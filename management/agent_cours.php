@@ -274,6 +274,7 @@ if ($id > 0 || !empty($ref)) {
 			print $count > 0 ? ('<a href="' . DOL_URL_ROOT . $_SERVER['PHP_SELF'].'?id=' . $object->id . '&checkAbsences">' .$count.' absences futurs connues' . '</a>') : 'Aucune absences futurs connues à ce jour.';
 			print '</td>';
 	
+			var_dump("kjenfkejf");
 			print '</tr>';
 		}
 		print '</tbody>';
