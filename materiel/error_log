@@ -1,0 +1,9 @@
+[10-Feb-2021 16:36:02 UTC] PHP Fatal error:  Uncaught Error: Class "mysqli" not found in /home/rovi9061/test-dolibarr.tousalamusique.com/core/db/mysqli.class.php:205
+Stack trace:
+#0 /home/rovi9061/test-dolibarr.tousalamusique.com/core/db/mysqli.class.php(91): DoliDBMysqli->connect()
+#1 /home/rovi9061/test-dolibarr.tousalamusique.com/core/lib/functions.lib.php(59): DoliDBMysqli->__construct()
+#2 /home/rovi9061/test-dolibarr.tousalamusique.com/master.inc.php(120): getDoliDBInstance()
+#3 /home/rovi9061/test-dolibarr.tousalamusique.com/main.inc.php(223): require_once('/home/rovi9061/...')
+#4 /home/rovi9061/test-dolibarr.tousalamusique.com/custom/materiel/materielindex.php(30): include('/home/rovi9061/...')
+#5 {main}
+  thrown in /home/rovi9061/test-dolibarr.tousalamusique.com/core/db/mysqli.class.php on line 205
