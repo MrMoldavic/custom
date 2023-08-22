@@ -3,6 +3,5 @@ CREATE TABLE llx_c_csp(
 	rowid integer AUTO_INCREMENT PRIMARY KEY NOT NULL, 
 	categorie varchar(255) NOT NULL, 
 	active smallint NOT NULL
-
 	-- END MODULEBUILDER FIELDS
 ) ENGINE=innodb;

@@ -558,7 +558,7 @@ public function loadMarques($fk_product = 0, $batch = '', $status = '', $sumStoc
 
 		$sql = "SELECT * FROM ".MAIN_DB_PREFIX."preinventaire";
 		$sql .= " WHERE inventoriable = 1";
-		$sql .= " AND rowid NOT IN ( SELECT fk_preinventaire FROM ".MAIN_DB_PREFIX."materiel)";
+		$sql .= " AND rowid NOT IN ". "(SELECT fk_preinventaire FROM ".MAIN_DB_PREFIX."materiel WHERE fk_preinventaire IS NOT NULL) ORDER BY rowid DESC";
 		$resql = $this->db->query($sql);
 		if ($this->db->num_rows($resql) > 0) {
 			$i = 0;
@@ -570,7 +570,6 @@ public function loadMarques($fk_product = 0, $batch = '', $status = '', $sumStoc
 				$i++;
 			}
 		}
-
 		return $return_array;
 	}
 

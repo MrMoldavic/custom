@@ -22,9 +22,9 @@
  *  \brief      Tab for notes on Groupe
  */
 
- ini_set('display_errors', '1');
-ini_set('display_startup_errors', '1');
-error_reporting(E_ALL);
+//  ini_set('display_errors', '1');
+// ini_set('display_startup_errors', '1');
+// error_reporting(E_ALL);
 
 //if (! defined('NOREQUIREDB'))              define('NOREQUIREDB', '1');				// Do not create database handler $db
 //if (! defined('NOREQUIREUSER'))            define('NOREQUIREUSER', '1');				// Do not load object $user
@@ -232,7 +232,7 @@ if ($id > 0 || !empty($ref)) {
 	print '<div class="fichecenter">';
 	print '<div class="underbanner clearboth"></div>';
 
-	$interpretations = "SELECT rowid,fk_morceau,date_debut_interpretation,date_fin_interpretation,description,fk_user_creat,status FROM ".MAIN_DB_PREFIX."organisation_interpretation WHERE fk_groupe =".$object->id;
+	$interpretations = "SELECT rowid,fk_morceau,temps,date_debut_interpretation,date_fin_interpretation,description,fk_user_creat,status FROM ".MAIN_DB_PREFIX."organisation_interpretation WHERE fk_groupe =".$object->id;
 	$resqlInterpretations = $db->query($interpretations);
 
 
@@ -242,6 +242,7 @@ if ($id > 0 || !empty($ref)) {
 		print '<tbody>';
 		print '<tr>';
 		print '<td style="padding:1em">Titre</td>';
+		print '<td style="padding:1em">Durée</td>';
 		print '<td style="padding:1em">Début d\'interprétation</td>';
 		print '<td style="padding:1em">Fin d\'interprétation</td>';
 		print '<td style="padding:1em">description</td>';
@@ -267,14 +268,15 @@ if ($id > 0 || !empty($ref)) {
 			$inter = new Interpretation($db);
 
 			print '<tr>';
-			print '<td style="padding:1em">'.$objMorceau->titre.' - '.$objArtiste->artiste.'</td>';
-			print '<td style="padding:1em">'.$value['date_debut_interpretation'].'</td>';
+			print '<td style="padding:1em">'.$objMorceau->titre.'</td>';
+			print '<td style="padding:1em">'.($value['temps'] != "" ? ($value['temps'].'min') : '').'</td>';
+			print '<td style="padding:1em">'.date('d/m/Y',strtotime($value['date_debut_interpretation'])).'</td>';
 			print '<td style="padding:1em">'.(!empty($value['date_fin_interpretation']) ? $value['date_fin_interpretation'] : "Indéfinie")  .'</td>';
 			print '<td style="padding:1em">'.$value['description'].'</td>';
 			print '<td style="padding:1em"><span class="badge  badge-status'.$value['status'].' badge-status">'.$inter->LibStatut($value['status']).'</td>';
 			print '<td style="padding:1em">'.$objUser->firstname.' '.$objUser->lastname.'</td>';
 			print '<td style="padding:1em"><a href="/custom/organisation/interpretation_card.php?id='.$value['rowid'].'&action=edit&token='.newToken().'">'.'✏️'.'</a></td>';
-			print '<td style="padding:1em"><a href="/custom/organisation/programmation_card.php?action=create&token='.newToken().'&fk_interpretation='.$objMorceau->rowid.'">'.'📆'.'</a></td>';
+			print '<td style="padding:1em"><a href="/custom/organisation/programmation_card.php?action=create&token='.newToken().'&fk_interpretation='.$value['rowid'].'">'.'📆'.'</a></td>';
 			print '<td style="padding:1em"><a href="'.$_SERVER['PHP_SELF'].'?id='.$object->id.'&action=deleteInterpretation&interpretation='.$value['rowid'].'">'.'❌'.'</a></td>';
 			print '</tr>';
 		}

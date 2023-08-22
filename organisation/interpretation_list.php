@@ -752,17 +752,14 @@ while ($i < $imaxinloop) {
 
 				elseif ($key == 'fk_morceau') {
 					$artiste = "SELECT a.artiste FROM ".MAIN_DB_PREFIX."organisation_artiste as a WHERE a.rowid ="."(SELECT f.fk_artiste FROM ".MAIN_DB_PREFIX."organisation_morceau as f WHERE f.rowid =".$object->fk_morceau.")";
-
-					//$artiste = "SELECT f.titre FROM ".MAIN_DB_PREFIX."organisation_morceau as f WHERE f.rowid =".$object->fk_morceau;
 					$resqlArtiste = $db->query($artiste);
 					$objectArtiste = $db->fetch_object($resqlArtiste);
-
 
 					$titre = "SELECT t.titre FROM ".MAIN_DB_PREFIX."organisation_morceau as t WHERE t.rowid =".$object->fk_morceau;
 					$resqlTitre = $db->query($titre);
 					$objectTitre = $db->fetch_object($resqlTitre);
 
-					print '<a href="'.DOL_URL_ROOT.'/custom/organisation/interpretation_card.php?id='.$object->id.'">'.$objectTitre->titre.' - '.$objectArtiste->artiste.'</a>';
+					print '<a href="'.DOL_URL_ROOT.'/custom/organisation/groupe_interpretation.php?id='.$object->fk_groupe.'">'.$objectTitre->titre.'</a>';
 				} 
 				
 	

@@ -127,7 +127,6 @@ class Contrat extends CommonObject
 		'ancienne_ref' => array('type'=>'varchar(255)', 'label'=>'Ancienne référence du contrat', 'enabled'=>'1','css'=>'maxwidth300', 'position'=>70, 'notnull'=>0, 'visible'=>1, 'validate'=>'1',),
 		'alternance' => array('type'=>'boolean', 'label'=>'Contrat en alternance', 'enabled'=>'1','css'=>'maxwidth300', 'position'=>70, 'notnull'=>0, 'visible'=>1, 'validate'=>'1',),
 		'aide_contrat' => array('type'=>'varchar(255)', 'label'=>'Aide pour le contrat', 'enabled'=>'1','css'=>'maxwidth300', 'position'=>70, 'notnull'=>0, 'visible'=>1, 'validate'=>'1','help'=>"Laissez vide si aucune aide",),
-
 		'note_public' => array('type'=>'html', 'label'=>'NotePublic', 'enabled'=>'1', 'position'=>61, 'notnull'=>0, 'visible'=>0, 'cssview'=>'wordbreak', 'validate'=>'1',),
 		'note_private' => array('type'=>'html', 'label'=>'NotePrivate', 'enabled'=>'1', 'position'=>62, 'notnull'=>0, 'visible'=>0, 'cssview'=>'wordbreak', 'validate'=>'1',),
 		'date_creation' => array('type'=>'datetime', 'label'=>'DateCreation', 'enabled'=>'1', 'position'=>500, 'notnull'=>1, 'visible'=>-2,),

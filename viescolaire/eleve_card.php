@@ -22,9 +22,9 @@
  *		\brief      Page to create/edit/view eleve
  */
 
-//  ini_set('display_errors', '1');
-// ini_set('display_startup_errors', '1');
-// error_reporting(E_ALL);
+ ini_set('display_errors', '1');
+ini_set('display_startup_errors', '1');
+error_reporting(E_ALL);
 
 //if (! defined('NOREQUIREDB'))              define('NOREQUIREDB', '1');				// Do not create database handler $db
 //if (! defined('NOREQUIREUSER'))            define('NOREQUIREUSER', '1');				// Do not load object $user
@@ -736,7 +736,7 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 		foreach($resqlSouhait as $val)
 		{
 			print '<tr class="oddeven">';
-			print '<td><a href="' . DOL_URL_ROOT . '/custom/viescolaire/souhait_card.php?id=' . $val['rowid']. '">' .'- ' . $val['nom_souhait'].'</a></td>';
+			print '<td><a href="' . DOL_URL_ROOT . '/custom/viescolaire/souhait_card.php?id=' . $val['rowid']. '">' .'- ' . $val['nom_souhait'].'</a> <span class="badge  badge-status'.($val['details'] != "" ? "4" : "8").' badge-status" style="color:white;">'.($val['details'] != "" ? "Appréciation Faite" : "Appréciation manquante").'</span></td>';
 			if($val['status'] == 4)
 			{
 				$sql = "SELECT c.nom_creneau,c.rowid FROM ".MAIN_DB_PREFIX."creneau as c WHERE c.rowid =".("(SELECT e.fk_creneau FROM ".MAIN_DB_PREFIX."affectation as e WHERE e.fk_souhait =".$val['rowid']." AND e.status = 4)");
@@ -748,8 +748,12 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 			}
 			elseif($val['status'] == 9)
 			{
-				print '		<td><span class="badge  badge-status8 badge-status" style="color:white;">Désactivé</span></td>';
-				print '		<td>Désactivé</td>';
+				// $sql = "SELECT c.nom_creneau,c.rowid FROM ".MAIN_DB_PREFIX."creneau as c WHERE c.rowid =".("(SELECT e.fk_creneau FROM ".MAIN_DB_PREFIX."affectation as e WHERE e.fk_souhait =".$val['rowid'].")");
+				// $resql = $db->query($sql);
+				// $objectCreneau = $db->fetch_object($resql);
+
+				print '<td><span class="badge  badge-status8 badge-status" style="color:white;">Souhait désactivé</span></td>';
+				print '<td><a href="'.DOL_URL_ROOT.'/custom/scolarite/creneau_card.php?id='.$objectCreneau->rowid.'">'.$objectCreneau->nom_creneau.'</a></td>';
 			}
 			else
 			{

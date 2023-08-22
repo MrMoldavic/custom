@@ -22,8 +22,17 @@
  * \brief       This file is a CRUD class file for Emprunt (Create/Read/Update/Delete)
  */
 
+
+
+
+
+ ini_set('display_errors', '1');
+ini_set('display_startup_errors', '1');
+error_reporting(E_ALL);
+
 // Put here all includes required by your class file
 require_once DOL_DOCUMENT_ROOT.'/core/class/commonobject.class.php';
+// require_once DOL_DOCUMENT_ROOT.'/custom/materiel/class/empruntLine.class.php';
 //require_once DOL_DOCUMENT_ROOT . '/societe/class/societe.class.php';
 //require_once DOL_DOCUMENT_ROOT . '/product/class/product.class.php';
 
@@ -63,6 +72,7 @@ class Emprunt extends CommonObject
 	 */
 	public $picto = 'fa-file';
 
+	public $total_ttc;
 
 	const STATUS_DRAFT = 0;
 	const STATUS_VALIDATED = 1;
@@ -114,8 +124,10 @@ class Emprunt extends CommonObject
 	public $fields=array(
 		'rowid' => array('type'=>'integer', 'label'=>'TechnicalID', 'enabled'=>'1', 'position'=>1, 'notnull'=>1, 'visible'=>0, 'noteditable'=>'1', 'index'=>1, 'css'=>'left', 'comment'=>"Id"),
 		'ref' => array('type'=>'varchar(128)', 'label'=>'Ref', 'enabled'=>'1', 'position'=>20, 'notnull'=>1, 'visible'=>4, 'noteditable'=>'1', 'index'=>1, 'searchall'=>1, 'showoncombobox'=>'1', 'validate'=>'1', 'comment'=>"Reference of object"),
-		'fk_emprunteur' => array('type'=>'integer:Emprunteur:custom/materiel/class/emprunteur.class.php:1', 'label'=>'Emprunteur', 'enabled'=>'1', 'position'=>30, 'notnull'=>0, 'visible'=>1, 'searchall'=>1, 'css'=>'maxwidth300', 'cssview'=>'wordbreak', 'help'=>"Personne laissant à disposition son objet à l'association", 'showoncombobox'=>'2', 'validate'=>'1', 'foreignkey'=>'user.rowid'),
-		'montant' => array('type'=>'price', 'label'=>'Montant', 'enabled'=>'1', 'position'=>40, 'notnull'=>0, 'visible'=>0, 'default'=>'null', 'isameasure'=>'1', 'help'=>"Valeur en euro des objets cumulés", 'validate'=>'1',),
+		'fk_emprunteur' => array('type'=>'integer:Emprunteur:custom/materiel/class/emprunteur.class.php:1', 'label'=>'Emprunteur', 'enabled'=>'1', 'position'=>30, 'notnull'=>0, 'visible'=>1, 'searchall'=>1, 'help'=>"Personne laissant à disposition son objet à l'association", 'showoncombobox'=>'2', 'validate'=>'1', 'foreignkey'=>'user.rowid'),
+		'montant' => array('type'=>'price', 'label'=>'Montant', 'enabled'=>'1', 'position'=>40, 'notnull'=>0, 'visible'=>2, 'default'=>'null', 'isameasure'=>'1', 'help'=>"Valeur en euro des objets cumulés", 'validate'=>'1',),
+		'date_emprunt' => array('type'=>'date', 'label'=>'Date de l\'emprunt', 'enabled'=>'1', 'position'=>44, 'notnull'=>1, 'visible'=>1,),
+
 		'description' => array('type'=>'text', 'label'=>'Notes', 'enabled'=>'1', 'position'=>45, 'notnull'=>0, 'visible'=>1, 'default'=>'', 'isameasure'=>'1', 'css'=>'maxwidth75imp', 'help'=>"Help text for quantity", 'validate'=>'1',),
 		'note_public' => array('type'=>'html', 'label'=>'NotePublic', 'enabled'=>'1', 'position'=>61, 'notnull'=>0, 'visible'=>0, 'cssview'=>'wordbreak', 'validate'=>'1',),
 		'note_private' => array('type'=>'html', 'label'=>'NotePrivate', 'enabled'=>'1', 'position'=>62, 'notnull'=>0, 'visible'=>0, 'cssview'=>'wordbreak', 'validate'=>'1',),
@@ -146,7 +158,7 @@ class Emprunt extends CommonObject
 	// /**
 	//  * @var string    Name of subtable line
 	//  */
-	// public $table_element_line = 'materiel_empruntline';
+	public $table_element_line = 'emprunt_det';
 
 	// /**
 	//  * @var string    Field with ID of parent key if this object has a parent
@@ -241,88 +253,146 @@ class Emprunt extends CommonObject
 
 	public function formAddObjectLine()
     {
-        global $form, $inventoriable, $amortissable;
+        global $form;
         //WYSIWYG Editor
         require_once DOL_DOCUMENT_ROOT.'/core/class/doleditor.class.php';
-        $array = array(1=>'Oui', 0=>'Non');
+
         print '<tr>';
+
         // Description
         print '<td>';
         $doleditor = new DolEditor('description', GETPOST('description', 'none'), '', 160, 'dolibarr_details', '', false, true, $conf->global->FCKEDITOR_ENABLE_PRODUCTDESC, ROWS_4, '90%');
         $doleditor->Create();
         print '</td>';
+
         // Valeur
         print '<td>';
-        print '<input type="number" min="0" step="0.01" name="valeur" class="minwidth300 maxwidth400onsmartphone" maxlength="255" value="'.GETPOST('valeur', 'float').'">';
-        print '</td>';
-        // Inventoriable
-        print '<td>';
-        print $form->selectarray('inventoriable', $array, $inventoriable);
-        print '</td>';
-        // Amortissable
-        print '<td>';
-        print $form->selectarray('amortissable', $array, $amortissable);
+        print '<input type="number" step="0.01" name="valeur" maxlength="255" value="'.GETPOST('valeur', 'float').'">';
         print '</td>';
 
-        // Amortissable
+        // Quantity
+        print '<td class="center">';
+        print '<input type="number" step="1" name="qty" maxlength="255" value="'.GETPOST('qty', 'int').'">';
+        print '</td>';
+
+        // BLANK
+        print '<td>';
+        print '</td>';
+
+        // Submit button
         print '<td>';
         print '<input type="submit" class="button" value="Ajouter" name="addline" id="addline">';
         print '</td>';
-        print '<td>';
-        print '<input type="number" min="0" step="0.01" placeholder="Nombre à ajouter..." id="nombre" name="nombre" maxlength="255">';
-        print '</td>';
+
         print '</tr>';
     }
 
 
-	public function addLine($description, $valeur, $inventoriable, $amortissable, $remaintospecify, $fksource, $nombre)
+	public function addLine($description, $valeur, $qty)
     {
-        // First check if the value of the object we want to add doesn't exceed the specified value of the source
-        if($remaintospecify == 0)
-        {
-            $remaintospecify = $this->remaining_to_specify;
-        }
-        if ($nombre == 0 || $nombre == "") $nombre = 1;
-        $remain = floatval($remaintospecify);
-        if (empty($this->line)) $this->fetch_lines();
+        // First check if the status is draft
+        if ($this->status != 0) return 0;
 
+        $sql = "INSERT INTO ".MAIN_DB_PREFIX."emprunt_det (";
+        $sql .= "fk_emprunt, ";
+        $sql .= "description, ";
+        $sql .= "valeur, ";
+        $sql .= "qty";
+        $sql .= ") VALUES (";
+        $sql .= $this->id . ", ";
+        $sql .= "'".str_replace("'","\'",$description)."', ";
+        $sql .= $valeur . ", ";
+        $sql .= $qty;
+        $sql .= ')';
 
-        if (($remain != 0 && $valeur > $remain) || ($nombre != 0 && (($valeur * $nombre) > $remain))   ){
-            $this->error = "La valeur du matériel dépasse la valeur à compléter de la source";
-            return 0;
-        }
-        for($i = 1; $i <= $nombre; $i++)
-        {
-            $sql = "INSERT INTO ".MAIN_DB_PREFIX."preinventaire (";
-            $sql .= "fk_source, ";
-            $sql .= "description, ";
-            $sql .= "valeur, ";
-            $sql .= "inventoriable, ";
-            $sql .= "amortissable";
-            $sql .= ") VALUES (";
-            if(!empty($fksource))
-            {
-                $sql .= $fksource . ", ";
-            }
-            else
-            {
-                $sql .= $this->id . ", ";
-            }
-            $sql .= "'".$description."', ";
-            $sql .= intval($valeur).", ";
-            $sql .= $inventoriable.", ";
-            $sql .= $amortissable;
-            $sql .= ')';
-            $resql = $this->db->query($sql);
-        }
+        $resql = $this->db->query($sql);
         if (!$resql) {
             $this->error = "Database Error";
             return 0;
         } else {
-            // Check and update status
-            $this->checkStatus();
             $this->db->commit();
             return 1;
+        }
+    }
+
+
+	public function printObjectLines($action = '', $lineid ='')
+    {
+
+        global $conf, $form;
+        //WYSIWYG Editor
+        require_once DOL_DOCUMENT_ROOT.'/core/class/doleditor.class.php';
+
+        $this->fetch_lines();
+        if (empty($this->lines)) return 1; // Stop the function here if there's no line
+        else 
+        {
+            foreach ($this->lines as $line)
+            {
+                // If this line is edited, we will print input fields instead of text
+                $islineedited = (($action == 'editline' && $line->id == $lineid && $this->status == Emprunt::STATUS_DRAFT) ? 1 : 0);
+
+                if ($islineedited) {
+                    print '<input type="hidden" name="lineid" value="'. $line->id .'" />';
+                }
+                
+                print '<tr>';
+
+                // Description
+                print '<td>';
+                if ($islineedited) {  
+                    $doleditor = new DolEditor('description', $line->description, '', 160, 'dolibarr_details', '', false, true, $conf->global->FCKEDITOR_ENABLE_PRODUCTDESC, ROWS_4, '90%');
+                    $doleditor->Create();
+                }
+                else print $line->description;
+                print '</td>';
+
+                // Valeur unitaire
+                print '<td>';
+                if ($islineedited) {  
+                    print '<input type="number" step="0.01" name="valeur" class="minwidth300 maxwidth400onsmartphone" maxlength="255" value="'.$line->valeur.'">';
+                }
+                else print price($line->valeur, 1, '', 0, -1, -1, $conf->currency);
+                print '</td>';
+
+                // Quantity
+                print '<td class="center">';
+                if ($islineedited) {  
+                    print '<input type="number" step="1" name="qty" class="minwidth300 maxwidth400onsmartphone" maxlength="255" value="'.$line->qty.'">';
+                }
+                else print $line->qty;
+                print '</td>';
+
+                // Valeur totale
+                print '<td>';
+                print price($line->valeur * $line->qty, 1, '', 0, -1, -1, $conf->currency);
+                print '</td>';
+
+                
+                if ($islineedited && $this->status == Emprunt::STATUS_DRAFT) 
+                {  
+                    print '<td>';
+                    print '<input type="submit" class="button" value="Modifier" name="save" id="addline">';
+                    print '<input type="submit" class="button" value="Annuler" name="cancel" id="addline">';                
+                    print '</td>';
+                } 
+                elseif ($this->status == Emprunt::STATUS_DRAFT) 
+                {
+                    // Modify / Remove button
+                    print '<td align="center">';
+                    print '<a class="reposition editfielda" href="'.$_SERVER["PHP_SELF"].'?action=editline&id='. $this->id .'&lineid='.$line->id.'">'.img_edit().'</a>';
+                    print '&nbsp;';
+                    print '<a href="'.$_SERVER["PHP_SELF"].'?action=ask_deleteline&id='. $this->id .'&lineid='.$line->id.'">'.img_delete().'</a>';
+                    print '</td>';
+                } 
+                else 
+                {
+                    print '<td align="center">';
+                    print '</td>';
+                }
+
+                print '</tr>';
+            }
         }
     }
 
@@ -437,7 +507,7 @@ class Emprunt extends CommonObject
 	{
 		$result = $this->fetchCommon($id, $ref);
 		if ($result > 0 && !empty($this->table_element_line)) {
-			$this->fetchLines();
+			$this->fetch_lines();
 		}
 		return $result;
 	}
@@ -447,14 +517,35 @@ class Emprunt extends CommonObject
 	 *
 	 * @return int         <0 if KO, 0 if not found, >0 if OK
 	 */
-	public function fetchLines()
-	{
-		$this->lines = array();
+	public function fetch_lines()
+    {
+        // Reset values
+        $this->lines = array();
 
-		$result = $this->fetchLinesCommon();
-		return $result;
-	}
+        $sql = "SELECT ed.rowid";
+        $sql .= " FROM ".MAIN_DB_PREFIX."emprunt_det as ed";
+        $sql .= " WHERE ed.fk_emprunt = ".$this->id;
+        $resql = $this->db->query($sql);
+        $num = $this->db->num_rows($resql);
 
+        $this->total_ttc = 0;
+        
+        if ($num)
+        {
+            $i = 0;
+            while ($i < $num)
+            {
+                $obj = $this->db->fetch_object($resql);
+                $line = new EmpruntLine($this->db);
+                $line->fetch($obj->rowid);
+                $this->total_ttc += $line->valeur * $line->qty;
+                $this->lines[$line->id] = $line;
+				
+                $i++;
+            }
+        }
+        return 1;
+    }
 
 	/**
 	 * Load list of objects in memory from the database.
@@ -624,8 +715,7 @@ class Emprunt extends CommonObject
 		if (!empty($num)) {
 			// Validate
 			$sql = "UPDATE ".MAIN_DB_PREFIX.$this->table_element;
-			$sql .= " SET ref = '".$this->db->escape($num)."',";
-			$sql .= " status = ".self::STATUS_VALIDATED;
+			$sql .= " SET status = ".self::STATUS_VALIDATED;
 			if (!empty($this->fields['date_validation'])) {
 				$sql .= ", date_validation = '".$this->db->idate($now)."'";
 			}
@@ -1143,32 +1233,5 @@ class Emprunt extends CommonObject
 		$this->db->commit();
 
 		return $error;
-	}
-}
-
-
-require_once DOL_DOCUMENT_ROOT.'/core/class/commonobjectline.class.php';
-
-/**
- * Class EmpruntLine. You can also remove this and generate a CRUD class for lines objects.
- */
-class EmpruntLine extends CommonObjectLine
-{
-	// To complete with content of an object EmpruntLine
-	// We should have a field rowid, fk_emprunt and position
-
-	/**
-	 * @var int  Does object support extrafields ? 0=No, 1=Yes
-	 */
-	public $isextrafieldmanaged = 0;
-
-	/**
-	 * Constructor
-	 *
-	 * @param DoliDb $db Database handler
-	 */
-	public function __construct(DoliDB $db)
-	{
-		$this->db = $db;
 	}
 }

@@ -145,7 +145,7 @@ $sql.= " FROM ".MAIN_DB_PREFIX."entretien as e";
 
 $sql.= " LEFT JOIN ".MAIN_DB_PREFIX."exploitation_replacement as er ON er.fk_entretien = e.rowid";
 
-$sql.= ($viewmode == 'active' ? " WHERE e.active=1" :  " WHERE e.active=0");
+// $sql.= ($viewmode == 'active' ? " WHERE e.active=1" :  " WHERE e.active=0");
 
 
 
@@ -221,9 +221,9 @@ print '<input type="hidden" name="viewmode" value="'.$viewmode.'">';
 
 
 
-	$morehtmlright = dolGetButtonTitle('En cours', '', 'fa fa-hourglass-half paddingleft imgforviewmode', $_SERVER["PHP_SELF"].'?viewmode=active', '', 1, array('morecss'=>'reposition'.($viewmode == 'active' ? ' btnTitleSelected' : '')));
+	// $morehtmlright = dolGetButtonTitle('En cours', '', 'fa fa-hourglass-half paddingleft imgforviewmode', $_SERVER["PHP_SELF"].'?viewmode=active', '', 1, array('morecss'=>'reposition'.($viewmode == 'active' ? ' btnTitleSelected' : '')));
 
-	$morehtmlright .= dolGetButtonTitle('Terminés', '', 'fa fa-hourglass-end paddingleft imgforviewmode', $_SERVER["PHP_SELF"].'?viewmode=ended', '', 1, array('morecss'=>'reposition'.($viewmode == 'ended' ? ' btnTitleSelected' : '')));
+	// $morehtmlright .= dolGetButtonTitle('Terminés', '', 'fa fa-hourglass-end paddingleft imgforviewmode', $_SERVER["PHP_SELF"].'?viewmode=ended', '', 1, array('morecss'=>'reposition'.($viewmode == 'ended' ? ' btnTitleSelected' : '')));
 
 	
 
@@ -333,18 +333,15 @@ print_liste_field_titre('Réf.', $_SERVER["PHP_SELF"], "e.rowid", "", $param, ""
 
 print_liste_field_titre('Matériel', $_SERVER["PHP_SELF"], "e.fk_materiel", "", $param, "", $sortfield, $sortorder);
 
-if ($viewmode == 'active') {
 
-	print_liste_field_titre('Remplacement', $_SERVER["PHP_SELF"], "e.fk_materiel", "", $param, "", $sortfield, $sortorder);
+print_liste_field_titre('Remplacement', $_SERVER["PHP_SELF"], "e.fk_materiel", "", $param, "", $sortfield, $sortorder);
 
-}
 
 print_liste_field_titre('Description', $_SERVER["PHP_SELF"], "e.description", "", $param, "", $sortfield, $sortorder);
 
 print_liste_field_titre('Deadline', $_SERVER["PHP_SELF"], "e.deadline_timestamp", "", $param, "", $sortfield, $sortorder);
 
-
-
+print_liste_field_titre('Etat', $_SERVER["PHP_SELF"], "e.active", "", $param, "", $sortfield, $sortorder);
 // Display the deactivation date in ended viewmode
 
 if ($viewmode == 'ended') {
@@ -353,7 +350,6 @@ if ($viewmode == 'ended') {
 
 }
 
-print '<td class="liste_titre center">État</td>';
 
 
 
@@ -431,7 +427,7 @@ if ($conf->entretien->enabled == 1)
 
     			print '<td class="tdoverflowmax200">';
 
-    			print $entretien->deadline_timestamp ? dol_print_date($entretien->deadline_timestamp, '%e %B %Y') : '<i>Pas de deadline</i>';
+    			print $entretien->deadline_timestamp ? date('d/m/Y', $entretien->deadline_timestamp) : '<i>Pas de deadline</i>';
 
     			print "</td>\n";
 

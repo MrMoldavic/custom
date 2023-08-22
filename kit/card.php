@@ -1,7 +1,7 @@
 <?php
-// ini_set('display_errors', '1');
-// ini_set('display_startup_errors', '1');
-// error_reporting(E_ALL);
+ini_set('display_errors', '1');
+ini_set('display_startup_errors', '1');
+error_reporting(E_ALL);
 
 // Load Dolibarr environment
 @include "../../main.inc.php";
@@ -14,6 +14,8 @@ require_once DOL_DOCUMENT_ROOT.'/custom/materiel/core/lib/kit.lib.php';
 require_once DOL_DOCUMENT_ROOT.'/custom/materiel/core/lib/functions.lib.php';
 require_once DOL_DOCUMENT_ROOT.'/product/class/html.formproduct.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formfile.class.php';
+require_once DOL_DOCUMENT_ROOT.'/custom/materiel/class/entretien.class.php';
+
 
 // Load translation files required by the page
 $langs->loadLangs(array("materiel@materiel"));

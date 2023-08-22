@@ -104,7 +104,7 @@ class html_cerfafr_materiel extends ModeleDon
 				$file = $dir."/SPECIMEN.html";
 			} else {
 				$donref = dol_sanitizeFileName($recufiscal->ref);
-				$dir = $conf->recufiscal->dir_output;
+				$dir = $conf->recufiscal->dir_output.'/'.$donref;
 				$file = $dir."/".$donref.".html";
 			}
 
@@ -159,7 +159,7 @@ class html_cerfafr_materiel extends ModeleDon
 				$recufiscalmodel = DOL_DOCUMENT_ROOT."/custom/recufiscal/html_cerfafr_materiel.html";
 				$form = implode('', file($recufiscalmodel));
 				$form = str_replace('__REF__', $recufiscal->ref, $form);
-				$form = str_replace('__DATE__', dol_print_date($recufiscal->datec, 'day', false, $outputlangs), $form);
+				$form = str_replace('__DATE__', dol_print_date($recufiscal->date_recu_fiscal, 'day', false, $outputlangs), $form);
 				$form = str_replace('__DONATOR_SOCIETE__', $recufiscal->donateur_object->societe, $form);
 				$form = str_replace('__DONATOR_FIRSTNAME__', $recufiscal->donateur_object->prenom, $form);
 				$form = str_replace('__DONATOR_LASTNAME__', $recufiscal->donateur_object->nom, $form);
@@ -211,7 +211,7 @@ class html_cerfafr_materiel extends ModeleDon
 				foreach($resqlDet as $value)
 				{
 					$DET .= '<b>Description : </b> '.$value['description'].'<br>';
-					$DET .= '<b>Valeur : </b>'.$value['valeur'].'€ <b>Quantitée : </b>'.$value['qty'];
+					$DET .= '<b>Valeur : </b>'.$value['valeur'].'€ <b>Quantité : </b>'.$value['qty'];
 					$DET .= '<hr>';
 				}
 				$form = str_replace('__DET__', $DET, $form);
@@ -261,7 +261,7 @@ class html_cerfafr_materiel extends ModeleDon
 				$form = str_replace('__ARTICLE978__', $art978, $form);
 
 				// Save file on disk
-				dol_syslog("html_cerfafr::write_file $file");
+				dol_syslog("html_cerfafr_materiel::write_file $file");
 				$handle = fopen($file, "w");
 				fwrite($handle, $form);
 				fclose($handle);

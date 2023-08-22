@@ -9,6 +9,7 @@ require_once DOL_DOCUMENT_ROOT.'/custom/materiel/class/formexploitation.class.ph
 require_once DOL_DOCUMENT_ROOT.'/custom/materiel/core/lib/functions.lib.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/functions.lib.php';
 
+
 // Load translation files required by the page
 $langs->loadLangs(array("materiel@materiel"));
 
@@ -23,6 +24,7 @@ $description = GETPOST('description', 'alpha');
 $deadline_datetime = DateTime::createFromFormat("d/m/Y", GETPOST('deadline_date'));
 $id = GETPOST('id', 'int');
 $new_suivi = GETPOST('new_suivi', 'alphanohtml');
+$agent = GETPOST('agent', 'integer');
 $form = new Form($db);
 $formmateriel = new FormMateriel($db);
 $entretien = new Entretien($db);
@@ -84,13 +86,14 @@ if ($action == 'add')
 		}
 	}
 } elseif ($action == 'add_suivi') {
-    if (empty($new_suivi)) setEventMessages($langs->trans('ErrorFieldRequired', 'Suivi'), null, 'errors');
+    if (empty($new_suivi)) setEventMessages("Veuillez renseigner un suivi valide.", null, 'errors');
+    if ($agent == "0") setEventMessages("Veuillez renseigner un agent pour le suivi.", null, 'errors');
     else {
         $materiel_status = getMaterielSuiviStatus($entretien->materiel_id);
         if (isInExploitation($entretien->materiel_id) && ($materiel_status['fk_localisation'] != 1 || $materiel_status['etat_suivi'] != 1)) {
             setEventMessages('Le matériel doit être retourné à l\'entrepôt avant de démarrer le suivi d\'entretien', null, 'errors');
         } else {
-            $result = $entretien->addSuivi($new_suivi, $user);
+            $result = $entretien->addSuivi($new_suivi, $agent, $user);
             if ($result) setEventMessages('Ligne de suivi ajoutée avec succès', null);
             else setEventMessages('Erreur lors de l\'ajout du suivi', null, 'errors');
             $action = 'view';
@@ -109,11 +112,38 @@ if ($action == 'add')
         if ($result) {
             setEventMessages('Entretien clôturé avec succès', null);
             if ($replacementOutOfKit) setEventMessages('<br>Le matériel de remplacement a été sorti de l\'exploitation', null);
-			header('Location: '.DOL_URL_ROOT.'/custom/entretien/list.php');
+			header('Location: '.DOL_URL_ROOT.'/custom/entretien/card.php?action=view&id='.$id);
             exit;
         }
         else setEventMessages('Erreur lors de la clôture de l\'entretien : ' . $entretien->error, null, 'errors');
     }
+} elseif ($action == 'confirm_ouverture' && $confirm == 'yes' && $usercancreate) {
+   
+    $entretien_id = isMaterielInEntretien($entretien->materiel_id);
+
+    if($entretien_id != 0 && ($entretien_id != $id))
+    {
+        setEventMessages('Impossible d\'ouvrir cet entretien, un plus récent éxiste déjà.', null, 'errors');
+        header('Location: '.DOL_URL_ROOT.'/custom/entretien/card.php?action=view&id='.$id);
+        exit;
+    }
+    else
+    {
+        $result = $entretien->ouverture($user);
+    
+        if($result)
+        {
+            setEventMessages('Entretien ouvert avec succès!', null);
+            header('Location: '.DOL_URL_ROOT.'/custom/entretien/card.php?action=view&id='.$id);
+            exit;
+        }
+        else setEventMessages('Erreur lors de la ouverture de l\'entretien : ' . $entretien->error, null, 'errors');
+    }
+
+
+
+
+   
 }
 
 
@@ -252,7 +282,7 @@ if ($action == 'create' && $usercancreate)
     print '<tr><td class="titlefield">';
     print "Deadline";
     print '</td><td colspan="3">';
-	$deadline_sanitized = (!empty($entretien->deadline_timestamp) ? dol_print_date($entretien->deadline_timestamp, '%e %B %Y') : '<i>Pas de deadline</i>');
+	$deadline_sanitized = (!empty($entretien->deadline_timestamp) ? date('d/m/Y', $entretien->deadline_timestamp) : '<i>Pas de deadline</i>');
     print $deadline_sanitized;
     print '</td></tr>';
     
@@ -263,7 +293,7 @@ if ($action == 'create' && $usercancreate)
     print '<tr><td class="titlefield">';
     print "Date de création";
     print '</td><td colspan="3">';
-    print dol_print_date($entretien->creation_timestamp, '%e %B %Y');
+    print date('d/m/Y', strtotime($entretien->creation_timestamp));
     print '</td></tr>';
     
     // Créé par
@@ -279,46 +309,78 @@ if ($action == 'create' && $usercancreate)
     print '<div class="fichehalfright"><div class="ficheaddleft">';
     print '<div class="underbanner clearboth"></div>';
     
-    /* FORMULAIRE D'ENTRÉE D'UNE NOUVELLE LIGNE DE SUIVI */
-    print '<form action="'.$_SERVER['PHP_SELF'].'" method="POST">';
-    print '<input type="hidden" name="token" value="'.newToken().'">';
-    print '<input type="hidden" name="id" value="'.$entretien->id.'">';
-    print '<input type="hidden" name="action" value="add_suivi">';
-    print '<table class="noborder centpercent">';
-    
-    // Line for title
-    print '<tr class="liste_titre">';
-    print '<td colspan="2">Nouvelle ligne de suivi</td>';
-    print '</tr>';
-    
-    // Line to enter new values
-    print '<!-- line to add new entry -->';
-    print '<tr class="oddeven nodrag nodrop nohover">';
-    print '<td>';
-    print '<input type="text" name="new_suivi" placeholder="Ex : Corde remplacée">';
-    print '</td>';
-    print '<td class="right">';
-    print '<input type="submit" class="button" name="add_suivi" value="'.$langs->trans("Add").'">';
-    print '</td>';
-    print "</tr>";
-    print '</table>';
-    print '</form>';
-    print '</div>';
+    if($entretien->active)
+    {
+  /* FORMULAIRE D'ENTRÉE D'UNE NOUVELLE LIGNE DE SUIVI */
+        print '<form action="'.$_SERVER['PHP_SELF'].'" method="POST">';
+        print '<input type="hidden" name="token" value="'.newToken().'">';
+        print '<input type="hidden" name="id" value="'.$entretien->id.'">';
+        print '<input type="hidden" name="action" value="add_suivi">';
+        print '<table class="noborder centpercent">';
+        
+        // Line for title
+        print '<tr class="liste_titre">';
+        print '<td>Nouvelle ligne de suivi</td>';
+        print '<td colspan="2">Action faite par:</td>';
+        print '</tr>';
+
+
+        $sqlAgent = "SELECT prenom, nom, rowid FROM ".MAIN_DB_PREFIX."management_agent";
+        $resqlAgent= $db->query($sqlAgent);
+        
+        // Line to enter new values
+        print '<!-- line to add new entry -->';
+        print '<tr class="oddeven nodrag nodrop nohover">';
+        print '<td>';
+        print '<input type="text" name="new_suivi" placeholder="Ex : Corde remplacée">';
+        print '</td>';
+        print '<td>';
+        print '<select name="agent">';
+        print '<option value="0">Choisir...</option>';
+        foreach( $resqlAgent as $value )
+        {
+            print '<option value="'.$value['rowid'].'">'.$value['prenom'].' '.$value['nom'].'</option>';
+        }
+        print '</select>';
+        print '</td>';
+        print '<td class="right">';
+        print '<input type="submit" class="button" name="add_suivi" value="Ajouter le suivi">';
+        print '</td>';
+        print "</tr>";
+        print '</table>';
+        print '</form>';
+        print '</div>';
+    }
+  
     
     /* LISTE DES LIGNES DE SUIVI */
     print '<table class="noborder centpercent">';
-	print '<tr class="liste_titre"><th colspan="2">Actions d\'entretien</th>';
+
+    print '<tr class="liste_titre">';
+    print '<td>Liste du suivi</td>';
+    print '<td>Action faite par:</td>';
+    print '<td>Date d\'ajout</td>';
     print '</tr>';
+
     $suivi_historic = $entretien->getSuiviHistoric();
     if (!$suivi_historic){ // Aucun historique de suivi pour cet entretien    
-		print '<tr class="oddeven"><td colspan="2" class="opacitymedium">Aucun historique de suivi pour cet entretien.</td></tr>';
+		print '<tr class="oddeven nodrag nodrop nohover"><td colspan="2" class="opacitymedium">Aucun historique de suivi pour cet entretien.</td></tr>';
     } else {
         foreach($suivi_historic as $suivi_row) {   
 		    print '<tr class="oddeven">';
             print '<td>';
             print $suivi_row['description'];
-            print '</td><td class="right">';
-            print dol_print_date($suivi_row['date'], '%e %B %Y');
+            print '</td>';
+            print '<td>';
+
+            $sqlAgentSuivi = "SELECT prenom, nom, rowid FROM ".MAIN_DB_PREFIX."management_agent WHERE rowid=".$suivi_row['fk_agent'];
+            $resqlAgentSuivi = $db->query($sqlAgentSuivi);
+            $objAgentSuivi = $db->fetch_object($resqlAgentSuivi);
+
+            print $objAgentSuivi->prenom.' '.$objAgentSuivi->nom;
+            print '</td>';
+            print '<td>';
+            print date('d/m/Y', $suivi_row['date']);
             print '</td></tr>';
         }     
     }
@@ -330,9 +392,14 @@ if ($action == 'create' && $usercancreate)
     dol_fiche_end();
     print "\n".'<div class="tabsAction">'."\n";
     if ($usercandelete && $entretien->active) {
-        print '<span id="action-cloture" class="butAction">Clôturer</span>'."\n";
+        print '<span id="action-cloture" class="butAction">Clôturer l\'entretien</span>'."\n";
         print $form->formconfirm("card.php?id=".$entretien->id, 'Clôturer l\'entretien ?', 'Êtes-vous sûr de vouloir clôturer cet entretien ?', "confirm_cloture", '', 0, "action-cloture");
     } 
+    else
+    {
+        print '<span id="action-ouverture" class="butAction">Ouvrir l\'entretien</span>'."\n";
+        print $form->formconfirm("card.php?id=".$entretien->id, 'Rouvrir l\'entretien', 'Êtes-vous sûr de vouloir rouvrir cet entretien ?', "confirm_ouverture", '', 0, "action-ouverture");
+    }
     print "\n</div>\n";
 }
 // End of page

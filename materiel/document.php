@@ -28,6 +28,10 @@
  *       \brief      Page des documents joints sur les produits
  */
 
+//  ini_set('display_errors', '1');
+//  ini_set('display_startup_errors', '1');
+//  error_reporting(E_ALL);
+
 require '../../main.inc.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/product.lib.php';
 require_once DOL_DOCUMENT_ROOT.'/custom/materiel/core/lib/materiel.lib.php';
@@ -37,6 +41,7 @@ require_once DOL_DOCUMENT_ROOT.'/custom/materiel/core/lib/functions.lib.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/files.lib.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/images.lib.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formfile.class.php';
+require_once DOL_DOCUMENT_ROOT.'/custom/materiel/class/entretien.class.php';
 
 if (!empty($conf->global->PRODUIT_PDF_MERGE_PROPAL))
 	require_once DOL_DOCUMENT_ROOT.'/product/class/propalmergepdfproduct.class.php';

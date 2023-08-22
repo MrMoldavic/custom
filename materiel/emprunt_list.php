@@ -76,6 +76,7 @@ if (!$res) {
 }
 
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formcompany.class.php';
+require_once DOL_DOCUMENT_ROOT.'/custom/materiel/class/empruntLine.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/date.lib.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/company.lib.php';
 
@@ -748,7 +749,10 @@ while ($i < $imaxinloop) {
 					print $object->showOutputField($val, $key, $object->id, '');
 				}  elseif ($key == 'ref') {
 					print $object->getNomUrl(0);
-				} else {
+				} elseif ($key == 'montant') {
+					print $object->id;
+				}
+				else {
 					print $object->showOutputField($val, $key, $object->$key, '');
 				}
 				print '</td>';
@@ -800,8 +804,6 @@ while ($i < $imaxinloop) {
 	$i++;
 }
 
-// Show total line
-include DOL_DOCUMENT_ROOT.'/core/tpl/list_print_total.tpl.php';
 
 // If no record found
 if ($num == 0) {

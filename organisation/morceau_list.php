@@ -260,7 +260,7 @@ $now = dol_now();
 
 //$help_url = "EN:Module_Morceau|FR:Module_Morceau_FR|ES:Módulo_Morceau";
 $help_url = '';
-$title = $langs->trans("Morceaus");
+$title = $langs->trans("Morceaux");
 $morejs = array();
 $morecss = array();
 

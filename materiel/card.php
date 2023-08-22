@@ -156,7 +156,14 @@ if ($action == 'add' && $usercancreate) {
         if (!$result) setEventMessages('Erreur lors de la création du matériel : ' . $materiel->error, null, 'errors');
         else setEventMessages('Matériel créé avec succès', null);
     }
-    if (!$error) header('Location: '.DOL_URL_ROOT.'/custom/materiel/list.php');
+    if (!$error)
+    {
+        $lastMateriel = "SELECT MAX(rowid) as max FROM ".MAIN_DB_PREFIX."materiel WHERE fk_user_author=".$user->id;
+        $resqlLastMateriel = $db->query($lastMateriel);
+        $objectLastMateriel = $db->fetch_object($resqlLastMateriel);
+
+        header('Location: '.DOL_URL_ROOT.'/custom/materiel/card.php?id='.$objectLastMateriel->max);
+    }
 }
 
 // Mise à jour d'un matériel
@@ -327,8 +334,8 @@ if ($action == 'create') {
     print '</td></tr>';
 
     // Source du préinventaire
-    print '<tr><td class="titlefieldcreate fieldrequired">Source préinventaire</td><td>';
-    print $form->selectarray('preinventaire_line_id', $formmateriel->getPreinventaireLinesForCreation(), $preinventaire_line_id, 1, 0, 0, 'style="min-width:200px;"', 0, 0, 0, '', '', 1);
+    print '<tr><td class="titlefieldcreate fieldrequired" style="max-width:300px">Source préinventaire</td><td>';
+    print $form->selectarray('preinventaire_line_id', $formmateriel->getPreinventaireLinesForCreation(), $preinventaire_line_id, 1, 0, 0, 'style="max-width:500px;"', 0, 0, 0, '', '', 1);
     print '</td>';
     print '</tr>';
 
@@ -340,7 +347,6 @@ if ($action == 'create') {
     print '</a>';
     print '</td>';
     print '</tr>';
-    
 
     // Précision du type
     $fieldname = 'Type d\'instrument <span class="classfortooltip" style="padding: 0px; padding: 0px; padding-right: 3px !important;" title="Ex : fretless, stéréo..."><img src="/theme/eldy/img/info.png" alt="" style="vertical-align: middle; cursor: help"></span>';
@@ -384,7 +390,7 @@ if ($action == 'create') {
     // Notes supplémentaires
     print '<tr><td class="titlefieldcreate tdtop">Descriptif de l\'objet</td><td colspan="3">';
 
-    $doleditor = new DolEditor('notes', GETPOST('notes', 'none'), '', 160, 'dolibarr_details', '', false, true, $conf->global->FCKEDITOR_ENABLE_PRODUCTDESC, ROWS_4, '90%');
+    $doleditor = new DolEditor('notes', GETPOST('notes', 'none'), '', 160, 'dolibarr_details', '', false, true, $conf->global->FCKEDITOR_ENABLE_PRODUCTDESC, ROWS_4, '50%');
     $doleditor->Create();
 
     print "</td></tr>";
@@ -856,7 +862,7 @@ if ($action != 'create' && $action != 'edit') {
             }
         }
         if ($usercancreate) {
-            print '<a class="butAction" href="'.$_SERVER["PHP_SELF"].'?action=edit&amp;id='.$materiel->id.'">'.$langs->trans("Modify").'</a>';
+            print '<a class="butAction" href="'.$_SERVER["PHP_SELF"].'?action=edit&amp;id='.$materiel->id.'">'.$langs->trans("Modifier").'</a>';
         }
 
         if ($usercandelete) {

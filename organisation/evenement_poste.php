@@ -373,30 +373,30 @@ if ($id > 0 || !empty($ref)) {
 
 			$sql2 = "SELECT * FROM ".MAIN_DB_PREFIX."organisation_poste WHERE fk_evenement=".$object->id." AND fk_type_poste=".$value['rowid'];
 			$resql2 = $db->query($sql2);	
-		
+			
 			if($resql2)
 			{
-				$printPoste = "";
 				foreach($resql2 as $res)
 				{
+					$printPoste = "";
 					$sqlAgent2 = "SELECT discord,prenom, nom, rowid FROM ".MAIN_DB_PREFIX."management_agent WHERE rowid=".$res['fk_agent'];
 					$resqlAgent2 = $db->query($sqlAgent2);
-					if($resqlAgent2)
+					
+					if($resqlAgent2 != "")
 					{
 						$objAgent2 = $db->fetch_object($resqlAgent2);
-					}
-					if($objAgent2->discord != NULL)
-					{
-						$printPoste .= "@".$objAgent2->discord.", ";
-					}
-					else
-					{
-						$printPoste .= $objAgent2->prenom." ".$objAgent2->nom.", ";
+						if($objAgent2->discord)
+						{
+							$printPoste .= "@".$objAgent2->discord.", ";
+						}
+						else
+						{
+							$printPoste .= $objAgent2->prenom." ".$objAgent2->nom.", ";
+						}
 					}
 					
+					print '<p>'.$printPoste.'</p>';
 				}
-				print '<p>'.$printPoste.'</p>';
-			
 			}
 			
 		}

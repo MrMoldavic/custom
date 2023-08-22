@@ -51,6 +51,11 @@ function elevePrepareHead($object)
 	$head[$h][2] = 'Materiel';
 	$h++;
 
+	$head[$h][0] = dol_buildpath("/viescolaire/eleve_appreciation.php", 1).'?id='.$object->id;
+	$head[$h][1] = $langs->trans("Appréciation");
+	$head[$h][2] = 'Appréciation';
+	$h++;
+
 	if (isset($object->fields['note_public']) || isset($object->fields['note_private'])) {
 		$nbNote = 0;
 		if (!empty($object->note_private)) {

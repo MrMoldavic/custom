@@ -396,7 +396,6 @@ class Entretien extends CommonObject
 	 */
 
 	public function fetch($id)
-
 	{
 
 		$sql = "SELECT *";
@@ -611,7 +610,7 @@ class Entretien extends CommonObject
 
 
 
-		$sql = "SELECT rowid, fk_user_author, description, tms FROM ";
+		$sql = "SELECT rowid, fk_user_author, description,fk_agent, tms FROM ";
 
 		$sql .= MAIN_DB_PREFIX."entretien_suivi ";
 
@@ -635,6 +634,8 @@ class Entretien extends CommonObject
 
 			$suivi_historic[$suivi_row->rowid]['fk_user'] = $suivi_row->fk_user_author;
 
+			$suivi_historic[$suivi_row->rowid]['fk_agent'] = $suivi_row->fk_agent;
+
 			$suivi_historic[$suivi_row->rowid]['description'] = $suivi_row->description;
 
 			$suivi_historic[$suivi_row->rowid]['date'] = $this->db->jdate($suivi_row->tms);
@@ -657,7 +658,7 @@ class Entretien extends CommonObject
 
 	 */
 
-	public function addSuivi($description, $user)
+	public function addSuivi($description, $agent, $user)
 
 	{	
 
@@ -669,13 +670,15 @@ class Entretien extends CommonObject
 
 		$sql = 'INSERT INTO '.MAIN_DB_PREFIX.'entretien_suivi ';
 
-		$sql .= '(fk_entretien, description, fk_user_author) ';
+		$sql .= '(fk_entretien, description, fk_agent, fk_user_author) ';
 
 		$sql .= 'VALUES (';
 
 		$sql .= $this->id.', ';
 
 		$sql .= "'".$description."', ";
+
+		$sql .= $agent.', ';
 
 		$sql .= $user->id;
 
@@ -708,61 +711,45 @@ class Entretien extends CommonObject
 	 */
 
 	public function cloture($user)
-
 	{
 
 		$sql = 'UPDATE '.MAIN_DB_PREFIX.'entretien';
-
 		$sql .= " SET active = 0,";
-
 		$sql .= "fk_user_delete = ".$user->id;
-
 		$sql .= ", suppression_timestamp = '".date('Y-m-d H:i:s') ."'";
-
 		$sql .= " WHERE rowid = ".$this->id;
-
 		if (!$this->db->query($sql)) return 0;
-
 		if (!$this->db->commit()) return 0;
 
-
-
 		// Si il y a une matériel de remplacement et qu'il est toujours à l'entrepôt, on le sort du kit
-
 		if (is_object($this->replacement_materiel_object))
-
 		{
-
 			$kit = new Kit($this->db);
-
 			$kit->fetch($this->replacement_materiel_object->fk_kit);
            $replacement_materiel_status = getMaterielSuiviStatus($this->replacement_materiel_id);
-
 			$is_replacement_in_warehouse = 0;
            if ($replacement_materiel_status['etat_suivi'] == 1 && $replacement_materiel_status['fk_localisation'] == 1) $is_replacement_in_warehouse = 1;
-       
-
 			if (($key = array_search($this->replacement_materiel_id, $kit->fk_materiel)) !== false && $is_replacement_in_warehouse) {
-
 				unset($kit->fk_materiel[$key]);
-
 				$sql = "UPDATE ".MAIN_DB_PREFIX."exploitation_replacement set active = 0 WHERE fk_materiel = ".$this->materiel_id;
-
 				$this->db->query($sql);
-
 				$this->db->commit();
-
 			}
-
 			$kit->update($user, 1);
-
 		}
-
 		return 1;
-
 	}
 
-
-
+	public function ouverture($user)
+	{
+		$sql = 'UPDATE '.MAIN_DB_PREFIX.'entretien';
+		$sql .= " SET active = 1,";
+		$sql .= "fk_user_delete = ".$user->id;
+		$sql .= ", suppression_timestamp = ''";
+		$sql .= " WHERE rowid = ".$this->id;
+		if (!$this->db->query($sql)) return 0;
+		if (!$this->db->commit()) return 0;
+		return 1;
+	}
 }
 

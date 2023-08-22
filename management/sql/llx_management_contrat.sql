@@ -29,6 +29,8 @@ CREATE TABLE llx_management_contrat(
 	salaire_brut varchar(255) NULL, 
 	salaire_net varchar(255) NULL, 
 	ancienne_ref varchar(255) NULL, 
+	alternance tinyint(4) NULL,
+	aide_contrat varchar(255) NULL,
 	note_public text, 
 	note_private text, 
 	date_creation datetime NOT NULL, 

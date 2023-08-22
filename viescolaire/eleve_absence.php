@@ -21,6 +21,10 @@
  *  \ingroup    viescolaire
  */
 
+// ini_set('display_errors', '1');
+// ini_set('display_startup_errors', '1');
+// error_reporting(E_ALL);
+
 //if (! defined('NOREQUIREDB'))              define('NOREQUIREDB', '1');				// Do not create database handler $db
 //if (! defined('NOREQUIREUSER'))            define('NOREQUIREUSER', '1');				// Do not load object $user
 //if (! defined('NOREQUIRESOC'))             define('NOREQUIRESOC', '1');				// Do not load object $mysoc
@@ -238,7 +242,6 @@ if ($id > 0 || !empty($ref)) {
 
 		$sqlProf1 = "SELECT firstname,lastname,rowid FROM ".MAIN_DB_PREFIX."user WHERE rowid= ".$creneauObj->fk_prof_1;
 		$resqlProf1 = $db->query($sqlProf1);
-		$profObject1 = $db->fetch_object($resqlProf1);
 
 		$sqlProf2 = "SELECT firstname,lastname,rowid FROM ".MAIN_DB_PREFIX."user WHERE rowid= ".$creneauObj->fk_prof_2;
 		$resqlProf2 = $db->query($sqlProf2);
@@ -246,14 +249,16 @@ if ($id > 0 || !empty($ref)) {
 		$sqlProf3 = "SELECT firstname,lastname,rowid FROM ".MAIN_DB_PREFIX."user WHERE rowid= ".$creneauObj->fk_prof_3;
 		$resqlProf3 = $db->query($sqlProf3);
 
-
 		print '<tr>';
 		print '<td>'.$etablissementObj->nom.'</td>';
-		print '<td>'.$creneauObj->nom_creneau.'</td>';
+		print '<td>'.($creneauObj->nom_creneau != "" ? $creneauObj->nom_creneau : '<span class="badge  badge-status8 badge-status" style="color:white;">Erreur créneau</span>').'</td>';
 		print '<td>';
-
-		print $profObject1->firstname.' '.$profObject1->lastname.'<br>';
 		
+		if($resqlProf1)
+		{
+			$profObject1 = $db->fetch_object($resqlProf1);
+			print $profObject1->firstname.' '.$profObject1->lastname.'<br>';
+		}
 		if($resqlProf2)
 		{
 			$profObject2 = $db->fetch_object($resqlProf2);
@@ -314,7 +319,6 @@ if ($id > 0 || !empty($ref)) {
 
 		$sqlProf1 = "SELECT firstname,lastname,rowid FROM ".MAIN_DB_PREFIX."user WHERE rowid= ".$creneauObj->fk_prof_1;
 		$resqlProf1 = $db->query($sqlProf1);
-		$profObject1 = $db->fetch_object($resqlProf1);
 
 		$sqlProf2 = "SELECT firstname,lastname,rowid FROM ".MAIN_DB_PREFIX."user WHERE rowid= ".$creneauObj->fk_prof_2;
 		$resqlProf2 = $db->query($sqlProf2);
@@ -326,11 +330,14 @@ if ($id > 0 || !empty($ref)) {
 
 		print '<tr>';
 		print '<td>'.$etablissementObj->nom.'</td>';
-		print '<td>'.$creneauObj->nom_creneau.'</td>';
+		print '<td>'.($creneauObj->nom_creneau != "" ? $creneauObj->nom_creneau : '<span class="badge  badge-status8 badge-status" style="color:white;">Erreur créneau</span>').'</td>';
 		print '<td>';
-
-		print $profObject1->firstname.' '.$profObject1->lastname.'<br>';
 		
+		if($resqlProf1)
+		{
+			$profObject1 = $db->fetch_object($resqlProf1);
+			print $profObject1->firstname.' '.$profObject1->lastname.'<br>';
+		}
 		if($resqlProf2)
 		{
 			$profObject2 = $db->fetch_object($resqlProf2);
@@ -353,7 +360,19 @@ if ($id > 0 || !empty($ref)) {
 			print '<td>'.$value['justification'].'</td>';
 		}
 		print '<td>'.date('d/m/Y', $time).'</td>';
-		print '<td>'.'<span class="badge  badge-status4 badge-status" style="color:white;">Jusitifiée</span>'.'</td>';
+		print '<td>';
+		print '<form action="">';
+		print '<input type="text" name="absenceID" value="'.$value['rowid'].'" hidden>';
+		print '<select name="statut" id="statut">';
+		print '<option value=""><span class="badge  badge-status1 badge-status" style="color:white;">Jusitifiée</span></option>';
+		print '<option value=""><span class="badge  badge-status1 badge-status" style="color:white;">Injustifiée</span></option>';
+		print '<option value=""><span class="badge  badge-status1 badge-status" style="color:white;">Retard</span></option>';
+		print '</select>';
+		print '<button type="submit">modifier</button>';
+		print '</form>';
+		
+		print '</td>';
+		//print '<td>'.'<span class="badge  badge-status4 badge-status" style="color:white;">Jusitifiée</span>'.'</td>';
 		print '</tr>';
 	}
 	print '</tbody>';
@@ -389,14 +408,27 @@ if ($id > 0 || !empty($ref)) {
 	
 		$time = strtotime($value['date_creation']);
 
+		$sqlProf1 = "SELECT firstname,lastname,rowid FROM ".MAIN_DB_PREFIX."user WHERE rowid= ".$creneauObj->fk_prof_1;
+		$resqlProf1 = $db->query($sqlProf1);
+
+		$sqlProf2 = "SELECT firstname,lastname,rowid FROM ".MAIN_DB_PREFIX."user WHERE rowid= ".$creneauObj->fk_prof_2;
+		$resqlProf2 = $db->query($sqlProf2);
+		
+		$sqlProf3 = "SELECT firstname,lastname,rowid FROM ".MAIN_DB_PREFIX."user WHERE rowid= ".$creneauObj->fk_prof_3;
+		$resqlProf3 = $db->query($sqlProf3);
+
 
 		print '<tr>';
 		print '<td>'.$etablissementObj->nom.'</td>';
-		print '<td>'.$creneauObj->nom_creneau.'</td>';
+		print '<td>'.($creneauObj->nom_creneau != "" ? $creneauObj->nom_creneau : '<span class="badge  badge-status8 badge-status" style="color:white;">Erreur créneau</span>').'</td>';
 		print '<td>';
 
-		print $profObject1->firstname.' '.$profObject1->lastname.'<br>';
 		
+		if($resqlProf1)
+		{
+			$profObject1 = $db->fetch_object($resqlProf1);
+			print $profObject1->firstname.' '.$profObject1->lastname.'<br>';
+		}
 		if($resqlProf2)
 		{
 			$profObject2 = $db->fetch_object($resqlProf2);
@@ -419,7 +451,11 @@ if ($id > 0 || !empty($ref)) {
 			print '<td>'.$value['justification'].'</td>';
 		}
 		print '<td>'.date('d/m/Y', $time).'</td>';
-		print '<td>'.'<span class="badge  badge-status1 badge-status" style="color:white;">Retard</span>'.'</td>';
+		print '<td>';
+		print '<select name="" id="">';
+		print '<option value=""><span class="badge  badge-status1 badge-status" style="color:white;">Retard</span></option>';
+		print '</select>';
+		print '</td>';
 		print '</tr>';
 	}
 	print '</tbody>';

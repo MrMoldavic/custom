@@ -29,8 +29,6 @@
 // Put here all includes required by your class file
 require_once DOL_DOCUMENT_ROOT . '/core/class/commonobject.class.php';
 require_once DOL_DOCUMENT_ROOT . '/custom/viescolaire/class/eleve.class.php';
-//require_once DOL_DOCUMENT_ROOT . '/societe/class/societe.class.php';
-//require_once DOL_DOCUMENT_ROOT . '/product/class/product.class.php';
 
 /**
  * Class for Souhait
@@ -113,8 +111,8 @@ class Souhait extends CommonObject
 		'fk_type_classe' => array('type' => 'sellist:type_classe:type', 'label' => 'Type de classe', 'enabled' => '1', 'position' => 2, 'notnull' => 1, 'visible' => 1, 'searchall' => 1, 'css' => 'maxwidth300', 'validate' => '1',),
 		'fk_instru_enseigne' => array('type' => 'sellist:c_instrument_enseigne:instrument', 'label' => 'Instrument souhaité', 'enabled' => '1', 'position' => 3, 'notnull' => 1, 'visible' => 1, 'validate' => '1',),	
 		'fk_niveau' => array('type' => 'sellist:c_niveaux:niveau', 'label' => 'Niveau de l\'élève', 'enabled' => '1', 'position' => 3, 'notnull' => 1, 'visible' => 1, 'validate' => '1',),		
-	
-		'details' => array('type' => 'text', 'label' => 'Détails', 'enabled' => '1', 'position' => 5, 'notnull' => 0, 'visible' => 1, 'css' => 'maxwidth75imp', 'validate' => '1', ),
+		'fk_annee_scolaire' => array('type' => 'sellist:c_annee_scolaire:annee', 'label' => 'Année scolaire concernée', 'enabled' => '1', 'position' => 4, 'notnull' => 1, 'visible' => 1, 'validate' => '1',),		
+		'details' => array('type' => 'text', 'label' => 'Appréciation de l\'élève (fin d\'année)', 'enabled' => '1', 'position' => 5, 'notnull' => 0, 'visible' => 1, 'css' => 'maxwidth75imp', 'validate' => '1', ),
 		'disponibilite' => array('type' => 'text', 'label' => 'Disponibilitées', 'enabled' => '1', 'position' => 4, 'notnull' => 0, 'visible' => 1, 'index' => 1, 'css' => 'maxwidth500 widthcentpercentminusxx', 'help' => "Disponibilitées de l'élèves, sous forme de texte.", 'validate' => '1',),
 		'note_public' => array('type' => 'html', 'label' => 'NotePublic', 'enabled' => '1', 'position' => 61, 'notnull' => 0, 'visible' => 0, 'cssview' => 'wordbreak', 'validate' => '1',),
 		'note_private' => array('type' => 'html', 'label' => 'NotePrivate', 'enabled' => '1', 'position' => 62, 'notnull' => 0, 'visible' => 0, 'cssview' => 'wordbreak', 'validate' => '1',),
@@ -383,8 +381,6 @@ class Souhait extends CommonObject
 		if ($result > 0 && !empty($this->table_element_line)) {
 			$this->fetchLines();
 		}
-
-
 		$this->eleve_object = new Eleve($this->db);
 		$this->eleve_object->fetch($this->fk_eleve);
 
@@ -500,10 +496,6 @@ class Souhait extends CommonObject
 		$type_cours = "SELECT t.type FROM ".MAIN_DB_PREFIX."type_classe as t WHERE t.rowid =".$this->fk_type_classe;
 		$resql = $this->db->query($type_cours);
 		$obj = $this->db->fetch_object($resql);
-
-		// $niveau = "SELECT n.niveau FROM ".MAIN_DB_PREFIX."eleve as e INNER JOIN ".MAIN_DB_PREFIX."c_niveaux as n ON n.rowid = e.fk_niveau WHERE e.rowid =".$this->fk_eleve;
-		// $resql = $this->db->query($niveau);
-		// $object2 = $this->db->fetch_object($resql);
 			
 		$instrument_enseigne = "SELECT i.instrument FROM ".MAIN_DB_PREFIX."c_instrument_enseigne as i WHERE i.rowid =".$this->fk_instru_enseigne;
 		$resql = $this->db->query($instrument_enseigne);
@@ -514,7 +506,6 @@ class Souhait extends CommonObject
 		$object1 = $this->db->fetch_object($resql);
 
 		$this->nom_souhait=$eleve->nom .'-'. $eleve->prenom .'-'. $obj->type .'-'. $object->instrument . '-' . $object1->niveau;
-
 
 		return $this->updateCommon($user, $notrigger);
 	}

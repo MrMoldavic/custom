@@ -59,7 +59,7 @@ class Source extends CommonObject {
 
     public function fetch($id)
     {
-        $sql = "SELECT s.rowid, s.fk_type_source, s.fk_source, s.inventoriable, s.fk_status, s.datec, s.active";
+        $sql = "SELECT s.rowid, s.fk_type_source, s.fk_origine, s.inventoriable, s.fk_status, s.datec, s.active";
         $sql .= " FROM ".MAIN_DB_PREFIX."source as s ";
         $sql .= " WHERE s.rowid = ".(int) $id;
         $resql = $this->db->query($sql);
@@ -68,7 +68,7 @@ class Source extends CommonObject {
                 $obj = $this->db->fetch_object($resql);
                 $this->id                           = $obj->rowid;
                 $this->source_type_id     = $obj->fk_type_source;
-                $this->fk_source     = $obj->fk_source;
+                $this->fk_origine     = $obj->fk_origine;
                 $this->inventoriable     = $obj->inventoriable;
                 $this->fk_status     = $obj->fk_status;
                 $this->datec     = $obj->datec;
@@ -85,7 +85,7 @@ class Source extends CommonObject {
             return 0;
         }
         $this->create_reference_object($obj->fk_type_source);
-        $this->fetch_reference_object($obj->fk_source);
+        $this->fetch_reference_object($obj->fk_origine);
         $this->ref = $this->source_reference_object->ref;
         $this->total_ttc = $this->source_reference_object->total_ttc;
         $this->fetch_lines();
@@ -136,7 +136,7 @@ class Source extends CommonObject {
         // Check if this source is already in the database
         $sql = "SELECT rowid FROM ".MAIN_DB_PREFIX."source";
         $sql .= " WHERE fk_type_source = ". $this->source_type_id;
-        $sql .= " AND fk_source = ". $this->source_reference_object->id;
+        $sql .= " AND fk_origine = ". $this->source_reference_object->id;
         $resql = $this->db->query($sql);
         if ($this->db->num_rows($resql) > 0) 
         {
@@ -145,7 +145,7 @@ class Source extends CommonObject {
         }
         $sql = "INSERT INTO ".MAIN_DB_PREFIX."source (";
         $sql .= "fk_type_source, ";
-        $sql .= "fk_source, ";
+        $sql .= "fk_origine, ";
         $sql .= "inventoriable";
         $sql .= ") VALUES (";
         $sql .= $this->source_type_id . ", ";
@@ -350,53 +350,55 @@ class Source extends CommonObject {
     public function addLine($description, $valeur, $inventoriable, $amortissable, $remaintospecify, $fksource, $nombre)
     {
         // First check if the value of the object we want to add doesn't exceed the specified value of the source
-        if($remaintospecify == 0)
-        {
-            $remaintospecify = $this->remaining_to_specify;
-        }
+
+        // if($remaintospecify == 0)
+        // {
+        //     $remaintospecify = $this->remaining_to_specify;
+        // }
         if ($nombre == 0 || $nombre == "") $nombre = 1;
         $remain = floatval($remaintospecify);
         if (empty($this->line)) $this->fetch_lines();
 
-
-        if (($remain != 0 && $valeur > $remain) || ($nombre != 0 && (($valeur * $nombre) > $remain))   ){
+        if (($remain != 0 && $valeur > $remain) || ($nombre != 0 && (($valeur * $nombre) > $remain)) || $remain == 0){
             $this->error = "La valeur du matériel dépasse la valeur à compléter de la source";
             return 0;
         }
-
-        for($i = 1; $i <= $nombre; $i++)
+        else
         {
-            $sql = "INSERT INTO ".MAIN_DB_PREFIX."preinventaire (";
-            $sql .= "fk_source, ";
-            $sql .= "description, ";
-            $sql .= "valeur, ";
-            $sql .= "inventoriable, ";
-            $sql .= "amortissable";
-            $sql .= ") VALUES (";
-            if(!empty($fksource))
+            for($i = 1; $i <= $nombre; $i++)
             {
-                $sql .= $fksource . ", ";
+                $sql = "INSERT INTO ".MAIN_DB_PREFIX."preinventaire (";
+                $sql .= "fk_source, ";
+                $sql .= "description, ";
+                $sql .= "valeur, ";
+                $sql .= "inventoriable, ";
+                $sql .= "amortissable";
+                $sql .= ") VALUES (";
+                if(!empty($fksource))
+                {
+                    $sql .= $fksource . ", ";
+                }
+                else
+                {
+                    $sql .= $this->id . ", ";
+                }
+                $sql .= "'".$description."', ";
+                $sql .= intval($valeur).", ";
+                $sql .= $inventoriable.", ";
+                $sql .= $amortissable;
+                $sql .= ')';
+                $resql = $this->db->query($sql);
             }
-            else
-            {
-                $sql .= $this->id . ", ";
+            if (!$resql) {
+                $this->error = "Database Error";
+                return 0;
+            } else {
+                // Check and update status
+                $this->checkStatus();
+                $this->db->commit();
+                return 1;
             }
-            $sql .= "'".$description."', ";
-            $sql .= intval($valeur).", ";
-            $sql .= $inventoriable.", ";
-            $sql .= $amortissable;
-            $sql .= ')';
-            $resql = $this->db->query($sql);
-        }
-        if (!$resql) {
-            $this->error = "Database Error";
-            return 0;
-        } else {
-            // Check and update status
-            $this->checkStatus();
-            $this->db->commit();
-            return 1;
-        }
+        }   
     }
 
     /**
@@ -477,7 +479,7 @@ class Source extends CommonObject {
                 {
                     // Modify / Remove button
                     print '<td align="center">';
-                    print '<a class="reposition editfielda" href="'.$_SERVER["PHP_SELF"].'?action=addline&description='.$line->description.'&valeur='.$line->valeur.'&inventoriable='.$line->inventoriable.'&amortissable='.$line->amortissable.'&remaintospecify='.intval($this->remaining_to_specify).'&fksource='.$line->fk_source.'">Cloner</a>';
+                    print '<a class="reposition editfielda" href="'.$_SERVER["PHP_SELF"].'?action=addline&description='.$line->description.'&valeur='.$line->valeur.'&inventoriable='.$line->inventoriable.'&amortissable='.$line->amortissable.'&remaintospecify='.intval($this->remaining_to_specify).'&fksource='.$line->fk_source.'&nombre=1">Cloner</a>';
                     print '&nbsp;&nbsp;&nbsp;&nbsp;';
                     print '<a class="reposition editfielda" href="'.$_SERVER["PHP_SELF"].'?action=editline&id='. $this->id .'&lineid='.$line->id.'">'.img_edit().'</a>';
                     print '&nbsp;&nbsp;&nbsp;&nbsp;';

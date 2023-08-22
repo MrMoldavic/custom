@@ -19,6 +19,7 @@ CREATE TABLE llx_organisation_interpretation(
 	rowid integer AUTO_INCREMENT PRIMARY KEY NOT NULL, 
 	fk_morceau integer(11) NOT NULL, 
 	fk_groupe integer(11) NOT NULL, 
+	temps integer(11) NULL, 
 	date_debut_interpretation date NOT NULL,
 	date_fin_interpretation date NULL,
 	description text, 

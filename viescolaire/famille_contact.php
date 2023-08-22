@@ -17,10 +17,19 @@
  */
 
 /**
- *  \file       famille_contact.php
- *  \ingroup    viescolaire
- *  \brief      Tab for contacts linked to Famille
+ *  \file       salle_recherche.php
+ *  \ingroup    scolarite
+ *  \brief      Tab for contacts linked to salle
  */
+
+
+ini_set('display_errors', '1');
+ini_set('display_startup_errors', '1');
+error_reporting(E_ALL);
+
+
+
+
 
 // Load Dolibarr environment
 $res = 0;
@@ -55,11 +64,11 @@ if (!$res) {
 
 require_once DOL_DOCUMENT_ROOT.'/contact/class/contact.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formcompany.class.php';
-dol_include_once('/viescolaire/class/famille.class.php');
-dol_include_once('/viescolaire/lib/viescolaire_famille.lib.php');
-
+dol_include_once('/scolarite/class/salle.class.php');
+dol_include_once('/scolarite/lib/scolarite_salle.lib.php');
+dol_include_once('/scolarite/class/creneau.class.php');
 // Load translation files required by the page
-$langs->loadLangs(array("viescolaire@viescolaire", "companies", "other", "mails"));
+$langs->loadLangs(array("scolarite@scolarite", "companies", "other", "mails"));
 
 $id     = (GETPOST('id') ?GETPOST('id', 'int') : GETPOST('facid', 'int')); // For backward compatibility
 $ref    = GETPOST('ref', 'alpha');
@@ -68,12 +77,16 @@ $socid  = GETPOST('socid', 'int');
 $action = GETPOST('action', 'aZ09');
 
 // Initialize technical objects
-$object = new Famille($db);
+// $object = new Salle($db);
 $extrafields = new ExtraFields($db);
-$diroutputmassaction = $conf->viescolaire->dir_output.'/temp/massgeneration/'.$user->id;
-$hookmanager->initHooks(array('famillecontact', 'globalcard')); // Note that conf->hooks_modules contains array
+$diroutputmassaction = $conf->scolarite->dir_output.'/temp/massgeneration/'.$user->id;
+$hookmanager->initHooks(array('sallesallex', 'globalcard')); // Note that conf->hooks_modules contains array
 // Fetch optionals attributes and labels
 $extrafields->fetch_name_optionals_label($object->table_element);
+
+if (empty($action) && empty($id) && empty($ref)) {
+	$action = 'create';
+}
 
 // Load object
 include DOL_DOCUMENT_ROOT.'/core/actions_fetchobject.inc.php'; // Must be include, not include_once  // Must be include, not include_once. Include fetch and fetch_thirdparty but not fetch_optionals
@@ -82,8 +95,8 @@ include DOL_DOCUMENT_ROOT.'/core/actions_fetchobject.inc.php'; // Must be includ
 // Set $enablepermissioncheck to 1 to enable a minimum low level of checks
 $enablepermissioncheck = 1;
 if ($enablepermissioncheck) {
-	$permissiontoread = $user->rights->viescolaire->eleve->read;
-	$permission = $user->rights->viescolaire->eleve->write;
+	$permissiontoread = $user->rights->scolarite->scolarite->read;
+	$permission = $user->rights->scolarite->scolarite->create;
 } else {
 	$permissiontoread = 1;
 	$permission = 1;
@@ -94,51 +107,15 @@ if ($enablepermissioncheck) {
 //if ($user->socid > 0) $socid = $user->socid;
 //$isdraft = (($object->status == $object::STATUS_DRAFT) ? 1 : 0);
 //restrictedArea($user, $object->element, $object->id, $object->table_element, '', 'fk_soc', 'rowid', $isdraft);
-if (empty($conf->viescolaire->enabled)) accessforbidden();
+if (empty($conf->scolarite->enabled)) accessforbidden();
 if (!$permissiontoread) accessforbidden();
-
-
-/*
- * Add a new contact
- */
-
-if ($action == 'addcontact' && $permission) {
-	$contactid = (GETPOST('userid') ? GETPOST('userid', 'int') : GETPOST('contactid', 'int'));
-	$typeid = (GETPOST('typecontact') ? GETPOST('typecontact') : GETPOST('type'));
-	$result = $object->add_contact($contactid, $typeid, GETPOST("source", 'aZ09'));
-
-	if ($result >= 0) {
-		header("Location: ".$_SERVER['PHP_SELF']."?id=".$object->id);
-		exit;
-	} else {
-		if ($object->error == 'DB_ERROR_RECORD_ALREADY_EXISTS') {
-			$langs->load("errors");
-			setEventMessages($langs->trans("ErrorThisContactIsAlreadyDefinedAsThisType"), null, 'errors');
-		} else {
-			setEventMessages($object->error, $object->errors, 'errors');
-		}
-	}
-} elseif ($action == 'swapstatut' && $permission) {
-	// Toggle the status of a contact
-	$result = $object->swapContactStatus(GETPOST('ligne', 'int'));
-} elseif ($action == 'deletecontact' && $permission) {
-	// Deletes a contact
-	$result = $object->delete_contact($lineid);
-
-	if ($result >= 0) {
-		header("Location: ".$_SERVER['PHP_SELF']."?id=".$object->id);
-		exit;
-	} else {
-		dol_print_error($db);
-	}
-}
 
 
 /*
  * View
  */
 
-$title = $langs->trans('Famille')." - ".$langs->trans('ContactsAddresses');
+$title = $langs->trans('Rechercher une salle');
 $help_url = '';
 //$help_url='EN:Module_Third_Parties|FR:Module_Tiers|ES:Empresas';
 llxHeader('', $title, $help_url);
@@ -149,76 +126,172 @@ $contactstatic = new Contact($db);
 $userstatic = new User($db);
 
 
+
 /* *************************************************************************** */
 /*                                                                             */
 /* View and edit mode                                                         */
 /*                                                                             */
 /* *************************************************************************** */
 
-if ($object->id) {
-	/*
-	 * Show tabs
-	 */
-	$head = famillePrepareHead($object);
 
-	print dol_get_fiche_head($head, 'contact', $langs->trans("Famille"), -1, $object->picto);
+if ($action == 'create') // SELECTION DU TYPE DE KIT
+{
+	// $sql = "SELECT * FROM ".MAIN_DB_PREFIX."salles";
+	// $resql = $db->query($sql);
 
-	$linkback = '<a href="'.dol_buildpath('/viescolaire/famille_list.php', 1).'?restore_lastsearch_values=1'.(!empty($socid) ? '&socid='.$socid : '').'">'.$langs->trans("BackToList").'</a>';
+	// $sqlEtablissement = "SELECT rowid,nom FROM ".MAIN_DB_PREFIX."etablissement";
+	// $resqlEtablissement = $db->query($sqlEtablissement);
 
-	$morehtmlref = '<div class="refidno">';
-	/*
-	 // Ref customer
-	 $morehtmlref.=$form->editfieldkey("RefCustomer", 'ref_client', $object->ref_client, $object, 0, 'string', '', 0, 1);
-	 $morehtmlref.=$form->editfieldval("RefCustomer", 'ref_client', $object->ref_client, $object, 0, 'string', '', null, null, '', 1);
-	 // Thirdparty
-	 $morehtmlref.='<br>'.$langs->trans('ThirdParty') . ' : ' . (is_object($object->thirdparty) ? $object->thirdparty->getNomUrl(1) : '');
-	 // Project
-	 if (! empty($conf->projet->enabled))
-	 {
-	 $langs->load("projects");
-	 $morehtmlref.='<br>'.$langs->trans('Project') . ' ';
-	 if ($permissiontoadd)
-	 {
-	 if ($action != 'classify')
-	 //$morehtmlref.='<a class="editfielda" href="' . $_SERVER['PHP_SELF'] . '?action=classify&token='.newToken().'&id=' . $object->id . '">' . img_edit($langs->transnoentitiesnoconv('SetProject')) . '</a> : ';
-	 $morehtmlref.=' : ';
-	 if ($action == 'classify') {
-	 //$morehtmlref.=$form->form_project($_SERVER['PHP_SELF'] . '?id=' . $object->id, $object->socid, $object->fk_project, 'projectid', 0, 0, 1, 1);
-	 $morehtmlref.='<form method="post" action="'.$_SERVER['PHP_SELF'].'?id='.$object->id.'">';
-	 $morehtmlref.='<input type="hidden" name="action" value="classin">';
-	 $morehtmlref.='<input type="hidden" name="token" value="'.newToken().'">';
-	 $morehtmlref.=$formproject->select_projects($object->socid, $object->fk_project, 'projectid', $maxlength, 0, 1, 0, 1, 0, 0, '', 1);
-	 $morehtmlref.='<input type="submit" class="button valignmiddle" value="'.$langs->trans("Modify").'">';
-	 $morehtmlref.='</form>';
-	 } else {
-	 $morehtmlref.=$form->form_project($_SERVER['PHP_SELF'] . '?id=' . $object->id, $object->socid, $object->fk_project, 'none', 0, 0, 0, 1);
-	 }
-	 } else {
-	 if (! empty($object->fk_project)) {
-	 $proj = new Project($db);
-	 $proj->fetch($object->fk_project);
-	 $morehtmlref .= ': '.$proj->getNomUrl();
-	 } else {
-	 $morehtmlref .= '';
-	 }
-	 }
-	 }*/
-	$morehtmlref .= '</div>';
+	// $etablissements = [];
 
-	dol_banner_tab($object, 'ref', $linkback, 1, 'ref', 'ref', $morehtmlref, '', 0, '', '', 1);
+	// foreach($resqlEtablissement as $value)
+	// {
+	// 	$etablissements[$value['rowid']] = $value['nom'];
+	// }
+
+	// $equipement = [''=>'Aucun', 'guitareE'=>'Guitares électriques (Amplis)','MAO'=>'MAO','Piano'=>'Piano','Batterie'=>'Batterie'];
+
+	// $date = date('Y-m-d H:i:s');
+	// //WYSIWYG Editor
+	// print '<form action="'.$_SERVER["PHP_SELF"].'" method="POST">';
+  
+	// print '<input type="hidden" name="action" value="create">';
+	// $titre = "Nouvel Appel";
+	// print talm_load_fiche_titre($title, $linkback, $picto);
+	// dol_fiche_head('');
+	// print '<table class="border centpercent">';
+	// print '<tr>';
+	// print '</td></tr>';
+	// // Type de Kit
+	// print '<tr><td class="fieldrequired titlefieldcreate">Sélectionnez une heure: </td><td>';
+	// print $form->selectDate($date,'date_evenement',1,1,0,"",1,1,0,'','','','',1,'','','auto');
+	// print ' <a href="'.DOL_URL_ROOT.'/custom/viescolaire/eleve_card.php?action=create">';
+	// print '</a>';
+	// print '</td>';
+	// print '</tr>';
+
+	// print '<tr><td class="fieldrequired titlefieldcreate">Sélectionnez un établissement : </td><td>';
+	// print $form->selectarray('etablissement', $etablissements);
+	// print ' <a href="'.DOL_URL_ROOT.'/custom/viescolaire/eleve_card.php?action=create">';
+	// print '</a>';
+	// print '</td>';
+	// print '</tr>';
+
+	// print '<tr><td class="fieldrequired titlefieldcreate">Sélectionnez un type d\'équipement : </td><td>';
+	// print $form->selectarray('equipement', $equipement);
+	// print ' <a href="'.DOL_URL_ROOT.'/custom/viescolaire/eleve_card.php?action=create">';
+	// print '</a>';
+	// print '</td>';
+	// print '</tr>';
+
+	// print "</table>"; 
+	// dol_fiche_end();
+	// print '<div class="center">';
+	// print '<input type="submit" class="button" value="Confirmer">';
+	// print '</div>';
+	// print '</form>';
+
+	$object = new Creneau($db);
+	// $object->fk_souhait = $id;
+	print load_fiche_titre($langs->trans("NewObject", $langs->transnoentitiesnoconv("Affectation")), '', 'object_' . $object->picto);
+
+	print '<form method="POST" action="' . $_SERVER["PHP_SELF"] . '?id=' . $id . '">';
+	print '<input type="hidden" name="token" value="' . newToken() . '">';
+	print '<input type="hidden" name="action" value="newaffectation">';
+	if ($backtopage) {
+		print '<input type="hidden" name="backtopage" value="' . $backtopage . '">';
+	}
+	if ($backtopageforcancel) {
+		print '<input type="hidden" name="backtopageforcancel" value="' . $backtopageforcancel . '">';
+	}
+
+	print dol_get_fiche_head(array(), '');
+
+	// Set some default values
+	// $_POST['fk_souhait'] = $id;
+
+	print '<table class="border centpercent tableforfieldcreate">' . "\n";
+
+	// Common attributes
+	include DOL_DOCUMENT_ROOT . '/core/tpl/commonfields_add.tpl.php';
+
+	// Other attributes
+	include DOL_DOCUMENT_ROOT . '/core/tpl/extrafields_add.tpl.php';
+
+	print '</table>' . "\n";
 
 	print dol_get_fiche_end();
 
-	print '<br>';
+	print $form->buttonsSaveCancel("Créer affectation");
 
-	// Contacts lines (modules that overwrite templates must declare this into descriptor)
-	$dirtpls = array_merge($conf->modules_parts['tpl'], array('/core/tpl'));
-	foreach ($dirtpls as $reldir) {
-		$res = @include dol_buildpath($reldir.'/contacts.tpl.php');
-		if ($res) {
-			break;
+	print '</form>';
+
+	print '</div>';
+
+	
+	if(GETPOSTISSET('etablissement', 'int'))
+	{
+		$date = GETPOST('date_evenement','varchar');
+		$dt = DateTime::createFromFormat('d/m/Y', $date);
+
+		$sqlJour = "SELECT * FROM ".MAIN_DB_PREFIX."c_jour WHERE rowid=".date('w',strtotime($dt->format('Y-m-d')));
+		$resqlJour = $db->query($sqlJour);
+		$jourObj = $db->fetch_object($resqlJour);
+
+		if(GETPOST('equipement', 'varchar') == '')
+		{
+			$sqlEquip = "SELECT s.rowid,s.salle FROM ". MAIN_DB_PREFIX . "salles as s WHERE fk_college=".GETPOST('etablissement', 'varchar')." AND equipement='Aucun'";
+			$resqlEquip = $db->query($sqlEquip);
 		}
+		else
+		{
+			$sqlEquip = "SELECT s.rowid,s.salle FROM ". MAIN_DB_PREFIX . "salles as s WHERE fk_college=".GETPOST('etablissement', 'varchar')." AND equipement="."'".GETPOST('equipement', 'varchar')."'";
+			$resqlEquip = $db->query($sqlEquip);
+		}
+	
+		
+	
+		$salleDispos = [];
+		foreach($resqlEquip as $salle)
+		{
+			$sql = "SELECT COUNT(*) as total FROM " . MAIN_DB_PREFIX . "creneau as c INNER JOIN " . MAIN_DB_PREFIX . "dispositif as d ON c.fk_dispositif = d.rowid INNER JOIN " . MAIN_DB_PREFIX . "c_heure as h ON c.heure_debut = h.rowid WHERE d.fk_etablissement =" . GETPOST('etablissement', 'int') . " AND c.jour=" . strftime('%u') . " AND h.heure =" .GETPOST('date_evenementhour', 'varchar')." AND c.fk_salle=".$salle['rowid']." AND c.status =" . 4 ." ORDER BY h.rowid DESC";
+			$resqlSalle= $db->query($sql);
+			$objSalle = $db->fetch_object($resqlSalle);
+		
+			if($objSalle->total == 0)
+			{
+				$salleDispos[] .= $salle['salle'];
+			}
+	
+		}
+		print '<h3>';
+	
+		if(GETPOST('equipement', 'varchar') == "")
+		{
+			print 'Liste des salles disponibles à '.GETPOST('date_evenementhour', 'varchar').'h le '.GETPOST('date_evenement', 'varchar').':';
+		}
+		else
+		{
+			print 'Liste des salles de '.GETPOST('equipement', 'varchar').' disponibles à '.GETPOST('date_evenementhour', 'varchar').'h le '.GETPOST('date_evenement', 'varchar').':';
+		}
+		print '</h3>';
+		print '<ul>';
+		if(empty($salleDispos))
+		{
+			print 'Désolé, aucune salle n\'est disponible à cet horaire avec cet équipement.';
+		}
+		else
+		{
+			foreach($salleDispos as $value)
+			{
+				print '<li>'.$value.'</li>';
+			}
+		}
+		
+		print '</ul>';
 	}
+
+	
 }
 
 // End of page

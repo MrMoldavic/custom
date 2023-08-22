@@ -20,6 +20,7 @@ CREATE TABLE llx_organisation_proposition(
 	fk_groupe integer NOT NULL, 
 	fk_evenement integer NOT NULL,  
 	description text, 
+	position integer NULL,
 	date_proposition date NOT NULL, 
 	note_public text, 
 	note_private text, 

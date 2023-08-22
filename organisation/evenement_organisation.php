@@ -91,6 +91,8 @@ $ref        = GETPOST('ref', 'alpha');
 $action = GETPOST('action', 'aZ09');
 $cancel     = GETPOST('cancel', 'aZ09');
 $backtopage = GETPOST('backtopage', 'alpha');
+$selectedRow = GETPOST('fk_proposition', 'alpha');
+$selectedInterpretation = GETPOST('fk_interpretation', 'alpha');
 
 // Initialize technical objects
 $object = new Evenement($db);
@@ -143,13 +145,62 @@ if (empty($reshook)) {
 }
 
 
+
+if($action == "confirm_delete")
+{
+	$sql = "DELETE FROM " . MAIN_DB_PREFIX . "organisation_proposition WHERE rowid=".$selectedRow;
+	$resql = $db->query($sql);
+
+	setEventMessage('Groupe supprimé de la conduite avec succès');
+	$action = "create";
+
+}
+
+if($action == "confirm_deleteInterpretation")
+{
+	$sql = "DELETE FROM " . MAIN_DB_PREFIX . "organisation_programmation WHERE fk_interpretation=".$selectedInterpretation.' AND fk_proposition='.$selectedRow.' AND fk_evenement='.$id;
+	$resql = $db->query($sql);
+
+	setEventMessage('Interpretation supprimée de la conduite avec succès');
+	$action = "create";
+}
+
+if($action == "changePosition")
+{	
+
+	$sql = "SELECT rowid FROM " . MAIN_DB_PREFIX . "organisation_proposition WHERE position=" . GETPOST('position','alpha');
+	$resql = $db->query($sql);
+
+	if($resql)
+	{
+		$sqlAllAbove = "SELECT position,rowid FROM " . MAIN_DB_PREFIX . "organisation_proposition WHERE position>=" . GETPOST('position','alpha');
+		$resqlAllAbove = $db->query($sqlAllAbove);
+
+		foreach($resqlAllAbove as $value)
+		{
+			if($value['position'] < (GETPOST('position','alpha')+1))
+			{
+				$sqlPositionPlusOne = "UPDATE " . MAIN_DB_PREFIX . "organisation_proposition SET position = " . ($value['position']+1) . " WHERE rowid=" . $value['rowid'];
+				$resqlPositionPlusOne = $db->query($sqlPositionPlusOne);
+			}
+			
+		}
+	}
+
+	$sql = "UPDATE " . MAIN_DB_PREFIX . "organisation_proposition SET position = " . GETPOST('position','alpha') . " WHERE rowid=" . GETPOST('IdProposition','alpha');
+	$resql = $db->query($sql);
+
+	setEventMessage('Positions mises à jour avec succès');
+	$action = "create";
+}
+
+
 /*
  * View
  */
 
 $form = new Form($db);
 
-//$help_url='EN:Customers_Orders|FR:Commandes_Clients|ES:Pedidos de clientes';
 $help_url = '';
 $title = $langs->trans('Evenement').' - '.$langs->trans("Notes");
 llxHeader('', $title, $help_url);
@@ -160,6 +211,27 @@ if ($id > 0 || !empty($ref)) {
 	$head = evenementPrepareHead($object);
 
 	print dol_get_fiche_head($head, 'Organisation', $langs->trans("Evenement"), -1, $object->picto);
+
+	$formconfirm = '';
+	if ($action == 'delete') {
+		$formconfirm = $form->formconfirm($_SERVER["PHP_SELF"].'?id='.$object->id.'&fk_proposition='.$selectedRow, $langs->trans('DeleteProgrammation'), "Êtes-vous sûr de vouloir suppimer ce groupe de la conduite?", 'confirm_delete', '', 0, 1);
+	}
+
+	if ($action == 'deleteInterpretation') {
+		$formconfirm = $form->formconfirm($_SERVER["PHP_SELF"].'?id='.$object->id.'&fk_interpretation='.$selectedInterpretation.'&fk_proposition='.$selectedRow, $langs->trans('DeleteProgrammation'), "Êtes-vous sûr de vouloir suppimer cette interpretation de la conduite?", 'confirm_deleteInterpretation', '', 0, 1);
+	}
+
+	// Call Hook formConfirm
+	$parameters = array('formConfirm' => $formconfirm, 'lineid' => $lineid);
+	$reshook = $hookmanager->executeHooks('formConfirm', $parameters, $object, $action); // Note that $action and $object may have been modified by hook
+	if (empty($reshook)) {
+		$formconfirm .= $hookmanager->resPrint;
+	} elseif ($reshook > 0) {
+		$formconfirm = $hookmanager->resPrint;
+	}
+
+	// Print form confirm
+	print $formconfirm;
 
 	// Object card
 	// ------------------------------------------------------------
@@ -176,11 +248,11 @@ if ($id > 0 || !empty($ref)) {
 	print '<div class="underbanner clearboth"></div>';
 
 
-	$propisition = "SELECT rowid,fk_groupe,description,date_proposition,fk_user_creat FROM ".MAIN_DB_PREFIX."organisation_proposition WHERE fk_evenement =".$object->id;
+	$propisition = "SELECT rowid,fk_groupe,description,date_proposition,fk_user_creat,position FROM ".MAIN_DB_PREFIX."organisation_proposition WHERE fk_evenement =".$object->id." ORDER BY position ASC";
 	$resqlPropisition = $db->query($propisition);
 
 	
-	print '<table class="border tableforfield">';
+	print '<table class="tagtable nobottomiftotal liste">';
 	print '<tbody>';
 	print '<tr>';
 	print '<td style="padding:2em">Groupes Proposés</td>';
@@ -190,7 +262,8 @@ if ($id > 0 || !empty($ref)) {
 	print '</tr>';
 			print '<tr id="goebbels">';
 			print '</tr>';
-
+	$positions = [];
+	$tempsTotal = 0;
 	foreach($resqlPropisition as $value)
 	{
 
@@ -205,28 +278,28 @@ if ($id > 0 || !empty($ref)) {
 		$programmation = "SELECT fk_interpretation, rowid FROM ".MAIN_DB_PREFIX."organisation_programmation WHERE fk_proposition = ".$value['rowid'].' AND fk_evenement = '.$object->id;
 		$resqlProgrammation = $db->query($programmation);
 
-	
-
 		print '<tr>';
-		print '<td>'.$objGroupe->nom_groupe.' ( proposé par '.$objuser->firstname.' '.$objuser->lastname.' )'.'</td>';
+		print '<td><span class="badge  badge-status4 badge-status" style="color:white;">'.$objGroupe->nom_groupe.'</span> ( proposé par '.$objuser->firstname.' '.$objuser->lastname.' )'.'</td>';
 		print '<td style="padding:1em">';
 		if($resqlProgrammation->num_rows > 0)
 		{
-			print '<table class="border tableforfield" style="background-color:#E0DBD9">';
+			print '<table class="border tableforfield" style="background-color:#f0eded">';
 			print '<tbody>';
 			print '<tr>';
-			print '<td style="padding:0.8em">Titre</td>';
-			print '<td style="padding:0.8em">Artiste</td>';
+			print '<td style="padding:0.8em">Titre et artiste</td>';
+			print '<td style="padding:0.8em">Durée</td>';
 			print '<td style="padding:0.8em">Position</td>';
-			print '<td style="padding:0.8em; display:flex">Actions</td>';
+			print '<td style="padding:0.8em">Actions</td>';
 			print '</tr>';
 
+			
 			foreach($resqlProgrammation as $val)
 			{
-				$interpretation = "SELECT fk_morceau,rowid FROM ".MAIN_DB_PREFIX."organisation_interpretation WHERE rowid = ".$val['fk_interpretation'];
+				$interpretation = "SELECT fk_morceau,temps,rowid FROM ".MAIN_DB_PREFIX."organisation_interpretation WHERE rowid = ".$val['fk_interpretation'];
 				$resqlInterpretation = $db->query($interpretation);
 				$objInterpretation = $db->fetch_object($resqlInterpretation);
 
+				$tempsTotal += intval($objInterpretation->temps);
 				$morceau = "SELECT titre,fk_artiste,rowid FROM ".MAIN_DB_PREFIX."organisation_morceau WHERE rowid = ".$objInterpretation->fk_morceau;
 				$resqlMorceau = $db->query($morceau);
 				$objMorceau = $db->fetch_object($resqlMorceau);
@@ -237,36 +310,40 @@ if ($id > 0 || !empty($ref)) {
 
 				print '<tr>';
 				print '<td style="padding:0.8em">'.$objMorceau->titre.'</td>';
-				print '<td style="padding:0.8em">'.$objArtiste->artiste.'</td>';
-				print '<td style="padding:0.8em"></td>';
-				print '<td style="padding:0.8em"></td>';
+				print '<td style="padding:0.8em">'.$objInterpretation->temps.'min</td>';
+				print '<td style="padding:0.8em"><input type="number" name="position"></td>';
+				print '<td style="padding:0.8em"><a href="'.$_SERVER['PHP_SELF'].'?action=deleteInterpretation&token='.newToken().'&id='.$object->id.'&fk_interpretation='.$objInterpretation->rowid.'&fk_proposition='.$value['rowid'].'">'.✖.'</a></td>';
 				print '</tr>';
-			
 			}
 			print '</tbody>';
 			print '</table>';
-			print '<a href="'.$_SERVER['PHP_SELF'].'?id='.$object->id.'&action=deleteInterpretation&interpretation='.$value['rowid'].'">'.'Ajouter une interprétation ➕'.'</a>';
-			//print '<td style="padding:1em"><a href="'.$_SERVER['PHP_SELF'].'?id='.$object->id.'&action=deleteInterpretation&interpretation='.$value['rowid'].'">'.'➕'.'</a></td>';
 		}
-		else
-		{
-			print '<a href="'.$_SERVER['PHP_SELF'].'?id='.$object->id.'&action=deleteInterpretation&interpretation='.$value['rowid'].'">'.'➕'.'</a>';
 
-		}
+		print '<a href="/custom/organisation/groupe_interpretation.php?id='.$value['fk_groupe'].'">'.'➕'.'</a>';
+	
 		print '</td>';
-		print '<td>Position</td>';
 		
-		// ACTIONS
-		print '<td>';
- print '<div><div class="fas fa-angle-up mat-sort-up" style="cursor:pointer; position:absolute;"></div><div class="fas fa-angle-down mat-sort-down" style="cursor:pointer; margin-top:20px;"></div> </div></td><td style="vertical-align:middle; padding-left:20px;"><span class="fas fa-trash delete-select"></span>';
-		print '</td>';
-		print '<td style="text-align:right; display: flex;"></td>';
-		print '</tr>';
+		print '<form method="POST" action="' . $_SERVER["PHP_SELF"] . '?id=' . $id . '">';
+		print '<input type="hidden" name="token" value="'.newToken().'">';
+		print '<input type="hidden" name="action" value="changePosition">';
+		print '<td><input type="hidden" name="IdProposition" value="'.$value['rowid'].'">';
+		print '<input type="number" name="position" value="'.$value['position'].'">';
 
+		print $form->buttonsSaveCancel("Mettre à jour la position")."</td>";
+		print '</form>';
+		print '<td><a href="'.$_SERVER['PHP_SELF'].'?action=delete&token='.newToken().'&id='.$object->id.'&fk_proposition='.$value['rowid'].'">'.✖.'</a></td>';
+		$tempsTotal += 3;
+		print '<tr>';
+		print '<td colspan="4" style="background-color:grey; color:white">Changement plateau (+5min)</td>';
+		print '<tr>';
 	}
+	
+	print '<tr>';
+	print '<h3>Durée du concert: '.($tempsTotal != "" ? $tempsTotal : "0").'min</h3>';
 
-			print '<tr id="poutine">';
-			print '</tr>';
+	print '</tr>';
+	print '<tr id="poutine">';
+	print '</tr>';
 	print '</tbody>';
 	print '</table>';
 
@@ -294,7 +371,6 @@ if ($id > 0 || !empty($ref)) {
 			}
 		});
 	});</script>";
-
 
 
 

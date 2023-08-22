@@ -22,6 +22,7 @@ CREATE TABLE llx_souhait(
   	fk_type_classe int(11) NOT NULL,
   	fk_instru_enseigne int(11) NOT NULL,
 	fk_niveau int(11) NOT NULL,
+	fk_annee_scolaire int(11) NOT NULL,
   	details text DEFAULT NULL,
   	disponibilite text NOT NULL,
 	note_public text, 

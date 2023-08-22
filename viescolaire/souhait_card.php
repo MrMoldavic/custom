@@ -22,9 +22,10 @@
  *		\brief      Page to create/edit/view souhait
  */
 
-// ini_set('display_errors', '1');
-// ini_set('display_startup_errors', '1');
-// error_reporting(E_ALL);
+ini_set('display_errors', '1');
+ini_set('display_startup_errors', '1');
+error_reporting(E_ALL);
+
 
 
 //if (! defined('NOREQUIREDB'))              define('NOREQUIREDB', '1');				// Do not create database handler $db
@@ -87,11 +88,15 @@ if (!$res) {
 require_once DOL_DOCUMENT_ROOT . '/core/class/html.formcompany.class.php';
 require_once DOL_DOCUMENT_ROOT . '/core/class/html.formfile.class.php';
 require_once DOL_DOCUMENT_ROOT . '/core/class/html.formprojet.class.php';
-require_once DOL_DOCUMENT_ROOT . '/custom/viescolaire/class/affectation.class.php';
-require_once DOL_DOCUMENT_ROOT . '/custom/viescolaire/class/affectation.class.php';
 
-dol_include_once('/viescolaire/class/souhait.class.php');
-dol_include_once('/viescolaire/lib/viescolaire_souhait.lib.php');
+dol_include_once('viescolaire/class/souhait.class.php');
+dol_include_once('viescolaire/lib/viescolaire_souhait.lib.php');
+
+dol_include_once('viescolaire/class/affectation.class.php');
+// dol_include_once('viescolaire/class/eleve.class.php');
+
+
+
 
 // Load translation files required by the page
 $langs->loadLangs(array("viescolaire@viescolaire", "other"));
@@ -210,6 +215,7 @@ if ($enablepermissioncheck) {
 	$permissiontoread = $user->rights->viescolaire->eleve->read;
 	$permissiontoadd = $user->rights->viescolaire->eleve->write; // Used by the include of actions_addupdatedelete.inc.php and actions_lineupdown.inc.php
 	$permissiontodelete = $user->rights->viescolaire->eleve->delete;
+	$permissionappreciation = $user->rights->viescolaire->eleve->appreciation;
 	$permissionnote = $user->rights->viescolaire->eleve->write; // Used by the include of actions_setnotes.inc.php
 	$permissiondellink = $user->rights->viescolaire->eleve->write; // Used by the include of actions_dellink.inc.php
 } else {
@@ -368,8 +374,8 @@ if (($id || $ref) && $action == 'edit') {
 	print '<table class="border centpercent tableforfieldedit">' . "\n";
 
 	// Common attributes
-	include DOL_DOCUMENT_ROOT . '/core/tpl/commonfields_edit.tpl.php';
 	
+	include DOL_DOCUMENT_ROOT . '/core/tpl/commonfields_edit.tpl.php';
 
 	// Other attributes
 	include DOL_DOCUMENT_ROOT . '/core/tpl/extrafields_edit.tpl.php';
@@ -505,18 +511,17 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 	//unset($object->fields['fk_project']);				// Hide field already shown in banner
 	//unset($object->fields['fk_soc']);					// Hide field already shown in banner
 	include DOL_DOCUMENT_ROOT . '/core/tpl/commonfields_view.tpl.php';
-
 	// Other attributes. Fields from hook formObjectOptions and Extrafields.
 	include DOL_DOCUMENT_ROOT . '/core/tpl/extrafields_view.tpl.php';
 
 	print '</table>';
 	print '<h3>Créneau actuel:</h3>';
 
-	$sql = "SELECT c.nom_creneau,c.rowid FROM ".MAIN_DB_PREFIX."creneau as c WHERE c.rowid =".("(SELECT e.fk_creneau FROM ".MAIN_DB_PREFIX."affectation as e WHERE e.fk_souhait =".$object->id." AND e.status = 4)");
-	$resql = $db->query($sql);
-	$objectCreneau = $db->fetch_object($resql);
+	$sqlCreneauActuel = "SELECT c.jour,c.heure_debut,c.heure_fin,c.fk_prof_1,c.nom_creneau,c.rowid FROM ".MAIN_DB_PREFIX."creneau as c WHERE c.rowid =".("(SELECT e.fk_creneau FROM ".MAIN_DB_PREFIX."affectation as e WHERE e.fk_souhait =".$object->id." AND e.status = 4)");
+	$resqlCreneauActuel = $db->query($sqlCreneauActuel);
+	$objectCreneauActuel = $db->fetch_object($resqlCreneauActuel);
 
-	if(!$objectCreneau && $object->status != 9)
+	if(!$objectCreneauActuel && $object->status != 9)
 	{
 		print '<span class="badge  badge-status8 badge-status" style="color:white;">Non affecté</span>';
 	}
@@ -526,8 +531,29 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 	}
 	else
 	{
-		print '<a href="'.DOL_URL_ROOT.'/custom/scolarite/creneau_card.php?id='.$objectCreneau->rowid.'">'.$objectCreneau->nom_creneau.'</a>';
+		$JourCreneauActuel = "SELECT jour, rowid FROM ".MAIN_DB_PREFIX."c_jour WHERE rowid =".$objectCreneauActuel->jour;
+		$resqlJourCreneauActuel = $db->query($JourCreneauActuel);
+		$objJourCreneauActuel = $db->fetch_object($resqlJourCreneauActuel);
+
+		$heureDebutCreneauActuel = "SELECT heure, rowid FROM ".MAIN_DB_PREFIX."c_heure WHERE rowid =".$objectCreneauActuel->heure_debut;
+		$resqlheureDebutCreneauActuel = $db->query($heureDebutCreneauActuel);
+		$objheureDebutCreneauActuel = $db->fetch_object($resqlheureDebutCreneauActuel);
+
+		$heureFinCreneauActuel = "SELECT heure, rowid FROM ".MAIN_DB_PREFIX."c_heure WHERE rowid =".$objectCreneauActuel->heure_fin;
+		$resqlheureFinCreneauActuel = $db->query($heureFinCreneauActuel);
+		$objheureFinCreneauActuel = $db->fetch_object($resqlheureFinCreneauActuel);
+
+		$professeurCreneauActuel = "SELECT * FROM ".MAIN_DB_PREFIX."user WHERE rowid = ".$objectCreneauActuel->fk_prof_1;
+		$resqlUserCreneauActuel = $db->query($professeurCreneauActuel);
+		$objUserCreneauActuel = $db->fetch_object($resqlUserCreneauActuel);
 		
+		print '<div style="background-color: #f2f2f2;border-radius: 25px;padding:1em;max-width:60%;margin:1em">';
+		print 'Jour : <span class="badge  badge-status8 badge-status" style="color:white;">'.$objJourCreneauActuel->jour.'</span><br>';
+		print 'Heure : '.$objheureDebutCreneauActuel->heure.'h / '.$objheureFinCreneauActuel->heure."h<br>";
+		print 'Professeur : '.$objUserCreneauActuel->firstname.' '.$objUserCreneauActuel->lastname."<br>";
+		print 'Lien :'.'<a href="'.DOL_URL_ROOT.'/custom/scolarite/creneau_card.php?id='.$objectCreneauActuel->rowid.'">'.$objectCreneauActuel->nom_creneau.'</a>'; 
+		print '</div>';
+
 	}
 
 	if ($object->status == $object::STATUS_VALIDATED) {
@@ -541,48 +567,101 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 
 	print '<p>- Nombre d\'anciennes affectations : '.$resqlAffectation->num_rows.'</p>';
 	
-	print '<div style="display:flex;flex-wrap:wrap">';
-
-	
-	foreach($resqlAffectation as $value)
+	if($resqlAffectation->num_rows > 0)
 	{
-		$sqlOldAffectation = "SELECT * FROM ".MAIN_DB_PREFIX."creneau WHERE rowid =".$value['fk_creneau'];
-		$resqlOldAffectation = $db->query($sqlOldAffectation);
-		$objectCreneau = $db->fetch_object($resqlOldAffectation);
+		print '<table class="tagtable liste">';
+		print '<tbody>';
 
-		if($objectCreneau)
+		print '<tr class="liste_titre">
+		<th class="wrapcolumntitle liste_titre">Jour</th>
+		<th class="wrapcolumntitle liste_titre">Horaire</th>
+		<th class="wrapcolumntitle liste_titre">Professeur</th>
+		</tr>';
+		foreach($resqlAffectation as $value)
 		{
-			$Jour = "SELECT jour, rowid FROM ".MAIN_DB_PREFIX."c_jour WHERE rowid =".$objectCreneau->jour;
-			$resqlJour = $db->query($Jour);
-			$objJour = $db->fetch_object($resqlJour);
-	
-			$heure = "SELECT heure, rowid FROM ".MAIN_DB_PREFIX."c_heure WHERE rowid =".$objectCreneau->heure_debut;
-			$resqlheure = $db->query($heure);
-			$objheure = $db->fetch_object($resqlheure);
-	
-			$heurefin = "SELECT heure, rowid FROM ".MAIN_DB_PREFIX."c_heure WHERE rowid =".$objectCreneau->heure_fin;
-			$resqlheureFin = $db->query($heurefin);
-			$objheureFin = $db->fetch_object($resqlheureFin);
-	
-			$professeur = "SELECT * FROM ".MAIN_DB_PREFIX."user WHERE rowid = ".$objectCreneau->fk_prof_1;
-			$resqlUser = $db->query($professeur);
-			$objUser = $db->fetch_object($resqlUser);
-	
-			
-			print '<div style="background-color: #f2f2f2;border-radius: 25px;padding:1em;max-width:45%;margin:1em">';
-	
-			print 'Jour : <span class="badge  badge-status8 badge-status" style="color:white;">'.$objJour->jour.'</span><br>';
-			print 'Heure : '.$objheure->heure.'h / '.$objheureFin->heure."h<br>";
-			print 'Professeur : '.$objUser->firstname.' '.$objUser->lastname."<br>";
-			
-	
-			print '</div>';
-		}
+			$sqlOldAffectation = "SELECT * FROM ".MAIN_DB_PREFIX."creneau WHERE rowid =".$value['fk_creneau'];
+			$resqlOldAffectation = $db->query($sqlOldAffectation);
+			$objectCreneau = $db->fetch_object($resqlOldAffectation);
 
+
+			if($objectCreneau)
+			{
+				$Jour = "SELECT jour, rowid FROM ".MAIN_DB_PREFIX."c_jour WHERE rowid =".$objectCreneau->jour;
+				$resqlJour = $db->query($Jour);
+				$objJour = $db->fetch_object($resqlJour);
+		
+				$heure = "SELECT heure, rowid FROM ".MAIN_DB_PREFIX."c_heure WHERE rowid =".$objectCreneau->heure_debut;
+				$resqlheure = $db->query($heure);
+				$objheure = $db->fetch_object($resqlheure);
+		
+				$heurefin = "SELECT heure, rowid FROM ".MAIN_DB_PREFIX."c_heure WHERE rowid =".$objectCreneau->heure_fin;
+				$resqlheureFin = $db->query($heurefin);
+				$objheureFin = $db->fetch_object($resqlheureFin);
+		
+				$professeur = "SELECT * FROM ".MAIN_DB_PREFIX."user WHERE rowid = ".$objectCreneau->fk_prof_1;
+				$resqlUser = $db->query($professeur);
+				$objUser = $db->fetch_object($resqlUser);
+
+				print '<tr class="oddeven">';
+				print '<td>'.$objJour->jour.'</td>';
+				print '<td>'.$objheure->heure.'h / '.$objheureFin->heure.'h</td>';
+				print '<td>'.$objUser->firstname.' '.$objUser->lastname.'</td>';
+				print '</tr>';
+			}
+		}
+		print '</tbody>';
+		print '</table>';
 	}
-	print '</div>';
+
 	
-	// print '<p>->'.$affectation.'</p>';
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	
 
 	print '</div>';
 	print '</div>';
@@ -644,7 +723,6 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 		print "</form>\n";
 	}
 
-
 	// Buttons for actions
 
 	if ($action != 'presend' && $action != 'editline') {
@@ -662,6 +740,7 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 			// }
 
 			// Back to draft
+			print dolGetButtonAction($langs->trans('Faire appréciation de l\'élève'), '', 'default', $_SERVER["PHP_SELF"] . '?id=' . $object->id . '&action=edit&token=' . newToken(), '', $permissionappreciation);
 			
 
 			if ($object->status == $object::STATUS_DRAFT) {

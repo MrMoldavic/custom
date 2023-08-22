@@ -20,6 +20,7 @@ CREATE TABLE llx_organisation_programmation(
 	fk_interpretation integer NOT NULL, 
 	fk_proposition integer NOT NULL, 
 	fk_evenement integer NOT NULL, 
+	position integer NULL,
 	description text, 
 	note_public text, 
 	note_private text, 

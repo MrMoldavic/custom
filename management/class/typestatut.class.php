@@ -114,7 +114,7 @@ class TypeStatut extends CommonObject
 	public $fields=array(
 		'rowid' => array('type'=>'integer', 'label'=>'TechnicalID', 'enabled'=>'1', 'position'=>1, 'notnull'=>1, 'visible'=>0, 'noteditable'=>'1', 'index'=>1, 'css'=>'left', 'comment'=>"Id"),
 		'nom' => array('type'=>'varchar(255)', 'label'=>'Nom du statut', 'enabled'=>'1', 'position'=>20, 'notnull'=>1, 'visible'=>1, 'index'=>1, 'searchall'=>1, 'showoncombobox'=>'1', 'validate'=>'1', 'css'=>'maxwidth300'),
-		'diminutif' => array('type'=>'varchar(255)', 'label'=>'Nom du statut', 'enabled'=>'1', 'position'=>20, 'notnull'=>1, 'visible'=>1, 'index'=>1, 'searchall'=>1, 'showoncombobox'=>'1', 'validate'=>'1', 'css'=>'maxwidth300'),
+		'diminutif' => array('type'=>'varchar(255)', 'label'=>'Diminutif du statut', 'enabled'=>'1', 'position'=>20, 'notnull'=>1, 'visible'=>1, 'index'=>1, 'searchall'=>1, 'showoncombobox'=>'1', 'validate'=>'1', 'css'=>'maxwidth300'),
 		'obligation_contrat' => array('type'=>'integer', 'label'=>'Obligation contrat', 'enabled'=>'1', 'position'=>30, 'default'=>1, 'visible'=>0, 'css'=>'minwidth300', 'cssview'=>'wordbreak','validate'=>'1',),
 		'unicite_contrat' => array('type'=>'integer', 'label'=>'Unicité du contrat', 'enabled'=>'1', 'position'=>40, 'default'=>1, 'visible'=>0, 'validate'=>'1',),
 		'fk_groupe_utilisateur' => array('type'=>'integer:UserGroup:user/class/usergroup.class.php', 'label'=>'Groupe utilisateur', 'enabled'=>'1', 'position'=>45, 'notnull'=>0, 'visible'=>1, 'default'=>'0', 'isameasure'=>'1', 'css'=>'maxwidth75imp', 'help'=>"Help text for quantity", 'validate'=>'1',),

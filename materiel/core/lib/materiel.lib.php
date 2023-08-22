@@ -46,6 +46,11 @@ function materiel_prepare_head($object)
 	$head[$h][2] = 'card';
 	$h++;
 
+	$head[$h][0] = DOL_URL_ROOT."/custom/materiel/materiel_entretien.php?id=".$object->id;
+	$head[$h][1] = 'Entretiens';
+	$head[$h][2] = 'Entretiens';
+	$h++;
+
 	$head[$h][0] = DOL_URL_ROOT."/custom/materiel/document.php?id=".$object->id;
 	$head[$h][1] = 'Documents';
 	$head[$h][2] = 'documents';

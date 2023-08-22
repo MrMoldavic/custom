@@ -65,7 +65,7 @@ class Engagement extends CommonObject
 
 
 	const STATUS_DRAFT = 0;
-	const STATUS_VALIDATED = 1;
+	const STATUS_VALIDATED = 4;
 	const STATUS_CANCELED = 9;
 
 
@@ -117,12 +117,12 @@ class Engagement extends CommonObject
 		'fk_eleve' => array('type'=>'integer:Eleve:custom/viescolaire/class/eleve.class.php:1', 'label'=>'Élève concerné', 'enabled'=>'1', 'position'=>30, 'notnull'=>0,'css'=>'maxwidth300', 'visible'=>1, 'searchall'=>1, 'help'=>"Help text", 'validate'=>'1',),
 		'fk_agent' => array('type'=>'integer:Agent:custom/management/class/agent.class.php:1', 'label'=>'Agent concerné','css'=>'maxwidth300',  'enabled'=>'1', 'position'=>40, 'notnull'=>0, 'visible'=>1, 'default'=>'null', 'isameasure'=>'1', 'help'=>"Help text for amount", 'validate'=>'1',),
 		'responsabilite' => array('type'=>'boolean', 'label'=>'Responsabilité', 'enabled'=>'1', 'position'=>45, 'notnull'=>0, 'visible'=>1, 'validate'=>'1',),
-		'date_fin_engagement' => array('type'=>'datetime', 'label'=>'DateFin', 'enabled'=>'1', 'position'=>500, 'notnull'=>0, 'visible'=>0,),
+		'date_fin_engagement' => array('type'=>'datetime', 'label'=>'Date de fin d\'engagement', 'enabled'=>'1', 'position'=>5000, 'notnull'=>0, 'visible'=>1,),
 		'description' => array('type'=>'text', 'label'=>'Description', 'enabled'=>'1', 'position'=>60, 'notnull'=>0, 'visible'=>3, 'validate'=>'1',),
 		'note_public' => array('type'=>'html', 'label'=>'NotePublic', 'enabled'=>'1', 'position'=>61, 'notnull'=>0, 'visible'=>0, 'cssview'=>'wordbreak', 'validate'=>'1',),
 		'note_private' => array('type'=>'html', 'label'=>'NotePrivate', 'enabled'=>'1', 'position'=>62, 'notnull'=>0, 'visible'=>0, 'cssview'=>'wordbreak', 'validate'=>'1',),
 		'date_creation' => array('type'=>'datetime', 'label'=>'DateCreation', 'enabled'=>'1', 'position'=>500, 'notnull'=>1, 'visible'=>-2,),
-		'tms' => array('type'=>'timestamp', 'label'=>'DateModification', 'enabled'=>'1', 'position'=>501, 'notnull'=>0, 'visible'=>-2,),
+		'tms' => array('type'=>'datetime', 'label'=>'Date d\'engagement', 'enabled'=>'1', 'position'=>501, 'notnull'=>0, 'visible'=>1,),
 		'fk_user_creat' => array('type'=>'integer:User:user/class/user.class.php', 'label'=>'UserAuthor', 'picto'=>'user', 'enabled'=>'1', 'position'=>510, 'notnull'=>1, 'visible'=>-2, 'foreignkey'=>'user.rowid',),
 		'fk_user_modif' => array('type'=>'integer:User:user/class/user.class.php', 'label'=>'UserModif', 'picto'=>'user', 'enabled'=>'1', 'position'=>511, 'notnull'=>-1, 'visible'=>-2,),
 		'last_main_doc' => array('type'=>'varchar(255)', 'label'=>'LastMainDoc', 'enabled'=>'1', 'position'=>600, 'notnull'=>0, 'visible'=>0,),
@@ -881,12 +881,12 @@ class Engagement extends CommonObject
 		if (empty($this->labelStatus) || empty($this->labelStatusShort)) {
 			global $langs;
 			//$langs->load("organisation@organisation");
-			$this->labelStatus[self::STATUS_DRAFT] = $langs->transnoentitiesnoconv('Draft');
-			$this->labelStatus[self::STATUS_VALIDATED] = $langs->transnoentitiesnoconv('Enabled');
-			$this->labelStatus[self::STATUS_CANCELED] = $langs->transnoentitiesnoconv('Disabled');
-			$this->labelStatusShort[self::STATUS_DRAFT] = $langs->transnoentitiesnoconv('Draft');
-			$this->labelStatusShort[self::STATUS_VALIDATED] = $langs->transnoentitiesnoconv('Enabled');
-			$this->labelStatusShort[self::STATUS_CANCELED] = $langs->transnoentitiesnoconv('Disabled');
+			$this->labelStatus[self::STATUS_DRAFT] = $langs->transnoentitiesnoconv('Engagement en attente');
+			$this->labelStatus[self::STATUS_VALIDATED] = $langs->transnoentitiesnoconv('Engagement Actif');
+			$this->labelStatus[self::STATUS_CANCELED] = $langs->transnoentitiesnoconv('Ancien engagement');
+			$this->labelStatusShort[self::STATUS_DRAFT] = $langs->transnoentitiesnoconv('Engagement en attente');
+			$this->labelStatusShort[self::STATUS_VALIDATED] = $langs->transnoentitiesnoconv('Engagement Actif');
+			$this->labelStatusShort[self::STATUS_CANCELED] = $langs->transnoentitiesnoconv('Ancien engagement');
 		}
 
 		$statusType = 'status'.$status;

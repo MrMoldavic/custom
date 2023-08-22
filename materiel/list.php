@@ -376,7 +376,7 @@ $arrayfields = array(
 	'm.notes_supplementaires'=>array('label'=>'Notes supplémentaires', 'checked'=>1, 'position'=>14),
 	'm.fk_origine'=>array('label'=>'Origine', 'checked'=>1, 'position'=>14),
 	'm.entrepot'=>array('label'=>'Entrepôt', 'checked'=>1, 'position'=>15),
-	'm.fk_proprietaire'=>array('label'=>'Propriétaire', 'checked'=>1, 'position'=>16),
+	// 'm.fk_proprietaire'=>array('label'=>'Propriétaire', 'checked'=>1, 'position'=>16),
 	'm.kit'=>array('label'=>'Kit', 'checked'=>1, 'position'=>15));
 
 
@@ -459,15 +459,15 @@ print '<form action="'.$_SERVER["PHP_SELF"].'" method="post" name="formulaire">'
 	print '</td>';
 
 
-	print '<td class="liste_titre left">';
-		print '<input class="flat" type="text" name="search_proprietaire" size="8" value="'.dol_escape_htmltag($search_proprietaire).'">';
-	print '</td>';
+	// print '<td class="liste_titre left">';
+	// 	print '<input class="flat" type="text" name="search_proprietaire" size="8" value="'.dol_escape_htmltag($search_proprietaire).'">';
+	// print '</td>';
 
 
 
-	print '<td class="liste_titre left">';
-		print $form->selectarray('search_etat_etiquette', getEtatEtiquetteDict(), $search_etat_etiquette, 1);
-	print '</td>';
+	// print '<td class="liste_titre left">';
+	// 	print $form->selectarray('search_etat_etiquette', getEtatEtiquetteDict(), $search_etat_etiquette, 1);
+	// print '</td>';
 
 
 	print '<td class="liste_titre center">';
@@ -500,11 +500,10 @@ print_liste_field_titre($arrayfields['m.fk_marque']['label'], $_SERVER["PHP_SELF
 
 print_liste_field_titre($arrayfields['m.entrepot']['label'], $_SERVER["PHP_SELF"], "m.fk_entrepot", "", $param, "", $sortfield, $sortorder);
 
-print_liste_field_titre($arrayfields['m.fk_proprietaire']['label'], $_SERVER["PHP_SELF"], "p.proprietaire", "", $param, "", $sortfield, $sortorder);
 
-print_liste_field_titre('État étiquette', $_SERVER["PHP_SELF"], "m.fk_etat_etiquette", "", '', "align='center'", $sortfield, $sortorder);
+//print_liste_field_titre('État étiquette', $_SERVER["PHP_SELF"], "m.fk_etat_etiquette", "", '', "align='center'", $sortfield, $sortorder);
 
-print_liste_field_titre('Kit', '', "", "", '', "align='center'");
+print_liste_field_titre('En kit', '', "", "", '', "align='center'");
 
 
 
@@ -603,10 +602,8 @@ if ($conf->materiel->enabled == 1)
 				$entrepot = $materiel->fk_entrepot != null ? $entrepotRes : '<i>Aucun</i>';
 				print '<td class="nowrap">'.$entrepot.'</td>';
 
-    			$proprietaire = $obj->proprietaire ? $obj->proprietaire : '<i>Aucun</i>';
-				print '<td class="nowrap">'.$proprietaire.'</td>';
 
-				print '<td class="tdoverflowmax200 center"><span class="badge  badge-dot badge-status'.$materiel->etat_etiquette_badge_code.' classfortooltip badge-status" title="'.$materiel->etat_etiquette.'"></span></td>';
+				//print '<td class="tdoverflowmax200 center"><span class="badge  badge-dot badge-status'.$materiel->etat_etiquette_badge_code.' classfortooltip badge-status" title="'.$materiel->etat_etiquette.'"></span></td>';
 
 				print '<td class="nowrap center">'.$materiel->KitStatut().'</td>';
 

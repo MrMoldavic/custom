@@ -140,16 +140,11 @@ function recufiscal_prepare_head($object)
 
 
 function getTypeArray()
-
 {
 
     $type_array = array();
-
     $type_array[RecuFiscal::TYPE_DON_NATURE] = 'Don en nature';
-
     $type_array[RecuFiscal::TYPE_ABANDON_DE_FRAIS] = 'Abandon de frais';
-
-
 
     return $type_array;
 

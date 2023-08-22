@@ -24,6 +24,10 @@
  *	\brief      Home page of materiel top menu
  */
 
+//  ini_set('display_errors', '1');
+// ini_set('display_startup_errors', '1');
+// error_reporting(E_ALL);
+
 // Load Dolibarr environment
 $res = 0;
 // Try main.inc.php into web root known defined into CONTEXT_DOCUMENT_ROOT (not always defined)
@@ -42,6 +46,7 @@ if (!$res) die("Include of main fails");
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formfile.class.php';
 
 require_once DOL_DOCUMENT_ROOT.'/custom/materiel/class/materiel.class.php';
+require_once DOL_DOCUMENT_ROOT.'/custom/materiel/class/entretien.class.php';
 require_once DOL_DOCUMENT_ROOT.'/custom/materiel/class/kit.class.php';
 require_once DOL_DOCUMENT_ROOT.'/custom/materiel/class/formmateriel.class.php';
 require_once DOL_DOCUMENT_ROOT.'/custom/materiel/class/formkit.class.php';
@@ -135,6 +140,77 @@ if ($conf->use_javascript_ajax)
 	print '</table>';
 	print '</div>';
 }
+
+
+if ($conf->materiel->enabled && $user->rights->materiel->read)
+{
+	$max = 10;
+	$sql = "SELECT m.rowid,m.fk_materiel,m.description, m.creation_timestamp as datem";
+	$sql .= " FROM ".MAIN_DB_PREFIX."entretien as m";
+    $sql .= " WHERE m.active = 1";
+	$sql .= $db->order("m.creation_timestamp", "DESC");
+	$sql .= $db->plimit($max, 0);
+
+	//print $sql;
+	$result = $db->query($sql);
+	if ($result)
+	{
+		$num = $db->num_rows($result);
+
+		$i = 0;
+
+		if ($num > 0)
+		{
+			$transRecordedType = 'Dernier entretiens ajoutés/modifiés';
+
+			print '<div class="div-table-responsive-no-min">';
+			print '<table class="noborder centpercent">';
+
+			$colnb = 5;
+
+			print '<tr class="liste_titre"><th colspan="3">'.$transRecordedType.'</th>';
+			print '<th class="right" colspan="2"><a href="'.DOL_URL_ROOT.'/custom/entretien/list.php">'.$langs->trans("FullList").'</td>';
+			print '</tr>';
+
+			foreach($result as $value)
+			{
+				$objEntretien = new Entretien($db);
+				$objEntretien->fetch($value['rowid']);
+
+				
+				
+                // $materiel_tmp->fetch($objp->fk_materiel);
+
+				print '<tr class="oddeven">';
+				print '<td class="nowrap">';
+				print $objEntretien->getNomUrl();
+				print "</td>\n";
+				print '<td>'.$value['description'].'</td>';
+				// print '<td>'.($materiel_tmp->modele ? $materiel_tmp->modele : '<i>Pas de modèle</i>').'</td>';
+				// print "<td>";
+				// print dol_print_date($db->jdate($objp->datem), 'day');
+				// print "</td>";
+				// print '<td class="right nowrap width25"><span class="badge  badge-status'.$materiel_tmp->etat_badge_code.' badge-status">'.$materiel_tmp->etat.'</span></td>';
+				print "</tr>\n";
+			}
+				
+
+			$db->free($result);
+
+			print "</table>";
+			print '</div>';
+			print '<br>';
+		}
+	}
+	else
+	{
+		dol_print_error($db);
+	}
+}
+
+$NBMAX = 3;
+$max = 3;
+
 
 
 

@@ -100,13 +100,10 @@ class FormPreinventaire
     {
         // Fetch factures, recu fiscaux and emprunt that are treated (meaning they are in the 'source' table)
         $sql = "SELECT f.rowid, f.ref FROM ".MAIN_DB_PREFIX."facture_fourn as f";
-        $sql .= " WHERE f.rowid IN (SELECT fk_source FROM ".MAIN_DB_PREFIX."source WHERE fk_type_source = 1 AND inventoriable = 1)";
+        $sql .= " WHERE f.rowid IN (SELECT fk_origine FROM ".MAIN_DB_PREFIX."source WHERE fk_type_source = 1 AND inventoriable = 1)";
         $sql .= " UNION ";
         $sql .= "SELECT r.rowid, r.ref FROM ".MAIN_DB_PREFIX."recu_fiscal as r";
-        $sql .= " WHERE r.rowid IN (SELECT fk_source FROM ".MAIN_DB_PREFIX."source WHERE fk_type_source = 2 AND inventoriable = 1)";
-        // $sql .= " UNION ";
-        // $sql = "SELECT e.rowid, e.ref FROM ".MAIN_DB_PREFIX."emprunt as e";
-        // $sql .= " WHERE e.rowid  IN (SELECT fk_source FROM ".MAIN_DB_PREFIX."source WHERE fk_type_source = 3 AND inventoriable = 1)";
+        $sql .= " WHERE r.rowid IN (SELECT fk_origine FROM ".MAIN_DB_PREFIX."source WHERE fk_type_source = 2 AND inventoriable = 1)";
 
         $resql = $this->db->query($sql);
         $num = $this->db->num_rows($resql);

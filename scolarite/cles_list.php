@@ -543,13 +543,14 @@ if (!empty($moreforfilter)) {
 	print '</div>';
 }
 
+
 $varpage = empty($contextpage) ? $_SERVER["PHP_SELF"] : $contextpage;
+//$selectedfields = $form->multiSelectArrayWithCheckbox('selectedfields', $arrayfields, $varpage, "1"); // This also change content of $arrayfields
 $selectedfields = $form->multiSelectArrayWithCheckbox('selectedfields', $arrayfields, $varpage, getDolGlobalString('MAIN_CHECKBOX_LEFT_COLUMN', '')); // This also change content of $arrayfields
 $selectedfields .= (count($arrayofmassactions) ? $form->showCheckAddButtons('checkforselect', 1) : '');
 
 print '<div class="div-table-responsive">'; // You can use div-table-responsive-no-min if you dont need reserved height for your table
 print '<table class="tagtable nobottomiftotal liste'.($moreforfilter ? " listwithfilterbefore" : "").'">'."\n";
-
 
 // Fields title search
 // --------------------------------------------------------------------
@@ -614,9 +615,10 @@ print '</tr>'."\n";
 
 $totalarray = array();
 $totalarray['nbfield'] = 0;
-
+$mode = "common";
 // Fields title label
 // --------------------------------------------------------------------
+
 print '<tr class="liste_titre">';
 if (!empty($conf->global->MAIN_CHECKBOX_LEFT_COLUMN)) {
 	print getTitleFieldOfList(($mode != 'kanban' ? $selectedfields : ''), 0, $_SERVER["PHP_SELF"], '', '', '', '', $sortfield, $sortorder, 'center maxwidthsearch ')."\n";
@@ -650,7 +652,7 @@ if (empty($conf->global->MAIN_CHECKBOX_LEFT_COLUMN)) {
 }
 $totalarray['nbfield']++;
 print '</tr>'."\n";
-
+ 
 
 // Detect if we need a fetch on each output line
 $needToFetchEachLine = 0;

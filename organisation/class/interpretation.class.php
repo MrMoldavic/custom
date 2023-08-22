@@ -114,12 +114,13 @@ class Interpretation extends CommonObject
 	 * @var array  Array with all fields and their property. Do not use it as a static var. It may be modified by constructor.
 	 */
 	public $fields=array(
-		'rowid' => array('type'=>'integer', 'label'=>'TechnicalID', 'enabled'=>'1', 'position'=>1, 'notnull'=>1, 'visible'=>0, 'noteditable'=>'1', 'index'=>1, 'css'=>'left', 'comment'=>"Id"),
-		'fk_morceau' => array('type'=>'integer:Morceau:custom/organisation/class/morceau.class.php:1', 'label'=>'Titre concerné', 'enabled'=>'1', 'position'=>20, 'notnull'=>1, 'visible'=>1, 'index'=>1,'css'=>'maxwidth300', 'searchall'=>1, 'showoncombobox'=>'1', 'validate'=>'1'),
+		'rowid' => array('type'=>'integer', 'label'=>'TechnicalID', 'enabled'=>'1', 'position'=>1, 'notnull'=>1, 'visible'=>0, 'noteditable'=>'1', 'index'=>1, 'css'=>'left', 'comment'=>"Id", 'showoncombobox'=>'1',),
+		'fk_morceau' => array('type'=>'integer:Morceau:custom/organisation/class/morceau.class.php:1', 'label'=>'Titre concerné', 'enabled'=>'1', 'position'=>20, 'notnull'=>1, 'visible'=>1, 'index'=>1,'css'=>'maxwidth300', 'searchall'=>1, 'validate'=>'1'),
 		'fk_groupe' => array('type'=>'integer:Groupe:custom/organisation/class/groupe.class.php:1', 'label'=>'Groupe concerné', 'enabled'=>'1', 'position'=>30, 'notnull'=>1, 'visible'=>1, 'searchall'=>1, 'css'=>'maxwidth300', 'validate'=>'1',),
-		'date_debut_interpretation' => array('type'=>'date', 'label'=>'Date de début d\'interprétation', 'enabled'=>'1', 'position'=>40, 'notnull'=>0, 'visible'=>1, 'default'=>'null', 'isameasure'=>'1', 'help'=>"Help text for amount", 'validate'=>'1',),
+		'temps' => array('type'=>'integer', 'label'=>'Temps (en minutes) de l\'interpretation', 'enabled'=>'1', 'position'=>35, 'notnull'=>1, 'visible'=>1,'validate'=>'1', 'help'=>"Arrondir au dessus si nécessaire (morceau de 3min45=>4min)",),
+		'date_debut_interpretation' => array('type'=>'date', 'label'=>'Date de début d\'interprétation', 'enabled'=>'1', 'position'=>40, 'notnull'=>1, 'visible'=>1,'validate'=>'1',),
 		'date_fin_interpretation' => array('type'=>'date', 'label'=>'Date de fin d\'interprétation', 'enabled'=>'1', 'position'=>45, 'notnull'=>0, 'visible'=>1, 'default'=>'0', 'isameasure'=>'1', 'css'=>'maxwidth75imp', 'help'=>"Help text for quantity", 'validate'=>'1',),
-		'note_public' => array('type'=>'html', 'label'=>'NotePublic', 'enabled'=>'1', 'position'=>61, 'notnull'=>0, 'visible'=>0, 'cssview'=>'wordbreak', 'validate'=>'1',),
+		'note_public' => array('type'=>'html', 'label'=>'Infos supplémentaires', 'enabled'=>'1', 'position'=>61, 'notnull'=>0, 'visible'=>1, 'cssview'=>'wordbreak', 'validate'=>'1',),
 		'note_private' => array('type'=>'html', 'label'=>'NotePrivate', 'enabled'=>'1', 'position'=>62, 'notnull'=>0, 'visible'=>0, 'cssview'=>'wordbreak', 'validate'=>'1',),
 		'date_creation' => array('type'=>'datetime', 'label'=>'DateCreation', 'enabled'=>'1', 'position'=>500, 'notnull'=>1, 'visible'=>-2,),
 		'tms' => array('type'=>'timestamp', 'label'=>'DateModification', 'enabled'=>'1', 'position'=>501, 'notnull'=>0, 'visible'=>-2,),

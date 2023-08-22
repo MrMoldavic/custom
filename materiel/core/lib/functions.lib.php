@@ -7,6 +7,10 @@ require_once DOL_DOCUMENT_ROOT.'/custom/materiel/core/lib/exploitation.lib.php';
  * en evitant de modifier le code d'origine
  */
 
+ ini_set('display_errors', '1');
+ini_set('display_startup_errors', '1');
+error_reporting(E_ALL);
+
 
  /**
   *  Show tab footer of a card.
@@ -131,17 +135,26 @@ function talm_banner_tab($object, $paramid, $morehtml = '', $shownav = 1, $field
 
   if ($object->element == 'materiel')
 	{
+		global $langs, $conf, $db;
+
 		if (!empty($conf->use_javascript_ajax)) {
+
+			$entretien_id = isMaterielInEntretien($object->id);
+            if ($entretien_id) {
+                $entretien = new Entretien($db);
+                $entretien->fetch($entretien_id);
+				$morehtmlstatus .= '<span class="classfortooltip badge badge-status3 badge-status">En entretien : '.$entretien->getNomUrl().'</span>';
+            }
+
+			$morehtmlstatus .= ' &nbsp; ';
 			$morehtmlstatus .= '<span class="classfortooltip badge badge-status'.$object->etat_badge_code.' badge-status" title="État du matériel">'.$object->etat.'</span>';
 		$morehtmlstatus .= ' &nbsp; ';
-			$morehtmlstatus .= '<span class="classfortooltip badge badge-status'.$object->exploitabilite_badge_code.' badge-status" title="Exploitabilité du matériel">'.$object->exploitabilite.'</span>';
+			$morehtmlstatus .= '<span class="classfortooltip badge badge-status'.$object->exploitabilite_badge_code.' badge-status" title="Exploitabilité du matériel">'.($object->exploitabilite == "OK" ? "Exploitable" : $object->exploitabilite).'</span>';
 		} else {
 			$morehtmlstatus .= '<span>'.$object->etat.'</span>';
 		}
 		$morehtmlstatus .= ' &nbsp; ';
-		$morehtmlstatus .= ' &nbsp; ';
-		$morehtmlstatus .= ' &nbsp; ';
-		$morehtmlstatus .= ' &nbsp; ';
+
 		if (!empty($conf->use_javascript_ajax)) {
 		    if ($object->fk_kit) $morehtmlstatus .= '<span class="badge  badge-status4 badge-status">En kit</span>';
 		    else $morehtmlstatus .= '<span class="badge  badge-status5 badge-status">Hors kit</span>';
@@ -192,6 +205,16 @@ function talm_banner_tab($object, $paramid, $morehtml = '', $shownav = 1, $field
   	if (in_array($object->element, array('materiel', 'kit', 'exploitation')))
   	{
   		if (!empty($object->label)) $morehtmlref .= '<div class="refidno">'.$object->label.'</div>';
+
+
+		if($object->element == 'materiel')
+		{
+			$marque = "SELECT marque FROM ".MAIN_DB_PREFIX."c_marque WHERE rowid =".$object->fk_marque;
+			$resqlMarque = $db->query($marque);
+			$objectMarque = $db->fetch_object($resqlMarque);
+			$morehtmlref .= '<div class="refidno">'.$objectMarque->marque.' '.$object->modele.'</div>';
+		}
+		
   	}
 
   	print '<div class="'.($onlybanner ? 'arearefnobottom ' : 'arearef ').'heightref valignmiddle centpercent">';
@@ -659,7 +682,6 @@ function talm_print_barre_liste($titre, $page, $file, $options = '', $sortfield 
 				if ($cpt > 2) $pagelist.='<li'.(($conf->dol_use_jmobile != 4)?' class="pagination"':'').'><span '.(($conf->dol_use_jmobile != 4)?'class="inactive"':'').'>...</span></li>';
 				elseif ($cpt == 2) $pagelist.='<li'.(($conf->dol_use_jmobile != 4)?' class="pagination"':'').'><a href="'.$file.'?page=1'.$options.'">2</a></li>';
 			}
-
 			do
 			{
 				if ($cpt==$page)
@@ -680,11 +702,11 @@ function talm_print_barre_liste($titre, $page, $file, $options = '', $sortfield 
 				elseif ($cpt == $nbpages-2) $pagelist.= '<li'.(($conf->dol_use_jmobile != 4)?' class="pagination"':'').'><a href="'.$file.'?page='.($nbpages-2).$options.'">'.($nbpages - 1).'</a></li>';
 				$pagelist.= '<li'.(($conf->dol_use_jmobile != 4)?' class="pagination"':'').'><a href="'.$file.'?page='.($nbpages-1).$options.'">'.$nbpages.'</a></li>';
 			}
-			}
-			else
-			{
-				$pagelist.= '<li'.(($conf->dol_use_jmobile != 4)?' class="pagination"':'').'><span '.(($conf->dol_use_jmobile != 4)?'class="active"':'').'>'.($page+1)."</li>";
-			}
+		}
+		else
+		{
+			$pagelist.= '<li'.(($conf->dol_use_jmobile != 4)?' class="pagination"':'').'><span '.(($conf->dol_use_jmobile != 4)?'class="active"':'').'>'.($page+1)."</li>";
+		}
 	}
 
 

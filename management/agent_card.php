@@ -132,7 +132,7 @@ include DOL_DOCUMENT_ROOT.'/core/actions_fetchobject.inc.php'; // Must be includ
 
 // There is several ways to check permission.
 // Set $enablepermissioncheck to 1 to enable a minimum low level of checks
-$enablepermissioncheck = 0;
+$enablepermissioncheck = 1;
 if ($enablepermissioncheck) {
 	$permissiontoread = $user->rights->management->agent->read;
 	$permissiontoadd = $user->rights->management->agent->write; // Used by the include of actions_addupdatedelete.inc.php and actions_lineupdown.inc.php
@@ -440,10 +440,21 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 			$objectStatuts = $db->fetch_object($resqlStatut);
 
 
-			$morehtmlref.= '<span class="badge  badge-status'.$objectStatuts->color.' badge-status"><a href="'.DOL_URL_ROOT.'/custom/management/agent_card.php?id='.$object->id.'&statut='.$objectStatuts->rowid.'&action=deleteStatut'.'">x   </a>'.$objectStatuts->nom.'</span>    ';
+			$morehtmlref.= '<span class="badge  badge-status'.$objectStatuts->color.' badge-status">';
+			if($user->id == $object->fk_user || $permissiontoadd)
+			{
+				$morehtmlref.= '<a href="'.DOL_URL_ROOT.'/custom/management/agent_card.php?id='.$object->id.'&statut='.$objectStatuts->rowid.'&action=deleteStatut'.'">x   </a>';
+			}
+			$morehtmlref.= $objectStatuts->nom.'</span>    ';
 		}
 	}
-	$morehtmlref.= '<span class="badge  badge-status'.$objectStatuts->color.' badge-status"><a href="'.DOL_URL_ROOT.'/custom/management/statut_card.php?action=create&fk_agent='.$object->id.'">+   </a></span>    ';	
+	if($user->id == $object->fk_user || $permissiontoadd)
+	{
+		$morehtmlref.= '<span class="badge  badge-status'.$objectStatuts->color.' badge-status">';
+		$morehtmlref.= '<a href="'.DOL_URL_ROOT.'/custom/management/statut_card.php?action=create&fk_agent='.$object->id.'">+   </a>';
+		$morehtmlref.= '</span>    ';	
+	}
+	
 	 /*
 	 // Thirdparty
 	 $morehtmlref.='<br>'.$langs->trans('ThirdParty') . ' : ' . (is_object($object->thirdparty) ? $object->thirdparty->getNomUrl(1) : '');
@@ -518,11 +529,21 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 			$resqlPoste = $db->query($sqlPoste);	
 			$objectPoste= $db->fetch_object($resqlPoste);
 
-			print '<span class="badge  badge-status4 badge-status"><a href="'.DOL_URL_ROOT.'/custom/management/agent_card.php?id='.$object->id.'&appetence='.$value['rowid'].'&action=deleteAppetence'.'">x   </a>'.$objectPoste->poste.' - '.$objectAppetence->type.'</span>    ';
+			print '<span class="badge  badge-status4 badge-status">';
+			if($user->id == $object->fk_user || $permissiontoadd)
+			{
+				print '<a href="'.DOL_URL_ROOT.'/custom/management/agent_card.php?id='.$object->id.'&appetence='.$value['rowid'].'&action=deleteAppetence'.'">x   </a>';
+			}
+			print $objectPoste->poste.' - '.$objectAppetence->type.'</span>    ';
 		}
 	}
-	print '<span class="badge  badge-status7 badge-status"><a href="'.DOL_URL_ROOT.'/custom/management/appetence_card.php?action=create&fk_agent='.$object->id.'">+   </a></span>';	
 
+	if($user->id == $object->fk_user || $permissiontoadd)
+	{
+		print '<span class="badge  badge-status7 badge-status">';
+		print '<a href="'.DOL_URL_ROOT.'/custom/management/appetence_card.php?action=create&fk_agent='.$object->id.'">+   </a>';
+		print '</span>';	
+	}
 
 	print '</div>';
 	print '</div>';
@@ -593,10 +614,11 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 
 		if (empty($reshook)) {
 			// Send
-			print dolGetButtonAction($langs->trans('Modifier'), '', 'default', $_SERVER["PHP_SELF"].'?id='.$object->id.'&action=edit&token='.newToken(), '', $permissiontoadd);
-
+			if($user->id == $object->fk_user)
+			{
+				print dolGetButtonAction($langs->trans('Modifier'), '', 'default', $_SERVER["PHP_SELF"].'?id='.$object->id.'&action=edit&token='.newToken(), '');
+			}
 			print dolGetButtonAction($langs->trans('Engager dans un groupe'), '', 'default', DOL_URL_ROOT.'/custom/organisation/engagement_card.php?fk_agent='.$object->id.'&action=create' , '', $permissiontoadd);
-
 			// Delete (need delete permission, or if draft, just need create/modify permission)
 			print dolGetButtonAction($langs->trans('Supprimer'), '', 'delete', $_SERVER['PHP_SELF'].'?id='.$object->id.'&action=delete&token='.newToken(), '', $permissiontodelete || ($object->status == $object::STATUS_DRAFT && $permissiontoadd));
 		}

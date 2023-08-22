@@ -23,9 +23,7 @@
  */
 
 // Put here all includes required by your class file
-require_once DOL_DOCUMENT_ROOT . '/core/class/commonobject.class.php';
-//require_once DOL_DOCUMENT_ROOT . '/societe/class/societe.class.php';
-//require_once DOL_DOCUMENT_ROOT . '/product/class/product.class.php';
+include_once DOL_DOCUMENT_ROOT . '/core/class/commonobject.class.php';
 
 /**
  * Class for Eleve
@@ -76,7 +74,7 @@ class Eleve extends CommonObject
 	const STATUS_PROBLEME = 8;
 
 
-
+	
 	/**
 	 *  'type' field format ('integer', 'integer:ObjectClass:PathToClass[:AddCreateButtonOrNot[:Filter[:Sortfield]]]', 'sellist:TableName:LabelFieldName[:KeyFieldName[:KeyFieldParent[:Filter[:Sortfield]]]]', 'varchar(x)', 'double(24,8)', 'real', 'price', 'text', 'text:none', 'html', 'date', 'datetime', 'timestamp', 'duration', 'mail', 'phone', 'url', 'password')
 	 *         Note: Filter can be a string like "(t.ref:like:'SO-%') or (t.date_creation:<:'20160101') or (t.nature:is:NULL)"
@@ -117,7 +115,7 @@ class Eleve extends CommonObject
 		'genre' => array('type' => 'sellist:c_genre:genre', 'label' => 'Genre', 'enabled' => '1', 'position' => 3, 'notnull' => 0, 'visible' => 1, 'validate' => '1','css' => 'maxwidth250',),
 		'geographie_prioritaire' => array('type' => 'sellist:c_geographie_prioritaire:emplacement', 'label' => 'Géographie prioritaire', 'enabled' => '1', 'position' => 3, 'notnull' => 0, 'visible' => 1, 'validate' => '1','css' => 'maxwidth250',),
 		'fk_etablissement' => array('type' => 'integer:Etablissement:custom/scolarite/class/etablissement.class.php:1', 'label' => 'Établissement', 'enabled' => '1', 'position' => 3, 'notnull' => 1, 'visible' => 1, 'default' => '0', 'css' => 'maxwidth250', 'validate' => '1',),
-		'fk_classe_etablissement' => array('type' => 'integer:Classe:custom/scolarite/class/classe.class.php:1:(t.fk_college:=:'."SELECT c.rowid FROM '.MAIN_DB_PREFIX.'etablissement as c WHERE c.rowid=t.fk_college".')', 'label' => 'Classe établissement', 'enabled' => '1', 'position' => 4, 'notnull' => 1, 'visible' => 1, 'validate' => '1', 'css' => 'maxwidth250',),
+		'fk_classe_etablissement' => array('type' => 'integer:Classe:custom/scolarite/class/classe.class.php:1:(t.fk_college=(SELECT c.rowid FROM '.MAIN_DB_PREFIX.'etablissement as c WHERE c.rowid=t.fk_college))', 'label' => 'Classe établissement', 'enabled' => '1', 'position' => 4, 'notnull' => 1, 'visible' => 1, 'validate' => '1', 'css' => 'maxwidth250',),
 		'fk_famille' => array('type' => 'integer:Famille:custom/viescolaire/class/famille.class.php:1', 'label' => 'Famille', 'enabled' => '1', 'position' => 1, 'notnull' => 1, 'visible' => 3, 'validate' => '1', 'css' => 'maxwidth250',),
 		'commentaires' => array('type' => 'text', 'label' => 'Commentaires', 'enabled' => '1', 'position' => 6, 'notnull' => 0, 'visible' => 3, 'validate' => '1',),
 		'note_public' => array('type' => 'html', 'label' => 'NotePublic', 'enabled' => '1', 'position' => 61, 'notnull' => 0, 'visible' => 0, 'cssview' => 'wordbreak', 'validate' => '1',),
@@ -145,10 +143,7 @@ class Eleve extends CommonObject
 	public $fk_user_creat;
 	public $fk_user_modif;
 	public $last_main_doc;
-	public $model_pdf;
-	// END MODULEBUILDER PROPERTIES
-
-
+	public $model_pdf; 
 	// If this object has a subtable with lines
 
 	// /**

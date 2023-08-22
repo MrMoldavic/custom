@@ -158,28 +158,34 @@ $upload_dir = $conf->viescolaire->multidir_output[isset($object->entity) ? $obje
 if (empty($conf->viescolaire->enabled)) accessforbidden();
 if (!$permissiontoread) accessforbidden();
 
-ini_set('display_errors', '1');
-ini_set('display_startup_errors', '1');
-error_reporting(E_ALL);
 
 /*
  * Actions
  */
 if($action == 'addAbsence')
 {
+	function dateToMySQL($date){
+        $tabDate = explode('/' , $date);
+        $dateToAdd = $tabDate[2].'-'.$tabDate[0].'-'.$tabDate[1];
+        //$dates = date('Y-m-d H:i:s', strtotime($dates));
+        return $dateToAdd;
+    }
+
 	$error = 0;
-	if((strtotime(GETPOST('date_fin_evenement')) != "") && (strtotime(GETPOST('date_fin_evenement')) < strtotime(GETPOST('date_evenement'))))
+	if((strtotime(dateToMySQL(GETPOST('date_fin_evenement'))) != "") && (strtotime(dateToMySQL(GETPOST('date_fin_evenement'))) < strtotime(dateToMySQL(GETPOST('date_evenement')))))
 	{
 		setEventMessage('Veuillez choisir des dates valides.','errors');
 		$action = 'create';
 		$error++;
 	}
 
+
 	$creneau = "SELECT * FROM ".MAIN_DB_PREFIX."creneau WHERE rowid = ".GETPOST('creneauid', 'int');
 	$resqlCreneau = $db->query($creneau);
 	$objCreneau = $db->fetch_object($resqlCreneau);
 
-	$dateJour = date('N', strtotime(GETPOST('date_evenement')));
+	$dateJour = date('N', strtotime(dateToMySQL(GETPOST('date_evenement'))));
+
 
 	if($objCreneau->jour != $dateJour)
 	{
@@ -190,10 +196,7 @@ if($action == 'addAbsence')
 
 
 
-
-
-
-	$newDate = strtotime(GETPOST('date_fin_evenement')) - strtotime(GETPOST('date_evenement'));
+	$newDate = strtotime(dateToMySQL(GETPOST('date_fin_evenement'))) - strtotime(dateToMySQL(GETPOST('date_evenement')));
 
 	$diffJours = floor($newDate / 86400);
 
@@ -206,11 +209,12 @@ if($action == 'addAbsence')
 		$result = 1;
 	}
 
-	$date = date('Y-m-d H:i:s', strtotime(GETPOST('date_evenement')));
+	$dateToAdd = dateToMySQL(GETPOST('date_evenement'));
 
+	//$date = date('Y-m-d H:i:s', strtotime(GETPOST('date_evenement')));
+	//var_dump($dateToAdd);
 	for($i=0; $i<$result; $i++)
 	{
-
 		if($error == 0)
 		{
 			$sql = "SELECT fk_etablissement FROM ".MAIN_DB_PREFIX."creneau as c INNER JOIN ".MAIN_DB_PREFIX."dispositif as d ON c.fk_dispositif=d.rowid WHERE c.rowid=".GETPOST('creneauid','int');
@@ -224,13 +228,12 @@ if($action == 'addAbsence')
 		
 			if($resqlAbsence->num_rows == 0)
 			{
-				
 				$sqlres = "INSERT INTO ".MAIN_DB_PREFIX."appel (fk_etablissement, fk_creneau, fk_eleve, justification, date_creation,fk_user_creat, status, treated) VALUES (";
 				$sqlres .= $resultat->fk_etablissement.",";
 				$sqlres .= GETPOST('creneauid', 'int').",";
 				$sqlres .= GETPOST('elevesid', 'int').",";
 				$sqlres .=  "'".addslashes(GETPOST('infos_evenement', 'alpha'))."',";
-				$sqlres .=  "'".$date."',";
+				$sqlres .=  "'".$dateToAdd."',";
 				$sqlres .= $user->id.",";
 				$sqlres .="'".addslashes(GETPOST('evenementid', 'alpha'))."',";
 				$sqlres .= 1 .")";
@@ -245,7 +248,8 @@ if($action == 'addAbsence')
 			}
 		}
 
-		$date = date('Y-m-d H:i:s', strtotime($date. ' + 7 days'));
+		$dateToAdd = date('Y-m-d H:i:s', strtotime($dateToAdd. ' + 7 days'));
+		
 	}
 
 	if($error == 0)
@@ -323,21 +327,6 @@ $formproject = new FormProjets($db);
 $title = $langs->trans("Justifier une absence");
 $help_url = '';
 llxHeader('', $title, $help_url);
-
-// Example : Adding jquery code
-// print '<script type="text/javascript">
-// jQuery(document).ready(function() {
-// 	function init_myfunc()
-// 	{
-// 		jQuery("#myid").removeAttr(\'disabled\');
-// 		jQuery("#myid").attr(\'disabled\',\'disabled\');
-// 	}
-// 	init_myfunc();
-// 	jQuery("#mybutton").click(function() {
-// 		init_myfunc();
-// 	});
-// });
-// </script>';
 
 // Part to create
 	if (($action == 'create' && !GETPOST('elevesid', 'int')) || ($action == 'fromValidation')) // SELECTION DU TYPE DE KIT
@@ -422,7 +411,7 @@ llxHeader('', $title, $help_url);
 			print '</tr>';
 	
 			print '<tr><td class="fieldrequired titlefieldcreate">Date de l\'absence <br>(Premier cours concerné): </td><td>';
-			print $form->selectDate(-1, 'date_evenement', '', '', '', '', 1, 1);
+			print $form->selectDate('', 'date_evenement', '', '', '', '', 1, 1);
 			print '</td>';
 			print '</tr>';
 

@@ -340,7 +340,6 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 	
 }
 
-var_dump("lajkenfzakjefneza");
 	
 
 // 	$head = statutPrepareHead($object);

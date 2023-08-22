@@ -107,6 +107,19 @@ $backtopage = GETPOST('backtopage', 'alpha');
 $backtopageforcancel = GETPOST('backtopageforcancel', 'alpha');
 $dol_openinpopup = GETPOST('dol_openinpopup', 'aZ09');
 
+
+
+
+
+if($action == 'desactivation')
+{
+	$object = new Groupe($db);
+	$sql = "UPDATE " . MAIN_DB_PREFIX . "organisation_groupe SET status = " . $object::STATUS_CANCELED . " WHERE rowid=" . $id;
+	$resql = $db->query($sql);
+
+	setEventMessage('Groupe mis en retraite avec succès!');
+}
+
 // Initialize technical objects
 $object = new Groupe($db);
 $extrafields = new ExtraFields($db);
@@ -178,6 +191,9 @@ if ($action == 'deleteEngagement') {
 	setEventMessage('Engagement supprimé avec succès');
 }
 
+
+
+
 if($action == 'importAll')
 {
 	// $sql = "DELETE FROM " . MAIN_DB_PREFIX . "organisation_engagement WHERE fk_groupe=".$object->id;
@@ -187,22 +203,22 @@ if($action == 'importAll')
 	$resqlAffectation = $db->query($affectation);
 	foreach($resqlAffectation as $val)
 	{
-		
+	
 		$eleve = "SELECT e.nom,e.prenom,e.rowid FROM ".MAIN_DB_PREFIX."eleve as e WHERE e.rowid=".("(SELECT s.fk_eleve FROM ".MAIN_DB_PREFIX."souhait as s WHERE s.rowid =".$val['fk_souhait'].")");
 		$resqlEleve = $db->query($eleve);
 		foreach($resqlEleve as $res)
 		{
 			$existingEngagement = "SELECT * FROM ".MAIN_DB_PREFIX."organisation_engagement WHERE fk_eleve = ".$res['rowid'].' AND fk_groupe='.$object->id;
 			$resqlExistingEngagement = $db->query($existingEngagement);
-
 			if($resqlExistingEngagement->num_rows != 1)
 			{
-				
+				$dateAjout = "'".date('Y-m-d H:i:s')."'";
 				$add = "INSERT INTO ".MAIN_DB_PREFIX."organisation_engagement(`fk_groupe`,`fk_eleve`, `fk_agent`, `responsabilite`, `date_fin_engagement`, `description`, `note_public`, `note_private`, `date_creation`, `tms`, `fk_user_creat`, `fk_user_modif`, `last_main_doc`, `import_key`, `model_pdf`, `status`) VALUES 
-				(".$object->id.",".$res['rowid'].",NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,".$user->id.",NULL,NULL,NULL,NULL,4)";
+				(".$object->id.",".$res['rowid'].",NULL,NULL,NULL,NULL,NULL,NULL,NULL,".$dateAjout.",".$user->id.",NULL,NULL,NULL,NULL,4)";
 				$resqlAdd = $db->query($add);
 				$count++;
 			}
+
 		}
 	}
 	if($count == 0)
@@ -548,7 +564,7 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 
 	if($resqlEngagement->num_rows > 0)
 	{
-		print '<table class="border centpercent tableforfield">';
+		print '<table class="tagtable liste">';
 		print '<tbody>';
 		print '<tr>';
 		print '<td style="padding:0.5em">Engagé</td>';
@@ -584,31 +600,30 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 			$resqlExistingInstru = $db->query($existingInstru);
 			$objExistingInstru = $db->fetch_object($resqlExistingInstru);
 	
-			print '<tr>';
-			print '<td>'.$objAgentEleve->prenom.' '.$objAgentEleve->nom.'</td>';
+			print '<tr style="background-color: #E9ffd7">';
+			print '<td><a href="' . DOL_URL_ROOT . '/custom'.($value['fk_agent'] != NULL ? '/management/agent_card.php' : '/viescolaire/eleve_card.php' ).'?id=' . ($value['fk_agent'] != NULL ? $value['fk_agent'] : $value['fk_eleve'] ) . '" target="_blank">'.$objAgentEleve->prenom.' '.$objAgentEleve->nom.'</a></td>';
 			print '<td><span class="badge  badge-status'.($value['fk_agent'] != NULL ? '4' : '1').' badge-status">'.($value['fk_agent'] != NULL ? 'Agent' : 'Eleve').'</span></td>';
 			print '<td><span class="badge  badge-status'.($value['responsabilite'] == 1 ? '4' : '1').' badge-status">'.($value['responsabilite'] == 1 ? 'Oui' : 'Non').'</span></td>';
 	
 			print '<form method="POST" action="'.$_SERVER['PHP_SELF'].'?id='.$object->id.'&action=addInstru">';
 			print '<input type="text" name="engagement" value="'.$value['rowid'].'" hidden>';
 			print '<td> <select name="Instru" id="">';
-			print '<option value="0">Aucun</option>';
+			print '<option value="0">Aucun</option>'; 
 	
 			foreach($resqlInstrument as $val)
 			{
 				print '<option value="'.$val['rowid'].'" '.($objExistingInstru->fk_instrument == $val['rowid'] ? 'selected' : '').'>'.$val['instrument'].'</option>';
 			}
-	
+			
 			print '</select>';
 			print '<button type="submit">Valider</button>';
 			print '</form>';
-	
 			print '</td>';
-			print '<td>'.$value['date_creation'].'</td>';
-			print '<td>'.(!empty($value['date_fin_engagement']) ? $value['date_fin_engagement'] : 'Indéfinie').'</td>';
+
+			print '<td>'.date('d/m/Y',strtotime($value['tms'])).'</td>';
+			print '<td>'.(!empty($value['date_fin_engagement']) ? date('d/m/Y',strtotime($value['date_fin_engagement'])) : 'Indéfinie').'</td>';
 			print '<td style="padding:1em"><a href="/custom/organisation/engagement_card.php?id='.$value['rowid'].'&action=edit&token='.newToken().'">'.'✏️'.'</a></td>';
 			print '<td style="padding:1em"><a href="'.DOL_URL_ROOT.'/custom/organisation/groupe_card.php?id='.$object->id.'&user='.(isset($value['fk_eleve']) ? $value['fk_eleve'] : $value['fk_agent']).'&action=deleteEngagement&statut='.$statut.'">'.'❌'.'</a></td>';
-	
 			print '</tr>';
 		}
 	
@@ -689,113 +704,36 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 		}
 
 		if (empty($reshook)) {
-			// Send
-			// if (empty($user->socid)) {
-			// 	print dolGetButtonAction($langs->trans('SendMail'), '', 'default', $_SERVER["PHP_SELF"].'?id='.$object->id.'&action=presend&mode=init&token='.newToken().'#formmailbeforetitle');
-			// }
 
-			// Back to draft
-			if ($object->status == $object::STATUS_VALIDATED) {
-				print dolGetButtonAction($langs->trans('SetToDraft'), '', 'default', $_SERVER["PHP_SELF"].'?id='.$object->id.'&action=confirm_setdraft&confirm=yes&token='.newToken(), '', $permissiontoadd);
+			if($object->status != $object::STATUS_CANCELED)
+			{
+				print dolGetButtonAction($langs->trans('Modifier'), '', 'default', $_SERVER["PHP_SELF"].'?id='.$object->id.'&action=edit&token='.newToken(), '', $permissiontoadd);
+
+				if ($object->status == $object::STATUS_DRAFT) {
+					print dolGetButtonAction($langs->trans('Groupe actif'), '', 'default', $_SERVER['PHP_SELF'].'?id='.$object->id.'&action=confirm_validate&confirm=yes&token='.newToken(), '', $permissiontoadd);
+				}
+	
+				if ($object->status == $object::STATUS_VALIDATED) {
+					print dolGetButtonAction($langs->trans('Groupe en attente'), '', 'default', $_SERVER["PHP_SELF"].'?id='.$object->id.'&action=confirm_setdraft&confirm=yes&token='.newToken(), '', $permissiontoadd);
+				}
+	
+				print dolGetButtonAction($langs->trans('Proposer à un concert'), '', 'default', DOL_URL_ROOT.'/custom/organisation/proposition_card.php?fk_groupe='.$object->id.'&action=create&token='.newToken() , '', $permissiontoadd);
+	
 			}
-
-			print dolGetButtonAction($langs->trans('Modify'), '', 'default', $_SERVER["PHP_SELF"].'?id='.$object->id.'&action=edit&token='.newToken(), '', $permissiontoadd);
-
-			// Validate
-			if ($object->status == $object::STATUS_DRAFT) {
-				print dolGetButtonAction($langs->trans('Validate'), '', 'default', $_SERVER['PHP_SELF'].'?id='.$object->id.'&action=confirm_validate&confirm=yes&token='.newToken(), '', $permissiontoadd);
-			}
-			//print dolGetButtonAction($langs->trans('Ajouter une interprétation'), '', 'default', DOL_URL_ROOT.'/custom/organisation/interpretation_card.php?fk_groupe='.$object->id.'&action=create' , '', $permissiontoadd);
-			print dolGetButtonAction($langs->trans('Proposer à un concert'), '', 'default', DOL_URL_ROOT.'/custom/organisation/proposition_card.php?fk_groupe='.$object->id.'&action=create' , '', $permissiontoadd);
-
-			//print dolGetButtonAction($langs->trans('Ajouter un membre au groupe'), '', 'default', DOL_URL_ROOT.'/custom/organisation/engagement_card.php?fk_groupe='.$object->id.'&action=create' , '', $permissiontoadd);
-
-
-			//print '<a href="'.DOL_URL_ROOT.'/custom/organisation/interpretation_card.php?id='.$object->id.'">'.$objectTitre->titre.' - '.$objectArtiste->artiste.'</a>';
-
-
 
 			
-			// Clone
-			//print dolGetButtonAction($langs->trans('ToClone'), '', 'default', $_SERVER['PHP_SELF'].'?id='.$object->id.(!empty($object->socid)?'&socid='.$object->socid:'').'&action=clone&token='.newToken(), '', $permissiontoadd);
-
-			/*
-			if ($permissiontoadd) {
-				if ($object->status == $object::STATUS_ENABLED) {
-					print dolGetButtonAction($langs->trans('Disable'), '', 'default', $_SERVER['PHP_SELF'].'?id='.$object->id.'&action=disable&token='.newToken(), '', $permissiontoadd);
+			if($permissiontoadd){
+				if ($object->status != $object::STATUS_CANCELED) {
+					print dolGetButtonAction($langs->trans('Groupe à la retraite'), '', 'default', $_SERVER['PHP_SELF'].'?id='.$object->id.'&action=desactivation&token='.newToken(), '', $permissiontoadd);
 				} else {
-					print dolGetButtonAction($langs->trans('Enable'), '', 'default', $_SERVER['PHP_SELF'].'?id='.$object->id.'&action=enable&token='.newToken(), '', $permissiontoadd);
+					print dolGetButtonAction($langs->trans('Groupe en attente'), '', 'default', $_SERVER["PHP_SELF"].'?id='.$object->id.'&action=confirm_setdraft&confirm=yes&token='.newToken(), '', $permissiontoadd);
 				}
+				print dolGetButtonAction($langs->trans('Supprimer le groupe'), '', 'delete', $_SERVER['PHP_SELF'].'?id='.$object->id.'&action=delete&token='.newToken(), '', $permissiontodelete || ($object->status == $object::STATUS_DRAFT && $permissiontoadd));
 			}
-			if ($permissiontoadd) {
-				if ($object->status == $object::STATUS_VALIDATED) {
-					print dolGetButtonAction($langs->trans('Cancel'), '', 'default', $_SERVER['PHP_SELF'].'?id='.$object->id.'&action=close&token='.newToken(), '', $permissiontoadd);
-				} else {
-					print dolGetButtonAction($langs->trans('Re-Open'), '', 'default', $_SERVER['PHP_SELF'].'?id='.$object->id.'&action=reopen&token='.newToken(), '', $permissiontoadd);
-				}
-			}
-			*/
-
-			// Delete (need delete permission, or if draft, just need create/modify permission)
-			print dolGetButtonAction($langs->trans('Delete'), '', 'delete', $_SERVER['PHP_SELF'].'?id='.$object->id.'&action=delete&token='.newToken(), '', $permissiontodelete || ($object->status == $object::STATUS_DRAFT && $permissiontoadd));
+			
 		}
 		print '</div>'."\n";
 	}
-
-
-	// // Select mail models is same action as presend
-	// if (GETPOST('modelselected')) {
-	// 	$action = 'presend';
-	// }
-
-	// if ($action != 'presend') {
-	// 	print '<div class="fichecenter"><div class="fichehalfleft">';
-	// 	print '<a name="builddoc"></a>'; // ancre
-
-	// 	$includedocgeneration = 1;
-
-	// 	// Documents
-	// 	if ($includedocgeneration) {
-	// 		$objref = dol_sanitizeFileName($object->ref);
-	// 		$relativepath = $objref.'/'.$objref.'.pdf';
-	// 		$filedir = $conf->organisation->dir_output.'/'.$object->element.'/'.$objref;
-	// 		$urlsource = $_SERVER["PHP_SELF"]."?id=".$object->id;
-	// 		$genallowed = $permissiontoread; // If you can read, you can build the PDF to read content
-	// 		$delallowed = $permissiontoadd; // If you can create/edit, you can remove a file on card
-	// 		print $formfile->showdocuments('organisation:Groupe', $object->element.'/'.$objref, $filedir, $urlsource, $genallowed, $delallowed, $object->model_pdf, 1, 0, 0, 28, 0, '', '', '', $langs->defaultlang);
-	// 	}
-
-	// 	// Show links to link elements
-	// 	$linktoelem = $form->showLinkToObjectBlock($object, null, array('groupe'));
-	// 	$somethingshown = $form->showLinkedObjectBlock($object, $linktoelem);
-
-
-	// 	print '</div><div class="fichehalfright">';
-
-	// 	$MAXEVENT = 10;
-
-	// 	$morehtmlcenter = dolGetButtonTitle($langs->trans('SeeAll'), '', 'fa fa-bars imgforviewmode', dol_buildpath('/organisation/groupe_agenda.php', 1).'?id='.$object->id);
-
-	// 	// List of actions on element
-	// 	include_once DOL_DOCUMENT_ROOT.'/core/class/html.formactions.class.php';
-	// 	$formactions = new FormActions($db);
-	// 	$somethingshown = $formactions->showactions($object, $object->element.'@'.$object->module, (is_object($object->thirdparty) ? $object->thirdparty->id : 0), 1, '', $MAXEVENT, '', $morehtmlcenter);
-
-	// 	print '</div></div>';
-	// }
-
-	// //Select mail models is same action as presend
-	// if (GETPOST('modelselected')) {
-	// 	$action = 'presend';
-	// }
-
-	// // Presend form
-	// $modelmail = 'groupe';
-	// $defaulttopic = 'InformationMessage';
-	// $diroutput = $conf->organisation->dir_output;
-	// $trackid = 'groupe'.$object->id;
-
-	// include DOL_DOCUMENT_ROOT.'/core/tpl/card_presend.tpl.php';
 }
 
 // End of page

@@ -71,30 +71,45 @@ if ($action == 'addline')
     } else {
         $result = $source->addLine($description, $valeur, $inventoriable, $amortissable, $remaintospecify, $fksource, $nombre);
         if (!$result) setEventMessages('Erreur lors de l\'ajout du matériel : ' . $source->error, null, 'errors');
-        else {
-            setEventMessages('Matériel ajouté avec succès' , null);
-            header('Location: '.$_SERVER["PHP_SELF"].'?id='.(isset($source->id) ? $source->id : $fksource));
-            exit;
-        }
+        else setEventMessages('Matériel ajouté avec succès' , null);
+            
+        header('Location: '.$_SERVER["PHP_SELF"].'?id='.(isset($source->id) ? $source->id : $fksource));
+        exit;
+
     }
 }
 elseif ($action == 'confirm_import' && $confirm == 'yes')
 {
+    //var_dump($source->source_reference_object->lines);
+   
     // This import only works with recu fiscaux
     // Check the source type
-    if ($source->source_type_id != 2)
-    {
-        setEventMessages('La source de référence ne supporte pas l\'import des matériels', null, 'errors');
-        $action = 'view';
-    }
-    else
-    {
+    // foreach ($source->source_reference_object->lines as $line)
+    // {
+    //     var_dump($line->pu_ttc);
+    // }
+    // if ($source->source_type_id != 2)
+    // {
+    //     setEventMessages('La source de référence ne supporte pas l\'import des matériels', null, 'errors');
+    //     $action = 'view';
+    // }
+    // else
+    // {
         // Loop through the source reference lines and add the line to the source
         $error = 0;
         foreach ($source->source_reference_object->lines as $line)
         {
             $description = $line->description;
-            $valeur = intval($line->valeur);
+
+            if ($source->source_type_id == 2)
+            {
+                $valeur = intval($line->valeur);
+            }
+            else
+            {
+                $valeur = intval($line->pu_ttc);
+            }
+         
             $fksource = $source->id;
             $nombre = 1;
             $remaintospecify = $source->remaining_to_specify;
@@ -106,6 +121,7 @@ elseif ($action == 'confirm_import' && $confirm == 'yes')
                 $result = $source->addLine($description, $valeur, $inventoriable, $amortissable, $remaintospecify, $fksource, $nombre);
                 if (!$result) $error++;
             }
+           
         }
         if ($error)
         {
@@ -121,18 +137,18 @@ elseif ($action == 'confirm_import' && $confirm == 'yes')
         }
     }
     // Check for valid data
-    if (empty($description) || empty($valeur)) {
-        setEventMessages('Donnée(s) invalide(s). Vérifiez les champs', null, 'errors');
-    } else {
-        $result = $source->addLine($description, $valeur, $inventoriable, $amortissable);
-        if (!$result) setEventMessages('Erreur lors de l\'ajout du matériel : ' . $source->error, null, 'errors');
-        else {
-            setEventMessages('Matériel ajouté avec succès' , null);
-            header('Location: '.$_SERVER["PHP_SELF"].'?id='.(isset($source->id) ? $source->id : $fksource));
-            exit;
-        }
-    }
-}
+    // if (empty($description) || empty($valeur)) {
+    //     setEventMessages('Donnée(s) invalide(s). Vérifiez les champs', null, 'errors');
+    // } else {
+    //     $result = $source->addLine($description, $valeur, $inventoriable, $amortissable);
+    //     if (!$result) setEventMessages('Erreur lors de l\'ajout du matériel : ' . $source->error, null, 'errors');
+    //     else {
+    //         setEventMessages('Matériel ajouté avec succès' , null);
+    //         header('Location: '.$_SERVER["PHP_SELF"].'?id='.(isset($source->id) ? $source->id : $fksource));
+    //         exit;
+    //     }
+    // }
+
 
 $formconfirm = '';
 if ($action == 'ask_deleteline')
@@ -223,7 +239,8 @@ if ($id > 0) {
     print '<tr><td class="titlefield">';
     print "Création";
     print '</td><td colspan="3">';
-    print dol_print_date($source->source_reference_object->datec, '%e %B %Y');
+    print date('d/m/Y', $source->source_reference_object->datec);
+
     print '</td></tr>';
     print '</table>';
     print '</div>';
@@ -283,7 +300,7 @@ if ($id > 0) {
     print '<td>';
     foreach($resqlDetail as $value)
     {
-        print '- '.$value['description'].' (x'.$value['qty'].') '.(round($objDetail->total_ht) != 0 ? round($objDetail->total_ht) : $value['valeur']).'€<br>';
+        print '- '.$value['description'].' (x'.$value['qty'].') <br>( Valeur unitaire : '.($source->source_type_id == 2 ? round($value['valeur']) : round($value['pu_ttc'])).'€ / Valeur totale : '.($source->source_type_id == 2 ? round($value['valeur'])*$value['qty'] : round($value['total_ttc'])).'€)<br><br>';
     }
     print '</td>';
 

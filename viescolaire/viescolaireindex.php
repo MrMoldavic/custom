@@ -130,17 +130,12 @@ if ($conf->use_javascript_ajax)
 	$datalabels = array();
 	$dataseries = array(['Collège Clemenceau', $nombreEleveCz],['Collège Jean de Verazzane', $nombreEleveVm],['Ecole des Dahlias', $nombreEleveDahlias]);
 	$i = 0;
-
-	// foreach ($materiels as $type=>$mat_count)
-	// {
-	//     $total+=$mat_count;
-	//     $dataseries[] = array($type, $mat_count);
-	// }
+ 
 	include_once DOL_DOCUMENT_ROOT.'/core/class/dolgraph.class.php';
 	$dolgraph = new DolGraph();
 	$dolgraph->SetData($dataseries);
 	$dolgraph->setShowLegend(2);
-	$dolgraph->setShowPercent(0);
+	$dolgraph->setShowPercent(1);
 	$dolgraph->SetType(array('pie'));
 	$dolgraph->setHeight('200');
 	$dolgraph->draw('idgraphstatus');
@@ -163,6 +158,7 @@ print '<div class="fichecenter"><div class="fichethirdleft">';
 
 
 print '</div></div></div>';
+
 
 
 // End of page

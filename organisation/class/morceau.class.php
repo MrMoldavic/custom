@@ -114,7 +114,7 @@ class Morceau extends CommonObject
 	public $fields=array(
 		'rowid' => array('type'=>'integer', 'label'=>'TechnicalID', 'enabled'=>'1', 'position'=>1, 'notnull'=>1, 'visible'=>0, 'noteditable'=>'1', 'index'=>1, 'css'=>'left', 'comment'=>"Id"),
 		'titre' => array('type'=>'varchar(255)', 'label'=>'Titre du morceau', 'enabled'=>'1', 'position'=>20, 'notnull'=>1, 'visible'=>1, 'index'=>1, 'searchall'=>1, 'showoncombobox'=>'1', 'validate'=>'1',),
-		'fk_artiste' => array('type'=>'sellist:organisation_artiste:artiste', 'label'=>'Artiste', 'enabled'=>'1', 'position'=>30, 'notnull'=>1, 'visible'=>1, 'searchall'=>1, 'css'=>'maxwidth300', 'validate'=>'1',),
+		'fk_artiste' => array('type'=>'sellist:organisation_artiste:artiste', 'label'=>'Artiste', 'enabled'=>'1', 'position'=>30, 'notnull'=>1, 'visible'=>1, 'foreignkey'=>'organisation_artiste.artiste', 'searchall'=>1, 'css'=>'maxwidth300', 'validate'=>'1',),
 		'url' => array('type'=>'varchar(255)', 'label'=>'Url Youtube', 'enabled'=>'1', 'position'=>30, 'notnull'=>1, 'visible'=>1, 'searchall'=>1, 'validate'=>'1',),
 		'description' => array('type'=>'text', 'label'=>'Description', 'enabled'=>'1', 'position'=>60, 'notnull'=>0, 'visible'=>3, 'validate'=>'1', 'help'=>"Durée, métrique, spécificitées...",),
 		'note_public' => array('type'=>'html', 'label'=>'NotePublic', 'enabled'=>'1', 'position'=>61, 'notnull'=>0, 'visible'=>0, 'cssview'=>'wordbreak', 'validate'=>'1',),
@@ -237,6 +237,12 @@ class Morceau extends CommonObject
 	 */
 	public function create(User $user, $notrigger = false)
 	{
+		$artiste = "SELECT artiste, rowid FROM ".MAIN_DB_PREFIX."organisation_artiste WHERE rowid=".$this->fk_artiste;
+		$resqlArtiste = $this->db->query($artiste);
+		$objArtiste= $this->db->fetch_object($resqlArtiste);
+
+		$this->titre = $this->titre .' - '.$objArtiste->artiste;
+
 		$resultcreate = $this->createCommon($user, $notrigger);
 
 		//$resultvalidate = $this->validate($user, $notrigger);
@@ -463,6 +469,12 @@ class Morceau extends CommonObject
 	 */
 	public function update(User $user, $notrigger = false)
 	{
+		$artiste = "SELECT artiste, rowid FROM ".MAIN_DB_PREFIX."organisation_artiste WHERE rowid=".$this->fk_artiste;
+		$resqlArtiste = $this->db->query($artiste);
+		$objArtiste= $this->db->fetch_object($resqlArtiste);
+
+		$this->titre = $this->titre .' - '.$objArtiste->artiste;
+
 		return $this->updateCommon($user, $notrigger);
 	}
 

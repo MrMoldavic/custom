@@ -4,7 +4,7 @@ require_once DOL_DOCUMENT_ROOT.'/core/class/commonobject.class.php';
 require_once DOL_DOCUMENT_ROOT.'/custom/materiel/class/kit.class.php';
 require_once DOL_DOCUMENT_ROOT.'/custom/materiel/class/source.class.php';
 include_once DOL_DOCUMENT_ROOT.'/core/lib/function.lib.php';
-include_once DOL_DOCUMENT_ROOT.'core/class/html.formfile.class.php';
+include_once DOL_DOCUMENT_ROOT.'/core/class/html.formfile.class.php';
 // ini_set('display_errors', '1');
 // ini_set('display_startup_errors', '1');
 // error_reporting(E_ALL);

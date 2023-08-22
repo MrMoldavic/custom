@@ -114,8 +114,10 @@ class Proposition extends CommonObject
 	public $fields=array(
 		'rowid' => array('type'=>'integer', 'label'=>'TechnicalID', 'enabled'=>'1', 'position'=>1, 'notnull'=>1, 'visible'=>0, 'noteditable'=>'1', 'index'=>1, 'css'=>'left', 'comment'=>"Id"),
 		'fk_groupe' => array('type'=>'integer:Groupe:custom/organisation/class/groupe.class.php:1', 'label'=>'Groupe concerné', 'enabled'=>'1', 'position'=>20, 'notnull'=>1, 'visible'=>1,'css'=>'maxwidth300', 'index'=>1, 'searchall'=>1, 'showoncombobox'=>'1', 'validate'=>'1'),
-		'fk_evenement' => array('type'=>'integer:Evenement:custom/organisation/class/evenement.class.php:1', 'label'=>'Événement', 'enabled'=>'1', 'position'=>30, 'notnull'=>0, 'visible'=>1, 'searchall'=>1, 'css'=>'minwidth300', 'css'=>'maxwidth300', 'validate'=>'1',),
+		'fk_evenement' => array('type'=>'integer:Evenement:custom/organisation/class/evenement.class.php:1', 'label'=>'Événement', 'enabled'=>'1', 'position'=>30, 'notnull'=>1, 'visible'=>1, 'searchall'=>1, 'css'=>'minwidth300', 'css'=>'maxwidth300', 'validate'=>'1',),
 		'description' => array('type'=>'text', 'label'=>'details', 'enabled'=>'1', 'position'=>60, 'notnull'=>0, 'visible'=>3, 'validate'=>'1',),
+		'position' => array('type'=>'integer', 'label'=>'Position conduite', 'enabled'=>'1', 'position'=>61, 'notnull'=>0, 'visible'=>0, 'validate'=>'1',),
+
 		'date_proposition' => array('type'=>'date', 'label'=>'Date de la proposition', 'enabled'=>'1', 'position'=>500, 'notnull'=>1, 'visible'=>1,),
 		'note_public' => array('type'=>'html', 'label'=>'NotePublic', 'enabled'=>'1', 'position'=>61, 'notnull'=>0, 'visible'=>0, 'cssview'=>'wordbreak', 'validate'=>'1',),
 		'note_private' => array('type'=>'html', 'label'=>'NotePrivate', 'enabled'=>'1', 'position'=>62, 'notnull'=>0, 'visible'=>0, 'cssview'=>'wordbreak', 'validate'=>'1',),
@@ -126,7 +128,7 @@ class Proposition extends CommonObject
 		'last_main_doc' => array('type'=>'varchar(255)', 'label'=>'LastMainDoc', 'enabled'=>'1', 'position'=>600, 'notnull'=>0, 'visible'=>0,),
 		'import_key' => array('type'=>'varchar(14)', 'label'=>'ImportId', 'enabled'=>'1', 'position'=>1000, 'notnull'=>-1, 'visible'=>-2,),
 		'model_pdf' => array('type'=>'varchar(255)', 'label'=>'Model pdf', 'enabled'=>'1', 'position'=>1010, 'notnull'=>-1, 'visible'=>0,),
-		'status' => array('type'=>'integer', 'label'=>'Status', 'enabled'=>'1', 'position'=>2000, 'notnull'=>1, 'visible'=>1, 'index'=>1, 'arrayofkeyval'=>array('1'=>'Actif','0'=>'Inactif'), 'validate'=>'1',),
+		'status' => array('type'=>'integer', 'label'=>'Status', 'enabled'=>'1', 'position'=>2000, 'notnull'=>1, 'visible'=>2, 'index'=>1, 'arrayofkeyval'=>array('4'=>'Actif','0'=>'Inactif'), 'validate'=>'1',),
 	);
 
 	public $rowid;
@@ -238,11 +240,36 @@ class Proposition extends CommonObject
 	 */
 	public function create(User $user, $notrigger = false)
 	{
-		$resultcreate = $this->createCommon($user, $notrigger);
+		$existingProposition = "SELECT fk_groupe, fk_evenement, rowid FROM ".MAIN_DB_PREFIX."organisation_proposition WHERE fk_groupe=".$this->fk_groupe." AND fk_evenement=".$this->fk_evenement;
+		$resqlPropostion = $this->db->query($existingProposition);
 
-		//$resultvalidate = $this->validate($user, $notrigger);
+		$error = 0;
+		if($resqlPropostion->num_rows != 0)
+		{
+			setEventMessage('Une proposition de groupe pour cet événement éxiste déjà.', 'errors'); 
+			$error++;
+		}
+		
+		if($error == 0)
+		{
+			$position = "SELECT position, rowid FROM ".MAIN_DB_PREFIX."organisation_proposition WHERE fk_evenement=".$this->fk_evenement." ORDER BY position DESC LIMIT 1";
+			$resqlPosition = $this->db->query($position);
 
-		return $resultcreate;
+			if(!$resqlPosition)
+			{
+				$this->position = 1;
+			}
+			else
+			{
+				$objProposition = $this->db->fetch_object($resqlPosition);
+				$this->position = $objProposition->position+1;
+			}
+	
+			$resultcreate = $this->createCommon($user, $notrigger);
+			// $resultvalidate = $this->validate($user, $notrigger);
+			return $resultcreate;
+		}
+		
 	}
 
 	/**
@@ -847,11 +874,11 @@ class Proposition extends CommonObject
 		if (empty($this->labelStatus) || empty($this->labelStatusShort)) {
 			global $langs;
 			//$langs->load("organisation@organisation");
-			$this->labelStatus[self::STATUS_DRAFT] = $langs->transnoentitiesnoconv('Draft');
-			$this->labelStatus[self::STATUS_VALIDATED] = $langs->transnoentitiesnoconv('Enabled');
+			$this->labelStatus[self::STATUS_DRAFT] = $langs->transnoentitiesnoconv('Brouillon');
+			$this->labelStatus[self::STATUS_VALIDATED] = $langs->transnoentitiesnoconv('En cours');
 			$this->labelStatus[self::STATUS_CANCELED] = $langs->transnoentitiesnoconv('Disabled');
-			$this->labelStatusShort[self::STATUS_DRAFT] = $langs->transnoentitiesnoconv('Draft');
-			$this->labelStatusShort[self::STATUS_VALIDATED] = $langs->transnoentitiesnoconv('Enabled');
+			$this->labelStatusShort[self::STATUS_DRAFT] = $langs->transnoentitiesnoconv('Brouillon');
+			$this->labelStatusShort[self::STATUS_VALIDATED] = $langs->transnoentitiesnoconv('En cours');
 			$this->labelStatusShort[self::STATUS_CANCELED] = $langs->transnoentitiesnoconv('Disabled');
 		}
 

@@ -22,6 +22,10 @@
  * \brief       This file is a CRUD class file for Programmation (Create/Read/Update/Delete)
  */
 
+  ini_set('display_errors', '1');
+ini_set('display_startup_errors', '1');
+error_reporting(E_ALL);
+
 // Put here all includes required by your class file
 require_once DOL_DOCUMENT_ROOT.'/core/class/commonobject.class.php';
 //require_once DOL_DOCUMENT_ROOT . '/societe/class/societe.class.php';
@@ -114,10 +118,12 @@ class Programmation extends CommonObject
 	 */
 	public $fields=array(
 		'rowid' => array('type'=>'integer', 'label'=>'TechnicalID', 'enabled'=>'1', 'position'=>1, 'notnull'=>1, 'visible'=>0, 'noteditable'=>'1', 'index'=>1, 'css'=>'left', 'comment'=>"Id"),
-		'fk_interpretation' => array('type'=>'integer:Interpretation:custom/organisation/class/interpretation.class.php:1', 'label'=>'Interprétation', 'enabled'=>'1', 'position'=>1, 'notnull'=>1, 'visible'=>1, 'index'=>1, 'searchall'=>1, 'showoncombobox'=>'1', 'validate'=>'1', 'css'=>'maxwidth250'),
+		'fk_interpretation' => array('type'=>'integer:Interpretation:custom/organisation/class/interpretation.class.php:1', 'label'=>'Interprétation', 'enabled'=>'1', 'position'=>1, 'notnull'=>1, 'visible'=>1, 'index'=>1,'noteditable'=>0, 'searchall'=>1, 'showoncombobox'=>'1', 'validate'=>'1', 'css'=>'maxwidth250'),
 		'fk_proposition' => array('type'=>'integer:Proposition:custom/organisation/class/proposition.class.php:1', 'label'=>'Proposition', 'enabled'=>'1', 'position'=>2, 'notnull'=>1, 'visible'=>2, 'index'=>1, 'searchall'=>1, 'showoncombobox'=>'1', 'validate'=>'1', 'css'=>'maxwidth250'),
 		'fk_evenement' => array('type'=>'integer:Evenement:custom/organisation/class/evenement.class.php:1', 'label'=>'Evenement', 'enabled'=>'1', 'position'=>3, 'notnull'=>1, 'visible'=>1, 'index'=>1, 'searchall'=>1, 'showoncombobox'=>'1', 'validate'=>'1', 'css'=>'maxwidth250'),
 		'description' => array('type'=>'text', 'label'=>'Description', 'enabled'=>'1', 'position'=>60, 'notnull'=>0, 'visible'=>3, 'validate'=>'1',),
+		'position' => array('type'=>'integer', 'label'=>'Position conduite', 'enabled'=>'1', 'position'=>61, 'notnull'=>0, 'visible'=>0, 'validate'=>'1',),
+
 		'note_public' => array('type'=>'html', 'label'=>'NotePublic', 'enabled'=>'1', 'position'=>61, 'notnull'=>0, 'visible'=>0, 'cssview'=>'wordbreak', 'validate'=>'1',),
 		'note_private' => array('type'=>'html', 'label'=>'NotePrivate', 'enabled'=>'1', 'position'=>62, 'notnull'=>0, 'visible'=>0, 'cssview'=>'wordbreak', 'validate'=>'1',),
 		'date_creation' => array('type'=>'datetime', 'label'=>'DateCreation', 'enabled'=>'1', 'position'=>500, 'notnull'=>1, 'visible'=>-2,),
@@ -127,7 +133,7 @@ class Programmation extends CommonObject
 		'last_main_doc' => array('type'=>'varchar(255)', 'label'=>'LastMainDoc', 'enabled'=>'1', 'position'=>600, 'notnull'=>0, 'visible'=>0,),
 		'import_key' => array('type'=>'varchar(14)', 'label'=>'ImportId', 'enabled'=>'1', 'position'=>1000, 'notnull'=>-1, 'visible'=>-2,),
 		'model_pdf' => array('type'=>'varchar(255)', 'label'=>'Model pdf', 'enabled'=>'1', 'position'=>1010, 'notnull'=>-1, 'visible'=>0,),
-		'status' => array('type'=>'integer', 'label'=>'Status', 'enabled'=>'1', 'position'=>2000, 'notnull'=>1, 'visible'=>1, 'index'=>1, 'arrayofkeyval'=>array('0'=>'Brouillon', '1'=>'Valid&eacute;', '9'=>'Annul&eacute;'), 'validate'=>'1',),
+		'status' => array('type'=>'integer', 'label'=>'Status', 'enabled'=>'1', 'position'=>2000, 'notnull'=>0, 'visible'=>0, 'index'=>1, 'arrayofkeyval'=>array('0'=>'Brouillon', '1'=>'Valid&eacute;', '9'=>'Annul&eacute;'), 'validate'=>'1',),
 	);
 
 	public $rowid;
@@ -239,26 +245,26 @@ class Programmation extends CommonObject
 	 */
 	public function create(User $user, $notrigger = false)
 	{
-
 		$interpretation = "SELECT fk_groupe, rowid FROM ".MAIN_DB_PREFIX."organisation_interpretation WHERE rowid=".$this->fk_interpretation;
 		$resqlInterpretation = $this->db->query($interpretation);
 		$objInterpretation = $this->db->fetch_object($resqlInterpretation);
-
+			
 		$proposition = "SELECT * FROM ".MAIN_DB_PREFIX."organisation_proposition WHERE fk_groupe=".$objInterpretation->fk_groupe.' AND fk_evenement='.$this->fk_evenement;
 		$resqlProposition = $this->db->query($proposition);
+		$objProposition = $this->db->fetch_object($resqlProposition);
 
-		$error = 0;
-		if(!$resqlProposition)
+		$existingProgrammation = "SELECT * FROM ".MAIN_DB_PREFIX."organisation_programmation WHERE fk_proposition=".$objProposition->rowid.' AND fk_evenement='.$this->fk_evenement." AND fk_interpretation=".$objInterpretation->rowid;
+		$resqlProgrammation = $this->db->query($existingProgrammation);
+	
+	
+		if($resqlProgrammation->num_rows > 0)
 		{
-			setEventMessage('Aucune proposition de groupe pour cet événement n\'a été trouvé.', 'errors'); 
-			$error++;
+			setEventMessage('Une programmation pour ce morceau à cet événement éxiste déjà.', 'errors'); 
 		}
-
-		if($error == 0)
+		else
 		{
-			$objProposition = $this->db->fetch_object($resqlProposition);
 			$this->fk_proposition = $objProposition->rowid;
-
+			$this->status = self::STATUS_VALIDATED;
 			$resultcreate = $this->createCommon($user, $notrigger);
 			return $resultcreate;
 		}

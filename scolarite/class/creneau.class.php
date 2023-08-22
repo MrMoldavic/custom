@@ -129,7 +129,7 @@ class Creneau extends CommonObject
 		'jour' => array('type'=>'sellist:c_jour:jour:rowid::(active=1):rowid', 'label'=>'Jour de la semaine', 'enabled'=>'1', 'position'=>8, 'notnull'=>1, 'visible'=>1, 'searchall'=>1, 'css'=>'maxwidth300', 'cssview'=>'wordbreak','validate'=>'1',),
 		'fk_salle' => array('type'=>'integer:Salle:custom/scolarite/class/salle.class.php:1', 'label'=>'Salle', 'enabled'=>'1', 'position'=>21, 'notnull'=>1, 'visible'=>3, 'searchall'=>1, 'css'=>'maxwidth200', 'cssview'=>'wordbreak',),
 		'commentaires' => array('type'=>'text', 'label'=>'Commentaires', 'enabled'=>'1', 'position'=>45, 'notnull'=>0, 'visible'=>3, 'isameasure'=>'1', 'css'=>'maxwidth400', 'help'=>"Help text for quantity", 'validate'=>'1',),
-		'nom_groupe' => array('type'=>'varchar(255)', 'label'=>'Nom du groupe', 'enabled'=>'1', 'position'=>1, 'notnull'=>0, 'visible'=>3,  'css'=>'maxwidth400','validate'=>'1', 'showoncombobox'=>'1','help'=>'Écriture : Nom pour un groupe seulement (nom de cours généré automatiquement)'),
+		'nom_groupe' => array('type'=>'varchar(255)', 'label'=>'Nom du groupe', 'enabled'=>'1', 'position'=>1, 'notnull'=>0, 'visible'=>3,  'css'=>'maxwidth400','validate'=>'1','help'=>'Écriture : Nom pour un groupe seulement (nom de cours généré automatiquement)'),
 		'nom_creneau' => array('type'=>'varchar(255)', 'label'=>'Nom du créneau', 'enabled'=>'1', 'position'=>0, 'notnull'=>0, 'visible'=>0,  'css'=>'maxwidth400','validate'=>'1', 'showoncombobox'=>'1',),
 
 		'note_public' => array('type'=>'text', 'label'=>'NotePublic', 'enabled'=>'1', 'position'=>61, 'notnull'=>0, 'visible'=>0, 'cssview'=>'maxwidth400', 'validate'=>'1',),
@@ -402,8 +402,8 @@ class Creneau extends CommonObject
 			if($this->fk_prof_1 != NULL)
 			{
 				$sqlProf1 = "SELECT firstname,lastname,rowid FROM ".MAIN_DB_PREFIX."user WHERE rowid= ".$this->fk_prof_1;
-				$resqlProf1 = $db->query($sqlProf1);
-				$objProf1 = $db->fetch_object($resqlProf1);
+				$resqlProf1 = $this->db->query($sqlProf1);
+				$objProf1 = $this->db->fetch_object($resqlProf1);
 
 				$professeur .= $objProf1->firstname.' '.$objProf1->lastname.' ';
 			}
@@ -411,16 +411,17 @@ class Creneau extends CommonObject
 			if($this->fk_prof_2 != NULL)
 			{
 				$sqlProf2 = "SELECT firstname,lastname,rowid FROM ".MAIN_DB_PREFIX."user WHERE rowid= ".$this->fk_prof_2;
-				$resqlProf2 = $db->query($sqlProf2);
-				$objProf2 = $db->fetch_object($resqlProf2);
+				$resqlProf2 = $this->db->query($sqlProf2);
+				$objProf2 = $this->db->fetch_object($resqlProf2);
 
 				$professeur .= $objProf2->firstname.' '.$objProf2->lastname.' ';
 			}
+			
 			if($this->fk_prof_3 != NULL)
 			{
 				$sqlProf3 = "SELECT firstname,lastname,rowid FROM ".MAIN_DB_PREFIX."user WHERE rowid= ".$this->fk_prof_3;
-				$resqlProf3 = $db->query($sqlProf3);
-				$objProf3 = $db->fetch_object($resqlProf3);
+				$resqlProf3 = $this->db->query($sqlProf3);
+				$objProf3 = $this->db->fetch_object($resqlProf3);
 
 				$professeur .= $objProf3->firstname.' '.$objProf3->lastname;
 			}

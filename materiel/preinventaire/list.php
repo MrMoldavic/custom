@@ -29,6 +29,21 @@ $search_inventoriable = GETPOST('search_inventoriable', 'int');
 $search_amortissable = GETPOST('search_amortissable', 'int');
 $search_etat = GETPOST('search_etat', 'int');
 
+
+$contextpage = GETPOST('contextpage', 'aZ') ? GETPOST('contextpage', 'aZ') : 'recufiscallist'; // To manage different context of search
+$limit = GETPOST('limit', 'int') ? GETPOST('limit', 'int') : $conf->liste_limit;
+$sortfield = GETPOST('sortfield', 'aZ09comma');
+$sortorder = GETPOST('sortorder', 'aZ09comma');
+$page = GETPOSTISSET('pageplusone') ? (GETPOST('pageplusone') - 1) : GETPOST("page", 'int');
+if (empty($page) || $page < 0 || GETPOST('button_search', 'alpha') || GETPOST('button_removefilter', 'alpha')) {
+	// If $page is not defined, or '' or -1 or if we click on clear filters
+	$page = 0;
+}
+$offset = $limit * $page;
+$pageprev = $page - 1;
+$pagenext = $page + 1;
+
+
 if (!$sortfield) $sortfield = "p.rowid";
 if (!$sortorder) $sortorder = "DESC";
 
@@ -66,6 +81,29 @@ if (isset($user->socid) && $user->socid > 0)
  */
 llxHeader("", $langs->trans("Pré-inventaire"));
 
+$param = '';
+if (!empty($contextpage) && $contextpage != $_SERVER["PHP_SELF"]) {
+	$param .= '&contextpage='.urlencode($contextpage);
+}
+if ($limit > 0 && $limit != $conf->liste_limit) {
+	$param .= '&limit='.urlencode($limit);
+}
+foreach ($search as $key => $val) {
+	if (is_array($search[$key]) && count($search[$key])) {
+		foreach ($search[$key] as $skey) {
+			if ($skey != '') {
+				$param .= '&search_'.$key.'[]='.urlencode($skey);
+			}
+		}
+	} elseif ($search[$key] != '') {
+		$param .= '&search_'.$key.'='.urlencode($search[$key]);
+	}
+}
+if ($optioncss != '') {
+	$param .= '&optioncss='.urlencode($optioncss);
+}
+
+
 print '<div class="fichecenter">';
 
 $sql = "SELECT p.rowid";
@@ -74,7 +112,36 @@ $sql .= " WHERE 1=1";
 if ($search_description != '' and $search_description) $sql .= natural_search('p.description', $search_description);
 if ($search_inventoriable != '-1' and $search_inventoriable != '') $sql .= natural_search('p.inventoriable', $search_inventoriable);
 if ($search_amortissable != '-1' and $search_amortissable != '') $sql .= natural_search('p.amortissable', $search_amortissable);
+
+$nbtotalofrecords = '';
+if (empty($conf->global->MAIN_DISABLE_FULL_SCANLIST)) {
+	/* This old and fast method to get and count full list returns all record so use a high amount of memory.
+	$resql = $db->query($sql);
+	$nbtotalofrecords = $db->num_rows($resql);
+	*/
+	/* The slow method does not consume memory on mysql (not tested on pgsql) */
+	/*$resql = $db->query($sql, 0, 'auto', 1);
+	while ($db->fetch_object($resql)) {
+		$nbtotalofrecords++;
+	}*/
+	/* The fast and low memory method to get and count full list converts the sql into a sql count */
+	$sqlforcount = preg_replace('/^SELECT[a-z0-9\._\s\(\),]+FROM/i', 'SELECT COUNT(*) as nbtotalofrecords FROM', $sql);
+	$resql = $db->query($sqlforcount);
+	$objforcount = $db->fetch_object($resql);
+	$nbtotalofrecords = $objforcount->nbtotalofrecords;
+	if (($page * $limit) > $nbtotalofrecords) {	// if total of record found is smaller than page * limit, goto and load page 0
+		$page = 0;
+		$offset = 0;
+	}
+	$db->free($resql);
+}
+
 $sql .= $db->order($sortfield, $sortorder);
+
+if ($limit) {
+	$sql .= $db->plimit($limit + 1, $offset);
+}
+
 $resql = $db->query($sql);
 
 // Definition of fields for lists
@@ -92,8 +159,15 @@ print '<form action="'.$_SERVER["PHP_SELF"].'" method="post" name="formulaire">'
 	print '<input type="hidden" name="sortfield" value="'.$sortfield.'">';
 	print '<input type="hidden" name="sortorder" value="'.$sortorder.'">';
 
+	$title = 'Liste du Pré-inventaire';
+	$arrayofselected = is_array($toselect) ? $toselect : array();
     $picto = 'materiel';
-	talm_print_barre_liste('Pré-inventaire', 0, $_SERVER["PHP_SELF"], '', '', '','', $num, $nbtotalofrecords, $picto, 0, '', '', $limit, 0, 0, 1);
+	//if ($usercancreate) $newcardbutton = dolGetButtonTitle('Nouveau matériel', '', 'fa fa-plus-circle', DOL_URL_ROOT.'/custom/materiel/card.php?action=create', '', 1);
+	if($resql)
+	{
+		$num = $db->num_rows($resql);
+	}
+	talm_print_barre_liste($title, $page, $_SERVER["PHP_SELF"], $param, $sortfield, $sortorder, $massactionbutton, $num, $nbtotalofrecords, 'object_'.$object->picto, 0, $newcardbutton, '', $limit, 0, 0, 1);
 
 print '<div class="div-table-responsive">';
 	print '<table class="tagtable liste">'."\n";
@@ -187,7 +261,7 @@ if ($conf->materiel->enabled == 1)
 				print $source_tmp->getNomUrl();
 				print "</td>\n";
 
-				print '<td class="nowrap">';
+				print '<td>';
 				print $preinventaireline->description;
 				print "</td>\n";
 

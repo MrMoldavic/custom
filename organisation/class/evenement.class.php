@@ -64,9 +64,9 @@ class Evenement extends CommonObject
 	public $picto = 'fa-calendar';
 
 
-	const STATUS_DRAFT = 0;
-	const STATUS_VALIDATED = 4;
-	const STATUS_CANCELED = 9;
+	const STATUS_DRAFT = 1;
+	const STATUS_VALIDATED = 2;
+	const STATUS_CANCELED = 3;
 
 
 	/**
@@ -115,13 +115,13 @@ class Evenement extends CommonObject
 		'rowid' => array('type'=>'integer', 'label'=>'TechnicalID', 'enabled'=>'1', 'position'=>1, 'notnull'=>1, 'visible'=>0, 'noteditable'=>'1', 'index'=>1, 'css'=>'left', 'comment'=>"Id"),
 		'nom_evenement' => array('type'=>'varchar(255)', 'label'=>'nom evenement', 'enabled'=>'1', 'position'=>1, 'notnull'=>-1, 'visible'=>2, 'showoncombobox'=>'1', 'css'=>'maxwidth300'),
 		'libelle' => array('type'=>'varchar(255)', 'label'=>'Libelle', 'enabled'=>'1', 'position'=>35, 'notnull'=>-1, 'visible'=>1, 'css'=>'maxwidth300'),
-		'fk_type_evenement' => array('type'=>'sellist:organisation_c_type_evenement:type', 'label'=>'Type d\'événement', 'enabled'=>'1', 'position'=>20, 'notnull'=>1, 'visible'=>1, 'validate'=>'1',),
-		'fk_etat_evenement' => array('type'=>'sellist:organisation_c_etat_evenement:etat', 'label'=>'Etat de l\'evenement', 'enabled'=>'1', 'position'=>30, 'notnull'=>1, 'visible'=>1, 'css'=>'maxwidth300', 'validate'=>'1',),
-		'date_evenement' => array('type'=>'date', 'label'=>'Date de l\'événement', 'enabled'=>'1', 'position'=>40, 'notnull'=>1, 'visible'=>1,),
-		'heure_debut' => array('type'=>'sellist:c_heure:heure', 'label'=>'Heure de début', 'enabled'=>'1', 'position'=>40, 'notnull'=>1, 'visible'=>1,),
-		'minute_debut' => array('type'=>'varchar(255)','arrayofkeyval'=>array('00'=>'00', '15'=>'15', '30'=>'30', '45'=>'45'), 'label'=>'Minutes de début', 'enabled'=>'1', 'position'=>40, 'notnull'=>1, 'visible'=>1, 'css'=>'maxwidth300'),
-		'heure_fin' => array('type'=>'sellist:c_heure:heure', 'label'=>'Heure de fin', 'enabled'=>'1', 'position'=>40, 'notnull'=>1, 'visible'=>1,),
-		'minute_fin' => array('type'=>'varchar(255)','arrayofkeyval'=>array('00'=>'00', '15'=>'15', '30'=>'30', '45'=>'45'), 'label'=>'Minutes de fin', 'enabled'=>'1', 'position'=>40, 'notnull'=>1, 'visible'=>1, 'css'=>'maxwidth300'),
+		'fk_type_evenement' => array('type'=>'sellist:organisation_c_type_evenement:type', 'label'=>'Type d\'événement', 'enabled'=>'1', 'position'=>20, 'notnull'=>1, 'visible'=>1),
+		'fk_etat_evenement' => array('type'=>'sellist:organisation_c_etat_evenement:etat', 'label'=>'Etat de l\'evenement', 'enabled'=>'1', 'position'=>30, 'notnull'=>1, 'visible'=>1, 'css'=>'maxwidth300'),
+		//'date_evenement' => array('type'=>'date', 'label'=>'Date de l\'événement', 'enabled'=>'1', 'position'=>40, 'notnull'=>0, 'visible'=>1,),
+		'debut' => array('type'=>'datetime', 'label'=>'Début', 'enabled'=>'1', 'position'=>40, 'notnull'=>1, 'visible'=>1,),
+		//'minute_debut' => array('type'=>'varchar(255)','arrayofkeyval'=>array('00'=>'00', '15'=>'15', '30'=>'30', '45'=>'45'), 'label'=>'Minutes de début', 'enabled'=>'1', 'position'=>40, 'notnull'=>1, 'visible'=>1, 'css'=>'maxwidth300'),
+		'fin' => array('type'=>'datetime', 'label'=>'Fin', 'enabled'=>'1', 'position'=>41, 'notnull'=>1, 'visible'=>1, 'notnull'=>-1,),
+		//'minute_fin' => array('type'=>'varchar(255)','arrayofkeyval'=>array('00'=>'00', '15'=>'15', '30'=>'30', '45'=>'45'), 'label'=>'Minutes de fin', 'enabled'=>'1', 'position'=>40, 'notnull'=>1, 'visible'=>1, 'css'=>'maxwidth300'),
 		'fk_antenne' => array('type'=>'integer:Etablissement:custom/scolarite/class/etablissement.class.php:1', 'label'=>'Antenne','enabled'=>'1', 'position'=>510, 'notnull'=>1, 'visible'=>1,'css'=>'maxwidth300'),
 		'lieu' => array('type'=>'varchar(255)', 'label'=>'Lieu de l\'événement', 'enabled'=>'1', 'position'=>520, 'notnull'=>-1, 'visible'=>1, 'css'=>'maxwidth300'),
 		'contexte' => array('type'=>'varchar(255)', 'label'=>'Contexte', 'enabled'=>'1', 'position'=>530, 'notnull'=>-1, 'visible'=>1, 'css'=>'maxwidth300'),
@@ -248,22 +248,15 @@ class Evenement extends CommonObject
 	{
 		$error = 0;
 
-		if(!$this->fk_type_evenement || !$this->fk_etat_evenement || !$this->date_evenement || !$this->heure_debut  || !$this->minute_debut || !$this->heure_fin || !$this->minute_fin || !$this->fk_antenne)
+		if(!$this->fk_type_evenement || !$this->fk_etat_evenement || !$this->fk_antenne)
 		{
 			setEventMessage('Des informations sont manquantes.', 'errors'); 
 			$error++;
 		}
 
-		if(($this->heure_fin == $this->heure_debut) && ($this->minute_debut == $this->minute_fin))
+		if(($this->fin < $this->debut) && $this->fin != "")
 		{
-			setEventMessage('Les horaires ne peuvent pas êtres les mêmes.', 'errors'); 
-			$error++;
-		}
-
-
-		if($this->heure_fin < $this->heure_debut)
-		{
-			setEventMessage('L\'heure de fin ne peut pas être inférieure à l\'heure de début.', 'errors'); 
+			setEventMessage('La fin de l\'événement ne peut pas être avant le début.', 'errors'); 
 			$error++;
 		}
 
@@ -273,18 +266,21 @@ class Evenement extends CommonObject
 			$resqlType = $this->db->query($type);
 			$objectType = $this->db->fetch_object($resqlType);
 	
-			$this->nom_evenement .= $objectType->type.'-'.date("d/m/Y", $this->date_evenement).'-';
+			$this->nom_evenement .= $objectType->type.'-'.date("d/m/Y", $this->debut).'-';
 	
 			$etablissement = "SELECT e.diminutif FROM ".MAIN_DB_PREFIX."etablissement as e WHERE e.rowid =".$this->fk_antenne;
 			$resqlEtablissement = $this->db->query($etablissement);
 			$objectEtablissement = $this->db->fetch_object($resqlEtablissement);
 	
+			$this->status = $this->fk_etat_evenement;
 	
 			$this->nom_evenement .= $objectEtablissement->diminutif;
 	
 			if(!empty($this->libelle)) $this->nom_evenement .= $this->libelle;
 		
 			$resultcreate = $this->createCommon($user, $notrigger);
+		
+			$this->validate($user, $notrigger);
 			return $resultcreate;
 		}
 		
@@ -510,23 +506,15 @@ class Evenement extends CommonObject
 	public function update(User $user, $notrigger = false)
 	{
 		$error = 0;
-
-		if(!$this->fk_type_evenement || !$this->fk_etat_evenement || !$this->date_evenement || !$this->heure_debut  || !$this->minute_debut || !$this->heure_fin || !$this->minute_fin || !$this->fk_antenne)
+		if(!$this->fk_type_evenement || !$this->fk_etat_evenement || !$this->fk_antenne)
 		{
 			setEventMessage('Des informations sont manquantes.', 'errors'); 
 			$error++;
 		}
 
-		if(($this->heure_fin == $this->heure_debut) && ($this->minute_debut == $this->minute_fin))
+		if(($this->fin < $this->debut) && $this->fin != "")
 		{
-			setEventMessage('Les horaires ne peuvent pas êtres les mêmes.', 'errors'); 
-			$error++;
-		}
-
-
-		if($this->heure_fin < $this->heure_debut)
-		{
-			setEventMessage('L\'heure de fin ne peut pas être inférieure à l\'heure de début.', 'errors'); 
+			setEventMessage('La fin de l\'événement ne peut pas être avant le début.', 'errors'); 
 			$error++;
 		}
 
@@ -537,14 +525,17 @@ class Evenement extends CommonObject
 			$resqlType = $this->db->query($type);
 			$objectType = $this->db->fetch_object($resqlType);
 	
-			$this->nom_evenement .= $objectType->type.'-'.date("d/m/Y", $this->date_evenement).'-';
+			$this->nom_evenement .= $objectType->type.'-'.date("d/m/Y", $this->debut).'-';
 	
 			$etablissement = "SELECT e.diminutif FROM ".MAIN_DB_PREFIX."etablissement as e WHERE e.rowid =".$this->fk_antenne;
 			$resqlEtablissement = $this->db->query($etablissement);
 			$objectEtablissement = $this->db->fetch_object($resqlEtablissement);
 	
 			$this->nom_evenement .= $objectEtablissement->diminutif;
-	
+
+			$this->status = $this->fk_etat_evenement;
+			//var_dump($this->fk_etat_evenement);
+			
 			if(!empty($this->libelle)) $this->nom_evenement .= '-'.$this->libelle;
 	
 			return $this->updateCommon($user, $notrigger);
@@ -629,8 +620,8 @@ class Evenement extends CommonObject
 		if (!empty($num)) {
 			// Validate
 			$sql = "UPDATE ".MAIN_DB_PREFIX.$this->table_element;
-			$sql .= " SET ref = '".$this->db->escape($num)."',";
-			$sql .= " status = ".self::STATUS_VALIDATED;
+
+			$sql .= " SET status = ".self::STATUS_VALIDATED;
 			if (!empty($this->fields['date_validation'])) {
 				$sql .= ", date_validation = '".$this->db->idate($now)."'";
 			}
@@ -933,12 +924,12 @@ class Evenement extends CommonObject
 		if (empty($this->labelStatus) || empty($this->labelStatusShort)) {
 			global $langs;
 			//$langs->load("organisation@organisation");
-			$this->labelStatus[self::STATUS_DRAFT] = $langs->transnoentitiesnoconv('Draft');
-			$this->labelStatus[self::STATUS_VALIDATED] = $langs->transnoentitiesnoconv('Enabled');
-			$this->labelStatus[self::STATUS_CANCELED] = $langs->transnoentitiesnoconv('Disabled');
-			$this->labelStatusShort[self::STATUS_DRAFT] = $langs->transnoentitiesnoconv('Draft');
-			$this->labelStatusShort[self::STATUS_VALIDATED] = $langs->transnoentitiesnoconv('Enabled');
-			$this->labelStatusShort[self::STATUS_CANCELED] = $langs->transnoentitiesnoconv('Disabled');
+			$this->labelStatus[self::STATUS_DRAFT] = $langs->transnoentitiesnoconv('Annulé');
+			$this->labelStatus[self::STATUS_VALIDATED] = $langs->transnoentitiesnoconv('En préparation');
+			$this->labelStatus[self::STATUS_CANCELED] = $langs->transnoentitiesnoconv('Terminé');
+			$this->labelStatusShort[self::STATUS_DRAFT] = $langs->transnoentitiesnoconv('Annulé');
+			$this->labelStatusShort[self::STATUS_VALIDATED] = $langs->transnoentitiesnoconv('En préparation');
+			$this->labelStatusShort[self::STATUS_CANCELED] = $langs->transnoentitiesnoconv('Terminé');
 		}
 
 		$statusType = 'status'.$status;

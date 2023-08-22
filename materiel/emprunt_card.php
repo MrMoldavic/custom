@@ -22,9 +22,9 @@
  *		\brief      Page to create/edit/view emprunt
  */
 
-// ini_set('display_errors', '1');
-// ini_set('display_startup_errors', '1');
-// error_reporting(E_ALL);
+ini_set('display_errors', '1');
+ini_set('display_startup_errors', '1');
+error_reporting(E_ALL);
 
 //if (! defined('NOREQUIREDB'))              define('NOREQUIREDB', '1');				// Do not create database handler $db
 //if (! defined('NOREQUIREUSER'))            define('NOREQUIREUSER', '1');				// Do not load object $user
@@ -82,6 +82,7 @@ if (!$res) {
 }
 
 require_once DOL_DOCUMENT_ROOT.'/custom/materiel/class/recufiscal.class.php';
+require_once DOL_DOCUMENT_ROOT.'/custom/materiel/class/empruntLine.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formcompany.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formfile.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formprojet.class.php';
@@ -104,6 +105,10 @@ $contextpage = GETPOST('contextpage', 'aZ') ? GETPOST('contextpage', 'aZ') : str
 $backtopage = GETPOST('backtopage', 'alpha');
 $backtopageforcancel = GETPOST('backtopageforcancel', 'alpha');
 $dol_openinpopup = GETPOST('dol_openinpopup', 'aZ09');
+
+$description = GETPOST('description', 'alpha');
+$valeur = GETPOST('valeur', 'float');
+$qty = GETPOST('qty', 'int');
 
 // Initialize technical objects
 $object = new Emprunt($db);
@@ -134,13 +139,13 @@ include DOL_DOCUMENT_ROOT.'/core/actions_fetchobject.inc.php'; // Must be includ
 
 // There is several ways to check permission.
 // Set $enablepermissioncheck to 1 to enable a minimum low level of checks
-$enablepermissioncheck = 0;
+$enablepermissioncheck = 1;
 if ($enablepermissioncheck) {
-	$permissiontoread = $user->rights->materiel->emprunt->read;
-	$permissiontoadd = $user->rights->materiel->emprunt->write; // Used by the include of actions_addupdatedelete.inc.php and actions_lineupdown.inc.php
-	$permissiontodelete = $user->rights->materiel->emprunt->delete || ($permissiontoadd && isset($object->status) && $object->status == $object::STATUS_DRAFT);
-	$permissionnote = $user->rights->materiel->emprunt->write; // Used by the include of actions_setnotes.inc.php
-	$permissiondellink = $user->rights->materiel->emprunt->write; // Used by the include of actions_dellink.inc.php
+	$permissiontoread = $user->rights->materiel->read;
+	$permissiontoadd = $user->rights->materiel->create; // Used by the include of actions_addupdatedelete.inc.php and actions_lineupdown.inc.php
+	$permissiontodelete = $user->rights->materiel->delete || ($permissiontoadd && isset($object->status) && $object->status == $object::STATUS_DRAFT);
+	$permissionnote = $user->rights->materiel->create; // Used by the include of actions_setnotes.inc.php
+	$permissiondellink = $user->rights->materiel->create; // Used by the include of actions_dellink.inc.php
 } else {
 	$permissiontoread = 1;
 	$permissiontoadd = 1; // Used by the include of actions_addupdatedelete.inc.php and actions_lineupdown.inc.php
@@ -148,6 +153,7 @@ if ($enablepermissioncheck) {
 	$permissionnote = 1;
 	$permissiondellink = 1;
 }
+
 
 $upload_dir = $conf->materiel->multidir_output[isset($object->entity) ? $object->entity : 1].'/emprunt';
 
@@ -163,6 +169,170 @@ if (!$permissiontoread) accessforbidden();
 /*
 * Actions
 */
+
+
+if ($action == 'addline' && $object->status == Emprunt::STATUS_DRAFT)
+{
+    // Check for valid data
+    if (empty($description) || empty($valeur) || empty($qty) || $qty < 0 || $valeur < 0) {
+        setEventMessages('Donnée(s) invalide(s). Vérifiez les champs', null, 'errors');
+    }
+    else {
+        $result = $object->addLine($description, $valeur, $qty);
+        if (!$result) setEventMessages('Erreur lors de l\'ajout du matériel : ' . $object->error, null, 'errors');
+        else {
+            setEventMessages('Matériel ajouté avec succès' , null);
+            header('Location: '.$_SERVER["PHP_SELF"].'?id='.$object->id);
+            exit;
+        }
+    }
+}
+elseif ($action == 'add')
+{
+    if (empty($donateurs) || $donateurs == '-1')
+    {
+        setEventMessages($langs->trans('ErrorFieldRequired', 'Donateur'), null, 'errors');
+        $action = "create";
+        $error++;
+    }
+    if (!array_key_exists($type, getTypeArray()))
+    {
+        setEventMessages('Option invalide pour le champs "Type"', null, 'errors');
+        $action = "create";
+        $error++;
+    }
+	if (!$error) {
+		$recufiscal->fk_donateur = $donateurs;
+		$recufiscal->fk_type = $type;
+		$recufiscal->notes = $notes;
+        $recufiscal->date_recu_fiscal = $date_recu_fiscal;
+
+		if (!$recufiscal->create($user)) {
+			setEventMessages('Une erreur est survenue lors de la création du reçu fiscal : '.$recufiscal->error, null, 'errors');
+			$action = 'create';
+		} else {
+			setEventMessages('Reçu fiscal créé avec succès', null);
+			header('Location: '.$_SERVER["PHP_SELF"].'?id='.$recufiscal->id);
+			exit;
+		}
+	}
+}
+elseif ($action == 'confirm_valid' && $confirm == 'yes')
+{
+    $result = $object->validate();
+    if (!$result)
+    {
+        setEventMessages('Une erreur est survenue lors de la validation du reçu fiscal.', null, 'errors');
+    }
+    else
+    {
+        setEventMessages('Emprunt validé avec succès !', null);
+        header('Location: '.DOL_URL_ROOT.'/custom/materiel/emprunt_card.php?id='.$object->id);
+        exit;
+    }
+}
+elseif ($action == 'confirm_editLines' && $confirm == 'yes')
+{
+    $result = $recufiscal->setStatus(RecuFiscal::STATUS_DRAFT);
+    if (!$result)
+    {
+        setEventMessages('Une erreur est survenue lors de la modification du statut du reçu fiscal', null, 'errors');
+    }
+    else
+    {
+        setEventMessages('Statut modifié avec succès', null);
+        header('Location: '.DOL_URL_ROOT.'/custom/recufiscal/card.php?id='.$recufiscal->id);
+        exit;
+    }
+}
+elseif ($action == 'confirm_edit' && $confirm == 'yes') $action == "edit";
+
+//update a product line
+elseif ($action == 'updateline' && $usercancreate && !$cancel)
+{
+    $result = $recufiscal->updateLine($lineid, $description, $valeur, $qty);
+    if ($result) {
+        setEventMessages('Ligne de produit mise à jour' , null);
+    }
+    else {
+        setEventMessages('Une erreur s\'est produite : '.$recufiscal->error , null, 'errors');
+    }
+    header('Location: '.$_SERVER["PHP_SELF"].'?id='.$recufiscal->id);
+    exit;
+}
+//update a product line
+elseif ($action == 'confirm_delete' && $usercancreate && $confirm == 'yes')
+{
+    $result = $recufiscal->delete();
+    if ($result) {
+        setEventMessages('Reçu fiscal supprimé avec succès' , null);
+        header('Location: /custom/recufiscal/list.php');
+        exit;
+    }
+    else {
+        setEventMessages('Une erreur s\'est produite : '.$recufiscal->error , null, 'errors');
+        $action = 'view';
+    }
+}
+$formconfirm = '';
+if ($action == 'ask_deleteline')
+{
+    $formconfirm = $form->formconfirm($_SERVER["PHP_SELF"].'?id='.$recufiscal->id.'&lineid='.$lineid, 'Suppression d\'une ligne de produit', 'Êtes-vous sûr de vouloir supprimer cette ligne de produit ?', 'confirm_deleteline', '', 0, 1);
+}	
+// Remove a product line
+elseif ($action == 'confirm_deleteline' && $confirm == 'yes' && $usercancreate && $recufiscal->fk_statut == RecuFiscal::STATUS_DRAFT)
+{
+    $result = $recufiscal->deleteLine($lineid);
+    if ($result)
+    {
+        setEventMessages('Ligne de produit supprimée' , null);
+        header('Location: '.$_SERVER["PHP_SELF"].'?id='.$recufiscal->id);
+        exit;
+    } else {
+        setEventMessages('Erreur de suppression de la ligne de produit : '.$recufiscal->error, null, 'errors');
+    }
+}
+elseif ($action == 'valid' && $object->status == Emprunt::STATUS_DRAFT)
+{
+    $text = "Êtes-vous sûr de vouloir valider le reçu fiscal sous la référence <b>{$recufiscal->ref}</b> ?";
+    $formconfirm = $form->formconfirm($_SERVER["PHP_SELF"].'?id='.$emprunt->id, 'Valider l\'emprunt', $text, 'confirm_valid', '', 1, 1);
+}    
+elseif ($action == 'editLines' && $recufiscal->fk_statut != RecuFiscal::STATUS_DRAFT)
+{
+    $text = "Êtes-vous sûr de vouloir repasser le reçu fiscal <b>{$recufiscal->ref}</b> au statut de brouillon ?";
+    $formconfirm = $form->formconfirm($_SERVER["PHP_SELF"].'?id='.$recufiscal->id, 'Modifier le reçu fiscal', $text, 'confirm_editLines', '', 1, 1);
+}    
+elseif ($action == 'edit' && $recufiscal->fk_statut != RecuFiscal::STATUS_DRAFT)
+{
+    $text = "Êtes-vous sûr de vouloir repasser le reçu fiscal <b>{$recufiscal->ref}</b> au statut de brouillon ?";
+    $formconfirm = $form->formconfirm($_SERVER["PHP_SELF"].'?id='.$recufiscal->id, 'Modifier le reçu fiscal', $text, 'confirm_edit', '', 1, 1);
+}  
+elseif ($action == 'setsent' && $recufiscal->fk_statut == RecuFiscal::STATUS_VALIDATED)
+{
+    $text = "Êtes-vous sûr de vouloir modifier le statut de ce reçu fiscal ?";
+    $formconfirm = $form->formconfirm($_SERVER["PHP_SELF"].'?id='.$recufiscal->id, 'Classer "Envoyé"', $text, 'confirm_setsent', '', 1, 1);
+}  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 $parameters = array();
@@ -290,94 +460,6 @@ if ($action == 'create') {
 }
 
 
-
-// if ($action == 'createEmprunteur')
-// {
-//     // Chargement de l'interface (top_menu et left_menu)
-   
-// 	print load_fiche_titre($langs->trans("Nouvel Emprunteur", $langs->transnoentitiesnoconv("Nouvel emprunteur")), '', 'object_' . $object->picto);
-//     //WYSIWYG Editor
-//     require_once DOL_DOCUMENT_ROOT.'/core/class/doleditor.class.php';
-// 	print '<form action="'.$_SERVER["PHP_SELF"].'" method="POST">';
-//     print '<input type="hidden" name="action" value="addEmprunteur">';
-// 	$picto = 'donateur';
-// 	$title = 'Nouvel emprunteur';
-
-// 	dol_fiche_head('');
-
-//     print '<table class="border centpercent">';
-//     print '<tr></tr>';
-
-//     // Prenom
-
-//     print '<tr><td class="fieldrequired titlefieldcreate">Prenom</td>';
-// 	print '<td colspan="3">';
-//     print '<input type="text" name="prenom" value="'.$prenom.'"/>';
-//     print  '</td></tr>';
-
-//     // Nom
-
-//     print '<tr><td class="fieldrequired titlefieldcreate">Nom</td>';
-// 	print '<td colspan="3">';
-//     print '<input type="text" name="nom" value="'.$nom.'"/>';
-//     print  '</td></tr>';
-
-//     // Societe
-
-//     print '<tr><td class="titlefieldcreate">Société</td>';
-// 	print '<td colspan="3">';
-//     print '<input type="text" name="societe" value="'.$societe.'"/>';
-//     print  '</td></tr>';
-
-
-//     // Address
-
-//     print '<tr><td class="fieldrequired titlefieldcreate">Adresse</td>';
-//     print '<td colspan="3">';
-//     print '<textarea name="address" id="address" class="quatrevingtpercent" rows="'.ROWS_2.'" wrap="soft">';
-//     print $adress;
-//     print '</textarea>';
-//     print '</td></tr>';
-
-//     // Zip / Town
-
-//     print '<tr><td>Code postal</td><td>';
-//     print '<input type="text" name="zipcode" value="'.$zipcode.'"/>';
-//     print '</td>';
-//     if ($conf->browser->layout == 'phone') print '</tr><tr>';
-//     print '<td class="tdtop">Ville</td><td>';
-//     print '<input type="text" name="town" value="'.$town.'"/>';
-//     print '</td></tr>';
-
-//     // Phone
-//     print '<tr><td>'.$form->editfieldkey('Phone', 'phone', '', $object, 0).'</td>';
-//     print '<td'.($conf->browser->layout == 'phone' ? ' colspan="3"' : '').'>'.img_picto('', 'object_phoning').' <input type="text" name="phone" id="phone" class="maxwidth200 widthcentpercentminusx" value="'.(GETPOSTISSET('phone') ?GETPOST('phone', 'alpha') : $object->phone).'"></td>';
-//     print '</tr><tr>';
-
-//     // Email
-
-//     print '<tr><td>E-mail</td>';
-//     print '<td colspan="3">'.img_picto('', 'object_email').' <input type="text" class="maxwidth500 widthcentpercentminusx" name="email" id="email" value="'.$email.'"></td></tr>';
-
-// 	// Notes
-
-//     print '<tr><td class="tdtop titlefieldcreate">Notes</td><td colspan="3">';
-//     $doleditor = new DolEditor('notes', GETPOST('notes', 'none'), '', 160, 'dolibarr_details', '', false, true, $conf->global->FCKEDITOR_ENABLE_PRODUCTDESC, ROWS_4, '90%');
-//     $doleditor->Create();
-//     print "</td></tr>";
-//     print "</table>";
-
-// 	dol_fiche_end();
-
-// 	print '<div class="center">';
-// 	print '<input type="submit" class="button" value="'.$langs->trans("Create").'">';
-// 	print ' &nbsp; &nbsp; ';
-// 	print '<input type="button" class="button" value="'.$langs->trans("Cancel").'" onClick="javascript:history.go(-1)">';
-// 	print '</div>';
-// 	print '</form>';
-// }
-
-
 // Part to edit record
 if (($id || $ref) && $action == 'edit') {
 	print load_fiche_titre($langs->trans("Emprunt"), '', 'object_'.$object->picto);
@@ -396,6 +478,7 @@ if (($id || $ref) && $action == 'edit') {
 	print dol_get_fiche_head();
 
 	print '<table class="border centpercent tableforfieldedit">'."\n";
+	$_POST['montant'] = $object->total_ttc;
 
 	// Common attributes
 	include DOL_DOCUMENT_ROOT.'/core/tpl/commonfields_edit.tpl.php';
@@ -481,40 +564,6 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 	$linkback = '<a href="'.dol_buildpath('/materiel/emprunt_list.php', 1).'?restore_lastsearch_values=1'.(!empty($socid) ? '&socid='.$socid : '').'">'.$langs->trans("BackToList").'</a>';
 
 	$morehtmlref = '<div class="refidno">';
-	/*
-	 // Ref customer
-	 $morehtmlref.=$form->editfieldkey("RefCustomer", 'ref_client', $object->ref_client, $object, 0, 'string', '', 0, 1);
-	 $morehtmlref.=$form->editfieldval("RefCustomer", 'ref_client', $object->ref_client, $object, 0, 'string', '', null, null, '', 1);
-	 // Thirdparty
-	 $morehtmlref.='<br>'.$langs->trans('ThirdParty') . ' : ' . (is_object($object->thirdparty) ? $object->thirdparty->getNomUrl(1) : '');
-	 // Project
-	 if (! empty($conf->project->enabled)) {
-	 $langs->load("projects");
-	 $morehtmlref .= '<br>'.$langs->trans('Project') . ' ';
-	 if ($permissiontoadd) {
-	 //if ($action != 'classify') $morehtmlref.='<a class="editfielda" href="' . $_SERVER['PHP_SELF'] . '?action=classify&token='.newToken().'&id=' . $object->id . '">' . img_edit($langs->transnoentitiesnoconv('SetProject')) . '</a> ';
-	 $morehtmlref .= ' : ';
-	 if ($action == 'classify') {
-	 //$morehtmlref .= $form->form_project($_SERVER['PHP_SELF'] . '?id=' . $object->id, $object->socid, $object->fk_project, 'projectid', 0, 0, 1, 1);
-	 $morehtmlref .= '<form method="post" action="'.$_SERVER['PHP_SELF'].'?id='.$object->id.'">';
-	 $morehtmlref .= '<input type="hidden" name="action" value="classin">';
-	 $morehtmlref .= '<input type="hidden" name="token" value="'.newToken().'">';
-	 $morehtmlref .= $formproject->select_projects($object->socid, $object->fk_project, 'projectid', $maxlength, 0, 1, 0, 1, 0, 0, '', 1);
-	 $morehtmlref .= '<input type="submit" class="button valignmiddle" value="'.$langs->trans("Modify").'">';
-	 $morehtmlref .= '</form>';
-	 } else {
-	 $morehtmlref.=$form->form_project($_SERVER['PHP_SELF'] . '?id=' . $object->id, $object->socid, $object->fk_project, 'none', 0, 0, 0, 1);
-	 }
-	 } else {
-	 if (! empty($object->fk_project)) {
-	 $proj = new Project($db);
-	 $proj->fetch($object->fk_project);
-	 $morehtmlref .= ': '.$proj->getNomUrl();
-	 } else {
-	 $morehtmlref .= '';
-	 }
-	 }
-	 }*/
 	$morehtmlref .= '</div>';
 
 
@@ -526,6 +575,7 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 	print '<div class="underbanner clearboth"></div>';
 	print '<table class="border centpercent tableforfield">'."\n";
 
+
 	// Common attributes
 	//$keyforbreak='fieldkeytoswitchonsecondcolumn';	// We change column just before this field
 	//unset($object->fields['fk_project']);				// Hide field already shown in banner
@@ -536,6 +586,17 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 	include DOL_DOCUMENT_ROOT.'/core/tpl/extrafields_view.tpl.php';
 
 	print '</table>';
+	print '<table class="border tableforfield" width="100%">';
+
+    // Valeur totale
+    print '<tr><td class="titlefield">';
+    print "Montant total";
+    print '</td><td colspan="3" class="amountpaymentcomplete">';
+    print price($object->total_ttc, 1, '', 0, -1, -1, $conf->currency);
+    print '</td></tr>';
+
+
+    print '</table>';
 	print '</div>';
 	print '</div>';
 
@@ -550,11 +611,11 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 
 	if ($object->status != 4) {
 		// Show object lines
-		print '<form name="addproduct" id="addproduct" action="'.$_SERVER["PHP_SELF"].'?id='.$recufiscal->id.(($action != 'editline') ? '#addline' : '#line_'.GETPOST('lineid')).'" method="POST">';
+		print '<form name="addproduct" id="addproduct" action="'.$_SERVER["PHP_SELF"].'?id='.$object->id.(($action != 'editline') ? '#addline' : '#line_'.GETPOST('lineid')).'" method="POST">';
 		print '<input type="hidden" name="token" value="'.newToken().'">';
 		print '<input type="hidden" name="action" value="'.(($action != 'editline') ? 'addline' : 'updateline').'">';
 		print '<input type="hidden" name="mode" value="">';
-		print '<input type="hidden" name="id" value="'.$recufiscal->id.'">';
+		print '<input type="hidden" name="id" value="'.$object->id.'">';
 
 		print '<div class="div-table-responsive-no-min">';
 		print '<table id="tablelines" class="noborder noshadow" width="100%">';
@@ -563,15 +624,15 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 		print '<td>Valeur unitaire</td>';
 		print '<td class="center">Quantité</td>';
 		print '<td>Valeur totale</td>';
-		print '<td class="center">Actions</td>';
 		print '<td style="width: 80px"></td>'; // Empty column for edit and remove button
 		print '</tr>';
+	
 
 		// Show object lines
-		if (!empty($object->lines)){
-			$ret = $recufiscal->printObjectLines($action, $lineid);
-		}
-
+		// if (!empty($object->lines)){
+		
+		// }
+		$ret = $object->printObjectLines($action, $lineid);
 		$num = count($object->lines);
 
 		// Form to add new line
@@ -592,35 +653,35 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 
 	// Buttons for actions
 
-	if ($action != 'presend' && $action != 'editline') {
-		print '<div class="tabsAction">'."\n";
-		$parameters = array();
-		$reshook = $hookmanager->executeHooks('addMoreActionsButtons', $parameters, $object, $action); // Note that $action and $object may have been modified by hook
-		if ($reshook < 0) {
-			setEventMessages($hookmanager->error, $hookmanager->errors, 'errors');
-		}
+	// if ($action != 'presend' && $action != 'editline') {
+	// 	print '<div class="tabsAction">'."\n";
+	// 	$parameters = array();
+	// 	$reshook = $hookmanager->executeHooks('addMoreActionsButtons', $parameters, $object, $action); // Note that $action and $object may have been modified by hook
+	// 	if ($reshook < 0) {
+	// 		setEventMessages($hookmanager->error, $hookmanager->errors, 'errors');
+	// 	}
 
-		if (empty($reshook)) {
-			// Send
-			if (empty($user->socid)) {
-				print dolGetButtonAction($langs->trans('SendMail'), '', 'default', $_SERVER["PHP_SELF"].'?id='.$object->id.'&action=presend&mode=init&token='.newToken().'#formmailbeforetitle');
-			}
+	// 	if (empty($reshook)) {
+	// 		// Send
+	// 		if (empty($user->socid)) {
+	// 			print dolGetButtonAction($langs->trans('SendMail'), '', 'default', $_SERVER["PHP_SELF"].'?id='.$object->id.'&action=presend&mode=init&token='.newToken().'#formmailbeforetitle');
+	// 		}
 
-			// Back to draft
-			if ($object->status == $object::STATUS_VALIDATED) {
-				print dolGetButtonAction($langs->trans('SetToDraft'), '', 'default', $_SERVER["PHP_SELF"].'?id='.$object->id.'&action=confirm_setdraft&confirm=yes&token='.newToken(), '', $permissiontoadd);
-			}
+	// 		// Back to draft
+	// 		if ($object->status == $object::STATUS_VALIDATED) {
+	// 			print dolGetButtonAction($langs->trans('SetToDraft'), '', 'default', $_SERVER["PHP_SELF"].'?id='.$object->id.'&action=confirm_setdraft&confirm=yes&token='.newToken(), '', $permissiontoadd);
+	// 		}
 
-			print dolGetButtonAction($langs->trans('Modify'), '', 'default', $_SERVER["PHP_SELF"].'?id='.$object->id.'&action=edit&token='.newToken(), '', $permissiontoadd);
+	// 		print dolGetButtonAction($langs->trans('Modify'), '', 'default', $_SERVER["PHP_SELF"].'?id='.$object->id.'&action=edit&token='.newToken(), '', $permissiontoadd);
 
-			// Clone
-			print dolGetButtonAction($langs->trans('ToClone'), '', 'default', $_SERVER['PHP_SELF'].'?id='.$object->id.(!empty($object->socid)?'&socid='.$object->socid:'').'&action=clone&token='.newToken(), '', $permissiontoadd);
+	// 		// Clone
+	// 		print dolGetButtonAction($langs->trans('ToClone'), '', 'default', $_SERVER['PHP_SELF'].'?id='.$object->id.(!empty($object->socid)?'&socid='.$object->socid:'').'&action=clone&token='.newToken(), '', $permissiontoadd);
 
-			// Delete (need delete permission, or if draft, just need create/modify permission)
-			print dolGetButtonAction($langs->trans('Delete'), '', 'delete', $_SERVER['PHP_SELF'].'?id='.$object->id.'&action=delete&token='.newToken(), '', $permissiontodelete || ($object->status == $object::STATUS_DRAFT && $permissiontoadd));
-		}
-		print '</div>'."\n";
-	}
+	// 		// Delete (need delete permission, or if draft, just need create/modify permission)
+	// 		print dolGetButtonAction($langs->trans('Delete'), '', 'delete', $_SERVER['PHP_SELF'].'?id='.$object->id.'&action=delete&token='.newToken(), '', $permissiontodelete || ($object->status == $object::STATUS_DRAFT && $permissiontoadd));
+	// 	}
+	// 	print '</div>'."\n";
+	// }
 
 
 	// Select mail models is same action as presend
@@ -668,16 +729,59 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 	if (GETPOST('modelselected')) {
 		$action = 'presend';
 	}
-
 	// Presend form
-	$modelmail = 'emprunt';
-	$defaulttopic = 'InformationMessage';
-	$diroutput = $conf->materiel->dir_output;
-	$trackid = 'emprunt'.$object->id;
+	if ($action != 'presend')
+    {
+        print "\n".'<div class="tabsAction">'."\n";
+        
+        if (empty($reshook)) {
+        
+            if ($permissiontoadd && $object->status == Emprunt::STATUS_VALIDATED) {
+                
+                print '<a class="butAction" href="'.$_SERVER["PHP_SELF"].'?action=presend&amp;id='.$object->id.'">Envoyer eMail</a>';
+                print '<a class="butAction" href="'.$_SERVER["PHP_SELF"].'?action=setsent&amp;id='.$object->id.'">Classer envoyé</a>';
+            }
 
-	include DOL_DOCUMENT_ROOT.'/core/tpl/card_presend.tpl.php';
+            if ($permissiontodelete) {
+				print '<a class="butAction" href="'.$_SERVER["PHP_SELF"].'?action=edit&amp;id='.$object->id.'">'.$langs->trans("Modifie l'emprunt").'</a>';
+                //print '<a class="butAction" href="'.$_SERVER["PHP_SELF"].'?action=editLines&amp;id='.$object->id.'">'.$langs->trans("Modifier le contenu de l'emprunt").'</a>';
+				// Validate button
+				if (!empty($object->lines) && $object->status == Emprunt::STATUS_DRAFT) print '<a class="butAction" href="/custom/materiel/emprunt_card.php?id='.$object->id.'&action=valid">Valider</a>';
+			 
+				
+				// Delete button
+				$text = 'Êtes-vous sûr de vouloir supprimer l\'emprunt? <b>'.$object->ref.'</b> ?';
+				print $form->formconfirm("card.php?id=".$object->id, 'Supprimer l\'emprunt', $text, "confirm_delete", '', 0, "action-delete");
+				print '<span id="action-delete" class="butActionDelete">Supprimer</span>';
+            }
+        }
+        
+        print "\n</div>\n";
+    }
+    print '<div class="fichecenter"><div class="fichehalfleft">';
+
+    $object = $recufiscal;
+    // Presend form
+    $modelmail = 'SendingRecuFiscalToDnor';
+    $defaulttopic = $conf->global->RECUFISCAL_MAIL_DEFAULT_TOPIC;
+    $diroutput = $conf->recufiscal->dir_output;
+    $autocopy = '';
+    $trackid = 'rf'.$object->id;
+
+    include DOL_DOCUMENT_ROOT.'/core/tpl/card_presend.tpl.php';
 }
+
 
 // End of page
 llxFooter();
 $db->close();
+
+
+
+
+
+
+
+
+
+

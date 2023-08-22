@@ -1029,6 +1029,7 @@ class Don extends CommonObject
 		}
 
 		$modelpath = "core/modules/dons/";
+		
 
 		// TODO Restore use of commonGenerateDocument instead of dedicated code here
 		//return $this->commonGenerateDocument($modelpath, $modele, $outputlangs, $hidedetails, $hidedesc, $hideref);

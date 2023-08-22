@@ -160,47 +160,12 @@ if ($id > 0 || !empty($ref)) {
 	// ------------------------------------------------------------
 	$linkback = '<a href="'.dol_buildpath('/management/agent_list.php', 1).'?restore_lastsearch_values=1'.(!empty($socid) ? '&socid='.$socid : '').'">'.$langs->trans("BackToList").'</a>';
 
-	$morehtmlref = '<div class="refidno">';
-	$morehtmlref.= $object->prenom;
-	/*
-	 // Ref customer
-	 $morehtmlref.=$form->editfieldkey("RefCustomer", 'ref_client', $object->ref_client, $object, 0, 'string', '', 0, 1);
-	 $morehtmlref.=$form->editfieldval("RefCustomer", 'ref_client', $object->ref_client, $object, 0, 'string', '', null, null, '', 1);
-	 // Thirdparty
-	 $morehtmlref.='<br>'.$langs->trans('ThirdParty') . ' : ' . (is_object($object->thirdparty) ? $object->thirdparty->getNomUrl(1) : '');
-	 // Project
-	 if (! empty($conf->project->enabled))
-	 {
-	 $langs->load("projects");
-	 $morehtmlref.='<br>'.$langs->trans('Project') . ' ';
-	 if ($permissiontoadd)
-	 {
-	 if ($action != 'classify')
-	 //$morehtmlref.='<a class="editfielda" href="' . $_SERVER['PHP_SELF'] . '?action=classify&token='.newToken().'&id=' . $object->id . '">' . img_edit($langs->transnoentitiesnoconv('SetProject')) . '</a> : ';
-	 $morehtmlref.=' : ';
-	 if ($action == 'classify') {
-	 //$morehtmlref.=$form->form_project($_SERVER['PHP_SELF'] . '?id=' . $object->id, $object->socid, $object->fk_project, 'projectid', 0, 0, 1, 1);
-	 $morehtmlref.='<form method="post" action="'.$_SERVER['PHP_SELF'].'?id='.$object->id.'">';
-	 $morehtmlref.='<input type="hidden" name="action" value="classin">';
-	 $morehtmlref.='<input type="hidden" name="token" value="'.newToken().'">';
-	 $morehtmlref.=$formproject->select_projects($object->socid, $object->fk_project, 'projectid', $maxlength, 0, 1, 0, 1, 0, 0, '', 1);
-	 $morehtmlref.='<input type="submit" class="button valignmiddle" value="'.$langs->trans("Modify").'">';
-	 $morehtmlref.='</form>';
-	 } else {
-	 $morehtmlref.=$form->form_project($_SERVER['PHP_SELF'] . '?id=' . $object->id, $object->socid, $object->fk_project, 'none', 0, 0, 0, 1);
-	 }
-	 } else {
-	 if (! empty($object->fk_project)) {
-	 $proj = new Project($db);
-	 $proj->fetch($object->fk_project);
-	 $morehtmlref .= ': '.$proj->getNomUrl();
-	 } else {
-	 $morehtmlref .= '';
-	 }
-	 }
-	 }*/
-	 $morehtmlref .= '</div>';
+	$morehtmlref  = '<div class="refidno">';
+	$morehtmlref .= $object->prenom;
 
+
+	
+	$morehtmlref .= '</div>';
 
 	dol_banner_tab($object, 'ref', $linkback, 1, 'ref', 'nom', $morehtmlref);
 
@@ -212,71 +177,76 @@ if ($id > 0 || !empty($ref)) {
 
 	foreach($resqlJour as $value)
 	{
-		print '<h3>'.$value['jour'].'</h3>';
-
 		$cours = "SELECT professeurs, nom_creneau, rowid FROM ".MAIN_DB_PREFIX."creneau WHERE status=4 AND jour=".$value['rowid']." AND (fk_prof_1=".$object->fk_user." OR fk_prof_2=".$object->fk_user." OR fk_prof_3=".$object->fk_user.") ORDER BY heure_debut ASC";
 		$resqlCours = $db->query($cours);
 
+		print '<h3>'.$value['jour'].($resqlCours->num_rows > 0 ? ('    <span class="badge  badge-status4 badge-status">  '.$resqlCours->num_rows.' Cours</span>') : ('      <span class="badge  badge-status8 badge-status">  Aucun cours à ce jour</span>')).'</h3>';
+
 		print '<table class="tagtable liste">';
 		print '<tbody>';
-		print '<tr class="liste_titre">
+		
+
+		if($resqlCours->num_rows != 0)
+		{
+			print '<tr class="liste_titre">
 			<th class="wrapcolumntitle liste_titre">Créneau</th>
 			<th class="wrapcolumntitle liste_titre">Professeurs</th>
 			<th class="wrapcolumntitle liste_titre">Élèves</th>
 			<th class="wrapcolumntitle liste_titre">Absences à venir</th>
-		</tr>';
-
-		foreach($resqlCours as $val)
-		{
-			print '<tr class="oddeven">';
-			print '<td style="width:30%">'.$val['nom_creneau'].'</td>';
-			print '<td>'.$val['professeurs'].'</td>';
-
-			$affectation = "SELECT s.fk_souhait FROM ".MAIN_DB_PREFIX."affectation as s WHERE s.fk_creneau=".$val['rowid']." AND date_fin IS NULL";
-			$resqlAffectation = $db->query($affectation);
-			
-			print '<td>';
-			foreach($resqlAffectation as $v)
+			</tr>';
+			foreach($resqlCours as $val)
 			{
-				$eleve = "SELECT e.nom,e.prenom,e.rowid FROM ".MAIN_DB_PREFIX."eleve as e WHERE e.rowid=".("(SELECT s.fk_eleve FROM ".MAIN_DB_PREFIX."souhait as s WHERE s.rowid =".$v['fk_souhait'].")");
-				$resqlEleve = $db->query($eleve);
-				foreach($resqlEleve as $res)
+				print '<tr class="oddeven">';
+				print '<td style="width:30%">'.$val['nom_creneau'].'</td>';
+				print '<td>'.$val['professeurs'].'</td>';
+	
+				$affectation = "SELECT s.fk_souhait FROM ".MAIN_DB_PREFIX."affectation as s WHERE s.fk_creneau=".$val['rowid']." AND date_fin IS NULL";
+				$resqlAffectation = $db->query($affectation);
+				
+				print '<td>';
+				foreach($resqlAffectation as $v)
 				{
-					print '<a href="' . DOL_URL_ROOT . '/custom/viescolaire/eleve_card.php?id=' . $res['rowid'] . '">' .'- '. $res['nom'].' '.$res['prenom'] . '</a>';
-					print '<br>';
-				}
-			}
-			print '</td>';
-
-
-			print '<td>';
-
-			$count = 0;
-			foreach($resqlAffectation as $v)
-			{
-				$eleve = "SELECT e.nom,e.prenom,e.rowid FROM ".MAIN_DB_PREFIX."eleve as e WHERE e.rowid=".("(SELECT s.fk_eleve FROM ".MAIN_DB_PREFIX."souhait as s WHERE s.rowid =".$v['fk_souhait'].")");
-				$resqlEleve = $db->query($eleve);
-
-				foreach($resqlEleve as $res)
-				{
-					$date = date('Y-m-d H:i:s');
-					$absence = "SELECT rowid, date_creation, justification  FROM ".MAIN_DB_PREFIX."appel WHERE fk_creneau=".$val['rowid']." AND fk_eleve=".$res['rowid']." AND date_creation >='".$date."'";
-					$resqlAbsence = $db->query($absence);
-
-					foreach($resqlAbsence as $r)
+					$eleve = "SELECT e.nom,e.prenom,e.rowid FROM ".MAIN_DB_PREFIX."eleve as e WHERE e.rowid=".("(SELECT s.fk_eleve FROM ".MAIN_DB_PREFIX."souhait as s WHERE s.rowid =".$v['fk_souhait'].")");
+					$resqlEleve = $db->query($eleve);
+					foreach($resqlEleve as $res)
 					{
-						$count++;
-						//print $res['prenom'].' '.$res['nom'].' '.date('d/m/Y', strtotime($r['date_creation'])).' - '.$r['justification'].'<br>';
+						print '<a href="' . DOL_URL_ROOT . '/custom/viescolaire/eleve_card.php?id=' . $res['rowid'] . '">' .'- '. $res['nom'].' '.$res['prenom'] . '</a>';
+						print '<br>';
 					}
 				}
-			}
-			
-			print $count > 0 ? ('<a href="' . DOL_URL_ROOT . $_SERVER['PHP_SELF'].'?id=' . $object->id . '&checkAbsences">' .$count.' absences futurs connues' . '</a>') : 'Aucune absences futurs connues à ce jour.';
-			print '</td>';
+				print '</td>';
+				print '<td>';
 	
-			var_dump("kjenfkejf");
-			print '</tr>';
+
+				$count = 0;
+				foreach($resqlAffectation as $v)
+				{
+					$eleve = "SELECT e.nom,e.prenom,e.rowid FROM ".MAIN_DB_PREFIX."eleve as e WHERE e.rowid=".("(SELECT s.fk_eleve FROM ".MAIN_DB_PREFIX."souhait as s WHERE s.rowid =".$v['fk_souhait'].")");
+					$resqlEleve = $db->query($eleve);
+	
+					foreach($resqlEleve as $res)
+					{
+						$date = date('Y-m-d H:i:s');
+						$absence = "SELECT rowid, date_creation, justification  FROM ".MAIN_DB_PREFIX."appel WHERE fk_creneau=".$val['rowid']." AND fk_eleve=".$res['rowid']." AND date_creation >='".$date."'";
+						$resqlAbsence = $db->query($absence);
+	
+						foreach($resqlAbsence as $r)
+						{
+							$count++;
+							//print $res['prenom'].' '.$res['nom'].' '.date('d/m/Y', strtotime($r['date_creation'])).' - '.$r['justification'].'<br>';
+						}
+					}
+				}
+				
+				print $count > 0 ? ('<a href="' . DOL_URL_ROOT . $_SERVER['PHP_SELF'].'?id=' . $object->id . '&idCours='.$val['rowid'].'&checkAbsences">' .$count.' absences futurs connues' . '</a>') : 'Aucune absences futurs connues à ce jour pour ces élèves.';
+				print '</td>';
+		
+				print '</tr>';
+			}
 		}
+		else
+		print '<p></p>';
+		
 		print '</tbody>';
 		print '</table>';
 	}

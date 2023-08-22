@@ -527,7 +527,14 @@ foreach($resqlInstru as $value)
 $concernes = [''=>'', 'professeurs'=>'Professeurs','eleves'=>'Élèves'];
 $date = date('Y-m-d H:i:s');
 
-// print '<hr>';
+//print '<button>Contacter les élèves des créneaux concernés</button>';
+
+
+
+
+
+
+
 
 print '<form method="POST" id="searchFormList" action="'.$_SERVER["PHP_SELF"].'">'."\n";
 if ($optioncss != '') {
@@ -699,231 +706,6 @@ if (isset($extrafields->attributes[$object->table_element]['computed']) && is_ar
 }
 
 
-// // Loop on record
-// // --------------------------------------------------------------------
-// $i = 0;
-// $totalarray = array();
-// $totalarray['nbfield'] = 0;
-// while ($i < ($limit ? min($num, $limit) : $num)) {
-// 	$obj = $db->fetch_object($resql);
-// 	if (empty($obj)) {
-// 		break; // Should not happen
-// 	}
-
-// 	// Store properties in $object
-// 	$object->setVarsFromFetchObj($obj);
-
-
-// 	// Show here line of result
-// 	print '<tr class="oddeven">';
-// 	foreach ($object->fields as $key => $val) {
-// 		$cssforfield = (empty($val['csslist']) ? (empty($val['css']) ? '' : $val['css']) : $val['csslist']);
-// 		if (in_array($val['type'], array('date', 'datetime', 'timestamp'))) {
-// 			$cssforfield .= ($cssforfield ? ' ' : '').'center';
-// 		} elseif ($key == 'status') {
-// 			$cssforfield .= ($cssforfield ? ' ' : '').'center';
-// 		}
-
-// 		if (in_array($val['type'], array('timestamp'))) {
-// 			$cssforfield .= ($cssforfield ? ' ' : '').'nowrap';
-// 		} elseif ($key == 'ref') {
-// 			$cssforfield .= ($cssforfield ? ' ' : '').'nowrap';
-// 		}
-
-// 		if (in_array($val['type'], array('double(24,8)', 'double(6,3)', 'integer', 'real', 'price')) && !in_array($key, array('rowid', 'status')) && empty($val['arrayofkeyval'])) {
-// 			$cssforfield .= ($cssforfield ? ' ' : '').'right';
-// 		}
-// 		//if (in_array($key, array('fk_soc', 'fk_user', 'fk_warehouse'))) $cssforfield = 'tdoverflowmax100';
-
-// 		if (!empty($arrayfields['t.'.$key]['checked'])) {
-// 			//print '<td'.($cssforfield ? ' class="'.$cssforfield.'"' : '').'>';
-// 			print '<td '.($object->status == 4 ? 'style="background-color: #E9ffd7"' : '') .'>';
-// 			if ($key == 'status') {
-// 				print $object->getLibStatut(5);
-// 			} elseif ($key == 'rowid') {
-// 				print $object->showOutputField($val, $key, $object->id, '');
-// 			} elseif ($key == 'nom_creneau'){
-// 				print $object->getNomUrl(1);
-
-// 			} elseif ($key == 'nombre_places'){
-
-// 				$affectation = "SELECT s.fk_souhait FROM ".MAIN_DB_PREFIX."affectation as s WHERE s.fk_creneau=".$object->id." AND date_fin IS NULL";
-// 				$resqlAffectation = $db->query($affectation);
-
-// 				$count = 0;
-// 				foreach($resqlAffectation as $value)
-// 				{
-// 					$eleve = "SELECT e.nom,e.prenom,e.rowid FROM ".MAIN_DB_PREFIX."eleve as e WHERE e.rowid=".("(SELECT s.fk_eleve FROM ".MAIN_DB_PREFIX."souhait as s WHERE s.rowid =".$value['fk_souhait'].")");
-// 					$resqlEleve = $db->query($eleve);
-// 					foreach($resqlEleve as $res)
-// 					{
-// 						$count++;
-// 					}
-					
-// 				}
-// 				if($count == intval($object->showOutputField($val, $key, $object->$key, '')))
-// 				{
-// 					print '<span class="badge  badge-status8 badge-status" style="color:white;">'.$count.'/'.$object->showOutputField($val, $key, $object->$key, '').'</span>';
-// 				}
-// 				else
-// 				{
-// 					print '<span class="badge  badge-status4 badge-status" style="color:white;">'.$count.'/'.$object->showOutputField($val, $key, $object->$key, '').'</span>';
-
-// 				}
-				
-
-// 			} elseif ($key == 'fk_dispositif'){
-
-// 				$diminutif = "SELECT diminutif FROM ".MAIN_DB_PREFIX."etablissement WHERE rowid = "."(SELECT fk_etablissement FROM ".MAIN_DB_PREFIX."dispositif WHERE rowid = ".$object->fk_dispositif.")";
-// 				$resqlDiminutif = $db->query($diminutif);
-// 				$objDiminutif = $db->fetch_object($resqlDiminutif);
-
-
-// 				$dispositif = "SELECT nom, rowid FROM ".MAIN_DB_PREFIX."dispositif WHERE rowid = ".$object->fk_dispositif;
-// 				$resqlDispositif = $db->query($dispositif);
-// 				$objDispositif = $db->fetch_object($resqlDispositif);
-
-// 				print '<a href="' . DOL_URL_ROOT . '/custom/scolarite/dispositif_card.php?id=' . $objDispositif->rowid . '">' . $objDiminutif->diminutif.' - '.$objDispositif->nom . '</a>';
-// 			} elseif ($key == 'fk_type_classe'){
-// 				$cours = "SELECT type FROM ".MAIN_DB_PREFIX."type_classe WHERE rowid =".$object->fk_type_classe;
-// 				$resqlCours = $db->query($cours);
-// 				$objCours= $db->fetch_object($resqlCours);
-
-// 				$niveau = "SELECT niveau FROM ".MAIN_DB_PREFIX."c_niveaux WHERE rowid =".$object->fk_niveau;
-// 				$resqlNiveau = $db->query($niveau);
-// 				$objNiveau= $db->fetch_object($resqlNiveau);
-
-// 				$instrument = "SELECT instrument FROM ".MAIN_DB_PREFIX."c_instrument_enseigne WHERE rowid =".$object->fk_instrument_enseigne;
-// 				$resqlInstrument = $db->query($instrument);
-// 				$objInstru = $db->fetch_object($resqlInstrument);
-
-// 				if($objCours->type == "Cours")
-// 				{
-// 					print '<a href="' . DOL_URL_ROOT . '/custom/scolarite/creneau_card.php?id=' . $object->id . '">' .  $objCours->type.' - '.$objInstru->instrument.' - '.$objNiveau->niveau . '</a>';
-
-// 				}
-// 				elseif($objCours->type == "Groupe")
-// 				{
-// 					print '<a href="' . DOL_URL_ROOT . '/custom/scolarite/creneau_card.php?id=' . $object->id . '">' . $objCours->type.' - '.$object->nom_groupe.' - '.$objNiveau->niveau . '</a>';
-
-// 				}
-// 			} elseif ($key == 'professeurs') {
-
-// 				$prof1 = "SELECT lastname, firstname, rowid FROM ".MAIN_DB_PREFIX."user WHERE rowid =".$object->fk_prof_1;
-// 				$resqlProf1 = $db->query($prof1);
-// 				$objProf1 = $db->fetch_object($resqlProf1);
-// 				$profs = "";
-
-// 				$profs .= '<a href="' . DOL_URL_ROOT . '/user/card.php?id=' . $objProf1->rowid . '">' .👨‍🏫. $objProf1->lastname.' '.$objProf1->firstname. '</a>'.'<br>';
-			
-// 				if(isset($object->fk_prof_2))
-// 				{
-// 					$prof2 = "SELECT lastname, firstname, rowid FROM ".MAIN_DB_PREFIX."user WHERE rowid =".$object->fk_prof_2;
-// 					$resqlProf2 = $db->query($prof2);
-// 					$objProf2 = $db->fetch_object($resqlProf2);
-
-// 					$profs .= '<a href="' . DOL_URL_ROOT . '/user/card.php?id=' . $objProf2->rowid . '">' .👨‍🏫. $objProf2->lastname.' '.$objProf2->firstname. '</a>'.'<br>';
-// 				}
-// 				if(isset($object->fk_prof_3))
-// 				{
-// 					$prof3 = "SELECT lastname, firstname, rowid FROM ".MAIN_DB_PREFIX."user WHERE rowid =".$object->fk_prof_3;
-// 					$resqlProf3 = $db->query($prof3);
-// 					$objProf3 = $db->fetch_object($resqlProf3);
-
-// 					$profs .= '<a href="' . DOL_URL_ROOT . '/user/card.php?id=' . $objProf3->rowid . '">' .👨‍🏫. $objProf3->lastname.' '.$objProf3->firstname. '</a>'.'<br>';
-// 				}
-
-// 				print $profs;
-
-// 			} elseif ($key == 'infos_creneau'){
-// 				$infos_creneau = "";
-
-// 				$Jour = "SELECT jour, rowid FROM ".MAIN_DB_PREFIX."c_jour WHERE rowid =".$object->jour;
-// 				$resqlJour = $db->query($Jour);
-// 				$objJour = $db->fetch_object($resqlJour);
-				
-// 				$heure = "SELECT heure, rowid FROM ".MAIN_DB_PREFIX."c_heure WHERE rowid =".$object->heure_debut;
-// 				$resqlheure = $db->query($heure);
-// 				$objheure = $db->fetch_object($resqlheure);
-
-// 				$heureFin = "SELECT heure, rowid FROM ".MAIN_DB_PREFIX."c_heure WHERE rowid =".$object->heure_fin;
-// 				$resqlheureFin = $db->query($heureFin);
-// 				$objheureFin = $db->fetch_object($resqlheureFin);
-
-// 				$Salle = "SELECT salle, rowid FROM ".MAIN_DB_PREFIX."salles WHERE rowid =".$object->fk_salle;
-// 				$resqlSalle = $db->query($Salle);
-// 				$objSalle = $db->fetch_object($resqlSalle);
-
-
-// 				$infos_creneau .= $objJour->jour.' | '.$objheure->heure.'h'.$object->minutes_debut.'-'.$objheureFin->heure.'h'.$object->minutes_fin.' | '.$objSalle->salle;
-
-// 				print $infos_creneau;
-
-// 			} elseif ($key == 'eleves'){
-// 				$affectation = "SELECT s.fk_souhait FROM ".MAIN_DB_PREFIX."affectation as s WHERE s.fk_creneau=".$object->id." AND date_fin IS NULL";
-// 				$resqlAffectation = $db->query($affectation);
-
-// 				foreach($resqlAffectation as $val)
-// 				{
-// 					$eleve = "SELECT e.nom,e.prenom,e.rowid FROM ".MAIN_DB_PREFIX."eleve as e WHERE e.rowid=".("(SELECT s.fk_eleve FROM ".MAIN_DB_PREFIX."souhait as s WHERE s.rowid =".$val['fk_souhait'].")");
-// 					$resqlEleve = $db->query($eleve);
-// 					foreach($resqlEleve as $res)
-// 					{
-// 						print '🧑‍🎓<a href="' . DOL_URL_ROOT . '/custom/viescolaire/eleve_card.php?id=' . $res['rowid'] . '">' .$res['nom'].' '.$res['prenom'] . '</a>';
-// 						print '<br>';
-// 					}
-					
-// 				}
-
-
-// 			} else {
-// 				print $object->showOutputField($val, $key, $object->$key, '');
-// 			}
-// 			print '</td>';
-			
-// 			if (!$i) {
-// 				$totalarray['nbfield']++;
-// 			}
-// 			if (!empty($val['isameasure']) && $val['isameasure'] == 1) {
-// 				if (!$i) {
-// 					$totalarray['pos'][$totalarray['nbfield']] = 't.'.$key;
-// 				}
-// 				if (!isset($totalarray['val'])) {
-// 					$totalarray['val'] = array();
-// 				}
-// 				if (!isset($totalarray['val']['t.'.$key])) {
-// 					$totalarray['val']['t.'.$key] = 0;
-// 				}
-// 				$totalarray['val']['t.'.$key] += $object->$key;
-// 			}
-// 		}
-// 	}
-// 	// Extra fields
-// 	include DOL_DOCUMENT_ROOT.'/core/tpl/extrafields_list_print_fields.tpl.php';
-// 	// Fields from hook
-// 	$parameters = array('arrayfields'=>$arrayfields, 'object'=>$object, 'obj'=>$obj, 'i'=>$i, 'totalarray'=>&$totalarray);
-// 	$reshook = $hookmanager->executeHooks('printFieldListValue', $parameters, $object); // Note that $action and $object may have been modified by hook
-// 	print $hookmanager->resPrint;
-// 	// Action column
-// 	print '<td class="nowrap center">';
-// 	if ($massactionbutton || $massaction) { // If we are in select mode (massactionbutton defined) or if we have already selected and sent an action ($massaction) defined
-// 		$selected = 0;
-// 		if (in_array($object->id, $arrayofselected)) {
-// 			$selected = 1;
-// 		}
-// 		print '<input id="cb'.$object->id.'" class="flat checkforselect" type="checkbox" name="toselect[]" value="'.$object->id.'"'.($selected ? ' checked="checked"' : '').'>';
-// 	}
-// 	print '</td>';
-// 	if (!$i) {
-// 		$totalarray['nbfield']++;
-// 	}
-
-// 	print '</tr>'."\n";
-
-// 	$i++;
-// }
-
-
 
 // Loop on record
 // --------------------------------------------------------------------
@@ -1070,7 +852,7 @@ while ($i < $imaxinloop) {
 					$objProf1 = $db->fetch_object($resqlProf1);
 					$profs = "";
 	
-					$profs .= '<a href="' . DOL_URL_ROOT . '/user/card.php?id=' . $objProf1->rowid . '">' .👨‍🏫. $objProf1->lastname.' '.$objProf1->firstname. '</a>'.'<br>';
+					$profs .= '<a href="' . DOL_URL_ROOT . '/user/card.php?id=' . $objProf1->rowid . '">' .'👨‍🏫'. $objProf1->lastname.' '.$objProf1->firstname. '</a>'.'<br>';
 				
 					if(isset($object->fk_prof_2))
 					{
@@ -1078,7 +860,7 @@ while ($i < $imaxinloop) {
 						$resqlProf2 = $db->query($prof2);
 						$objProf2 = $db->fetch_object($resqlProf2);
 	
-						$profs .= '<a href="' . DOL_URL_ROOT . '/user/card.php?id=' . $objProf2->rowid . '">' .👨‍🏫. $objProf2->lastname.' '.$objProf2->firstname. '</a>'.'<br>';
+						$profs .= '<a href="' . DOL_URL_ROOT . '/user/card.php?id=' . $objProf2->rowid . '">' .'👨‍🏫'. $objProf2->lastname.' '.$objProf2->firstname. '</a>'.'<br>';
 					}
 					if(isset($object->fk_prof_3))
 					{
@@ -1086,7 +868,7 @@ while ($i < $imaxinloop) {
 						$resqlProf3 = $db->query($prof3);
 						$objProf3 = $db->fetch_object($resqlProf3);
 	
-						$profs .= '<a href="' . DOL_URL_ROOT . '/user/card.php?id=' . $objProf3->rowid . '">' .👨‍🏫. $objProf3->lastname.' '.$objProf3->firstname. '</a>'.'<br>';
+						$profs .= '<a href="' . DOL_URL_ROOT . '/user/card.php?id=' . $objProf3->rowid . '">' .'👨‍🏫'. $objProf3->lastname.' '.$objProf3->firstname. '</a>'.'<br>';
 					}
 	
 					print $profs;
@@ -1125,7 +907,7 @@ while ($i < $imaxinloop) {
 						$resqlEleve = $db->query($eleve);
 						foreach($resqlEleve as $res)
 						{
-							print '🧑‍🎓<a href="' . DOL_URL_ROOT . '/custom/viescolaire/eleve_card.php?id=' . $res['rowid'] . '">' .$res['nom'].' '.$res['prenom'] . '</a>';
+							print '🧑‍🎓'.'<a href="' . DOL_URL_ROOT . '/custom/viescolaire/eleve_card.php?id=' . $res['rowid'] . '">' .$res['nom'].' '.$res['prenom'] . '</a>';
 							print '<br>';
 						}
 						

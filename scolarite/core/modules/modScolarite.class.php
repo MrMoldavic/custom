@@ -55,7 +55,7 @@ class modScolarite extends DolibarrModules
 		$this->family = "other";
 
 		// Module position in the family on 2 digits ('01', '10', '20', ...)
-		$this->module_position = '90';
+		$this->module_position = '01';
 
 		// Gives the possibility for the module, to provide his own family info and position of this family (Overwrite $this->family and $this->module_position. Avoid this)
 		//$this->familyinfo = array('myownfamily' => array('position' => '01', 'label' => $langs->trans("MyOwnFamily")));
@@ -83,7 +83,7 @@ class modScolarite extends DolibarrModules
 		// If file is in theme/yourtheme/img directory under name object_pictovalue.png, use this->picto='pictovalue'
 		// If file is in module/img directory under name object_pictovalue.png, use this->picto='pictovalue@module'
 		// To use a supported fa-xxx css style of font awesome, use this->picto='xxx'
-		$this->picto = 'bomb';
+		$this->picto = 'generic';
 
 		// Define some features supported by module (triggers, login, substitutions, menus, css, etc...)
 		$this->module_parts = array(
@@ -642,46 +642,7 @@ class modScolarite extends DolibarrModules
             // 0=Menu for internal users, 1=external users, 2=both
             'user'=>2
         );
-		$this->menu[$r++]=array(
-            // '' if this is a top menu. For left menu, use 'fk_mainmenu=xxx' or 'fk_mainmenu=xxx,fk_leftmenu=yyy' where xxx is mainmenucode and yyy is a leftmenucode
-            'fk_menu'=>'fk_mainmenu=antennes,fk_leftmenu=dispositif',
-            // This is a Left menu entry
-            'type'=>'left',
-            'titre'=>'Nouveau créneau',
-            'mainmenu'=>'antennes',
-            'leftmenu'=>'creneaux',
-            'url'=>'/scolarite/creneau_card.php?action=create',
-            // Lang file to use (without .lang) by module. File must be in langs/code_CODE/ directory.
-            'langs'=>'scolarite@scolarite',
-            'position'=>1100+$r,
-            // Define condition to show or hide menu entry. Use '$conf->scolarite->enabled' if entry must be visible if module is enabled. Use '$leftmenu==\'system\'' to show if leftmenu system is selected.
-            'enabled'=>'$conf->scolarite->enabled',
-            // Use 'perms'=>'$user->rights->scolarite->level1->level2' if you want your menu with a permission rules
-            'perms'=>'$user->rights->scolarite->scolarite->create',
-            'target'=>'',
-            // 0=Menu for internal users, 1=external users, 2=both
-            'user'=>2
-        );
-		$this->menu[$r++]=array(
-            // '' if this is a top menu. For left menu, use 'fk_mainmenu=xxx' or 'fk_mainmenu=xxx,fk_leftmenu=yyy' where xxx is mainmenucode and yyy is a leftmenucode
-            'fk_menu'=>'fk_mainmenu=antennes,fk_leftmenu=creneaux',
-            // This is a Left menu entry
-            'type'=>'left',
-            'titre'=>'Liste des créneaux',
-            'mainmenu'=>'antennes',
-            'leftmenu'=>'',
-            'url'=>'/scolarite/creneau_list.php',
-            // Lang file to use (without .lang) by module. File must be in langs/code_CODE/ directory.
-            'langs'=>'scolarite@scolarite',
-            'position'=>1100+$r,
-            // Define condition to show or hide menu entry. Use '$conf->scolarite->enabled' if entry must be visible if module is enabled. Use '$leftmenu==\'system\'' to show if leftmenu system is selected.
-            'enabled'=>'$conf->scolarite->enabled',
-            // Use 'perms'=>'$user->rights->scolarite->level1->level2' if you want your menu with a permission rules
-            'perms'=>'$user->rights->scolarite->scolarite->read',
-            'target'=>'',
-            // 0=Menu for internal users, 1=external users, 2=both
-            'user'=>2
-        );
+		
 		
 
 
