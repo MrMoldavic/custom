@@ -265,7 +265,7 @@ if ($conf->materiel->enabled == 1)
 
 				print '<tr class="oddeven">';
 
-    			print '<td class="tdoverflowmax100">';
+    			print '<td class="tdoverflowmax200">';
 				print $source->getNomUrl(1);
     			print "</td>\n";
 
