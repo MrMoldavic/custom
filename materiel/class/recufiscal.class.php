@@ -282,7 +282,7 @@ Class RecuFiscal extends CommonObject
         return 1;
     }
 
-    private function dateToMySQL($date){
+    public function dateToMySQL($date){
         $tabDate = explode('/' , $date);
         $date  = $tabDate[2].'-'.$tabDate[1].'-'.$tabDate[0];
         $date = date('Y-m-d', strtotime($date) );

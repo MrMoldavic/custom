@@ -74,7 +74,7 @@ if (array_key_exists($action, $quick_modification_actions))
     $type = $quick_modification_actions[$action];
     $value = GETPOST($field_name);
 
-    $date = date('Y-m-d', strtotime($value));
+    $date = $recufiscal->dateToMySQL($value);
     $result = $recufiscal->setValueFrom($field_name, $date, 'recu_fiscal', null, $type);
 
     if ($result > 0) setEventMessages('Valeur modifiée avec succès.', null);
