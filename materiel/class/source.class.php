@@ -4,6 +4,8 @@ require_once DOL_DOCUMENT_ROOT.'/fourn/class/fournisseur.facture.class.php';
 require_once DOL_DOCUMENT_ROOT.'/custom/materiel/core/lib/preinventaire.lib.php';
 require_once DOL_DOCUMENT_ROOT.'/custom/materiel/class/preinventaireline.class.php';
 require_once DOL_DOCUMENT_ROOT.'/custom/materiel/class/recufiscal.class.php';
+require_once DOL_DOCUMENT_ROOT.'/custom/materiel/class/emprunt.class.php';
+require_once DOL_DOCUMENT_ROOT.'/custom/materiel/class/empruntLine.class.php';
 
 class Source extends CommonObject {
 
@@ -107,10 +109,10 @@ class Source extends CommonObject {
                 $this->source_reference_object = new RecuFiscal($this->db);
                 $this->source_reference_type = 'Reçu Fiscal';
                 break;
-            // case 'emprunt':
-            //     return new Emprunt($db);
-                // $this->source_reference_type = 'Emprunt';
-            //     break;
+            case 'emprunt':
+                $this->source_reference_object = new Emprunt($this->db);
+                $this->source_reference_type = 'Emprunt';
+                break;
         }
     }
 

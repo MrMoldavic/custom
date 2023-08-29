@@ -1,7 +1,7 @@
 <?php
-// ini_set('display_errors', '1');
-// ini_set('display_startup_errors', '1');
-// error_reporting(E_ALL);
+ini_set('display_errors', '1');
+ini_set('display_startup_errors', '1');
+error_reporting(E_ALL);
 
 @include_once "../../../../main.inc.php";
 
@@ -144,6 +144,7 @@ if (empty($conf->global->MAIN_DISABLE_FULL_SCANLIST)) {
 	}*/
 	/* The fast and low memory method to get and count full list converts the sql into a sql count */
 	$sqlforcount = preg_replace('/^SELECT[a-z0-9\._\s\(\),]+FROM/i', 'SELECT COUNT(*) as nbtotalofrecords FROM', $sql);
+
 	$resql = $db->query($sqlforcount);
 	$objforcount = $db->fetch_object($resql);
 	$nbtotalofrecords = $objforcount->nbtotalofrecords;
@@ -161,11 +162,13 @@ if($source_type_array[$sourcetypeid]['tablename'] == "emprunt")
 {
 	$sql.= " AND s.status != 0"; // This line is to not select drafts sources
 	$sortfield = "s.date_creation";
+	$title = 'Liste des Emprunts';
 }
 elseif($source_type_array[$sourcetypeid]['tablename'] == "facture_fourn" || $source_type_array[$sourcetypeid]['tablename'] == "recu_fiscal")
 {
 	$sql.= " AND s.fk_statut != 0"; // This line is to not select drafts sources
 	$sortfield = "s.datec";
+	$title = $source_type_array[$sourcetypeid]['tablename'] == "facture_fourn" ? 'Liste des factures' : 'Liste des reçus fiscaux';
 } 
 
 $sql .= $db->order($sortfield, $sortorder);
@@ -173,8 +176,8 @@ if ($limit) {
 	$sql .= $db->plimit($limit + 1, $offset);
 }
 
-
 $resql = $db->query($sql);
+
 
 print '<div class="fichecenter">';
 print '<form action="'.$_SERVER["PHP_SELF"].'" method="post" name="formulaire">';
@@ -185,7 +188,7 @@ print '<input type="hidden" name="sortfield" value="'.$sortfield.'">';
 print '<input type="hidden" name="sortorder" value="'.$sortorder.'">';
 print '<input type="hidden" name="sourcetypeid" value="'.$sourcetypeid.'">';
 
-$title = 'Liste des Reçus Fiscaux';
+
 $arrayofselected = is_array($toselect) ? $toselect : array();
 
 // Button to switch the source type to manage
@@ -203,6 +206,7 @@ if($resql)
 {
 	$num = $db->num_rows($resql);
 }
+
 //talm_print_barre_liste('Gestion / Traitement des sources', 0, $_SERVER["PHP_SELF"], '', '', '',$massactionbutton, $num, $nbtotalofrecords, $picto, 0, $morehtmlright, '', $limit, 0, 0, 1);
 talm_print_barre_liste($title, $page, $_SERVER["PHP_SELF"], $param, $sortfield, $sortorder, $massactionbutton, $num, $nbtotalofrecords, $picto, 0, $morehtmlright, '', $limit, 0, 0, 1);
 
@@ -227,7 +231,7 @@ print '<td class="liste_titre center maxwidthsearch">';
 print '</td>';
 print '<td class="liste_titre center maxwidthsearch">';
 print '</td>';
-if($sourcetypeid != 2)
+if($sourcetypeid == 1)
 {
 	print '<td class="liste_titre center maxwidthsearch">';
 	print '</td>';
@@ -252,20 +256,24 @@ print_liste_field_titre('Référence', $_SERVER["PHP_SELF"], "s.ref", "", $param
 if($sourcetypeid == 2)
 {
 	print_liste_field_titre('Contenu du don', $_SERVER["PHP_SELF"], "", "", $param, "", $sortfield, $sortorder);
+	$intitule = "Date du Don";
 }
 elseif($sourcetypeid == 3)
 {
 	print_liste_field_titre('Contenu de l\'emprunt', $_SERVER["PHP_SELF"], "", "", $param, "", $sortfield, $sortorder);
+	$intitule = "Date de l'emprunt";
 }
 else
 {
 	print_liste_field_titre('Contenu de la facture', $_SERVER["PHP_SELF"], "s.libelle", "", $param, "", $sortfield, $sortorder);
 	print_liste_field_titre('Tiers', $_SERVER["PHP_SELF"], "s.fk_soc", "", $param, "", $sortfield, $sortorder);
 	print_liste_field_titre('Montant', $_SERVER["PHP_SELF"], "s.total_ttc", "", $param, "", $sortfield, $sortorder); // A CHANGER (total_ttc pas le meme champs sur les tables recus fiscaux et emprunts)
+	$intitule = "Date de la facture";
 }
-print_liste_field_titre('Date de création', $_SERVER["PHP_SELF"], "s.datec", "", $param, "", $sortfield, $sortorder);
+print_liste_field_titre($intitule, $_SERVER["PHP_SELF"], "s.datec", "", $param, "", $sortfield, $sortorder);
 print '<td class="center">Gérer</td>';
 print '<td class="nowrap"></td>';
+
 
 // Draft MyObject
 if ($conf->materiel->enabled == 1)
@@ -291,24 +299,27 @@ if ($conf->materiel->enabled == 1)
     			print '<td class="tdoverflowmax100">';
 				print $source->source_reference_object->getNomUrl(1);
     			print "</td>\n";
-
 				print '<td class="tdoverflowmax300">';
 				if($sourcetypeid == 2)
 				{
 					$detail = "SELECT * FROM ".MAIN_DB_PREFIX."recu_fiscal_det WHERE fk_recu_fiscal = ".$obj->rowid;
+				}
+				elseif($sourcetypeid == 3)
+				{
+					$detail = "SELECT * FROM ".MAIN_DB_PREFIX."emprunt_det WHERE fk_emprunt = ".$obj->rowid;
 				}
 				else
 				{
 					$detail = "SELECT * FROM ".MAIN_DB_PREFIX."facture_fourn_det WHERE fk_facture_fourn = ".$obj->rowid;
 				}
 				$resqlDetail = $db->query($detail);
-					
 				foreach($resqlDetail as $value)
 				{
 					print '- '.$value['description'].' (x'.$value['qty'].')'.'<br>';
 				}
     			print "</td>\n";
-				if($sourcetypeid != 2)
+				
+				if($sourcetypeid == 1)
 				{
 				print '<td class="tdoverflowmax100">';
 				$societe = "SELECT * FROM ".MAIN_DB_PREFIX."societe WHERE rowid = ".$source->source_reference_object->fk_soc;
@@ -322,7 +333,7 @@ if ($conf->materiel->enabled == 1)
     			print "</td>\n";
 				}
     			print '<td class="tdoverflowmax100">';
-				print date('d/m/Y', $source->source_reference_object->datec);
+				print date('d/m/Y', ($sourcetypeid == 1 ? $source->source_reference_object->date : ($sourcetypeid == 2 ? $source->source_reference_object->date_recu_fiscal : $source->source_reference_object->date_emprunt)));
     			print "</td>\n";
 				
 

@@ -343,7 +343,6 @@ elseif ($action == 'setsent' && $recufiscal->fk_statut == RecuFiscal::STATUS_VAL
     $formconfirm = $form->formconfirm($_SERVER["PHP_SELF"].'?id='.$recufiscal->id, 'Classer "Envoyé"', $text, 'confirm_setsent', '', 1, 1);
 }  
 
-
 // Actions to send emails
 $triggersendname = '';
 $paramname = 'id';
@@ -560,6 +559,7 @@ elseif ($recufiscal->id > 0) {
 	/*
 	 * Generated documents
 	 */
+
 	$filename = dol_sanitizeFileName($recufiscal->ref);
 	$filedir = $conf->recufiscal->dir_output.'/'.$filename;
 	$urlsource = $_SERVER['PHP_SELF'].'?rowid='.$recufiscal->id;
@@ -574,7 +574,6 @@ elseif ($recufiscal->id > 0) {
 	// $somethingshown = $form->showLinkedObjectBlock($object, $linktoelem);
 	print '</div><div class="fichehalfright">';
 	print '</div></div>';
-
 
     /* ************************************************************************** */
     /*                                                                            */

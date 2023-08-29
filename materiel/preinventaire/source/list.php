@@ -229,7 +229,7 @@ print '<tr class="liste_titre">';
 print_liste_field_titre('Réf.', $_SERVER["PHP_SELF"], "s.ref", "", $param, "", $sortfield, $sortorder);
 print_liste_field_titre('Contenu', $_SERVER["PHP_SELF"], "s.ref", "", $param, "", $sortfield, $sortorder);
 print_liste_field_titre('Type de source', $_SERVER["PHP_SELF"], "s.fk_type_source", "", $param, 'align="center"', $sortfield, $sortorder);
-print_liste_field_titre('Date de création.', $_SERVER["PHP_SELF"], "s.datec", "", $param, "", $sortfield, $sortorder);
+print_liste_field_titre('Date effective', $_SERVER["PHP_SELF"], "s.datec", "", $param, "", $sortfield, $sortorder);
 print_liste_field_titre('Montant indiqué', $_SERVER["PHP_SELF"], "s.total_ttc", "", $param, "", $sortfield, $sortorder); // A CHANGER (total_ttc pas le meme champs sur les tables recus fiscaux et emprunts)
 print '<td>Valeur cumulée</td>';
 print '<td class="center">État</td>';
@@ -274,6 +274,10 @@ if ($conf->materiel->enabled == 1)
 				{
 					$detail = "SELECT * FROM ".MAIN_DB_PREFIX."recu_fiscal_det WHERE fk_recu_fiscal = ".$obj->fk_origine;
 				}
+				elseif($obj->fk_type_source == 3)
+				{
+					$detail = "SELECT * FROM ".MAIN_DB_PREFIX."emprunt_det WHERE fk_emprunt = ".$obj->fk_origine;
+				}
 				else
 				{
 					$detail = "SELECT * FROM ".MAIN_DB_PREFIX."facture_fourn_det WHERE fk_facture_fourn = ".$obj->fk_origine;
@@ -292,9 +296,9 @@ if ($conf->materiel->enabled == 1)
 				print $source->source_reference_type;
 				print '</span>';
     			print "</td>\n";
-                
     			print '<td class="tdoverflowmax200">';
-				print date('d/m/Y', $source->source_reference_object->datec);
+				print date('d/m/Y', ($source->source_reference_type == 'Facture' ? $source->source_reference_object->date : ($source->source_reference_type == 'Reçu Fiscal' ? $source->source_reference_object->date_recu_fiscal : $source->source_reference_object->date_emprunt)));
+
     			print "</td>\n";
                 
                 print '<td class="tdoverflowmax200">';

@@ -59,6 +59,7 @@ abstract class ModeleMateriel extends CommonDocGenerator
 		include_once DOL_DOCUMENT_ROOT.'/core/lib/functions2.lib.php';
 		$list = getListOfModels($db, $type, $maxfilenamelength);
 
+	
 		return $list;
 	}
 }

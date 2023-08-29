@@ -748,9 +748,9 @@ while ($i < $imaxinloop) {
 				} elseif ($key == 'rowid') {
 					print $object->showOutputField($val, $key, $object->id, '');
 				}  elseif ($key == 'ref') {
-					print $object->getNomUrl(0);
+					print $object->getNomUrl(1);
 				} elseif ($key == 'montant') {
-					print $object->id;
+					print price($object->montant, 1, '', 0, -1, -1, $conf->currency);
 				}
 				else {
 					print $object->showOutputField($val, $key, $object->$key, '');

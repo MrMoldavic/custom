@@ -61,7 +61,7 @@ class Emprunteur extends CommonObject
 	/**
 	 * @var string String with name of icon for emprunteur. Must be a 'fa-xxx' fontawesome code (or 'fa-xxx_fa_color_size') or 'emprunteur@materiel' if picto is file 'img/object_emprunteur.png'.
 	 */
-	public $picto = 'fa-file';
+	public $picto = 'donateur';
 
 
 	const STATUS_DRAFT = 0;
@@ -759,7 +759,8 @@ class Emprunteur extends CommonObject
 
 		if (empty($this->showphoto_on_popup)) {
 			if ($withpicto) {
-				$result .= img_object(($notooltip ? '' : $label), ($this->picto ? $this->picto : 'generic'), ($notooltip ? (($withpicto != 2) ? 'class="paddingright"' : '') : 'class="'.(($withpicto != 2) ? 'paddingright ' : '').'classfortooltip"'), 0, 0, $notooltip ? 0 : 1);
+				//$result .= img_object(($notooltip ? '' : $label), ($this->picto ? $this->picto : 'generic'), ($notooltip ? (($withpicto != 2) ? 'class="paddingright"' : '') : 'class="'.(($withpicto != 2) ? 'paddingright ' : '').'classfortooltip"'), 0, 0, $notooltip ? 0 : 1);
+				$result .= talm_img_object(($notooltip ? '' : $label), 'donateur', ($notooltip ? 'class="paddingright"'.$style : 'class="paddingright classfortooltip"'.$style), 0, 0, $notooltip ? 0 : 1);
 			}
 		} else {
 			if ($withpicto) {
@@ -787,7 +788,7 @@ class Emprunteur extends CommonObject
 		}
 
 		if ($withpicto != 2) {
-			$result .= $this->nom;
+			$result .= $this->prenom.' '.$this->nom;
 		}
 
 		$result .= $linkend;

@@ -739,6 +739,7 @@ Class RecuFiscal extends CommonObject
 			dol_syslog(__METHOD__.": passing iconPDF parameter is deprecated", LOG_WARNING);
 		}
    
+        
 		global $langs, $conf, $user, $hookmanager;
 		global $form;
 		$reshook = 0;
@@ -816,7 +817,7 @@ Class RecuFiscal extends CommonObject
 			$modellist = array();
             include_once DOL_DOCUMENT_ROOT.'/custom/materiel/modules_materiel.php';
             $modellist = ModeleMateriel::liste_modeles($this->db);
-			
+
 			// Set headershown to avoid to have table opened a second time later
 			$headershown = 1;
 			if (empty($buttonlabel)) {
@@ -927,6 +928,7 @@ Class RecuFiscal extends CommonObject
 				$out .= '<div class="div-table-responsive-no-min">';
 				$out .= '<table class="noborder centpercent" id="'.$modulepart.'_table">'."\n";
 			}
+
 			// Loop on each file found
 			if (is_array($file_list)) {
 				// Defined relative dir to DOL_DATA_ROOT
@@ -939,12 +941,12 @@ Class RecuFiscal extends CommonObject
 				// Get list of files stored into database for same relative directory
 				if ($relativedir) {
 					completeFileArrayWithDatabaseInfo($file_list, $relativedir);
-					//var_dump($sortfield.' - '.$sortorder);
 					if (!empty($sortfield) && !empty($sortorder)) {	// If $sortfield is for example 'position_name', we will sort on the property 'position_name' (that is concat of position+name)
 						$file_list = dol_sort_array($file_list, $sortfield, $sortorder);
 					}
 				}
 				foreach ($file_list as $file) {
+                 
 					// Define relative path for download link (depends on module)
 					$relativepath = $file["name"]; // Cas general
 					$out .= '<tr class="oddeven">';

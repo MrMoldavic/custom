@@ -101,7 +101,7 @@ elseif ($action == 'confirm_import' && $confirm == 'yes')
         {
             $description = $line->description;
 
-            if ($source->source_type_id == 2)
+            if ($source->source_type_id == 2 || $source->source_type_id == 3)
             {
                 $valeur = intval($line->valeur);
             }
@@ -239,7 +239,8 @@ if ($id > 0) {
     print '<tr><td class="titlefield">';
     print "Création";
     print '</td><td colspan="3">';
-    print date('d/m/Y', $source->source_reference_object->datec);
+    print date('d/m/Y', ($source->source_reference_type == 'Facture' ? $source->source_reference_object->date : ($source->source_reference_type == 'Reçu Fiscal' ? $source->source_reference_object->date_recu_fiscal : $source->source_reference_object->date_emprunt)));
+
 
     print '</td></tr>';
     print '</table>';
@@ -286,6 +287,11 @@ if ($id > 0) {
         print '<td>Contenu du don</td>';
         $detail = "SELECT * FROM ".MAIN_DB_PREFIX."recu_fiscal_det WHERE fk_recu_fiscal = ".$source->source_reference_object->id;
     }
+    elseif($source->source_reference_object->table_element == "emprunt")
+    {
+        print '<td>Contenu de la facture</td>';
+        $detail = "SELECT * FROM ".MAIN_DB_PREFIX."emprunt_det WHERE fk_emprunt = ".$source->source_reference_object->id;
+    }
     else
     {
         print '<td>Contenu de la facture</td>';
@@ -300,7 +306,7 @@ if ($id > 0) {
     print '<td>';
     foreach($resqlDetail as $value)
     {
-        print '- '.$value['description'].' (x'.$value['qty'].') <br>( Valeur unitaire : '.($source->source_type_id == 2 ? round($value['valeur']) : round($value['pu_ttc'])).'€ / Valeur totale : '.($source->source_type_id == 2 ? round($value['valeur'])*$value['qty'] : round($value['total_ttc'])).'€)<br><br>';
+        print '- '.$value['description'].' (x'.$value['qty'].') <br>( Valeur unitaire : '.($source->source_type_id == 2 || $source->source_type_id == 3 ? round($value['valeur']) : round($value['pu_ttc'])).'€ / Valeur totale : '.($source->source_type_id == 2 || $source->source_type_id == 3 ? round($value['valeur'])*$value['qty'] : round($value['total_ttc'])).'€)<br><br>';
     }
     print '</td>';
 

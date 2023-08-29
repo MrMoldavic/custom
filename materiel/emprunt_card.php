@@ -81,11 +81,14 @@ if (!$res) {
 	die("Include of main fails");
 }
 
-require_once DOL_DOCUMENT_ROOT.'/custom/materiel/class/recufiscal.class.php';
+require_once DOL_DOCUMENT_ROOT.'/custom/materiel/class/emprunt.class.php';
 require_once DOL_DOCUMENT_ROOT.'/custom/materiel/class/empruntLine.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formcompany.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formfile.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formprojet.class.php';
+require_once DOL_DOCUMENT_ROOT.'/custom/materiel/core/lib/functions.lib.php';
+require_once DOL_DOCUMENT_ROOT.'/core/lib/functions.lib.php';
+
 dol_include_once('/materiel/class/emprunt.class.php');
 dol_include_once('/materiel/lib/materiel_emprunt.lib.php');
 
@@ -100,7 +103,10 @@ $lineid   = GETPOST('lineid', 'int');
 $action = GETPOST('action', 'aZ09');
 $confirm = GETPOST('confirm', 'alpha');
 $cancel = GETPOST('cancel', 'aZ09');
-$emprunteur = GETPOST('emprunteur', 'int');
+$emprunteur = GETPOST('fk_emprunteur', 'int');
+$date_emprunt = GETPOST('date_emprunt', 'alpha');
+$notes = GETPOST('notes', 'alpha');
+
 $contextpage = GETPOST('contextpage', 'aZ') ? GETPOST('contextpage', 'aZ') : str_replace('_', '', basename(dirname(__FILE__)).basename(__FILE__, '.php')); // To manage different context of search
 $backtopage = GETPOST('backtopage', 'alpha');
 $backtopageforcancel = GETPOST('backtopageforcancel', 'alpha');
@@ -187,53 +193,9 @@ if ($action == 'addline' && $object->status == Emprunt::STATUS_DRAFT)
         }
     }
 }
-elseif ($action == 'add')
+elseif ($action == 'confirm_editLines' || $action == 'confirm_valid' && $confirm == 'yes')
 {
-    if (empty($donateurs) || $donateurs == '-1')
-    {
-        setEventMessages($langs->trans('ErrorFieldRequired', 'Donateur'), null, 'errors');
-        $action = "create";
-        $error++;
-    }
-    if (!array_key_exists($type, getTypeArray()))
-    {
-        setEventMessages('Option invalide pour le champs "Type"', null, 'errors');
-        $action = "create";
-        $error++;
-    }
-	if (!$error) {
-		$recufiscal->fk_donateur = $donateurs;
-		$recufiscal->fk_type = $type;
-		$recufiscal->notes = $notes;
-        $recufiscal->date_recu_fiscal = $date_recu_fiscal;
-
-		if (!$recufiscal->create($user)) {
-			setEventMessages('Une erreur est survenue lors de la création du reçu fiscal : '.$recufiscal->error, null, 'errors');
-			$action = 'create';
-		} else {
-			setEventMessages('Reçu fiscal créé avec succès', null);
-			header('Location: '.$_SERVER["PHP_SELF"].'?id='.$recufiscal->id);
-			exit;
-		}
-	}
-}
-elseif ($action == 'confirm_valid' && $confirm == 'yes')
-{
-    $result = $object->validate();
-    if (!$result)
-    {
-        setEventMessages('Une erreur est survenue lors de la validation du reçu fiscal.', null, 'errors');
-    }
-    else
-    {
-        setEventMessages('Emprunt validé avec succès !', null);
-        header('Location: '.DOL_URL_ROOT.'/custom/materiel/emprunt_card.php?id='.$object->id);
-        exit;
-    }
-}
-elseif ($action == 'confirm_editLines' && $confirm == 'yes')
-{
-    $result = $recufiscal->setStatus(RecuFiscal::STATUS_DRAFT);
+	$result = ($action == 'confirm_editLines' ? $object->setStatus(Emprunt::STATUS_DRAFT) : $object->setStatus(Emprunt::STATUS_VALIDATED));	
     if (!$result)
     {
         setEventMessages('Une erreur est survenue lors de la modification du statut du reçu fiscal', null, 'errors');
@@ -241,98 +203,45 @@ elseif ($action == 'confirm_editLines' && $confirm == 'yes')
     else
     {
         setEventMessages('Statut modifié avec succès', null);
-        header('Location: '.DOL_URL_ROOT.'/custom/recufiscal/card.php?id='.$recufiscal->id);
+        header('Location: '.DOL_URL_ROOT.'/custom/materiel/emprunt_card.php?id='.$object->id);
         exit;
     }
 }
-elseif ($action == 'confirm_edit' && $confirm == 'yes') $action == "edit";
 
 //update a product line
-elseif ($action == 'updateline' && $usercancreate && !$cancel)
+elseif ($action == 'updateline' && $permissiontoadd && !$cancel)
 {
-    $result = $recufiscal->updateLine($lineid, $description, $valeur, $qty);
+   $result = $object->updateLine($lineid, $description, $valeur, $qty);
+
+
     if ($result) {
         setEventMessages('Ligne de produit mise à jour' , null);
     }
     else {
-        setEventMessages('Une erreur s\'est produite : '.$recufiscal->error , null, 'errors');
+        setEventMessages('Une erreur s\'est produite : '.$object->error , null, 'errors');
     }
-    header('Location: '.$_SERVER["PHP_SELF"].'?id='.$recufiscal->id);
+    header('Location: '.$_SERVER["PHP_SELF"].'?id='.$object->id);
     exit;
 }
-//update a product line
-elseif ($action == 'confirm_delete' && $usercancreate && $confirm == 'yes')
-{
-    $result = $recufiscal->delete();
-    if ($result) {
-        setEventMessages('Reçu fiscal supprimé avec succès' , null);
-        header('Location: /custom/recufiscal/list.php');
-        exit;
-    }
-    else {
-        setEventMessages('Une erreur s\'est produite : '.$recufiscal->error , null, 'errors');
-        $action = 'view';
-    }
-}
 $formconfirm = '';
-if ($action == 'ask_deleteline')
+if ($action == 'ask_deletelineeee')
 {
-    $formconfirm = $form->formconfirm($_SERVER["PHP_SELF"].'?id='.$recufiscal->id.'&lineid='.$lineid, 'Suppression d\'une ligne de produit', 'Êtes-vous sûr de vouloir supprimer cette ligne de produit ?', 'confirm_deleteline', '', 0, 1);
+	$formconfirm = $form->formconfirm($_SERVER["PHP_SELF"].'?id='.$object->id.'&lineid='.$lineid, 'Suppression d\'une ligne de produit', 'Êtes-vous sûr de vouloir supprimer cette ligne de produit ?', 'confirm_deleteline', '', 0, 1);
 }	
 // Remove a product line
-elseif ($action == 'confirm_deleteline' && $confirm == 'yes' && $usercancreate && $recufiscal->fk_statut == RecuFiscal::STATUS_DRAFT)
+
+elseif ($action == 'ask_deleteline' && $permissiontoadd && $object->fk_statut == Emprunt::STATUS_DRAFT)
 {
-    $result = $recufiscal->deleteLine($lineid);
+    $result = $object->deleteLine($lineid);
     if ($result)
     {
         setEventMessages('Ligne de produit supprimée' , null);
-        header('Location: '.$_SERVER["PHP_SELF"].'?id='.$recufiscal->id);
+        header('Location: '.$_SERVER["PHP_SELF"].'?id='.$object->id);
         exit;
     } else {
-        setEventMessages('Erreur de suppression de la ligne de produit : '.$recufiscal->error, null, 'errors');
+        setEventMessages('Erreur de suppression de la ligne de produit : '.$object->error, null, 'errors');
     }
 }
-elseif ($action == 'valid' && $object->status == Emprunt::STATUS_DRAFT)
-{
-    $text = "Êtes-vous sûr de vouloir valider le reçu fiscal sous la référence <b>{$recufiscal->ref}</b> ?";
-    $formconfirm = $form->formconfirm($_SERVER["PHP_SELF"].'?id='.$emprunt->id, 'Valider l\'emprunt', $text, 'confirm_valid', '', 1, 1);
-}    
-elseif ($action == 'editLines' && $recufiscal->fk_statut != RecuFiscal::STATUS_DRAFT)
-{
-    $text = "Êtes-vous sûr de vouloir repasser le reçu fiscal <b>{$recufiscal->ref}</b> au statut de brouillon ?";
-    $formconfirm = $form->formconfirm($_SERVER["PHP_SELF"].'?id='.$recufiscal->id, 'Modifier le reçu fiscal', $text, 'confirm_editLines', '', 1, 1);
-}    
-elseif ($action == 'edit' && $recufiscal->fk_statut != RecuFiscal::STATUS_DRAFT)
-{
-    $text = "Êtes-vous sûr de vouloir repasser le reçu fiscal <b>{$recufiscal->ref}</b> au statut de brouillon ?";
-    $formconfirm = $form->formconfirm($_SERVER["PHP_SELF"].'?id='.$recufiscal->id, 'Modifier le reçu fiscal', $text, 'confirm_edit', '', 1, 1);
-}  
-elseif ($action == 'setsent' && $recufiscal->fk_statut == RecuFiscal::STATUS_VALIDATED)
-{
-    $text = "Êtes-vous sûr de vouloir modifier le statut de ce reçu fiscal ?";
-    $formconfirm = $form->formconfirm($_SERVER["PHP_SELF"].'?id='.$recufiscal->id, 'Classer "Envoyé"', $text, 'confirm_setsent', '', 1, 1);
-}  
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 $parameters = array();
@@ -400,20 +309,6 @@ $title = $langs->trans("Emprunt");
 $help_url = '';
 llxHeader('', $title, $help_url);
 
-// Example : Adding jquery code
-// print '<script type="text/javascript">
-// jQuery(document).ready(function() {
-// 	function init_myfunc()
-// 	{
-// 		jQuery("#myid").removeAttr(\'disabled\');
-// 		jQuery("#myid").attr(\'disabled\',\'disabled\');
-// 	}
-// 	init_myfunc();
-// 	jQuery("#mybutton").click(function() {
-// 		init_myfunc();
-// 	});
-// });
-// </script>';
 
 
 // Part to create
@@ -423,7 +318,7 @@ if ($action == 'create') {
 		exit;
 	}
 
-	print load_fiche_titre($langs->trans("NewObject", $langs->transnoentitiesnoconv("Emprunt")), '', 'object_'.$object->picto);
+	print load_fiche_titre($langs->trans("NewObject", $langs->transnoentitiesnoconv("Emprunt")), '', $object->picto);
 
 	print '<form method="POST" action="'.$_SERVER["PHP_SELF"].'">';
 	print '<input type="hidden" name="token" value="'.newToken().'">';
@@ -444,6 +339,7 @@ if ($action == 'create') {
 
 	// Common attributes
 	include DOL_DOCUMENT_ROOT.'/core/tpl/commonfields_add.tpl.php';
+	
 
 	// Other attributes
 	include DOL_DOCUMENT_ROOT.'/core/tpl/extrafields_add.tpl.php';
@@ -609,7 +505,6 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 	* Lines
 	*/
 
-	if ($object->status != 4) {
 		// Show object lines
 		print '<form name="addproduct" id="addproduct" action="'.$_SERVER["PHP_SELF"].'?id='.$object->id.(($action != 'editline') ? '#addline' : '#line_'.GETPOST('lineid')).'" method="POST">';
 		print '<input type="hidden" name="token" value="'.newToken().'">';
@@ -627,7 +522,6 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 		print '<td style="width: 80px"></td>'; // Empty column for edit and remove button
 		print '</tr>';
 	
-
 		// Show object lines
 		// if (!empty($object->lines)){
 		
@@ -637,7 +531,7 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 
 		// Form to add new line
 		// If the state is draft, show the form to add a new line
-		if ($object->statut == Emprunt::STATUS_DRAFT)
+		if ($object->status == Emprunt::STATUS_DRAFT)
 		{
 			
 			if ($action != 'editline')
@@ -649,126 +543,43 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 		print '</form>';
 
 		dol_fiche_end();
-	}
 
 	// Buttons for actions
 
-	// if ($action != 'presend' && $action != 'editline') {
-	// 	print '<div class="tabsAction">'."\n";
-	// 	$parameters = array();
-	// 	$reshook = $hookmanager->executeHooks('addMoreActionsButtons', $parameters, $object, $action); // Note that $action and $object may have been modified by hook
-	// 	if ($reshook < 0) {
-	// 		setEventMessages($hookmanager->error, $hookmanager->errors, 'errors');
-	// 	}
+	if ($action != 'presend' && $action != 'editline') {
+		print '<div class="tabsAction">'."\n";
+		$parameters = array();
+		$reshook = $hookmanager->executeHooks('addMoreActionsButtons', $parameters, $object, $action); // Note that $action and $object may have been modified by hook
+		if ($reshook < 0) {
+			setEventMessages($hookmanager->error, $hookmanager->errors, 'errors');
+		}
 
-	// 	if (empty($reshook)) {
-	// 		// Send
-	// 		if (empty($user->socid)) {
-	// 			print dolGetButtonAction($langs->trans('SendMail'), '', 'default', $_SERVER["PHP_SELF"].'?id='.$object->id.'&action=presend&mode=init&token='.newToken().'#formmailbeforetitle');
-	// 		}
+		if (empty($reshook)) {
+			// Send
+			if (empty($user->socid)) {
+				print dolGetButtonAction($langs->trans('SendMail'), '', 'default', $_SERVER["PHP_SELF"].'?id='.$object->id.'&action=presend&mode=init&token='.newToken().'#formmailbeforetitle');
+			}
 
-	// 		// Back to draft
-	// 		if ($object->status == $object::STATUS_VALIDATED) {
-	// 			print dolGetButtonAction($langs->trans('SetToDraft'), '', 'default', $_SERVER["PHP_SELF"].'?id='.$object->id.'&action=confirm_setdraft&confirm=yes&token='.newToken(), '', $permissiontoadd);
-	// 		}
+			// Back to draft
+			if ($object->status == $object::STATUS_VALIDATED ) {
+				print dolGetButtonAction($langs->trans('SetToDraft'), '', 'default', $_SERVER["PHP_SELF"].'?id='.$object->id.'&action=confirm_editLines&confirm=yes&token='.newToken(), '', $permissiontoadd);
+			}
 
-	// 		print dolGetButtonAction($langs->trans('Modify'), '', 'default', $_SERVER["PHP_SELF"].'?id='.$object->id.'&action=edit&token='.newToken(), '', $permissiontoadd);
+			if ($object->status == $object::STATUS_DRAFT && $num > 0) {
+				print dolGetButtonAction($langs->trans('Validate'), '', 'default', $_SERVER["PHP_SELF"].'?id='.$object->id.'&action=confirm_valid&confirm=yes&token='.newToken(), '', $permissiontoadd);
+			}
 
-	// 		// Clone
-	// 		print dolGetButtonAction($langs->trans('ToClone'), '', 'default', $_SERVER['PHP_SELF'].'?id='.$object->id.(!empty($object->socid)?'&socid='.$object->socid:'').'&action=clone&token='.newToken(), '', $permissiontoadd);
+			print dolGetButtonAction($langs->trans('Modify'), '', 'default', $_SERVER["PHP_SELF"].'?id='.$object->id.'&action=edit&token='.newToken(), '', $permissiontoadd);
 
-	// 		// Delete (need delete permission, or if draft, just need create/modify permission)
-	// 		print dolGetButtonAction($langs->trans('Delete'), '', 'delete', $_SERVER['PHP_SELF'].'?id='.$object->id.'&action=delete&token='.newToken(), '', $permissiontodelete || ($object->status == $object::STATUS_DRAFT && $permissiontoadd));
-	// 	}
-	// 	print '</div>'."\n";
-	// }
+			// Clone
+			//print dolGetButtonAction($langs->trans('ToClone'), '', 'default', $_SERVER['PHP_SELF'].'?id='.$object->id.(!empty($object->socid)?'&socid='.$object->socid:'').'&action=clone&token='.newToken(), '', $permissiontoadd);
 
-
-	// Select mail models is same action as presend
-	if (GETPOST('modelselected')) {
-		$action = 'presend';
+			// Delete (need delete permission, or if draft, just need create/modify permission)
+			print dolGetButtonAction($langs->trans('Delete'), '', 'delete', $_SERVER['PHP_SELF'].'?id='.$object->id.'&action=delete&token='.newToken(), '', $permissiontodelete || ($object->status == $object::STATUS_DRAFT && $permissiontoadd));
+		}
+		print '</div>'."\n";
 	}
 
-	// if ($action != 'presend') {
-	// 	print '<div class="fichecenter"><div class="fichehalfleft">';
-	// 	print '<a name="builddoc"></a>'; // ancre
-
-	// 	$includedocgeneration = 1;
-
-	// 	// Documents
-	// 	if ($includedocgeneration) {
-	// 		$objref = dol_sanitizeFileName($object->ref);
-	// 		$relativepath = $objref.'/'.$objref.'.pdf';
-	// 		$filedir = $conf->materiel->dir_output.'/'.$object->element.'/'.$objref;
-	// 		$urlsource = $_SERVER["PHP_SELF"]."?id=".$object->id;
-	// 		$genallowed = $permissiontoread; // If you can read, you can build the PDF to read content
-	// 		$delallowed = $permissiontoadd; // If you can create/edit, you can remove a file on card
-	// 		print $formfile->showdocuments('materiel:Emprunt', $object->element.'/'.$objref, $filedir, $urlsource, $genallowed, $delallowed, $object->model_pdf, 1, 0, 0, 28, 0, '', '', '', $langs->defaultlang);
-	// 	}
-
-	// 	// Show links to link elements
-	// 	$linktoelem = $form->showLinkToObjectBlock($object, null, array('emprunt'));
-	// 	$somethingshown = $form->showLinkedObjectBlock($object, $linktoelem);
-
-
-	// 	print '</div><div class="fichehalfright">';
-
-	// 	$MAXEVENT = 10;
-
-	// 	$morehtmlcenter = dolGetButtonTitle($langs->trans('SeeAll'), '', 'fa fa-bars imgforviewmode', dol_buildpath('/materiel/emprunt_agenda.php', 1).'?id='.$object->id);
-
-	// 	// List of actions on element
-	// 	include_once DOL_DOCUMENT_ROOT.'/core/class/html.formactions.class.php';
-	// 	$formactions = new FormActions($db);
-	// 	$somethingshown = $formactions->showactions($object, $object->element.'@'.$object->module, (is_object($object->thirdparty) ? $object->thirdparty->id : 0), 1, '', $MAXEVENT, '', $morehtmlcenter);
-
-	// 	print '</div></div>';
-	// }
-
-	//Select mail models is same action as presend
-	if (GETPOST('modelselected')) {
-		$action = 'presend';
-	}
-	// Presend form
-	if ($action != 'presend')
-    {
-        print "\n".'<div class="tabsAction">'."\n";
-        
-        if (empty($reshook)) {
-        
-            if ($permissiontoadd && $object->status == Emprunt::STATUS_VALIDATED) {
-                
-                print '<a class="butAction" href="'.$_SERVER["PHP_SELF"].'?action=presend&amp;id='.$object->id.'">Envoyer eMail</a>';
-                print '<a class="butAction" href="'.$_SERVER["PHP_SELF"].'?action=setsent&amp;id='.$object->id.'">Classer envoyé</a>';
-            }
-
-            if ($permissiontodelete) {
-				print '<a class="butAction" href="'.$_SERVER["PHP_SELF"].'?action=edit&amp;id='.$object->id.'">'.$langs->trans("Modifie l'emprunt").'</a>';
-                //print '<a class="butAction" href="'.$_SERVER["PHP_SELF"].'?action=editLines&amp;id='.$object->id.'">'.$langs->trans("Modifier le contenu de l'emprunt").'</a>';
-				// Validate button
-				if (!empty($object->lines) && $object->status == Emprunt::STATUS_DRAFT) print '<a class="butAction" href="/custom/materiel/emprunt_card.php?id='.$object->id.'&action=valid">Valider</a>';
-			 
-				
-				// Delete button
-				$text = 'Êtes-vous sûr de vouloir supprimer l\'emprunt? <b>'.$object->ref.'</b> ?';
-				print $form->formconfirm("card.php?id=".$object->id, 'Supprimer l\'emprunt', $text, "confirm_delete", '', 0, "action-delete");
-				print '<span id="action-delete" class="butActionDelete">Supprimer</span>';
-            }
-        }
-        
-        print "\n</div>\n";
-    }
-    print '<div class="fichecenter"><div class="fichehalfleft">';
-
-    $object = $recufiscal;
-    // Presend form
-    $modelmail = 'SendingRecuFiscalToDnor';
-    $defaulttopic = $conf->global->RECUFISCAL_MAIL_DEFAULT_TOPIC;
-    $diroutput = $conf->recufiscal->dir_output;
-    $autocopy = '';
-    $trackid = 'rf'.$object->id;
-
-    include DOL_DOCUMENT_ROOT.'/core/tpl/card_presend.tpl.php';
 }
 
 

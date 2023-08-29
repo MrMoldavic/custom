@@ -32,6 +32,7 @@ error_reporting(E_ALL);
 
 // Put here all includes required by your class file
 require_once DOL_DOCUMENT_ROOT.'/core/class/commonobject.class.php';
+require_once DOL_DOCUMENT_ROOT.'/custom/materiel/core/lib/functions.lib.php';
 // require_once DOL_DOCUMENT_ROOT.'/custom/materiel/class/empruntLine.class.php';
 //require_once DOL_DOCUMENT_ROOT . '/societe/class/societe.class.php';
 //require_once DOL_DOCUMENT_ROOT . '/product/class/product.class.php';
@@ -70,12 +71,12 @@ class Emprunt extends CommonObject
 	/**
 	 * @var string String with name of icon for emprunt. Must be a 'fa-xxx' fontawesome code (or 'fa-xxx_fa_color_size') or 'emprunt@materiel' if picto is file 'img/object_emprunt.png'.
 	 */
-	public $picto = 'fa-file';
+	public $picto = 'emprunt';
 
 	public $total_ttc;
 
 	const STATUS_DRAFT = 0;
-	const STATUS_VALIDATED = 1;
+	const STATUS_VALIDATED = 4;
 	const STATUS_CANCELED = 9;
 
 
@@ -124,8 +125,8 @@ class Emprunt extends CommonObject
 	public $fields=array(
 		'rowid' => array('type'=>'integer', 'label'=>'TechnicalID', 'enabled'=>'1', 'position'=>1, 'notnull'=>1, 'visible'=>0, 'noteditable'=>'1', 'index'=>1, 'css'=>'left', 'comment'=>"Id"),
 		'ref' => array('type'=>'varchar(128)', 'label'=>'Ref', 'enabled'=>'1', 'position'=>20, 'notnull'=>1, 'visible'=>4, 'noteditable'=>'1', 'index'=>1, 'searchall'=>1, 'showoncombobox'=>'1', 'validate'=>'1', 'comment'=>"Reference of object"),
-		'fk_emprunteur' => array('type'=>'integer:Emprunteur:custom/materiel/class/emprunteur.class.php:1', 'label'=>'Emprunteur', 'enabled'=>'1', 'position'=>30, 'notnull'=>0, 'visible'=>1, 'searchall'=>1, 'help'=>"Personne laissant à disposition son objet à l'association", 'showoncombobox'=>'2', 'validate'=>'1', 'foreignkey'=>'user.rowid'),
-		'montant' => array('type'=>'price', 'label'=>'Montant', 'enabled'=>'1', 'position'=>40, 'notnull'=>0, 'visible'=>2, 'default'=>'null', 'isameasure'=>'1', 'help'=>"Valeur en euro des objets cumulés", 'validate'=>'1',),
+		'fk_emprunteur' => array('type'=>'integer:Emprunteur:custom/materiel/class/emprunteur.class.php:1', 'label'=>'Emprunteur', 'enabled'=>'1', 'position'=>30, 'notnull'=>0, 'visible'=>1, 'searchall'=>1, 'help'=>"Personne laissant à disposition son objet à l'association", 'showoncombobox'=>'2', 'validate'=>'1', 'foreignkey'=>'emprunteur.rowid', 'css'=>'maxwidth200',),
+		'montant' => array('type'=>'price', 'label'=>'Montant', 'enabled'=>'1', 'position'=>40, 'notnull'=>1, 'visible'=>2, 'default'=>0, 'isameasure'=>'1', 'help'=>"Valeur en euro des objets cumulés", 'validate'=>'1',),
 		'date_emprunt' => array('type'=>'date', 'label'=>'Date de l\'emprunt', 'enabled'=>'1', 'position'=>44, 'notnull'=>1, 'visible'=>1,),
 
 		'description' => array('type'=>'text', 'label'=>'Notes', 'enabled'=>'1', 'position'=>45, 'notnull'=>0, 'visible'=>1, 'default'=>'', 'isameasure'=>'1', 'css'=>'maxwidth75imp', 'help'=>"Help text for quantity", 'validate'=>'1',),
@@ -135,7 +136,7 @@ class Emprunt extends CommonObject
 		'tms' => array('type'=>'timestamp', 'label'=>'DateModification', 'enabled'=>'1', 'position'=>501, 'notnull'=>0, 'visible'=>-2,),
 		'fk_user_creat' => array('type'=>'integer:User:user/class/user.class.php', 'label'=>'UserAuthor', 'picto'=>'user', 'enabled'=>'1', 'position'=>510, 'notnull'=>1, 'visible'=>-2, 'foreignkey'=>'user.rowid',),
 		'fk_user_modif' => array('type'=>'integer:User:user/class/user.class.php', 'label'=>'UserModif', 'picto'=>'user', 'enabled'=>'1', 'position'=>511, 'notnull'=>-1, 'visible'=>-2,),
-		'status' => array('type'=>'integer', 'label'=>'Status', 'enabled'=>'1', 'position'=>2000, 'notnull'=>1, 'visible'=>0, 'index'=>1, 'arrayofkeyval'=>array('0'=>'Brouillon', '1'=>'Valid&eacute;', '9'=>'Annul&eacute;'), 'validate'=>'1',),
+		'status' => array('type'=>'integer', 'label'=>'Status', 'enabled'=>'1', 'position'=>2000, 'notnull'=>1, 'visible'=>2, 'index'=>1, 'arrayofkeyval'=>array('0'=>'Brouillon', '1'=>'Valid&eacute;', '9'=>'Annul&eacute;'), 'validate'=>'1',),
 	);
 
 	public $rowid;
@@ -241,12 +242,16 @@ class Emprunt extends CommonObject
 	 */
 	public function create(User $user, $notrigger = false)
 	{
+		$this->montant = 0.00;
 		$resultcreate = $this->createCommon($user, $notrigger);
 
-		$sqlRef = "UPDATE " . MAIN_DB_PREFIX . "emprunt SET ref = 'EMP-" . $resultcreate . "' WHERE rowid=" . $resultcreate;
-		$this->db->query($sqlRef);
+		$emprunteur = "SELECT nom FROM " . MAIN_DB_PREFIX . "emprunteur WHERE rowid = (SELECT fk_emprunteur FROM ".MAIN_DB_PREFIX."emprunt WHERE rowid = ".$resultcreate.")";
+		$resqlEmprunteur = $this->db->query($emprunteur);
+		$objEmprunteur =  $this->db->fetch_object($resqlEmprunteur);
 
-		//$resultvalidate = $this->validate($user, $notrigger);
+		
+		$sqlRef = "UPDATE " . MAIN_DB_PREFIX . "emprunt SET ref = 'EMP-" . $resultcreate . "-".$objEmprunteur->nom."' WHERE rowid=" . $resultcreate;
+		$this->db->query($sqlRef);
 
 		return $resultcreate;
 	}
@@ -305,7 +310,12 @@ class Emprunt extends CommonObject
         $sql .= $qty;
         $sql .= ')';
 
-        $resql = $this->db->query($sql);
+
+		$sqlMontant = "UPDATE " . MAIN_DB_PREFIX . "emprunt SET montant = montant + ".($valeur*$qty)." WHERE rowid=" . $this->id;
+		$this->db->query($sqlMontant);
+
+
+       $resql = $this->db->query($sql);
         if (!$resql) {
             $this->error = "Database Error";
             return 0;
@@ -547,6 +557,52 @@ class Emprunt extends CommonObject
         return 1;
     }
 
+	public function updateLine($lineid, $description, $valeur, $qty)
+    {
+        // Check if the recufiscal is in draft mode
+        if ($this->status != Emprunt::STATUS_DRAFT)
+        {
+            $this->error = 'Le reçu ne peut pas être modifié si il n\'est pas en brouillon';
+            return 0;
+        }
+
+        // Check if the line is indeed associatied with this recufiscal
+        if (!array_key_exists($lineid, $this->lines)) { 
+            // This line doesn't correspond to this recufiscal
+            $this->error = 'Ligne de matériel invalide pour ce reçu fiscal';
+            return 0;
+        } else {
+
+			$line = "SELECT valeur,qty,rowid FROM " . MAIN_DB_PREFIX . "emprunt_det WHERE rowid = ".$lineid;
+			$resqlLine = $this->db->query($line);
+			$objLine =  $this->db->fetch_object($resqlLine);
+
+			$sqlSubMontant = "UPDATE " . MAIN_DB_PREFIX . "emprunt SET montant = montant - ".($objLine->valeur*$objLine->qty)." WHERE rowid=" . $this->id;
+			$this->db->query($sqlSubMontant);
+
+
+			// prendre la valeur actuelle de la ligne, la soustraire au montant existant dans l'emprunt, et remplacer par la nouvelle valeur
+            $sql = "UPDATE ". MAIN_DB_PREFIX ."emprunt_det";
+            $sql .= " SET description = '". $description ."', ";
+            $sql .= "valeur = ". $valeur .", ";
+            $sql .= "qty = ". $qty;
+            $sql .= " WHERE rowid = ". $lineid;
+            $resql = $this->db->query($sql);
+
+
+			$sqlAddMontant = "UPDATE " . MAIN_DB_PREFIX . "emprunt SET montant = montant + ".($valeur*$qty)." WHERE rowid=" . $this->id;
+			$this->db->query($sqlAddMontant);
+
+            if (!$resql) {
+                $this->error = 'Database error';
+                return 0;
+            } else {
+                $this->db->commit();
+                return 1;
+            }
+        }
+    }
+
 	/**
 	 * Load list of objects in memory from the database.
 	 *
@@ -636,7 +692,15 @@ class Emprunt extends CommonObject
 	 */
 	public function update(User $user, $notrigger = false)
 	{
+		$emprunteur = "SELECT nom FROM " . MAIN_DB_PREFIX . "emprunteur WHERE rowid = ".$this->fk_emprunteur;
+		$resqlEmprunteur = $this->db->query($emprunteur);
+		$objEmprunteur =  $this->db->fetch_object($resqlEmprunteur);
+
+
+		$this->ref = 'EMP-'. $this->id . "-".$objEmprunteur->nom;
+
 		return $this->updateCommon($user, $notrigger);
+	
 	}
 
 	/**
@@ -660,15 +724,49 @@ class Emprunt extends CommonObject
 	 *  @param 	bool 	$notrigger  false=launch triggers after, true=disable triggers
 	 *  @return int         		>0 if OK, <0 if KO
 	 */
-	public function deleteLine(User $user, $idline, $notrigger = false)
-	{
-		if ($this->status < 0) {
-			$this->error = 'ErrorDeleteLineNotAllowedByObjectStatus';
-			return -2;
-		}
+	public function deleteLine($id)
+    {
+        // Check if there is no source related to this receipt
+        $sql = "SELECT rowid FROM ".MAIN_DB_PREFIX."source ";
+        $sql .= "WHERE fk_origine = " . $this->id;
+        $sql .= " AND fk_type_source = 3";
+        $resql = $this->db->query($sql);
+        $num = $this->db->num_rows($resql);
+        if ($num > 0)
+        {
+            // A source has been found related to this receipt
+            $this->error = 'Ce reçu fiscal est lié à une source';
+            return 0;
+        }
 
-		return $this->deleteLineCommon($user, $idline, $notrigger);
-	}
+        // Check if the line id corresponds to this receipt
+        if (!array_key_exists($id, $this->lines))
+        {
+            $this->error = "Ligne de produit invalide pour ce reçu fiscal";
+            return 0;
+        }
+
+		$sqlRowDet = "SELECT qty,valeur,rowid FROM ".MAIN_DB_PREFIX."emprunt_det ";
+		$sqlRowDet .= "WHERE rowid = ".$id;
+        $resqlRowDet = $this->db->query($sqlRowDet);
+		$objRowDet =  $this->db->fetch_object($resqlRowDet);
+
+		$sqlMontant = "UPDATE " . MAIN_DB_PREFIX . "emprunt SET montant = montant - ".($objRowDet->valeur*$objRowDet->qty)." WHERE rowid=" . $this->id;
+		$this->db->query($sqlMontant);
+
+        // Delete line from database
+        $sql = "DELETE FROM ".MAIN_DB_PREFIX."emprunt_det ";
+        $sql .= "WHERE rowid = ".$id;
+        $resql = $this->db->query($sql);
+        if (!$resql) return 0;
+        else 
+        {
+            $this->db->commit();
+            return 1;
+        }
+
+
+    }
 
 
 	/**
@@ -742,42 +840,42 @@ class Emprunt extends CommonObject
 			}
 		}
 
-		if (!$error) {
-			$this->oldref = $this->ref;
+		// if (!$error) {
+		// 	$this->oldref = $this->ref;
 
-			// Rename directory if dir was a temporary ref
-			if (preg_match('/^[\(]?PROV/i', $this->ref)) {
-				// Now we rename also files into index
-				$sql = 'UPDATE '.MAIN_DB_PREFIX."ecm_files set filename = CONCAT('".$this->db->escape($this->newref)."', SUBSTR(filename, ".(strlen($this->ref) + 1).")), filepath = 'emprunt/".$this->db->escape($this->newref)."'";
-				$sql .= " WHERE filename LIKE '".$this->db->escape($this->ref)."%' AND filepath = 'emprunt/".$this->db->escape($this->ref)."' and entity = ".$conf->entity;
-				$resql = $this->db->query($sql);
-				if (!$resql) {
-					$error++; $this->error = $this->db->lasterror();
-				}
+		// 	// Rename directory if dir was a temporary ref
+		// 	if (preg_match('/^[\(]?PROV/i', $this->ref)) {
+		// 		// Now we rename also files into index
+		// 		$sql = 'UPDATE '.MAIN_DB_PREFIX."ecm_files set filename = CONCAT('".$this->db->escape($this->newref)."', SUBSTR(filename, ".(strlen($this->ref) + 1).")), filepath = 'emprunt/".$this->db->escape($this->newref)."'";
+		// 		$sql .= " WHERE filename LIKE '".$this->db->escape($this->ref)."%' AND filepath = 'emprunt/".$this->db->escape($this->ref)."' and entity = ".$conf->entity;
+		// 		$resql = $this->db->query($sql);
+		// 		if (!$resql) {
+		// 			$error++; $this->error = $this->db->lasterror();
+		// 		}
 
-				// We rename directory ($this->ref = old ref, $num = new ref) in order not to lose the attachments
-				$oldref = dol_sanitizeFileName($this->ref);
-				$newref = dol_sanitizeFileName($num);
-				$dirsource = $conf->materiel->dir_output.'/emprunt/'.$oldref;
-				$dirdest = $conf->materiel->dir_output.'/emprunt/'.$newref;
-				if (!$error && file_exists($dirsource)) {
-					dol_syslog(get_class($this)."::validate() rename dir ".$dirsource." into ".$dirdest);
+		// 		// We rename directory ($this->ref = old ref, $num = new ref) in order not to lose the attachments
+		// 		$oldref = dol_sanitizeFileName($this->ref);
+		// 		$newref = dol_sanitizeFileName($num);
+		// 		$dirsource = $conf->materiel->dir_output.'/emprunt/'.$oldref;
+		// 		$dirdest = $conf->materiel->dir_output.'/emprunt/'.$newref;
+		// 		if (!$error && file_exists($dirsource)) {
+		// 			dol_syslog(get_class($this)."::validate() rename dir ".$dirsource." into ".$dirdest);
 
-					if (@rename($dirsource, $dirdest)) {
-						dol_syslog("Rename ok");
-						// Rename docs starting with $oldref with $newref
-						$listoffiles = dol_dir_list($conf->materiel->dir_output.'/emprunt/'.$newref, 'files', 1, '^'.preg_quote($oldref, '/'));
-						foreach ($listoffiles as $fileentry) {
-							$dirsource = $fileentry['name'];
-							$dirdest = preg_replace('/^'.preg_quote($oldref, '/').'/', $newref, $dirsource);
-							$dirsource = $fileentry['path'].'/'.$dirsource;
-							$dirdest = $fileentry['path'].'/'.$dirdest;
-							@rename($dirsource, $dirdest);
-						}
-					}
-				}
-			}
-		}
+		// 			if (@rename($dirsource, $dirdest)) {
+		// 				dol_syslog("Rename ok");
+		// 				// Rename docs starting with $oldref with $newref
+		// 				$listoffiles = dol_dir_list($conf->materiel->dir_output.'/emprunt/'.$newref, 'files', 1, '^'.preg_quote($oldref, '/'));
+		// 				foreach ($listoffiles as $fileentry) {
+		// 					$dirsource = $fileentry['name'];
+		// 					$dirdest = preg_replace('/^'.preg_quote($oldref, '/').'/', $newref, $dirsource);
+		// 					$dirsource = $fileentry['path'].'/'.$dirsource;
+		// 					$dirdest = $fileentry['path'].'/'.$dirdest;
+		// 					@rename($dirsource, $dirdest);
+		// 				}
+		// 			}
+		// 		}
+		// 	}
+		// }
 
 		// Set new ref and current status
 		if (!$error) {
@@ -794,6 +892,25 @@ class Emprunt extends CommonObject
 		}
 	}
 
+	public function setStatus($statusid)
+    {
+        $sql = "UPDATE ".MAIN_DB_PREFIX."emprunt ";
+        $sql .= "SET status = {$statusid} ";
+        $sql .= "WHERE rowid = {$this->id}";
+        $resql = $this->db->query($sql);
+        if (!$resql)
+        {
+            $this->error = "Query error";
+            return 0;
+        }
+        else 
+        {
+            $this->db->commit();
+            return 1;
+        }
+    }
+
+
 
 	/**
 	 *	Set draft status
@@ -808,13 +925,6 @@ class Emprunt extends CommonObject
 		if ($this->status <= self::STATUS_DRAFT) {
 			return 0;
 		}
-
-		/*if (! ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->materiel->write))
-		 || (! empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->materiel->materiel_advance->validate))))
-		 {
-		 $this->error='Permission denied';
-		 return -1;
-		 }*/
 
 		return $this->setStatusCommon($user, self::STATUS_DRAFT, $notrigger, 'EMPRUNT_UNVALIDATE');
 	}
@@ -935,7 +1045,8 @@ class Emprunt extends CommonObject
 
 		if (empty($this->showphoto_on_popup)) {
 			if ($withpicto) {
-				$result .= img_object(($notooltip ? '' : $label), ($this->picto ? $this->picto : 'generic'), ($notooltip ? (($withpicto != 2) ? 'class="paddingright"' : '') : 'class="'.(($withpicto != 2) ? 'paddingright ' : '').'classfortooltip"'), 0, 0, $notooltip ? 0 : 1);
+				//$result .= img_object(($notooltip ? '' : $label), ($this->picto ? $this->picto : 'generic'), ($notooltip ? (($withpicto != 2) ? 'class="paddingright"' : '') : 'class="'.(($withpicto != 2) ? 'paddingright ' : '').'classfortooltip"'), 0, 0, $notooltip ? 0 : 1);
+				$result .= talm_img_object(($notooltip ? '' : $label), 'emprunt', ($notooltip ? 'class="paddingright"'.$style : 'class="paddingright classfortooltip"'.$style), 0, 0, $notooltip ? 0 : 1);
 			}
 		} else {
 			if ($withpicto) {
@@ -1018,11 +1129,11 @@ class Emprunt extends CommonObject
 		if (empty($this->labelStatus) || empty($this->labelStatusShort)) {
 			global $langs;
 			//$langs->load("materiel@materiel");
-			$this->labelStatus[self::STATUS_DRAFT] = $langs->transnoentitiesnoconv('Draft');
-			$this->labelStatus[self::STATUS_VALIDATED] = $langs->transnoentitiesnoconv('Enabled');
+			$this->labelStatus[self::STATUS_DRAFT] = $langs->transnoentitiesnoconv('Brouillon');
+			$this->labelStatus[self::STATUS_VALIDATED] = $langs->transnoentitiesnoconv('Validé');
 			$this->labelStatus[self::STATUS_CANCELED] = $langs->transnoentitiesnoconv('Disabled');
-			$this->labelStatusShort[self::STATUS_DRAFT] = $langs->transnoentitiesnoconv('Draft');
-			$this->labelStatusShort[self::STATUS_VALIDATED] = $langs->transnoentitiesnoconv('Enabled');
+			$this->labelStatusShort[self::STATUS_DRAFT] = $langs->transnoentitiesnoconv('Brouillon');
+			$this->labelStatusShort[self::STATUS_VALIDATED] = $langs->transnoentitiesnoconv('Validé');
 			$this->labelStatusShort[self::STATUS_CANCELED] = $langs->transnoentitiesnoconv('Disabled');
 		}
 

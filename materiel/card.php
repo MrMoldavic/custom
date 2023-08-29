@@ -4,6 +4,7 @@
 // ini_set('display_startup_errors', '1');
 // error_reporting(E_ALL);
 
+
 @include "../../main.inc.php";
 
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formfile.class.php';
@@ -42,7 +43,7 @@ if (isset($user->socid) && $user->socid > 0) {
 $id = GETPOST('id', 'int');
 $preinventaire_line_id = GETPOST('preinventaire_line_id', 'alpha'); //id de la ligne dans le preinventaire
 $type_materiel = GETPOST('idtypemateriel', 'alpha'); //id du type de matériel
-$etat = GETPOST('etat', 'alpha'); //etat du matériel (fk)
+$etat = (GETPOST('etat', 'alpha') ? GETPOST('etat', 'alpha') : '9'); //etat du matériel (fk) 9-> Valeur "A definir" dans le dictionnaire
 $fk_etat_etiquette = GETPOST('fk_etat_etiquette', 'alpha'); //etat de l'etiquette (fk)
 $exploitabilite = GETPOST('exploitabilite', 'alpha'); //etat du matériel (fk)
 $precision_type = GETPOST('precision_type', 'alpha'); //id de la marque
@@ -54,7 +55,6 @@ $proprietaire = GETPOST('idproprietaire', 'int'); //id de l'adhérent propriéta
 $origine_materiel = GETPOST('origine_materiel', 'alpha'); //id de l'origine
 
 
-
 $action = (GETPOST('action', 'alpha') ? GETPOST('action', 'alpha') : 'view');
 $cancel = GETPOST('cancel', 'alpha');
 $backtopage = GETPOST('backtopage', 'alpha');
@@ -62,7 +62,7 @@ $confirm = GETPOST('confirm', 'alpha');
 $socid = GETPOST('socid', 'int');
 $duration_value = GETPOST('duration_value', 'int');
 $duration_unit = GETPOST('duration_unit', 'alpha');
-
+ 
 
 $form = new Form($db);
 $formfile = new FormFile($db);
@@ -364,13 +364,13 @@ if ($action == 'create') {
 
 
     // Modèle
-    print '<tr><td class="titlefieldcreate">Modèle</td><td colspan="3"><input name="modele" class="minwidth300 maxwidth400onsmartphone" maxlength="255" value="'.dol_escape_htmltag(GETPOST('marque', 'alphanohtml')).'"></td></tr>';
+    print '<tr><td class="titlefieldcreate">Modèle</td><td colspan="3"><input name="modele" class="minwidth300 maxwidth400onsmartphone" maxlength="255" value="'.dol_escape_htmltag($modele).'"></td></tr>';
 
-
+   
     // État
     print '<tr><td class="titlefieldcreate fieldrequired">État du matériel</td><td colspan="3">';
     $etatarray = $materiel->getEtatDict();
-    print $form->selectarray('etat', $etatarray, GETPOST('etat'), 0, 0, 0, 'style="min-width:200px;"');
+    print $form->selectarray('etat', $etatarray, $etat, 0, 0, 0, 'style="min-width:200px;"');
     print '</td></tr>';
 
     // État étiquette
@@ -418,7 +418,7 @@ if ($action == 'create') {
     }
 
     print '<tr><td classe="titlefieldcreate">Entrepôt</td><td>';
-    print $form->selectarray('fk_entrepot', $salles);
+    print $form->selectarray('fk_entrepot', $salles, $entrepot);
     print ' <a href="'.DOL_URL_ROOT.'/custom/scolarite/salle_card.php?action=create">';
     print '<span class="fa fa-plus-circle valignmiddle paddingleft" title="'.$langs->trans("AddWarehouse").'"></span>';
     print '</a>';
@@ -428,7 +428,7 @@ if ($action == 'create') {
 
     // Propriétaire
     print '<tr><td class="titlefieldcreate">Propriétaire</td><td>';
-    print $formmateriel->selectProprietaires('', "idproprietaire", '', 1);
+    print $formmateriel->selectProprietaires($proprietaire, "idproprietaire",'', 1);
     print ' <a href="'.DOL_URL_ROOT.'/admin/dict.php?id=63">';
     print '<span class="fa fa-plus-circle valignmiddle paddingleft" title="Ajouter un propriétaire"></span>';
     print '</a>';
@@ -557,7 +557,7 @@ if ($action == 'create') {
             }
 
             print '<tr><td classe="titlefieldcreate">Entrepôt</td><td>';
-            print $form->selectarray('fk_entrepot', $salles);
+            print $form->selectarray('fk_entrepot', $salles, 'fk_entrepot');
             print ' <a href="'.DOL_URL_ROOT.'/custom/scolarite/salle_card.php?action=create">';
             print '<span class="fa fa-plus-circle valignmiddle paddingleft" title="'.$langs->trans("AddWarehouse").'"></span>';
             print '</a>';
@@ -863,7 +863,8 @@ if ($action != 'create' && $action != 'edit') {
         }
         if ($usercancreate) {
             print '<a class="butAction" href="'.$_SERVER["PHP_SELF"].'?action=edit&amp;id='.$materiel->id.'">'.$langs->trans("Modifier").'</a>';
-        }
+            print '<a class="butAction" href="card.php?action=create&idtypemateriel='.$materiel->fk_type_materiel.'&precision_type='.$materiel->precision_type.'&idmarque='.$materiel->fk_marque.'&modele='.$materiel->modele.'&etat='.$materiel->fk_etat.'&fk_etat_etiquette='.$materiel->fk_etat_etiquette.'&exploitabilite='.$materiel->fk_exploitabilite.'&notes='.$materiel->notes.'&origine_materiel='.$materiel->fk_origine.'&fk_default_warehouse='.$materiel->fk_entrepot.'&idproprietaire='.$materiel->fk_proprietaire.'">'.$langs->trans("Cloner").'</a>';
+        }  
 
         if ($usercandelete) {
             if ($materiel->active) {

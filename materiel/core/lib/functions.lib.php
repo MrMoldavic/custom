@@ -268,7 +268,7 @@ function talm_img_picto($titlealt, $picto, $moreatt = '', $pictoisfullpath = fal
 		$pictowithouttext = preg_replace('/(\.png|\.gif|\.svg)$/', '', $picto);
         if (empty($srconly) && in_array($pictowithouttext, array('materiel', 'object_materiel', 'title_materiel', 'kit', 'object_kit', 
 																 'exploitation', 'object_exploitation', 'entretien', 'object_entretien', 
-																 'source', 'object_source', 'recufiscal', 'object_recufiscal', 'supplier_invoice', 
+																 'source', 'object_source', 'recufiscal', 'object_recufiscal','emprunt', 'object_emprunt', 'supplier_invoice', 
 																 'object_supplier_invoice', 'donateur', 'object_donateur', 'salle', 'object_salle')
 		)) {
 			$fakey = $pictowithouttext;
@@ -278,7 +278,7 @@ function talm_img_picto($titlealt, $picto, $moreatt = '', $pictoisfullpath = fal
 
 		    $arrayconvpictotofa = array(
 		    	'materiel'=>'guitar', 'kit'=>'boxes', 'exploitation'=>'truck-loading', 'entretien'=>'tools', 'source'=>'file-contract', 
-				'recufiscal'=>'hand-holding-usd', 'supplier_invoice'=>'file-invoice-dollar', 'donateur'=>'user-tie', 'salle'=>'chalkboard'
+				'recufiscal'=>'hand-holding-usd','emprunt'=>'handshake', 'supplier_invoice'=>'file-invoice-dollar', 'donateur'=>'user-tie', 'salle'=>'chalkboard'
 		    );
 			if (!empty($arrayconvpictotofa[$pictowithouttext]))
 			{
@@ -309,7 +309,7 @@ function talm_img_picto($titlealt, $picto, $moreatt = '', $pictoisfullpath = fal
 			// Define $color
 			$arrayconvpictotocolor = array(
 				'kit'=>'#a69944','exploitation'=>'#a69944', 'materiel'=>'#a69944', 'entretien'=>'#a69944', 'source'=>'#a69944', 
-				'recufiscal'=>'#a69944', 'supplier_invoice'=>'#a69944', 'donateur'=>'#a69944', 'salle'=>'#a69944'
+				'recufiscal'=>'#a69944', 'supplier_invoice'=>'#a69944','emprunt'=>'#a69944', 'donateur'=>'#a69944', 'salle'=>'#a69944'
 			);
 			if (isset($arrayconvpictotocolor[$pictowithouttext])) {
 				$facolor = $arrayconvpictotocolor[$pictowithouttext];
@@ -646,7 +646,7 @@ function talm_print_barre_liste($titre, $page, $file, $options = '', $sortfield 
 	if ($picto && $titre) print '<td class="nobordernopadding widthpictotitle valignmiddle col-picto">'.talm_img_picto('', $picto, 'class="valignmiddle pictotitle widthpictotitle"', $pictoisfullpath).'</td>';
 	print '<td class="nobordernopadding valignmiddle col-title">';
 	print '<div class="titre inline-block">'.$titre;
-	if (!empty($titre) && $savtotalnboflines >= 0 && (string) $savtotalnboflines != '') print '<span class="opacitymedium colorblack paddingleft">('.$totalnboflines.')</span>';
+	if (!empty($titre) && $savtotalnboflines >= 0 && (string) $savtotalnboflines != '') print '<span class="opacitymedium colorblack paddingleft">('.$num.')</span>';
 	print '</div></td>';
 
 	// Center
