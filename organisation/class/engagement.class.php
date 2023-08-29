@@ -253,6 +253,15 @@ class Engagement extends CommonObject
 			$error++;
 		}	
 
+		$engagmement = "SELECT rowid FROM ".MAIN_DB_PREFIX."organisation_engagement WHERE ".($this->fk_agent != "" ? 'fk_agent' : "fk_eleve")."=".($this->fk_agent != "" ? $this->fk_agent : $this->fk_eleve);
+		$resqlEngagement = $this->db->query($engagmement);
+		
+		if($resqlEngagement->num_rows > 0)
+		{
+			setEventMessage('Cet Agent/Eleve est déjà présent dans le groupe.', 'errors');
+			$error++;
+		}
+		
 
 		if($error == 0)
 		{
