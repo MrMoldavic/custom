@@ -22,9 +22,9 @@
  *		\brief      Page to create/edit/view eleve
  */
 
- ini_set('display_errors', '1');
-ini_set('display_startup_errors', '1');
-error_reporting(E_ALL);
+//  ini_set('display_errors', '1');
+// ini_set('display_startup_errors', '1');
+// error_reporting(E_ALL);
 
 //if (! defined('NOREQUIREDB'))              define('NOREQUIREDB', '1');				// Do not create database handler $db
 //if (! defined('NOREQUIREUSER'))            define('NOREQUIREUSER', '1');				// Do not load object $user
@@ -757,8 +757,8 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 			}
 			else
 			{
-				print '		<td><span class="badge  badge-status1 badge-status" style="color:white;">En attente d\'affectation</span></td>';
-				print '		<td>Aucun créneau</td>';
+				print '<td><span class="badge  badge-status1 badge-status" style="color:white;">En attente d\'affectation</span></td>';
+				print '<td>Aucun créneau</td>';
 			}
 			print '</tr>';
 			

@@ -7,9 +7,9 @@ require_once DOL_DOCUMENT_ROOT.'/custom/materiel/core/lib/exploitation.lib.php';
  * en evitant de modifier le code d'origine
  */
 
- ini_set('display_errors', '1');
-ini_set('display_startup_errors', '1');
-error_reporting(E_ALL);
+//  ini_set('display_errors', '1');
+// ini_set('display_startup_errors', '1');
+// error_reporting(E_ALL);
 
 
  /**
