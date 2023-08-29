@@ -293,7 +293,7 @@ if ($id > 0 || !empty($ref)) {
 
 			
 				print '<tr class="oddeven">';
-				print '<td><a href="/custom/materiel/card.php?action=view&token='.newToken().'&id='.$objInstrument->rowid.'"><span class="badge badge-status4">'.$objTypeMateriel->indicatif.'-'.$cote.'</span></a></td>';
+				print '<td><a href="/custom/materiel/materiel_card.php?action=view&token='.newToken().'&id='.$objInstrument->rowid.'"><span class="badge badge-status4">'.$objTypeMateriel->indicatif.'-'.$cote.'</span></a></td>';
 				print '<td><span class="badge badge-status7">'.$objInstrument->precision_type.'</span></td>';
 				print '<td>'.$objMarque->marque.'</td>';
 				print '<td>'.$objInstrument->modele.'</td>';

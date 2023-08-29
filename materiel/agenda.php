@@ -91,12 +91,12 @@ if ($id > 0)
     $result = $materiel->fetch($id);
     if (!$result) {
         setEventMessages('Impossible de récupérer les données du matériel.', null, 'errors');
-        header('Location: '.DOL_URL_ROOT.'/custom/materiel/list.php');
+        header('Location: '.DOL_URL_ROOT.'/custom/materiel/materiel_list.php');
         exit;
     }
 } else {
     setEventMessages('Impossible de récupérer les données du matériel.', null, 'errors');
-    header('Location: '.DOL_URL_ROOT.'/custom/materiel/list.php');
+    header('Location: '.DOL_URL_ROOT.'/custom/materiel/materiel_list.php');
 }
 
 
@@ -119,7 +119,7 @@ $titre = 'Matériel - Historique';
 $picto = ('materiel');
 talm_fiche_head($head, 'agenda', $titre, -1, $picto);
 
-$linkback = '<a href="'.DOL_URL_ROOT.'/custom/materiel/list.php/">Retour à la liste</a>';
+$linkback = '<a href="'.DOL_URL_ROOT.'/custom/materiel/materiel_list.php/">Retour à la liste</a>';
 talm_banner_tab($materiel, 'id', $linkback, 1, 'rowid');
 
 print '<div class="fichecenter">';

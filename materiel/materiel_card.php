@@ -107,7 +107,7 @@ if (array_key_exists($action, $quick_modification_actions))
 if ($action == 'confirm_entretien') {
 	if (!$id) exit;
 	$urlparameters = '?materiel_id='.$id;
-	$urlparameters .= '&redirect_url='.urlencode(DOL_URL_ROOT.'/custom/materiel/card.php?id='.$id);
+	$urlparameters .= '&redirect_url='.urlencode(DOL_URL_ROOT.'/custom/materiel/materiel_card.php?id='.$id);
 	header('Location: '.DOL_URL_ROOT.'/custom/entretien/card.php'.$urlparameters);
 }
 
@@ -162,7 +162,7 @@ if ($action == 'add' && $usercancreate) {
         $resqlLastMateriel = $db->query($lastMateriel);
         $objectLastMateriel = $db->fetch_object($resqlLastMateriel);
 
-        header('Location: '.DOL_URL_ROOT.'/custom/materiel/card.php?id='.$objectLastMateriel->max);
+        header('Location: '.DOL_URL_ROOT.'/custom/materiel/materiel_card.php?id='.$objectLastMateriel->max);
     }
 }
 
@@ -238,7 +238,7 @@ if ($action == 'confirm_delete' && $confirm == 'yes' && $usercandelete) {
 
         if ($result > 0) {
             setEventMessages('Le matériel a bien été supprimé.', null);
-            header('Location: '.DOL_URL_ROOT.'/custom/materiel/list.php');
+            header('Location: '.DOL_URL_ROOT.'/custom/materiel/materiel_list.php');
             exit;
         } else {
             setEventMessages('Erreur lors de la suppression.', null, 'errors');
@@ -263,7 +263,7 @@ elseif ($action == 'confirm_deactivate' && $confirm == 'yes' && $usercandelete) 
 
             if ($result > 0) {
                 setEventMessages('Le matériel a bien été désactivé.', null);
-                header('Location: '.DOL_URL_ROOT.'/custom/materiel/list.php');
+                header('Location: '.DOL_URL_ROOT.'/custom/materiel/materiel_list.php');
                 exit;
             } else {
                 setEventMessages('Erreur lors de la désactivation.', null, 'errors');
@@ -277,7 +277,7 @@ elseif ($action == 'confirm_deactivate' && $confirm == 'yes' && $usercandelete) 
         $result = $materiel->deactivate($user);
         if ($result > 0) {
             setEventMessages('Le matériel a bien été désactivé.', null);
-            header('Location: '.DOL_URL_ROOT.'/custom/materiel/list.php');
+            header('Location: '.DOL_URL_ROOT.'/custom/materiel/materiel_list.php');
             exit;
         } else {
             setEventMessages('Erreur lors de la désactivation.', null, 'errors');
@@ -296,7 +296,7 @@ if ($action == 'confirm_reactivate' && $confirm == 'yes' && $usercandelete) {
     $result = $materiel->reactivate();
     if ($result > 0) {
         setEventMessages('Le matériel a bien été réactivé.', null);
-        header('Location: '.DOL_URL_ROOT.'/custom/materiel/list.php');
+        header('Location: '.DOL_URL_ROOT.'/custom/materiel/materiel_list.php');
         exit;
     } else {
         setEventMessages('Erreur lors de la réactivation.', null, 'errors');
@@ -356,7 +356,7 @@ if ($action == 'create') {
     // Marque materiel
     print '<tr><td class="titlefieldcreate fieldrequired">Marque</td><td>';
     print $formmateriel->selectMarques(GETPOST('idmarque'), 'idmarque', '', 1);
-    print ' <a href="'.DOL_URL_ROOT.'/admin/dict.php?id=62'.'">';
+    print ' <a href="'.DOL_URL_ROOT.'/admin/dict.php?id=72'.'">';
     print '<span class="fa fa-plus-circle valignmiddle paddingleft" title="Ajouter une marque"></span>';
     print '</a>';
     print '</td>';
@@ -429,7 +429,7 @@ if ($action == 'create') {
     // Propriétaire
     print '<tr><td class="titlefieldcreate">Propriétaire</td><td>';
     print $formmateriel->selectProprietaires($proprietaire, "idproprietaire",'', 1);
-    print ' <a href="'.DOL_URL_ROOT.'/admin/dict.php?id=63">';
+    print ' <a href="'.DOL_URL_ROOT.'/admin/dict.php?id=73">';
     print '<span class="fa fa-plus-circle valignmiddle paddingleft" title="Ajouter un propriétaire"></span>';
     print '</a>';
     print '</td>';
@@ -591,7 +591,7 @@ if ($action == 'create') {
             $picto = ('materiel');
             talm_fiche_head($head, 'card', $titre, -1, $picto);
 
-            $linkback = '<a href="'.DOL_URL_ROOT.'/custom/materiel/list.php/">Retour à la liste</a>';
+            $linkback = '<a href="'.DOL_URL_ROOT.'/custom/materiel/materiel_list.php/">Retour à la liste</a>';
 
             talm_banner_tab($materiel, 'id', $linkback, 1, 'rowid');
 
@@ -863,7 +863,7 @@ if ($action != 'create' && $action != 'edit') {
         }
         if ($usercancreate) {
             print '<a class="butAction" href="'.$_SERVER["PHP_SELF"].'?action=edit&amp;id='.$materiel->id.'">'.$langs->trans("Modifier").'</a>';
-            print '<a class="butAction" href="card.php?action=create&idtypemateriel='.$materiel->fk_type_materiel.'&precision_type='.$materiel->precision_type.'&idmarque='.$materiel->fk_marque.'&modele='.$materiel->modele.'&etat='.$materiel->fk_etat.'&fk_etat_etiquette='.$materiel->fk_etat_etiquette.'&exploitabilite='.$materiel->fk_exploitabilite.'&notes='.$materiel->notes.'&origine_materiel='.$materiel->fk_origine.'&fk_default_warehouse='.$materiel->fk_entrepot.'&idproprietaire='.$materiel->fk_proprietaire.'">'.$langs->trans("Cloner").'</a>';
+            print '<a class="butAction" href="materiel_card.php?action=create&idtypemateriel='.$materiel->fk_type_materiel.'&precision_type='.$materiel->precision_type.'&idmarque='.$materiel->fk_marque.'&modele='.$materiel->modele.'&etat='.$materiel->fk_etat.'&fk_etat_etiquette='.$materiel->fk_etat_etiquette.'&exploitabilite='.$materiel->fk_exploitabilite.'&notes='.$materiel->notes.'&origine_materiel='.$materiel->fk_origine.'&fk_default_warehouse='.$materiel->fk_entrepot.'&idproprietaire='.$materiel->fk_proprietaire.'">'.$langs->trans("Cloner").'</a>';
         }  
 
         if ($usercandelete) {

@@ -19,7 +19,7 @@
  */
 
 /**
- *	\file       materiel/list.php
+ *	\file       materiel/materiel_list.php
  *	\ingroup    materiel
  *	\brief      Home page of materiel top menu
  */

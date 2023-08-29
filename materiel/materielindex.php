@@ -248,7 +248,7 @@ if ($conf->materiel->enabled && $user->rights->materiel->read)
 			$colnb = 5;
 
 			print '<tr class="liste_titre"><th colspan="3">'.$transRecordedType.'</th>';
-			print '<th class="right" colspan="2"><a href="'.DOL_URL_ROOT.'/custom/materiel/list.php">'.$langs->trans("FullList").'</td>';
+			print '<th class="right" colspan="2"><a href="'.DOL_URL_ROOT.'/custom/materiel/materiel_list.php">'.$langs->trans("FullList").'</td>';
 			print '</tr>';
 
 			while ($i < $num)

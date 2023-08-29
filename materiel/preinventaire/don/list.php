@@ -234,7 +234,7 @@ print '<form action="'.$_SERVER["PHP_SELF"].'" method="post" name="formulaire">'
 	//if (in_array($massaction, array('presend', 'predelete'))) $arrayofmassactions = array();
 	$massactionbutton = $form->selectMassAction('', $arrayofmassactions);
     $picto = 'materiel';
-    if ($usercancreate) $newcardbutton = dolGetButtonTitle('Nouveau matériel', '', 'fa fa-plus-circle', DOL_URL_ROOT.'/custom/materiel/card.php?action=create', '', 1);
+    if ($usercancreate) $newcardbutton = dolGetButtonTitle('Nouveau matériel', '', 'fa fa-plus-circle', DOL_URL_ROOT.'/custom/materiel/materiel_card.php?action=create', '', 1);
 	talm_print_barre_liste('Matériels', 0, $_SERVER["PHP_SELF"], '', '', '',$massactionbutton, $num, $nbtotalofrecords, $picto, 0, $newcardbutton, '', $limit, 0, 0, 1);
 
 	include DOL_DOCUMENT_ROOT.'/core/tpl/massactions_pre.tpl.php';

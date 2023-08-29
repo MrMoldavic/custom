@@ -112,7 +112,7 @@ if ($object->id)
 
     $shownav = 1;
 
-    $linkback = '<a href="'.DOL_URL_ROOT.'/custom/materiel/list.php/">Retour à la liste</a>';
+    $linkback = '<a href="'.DOL_URL_ROOT.'/custom/materiel/materiel_list.php/">Retour à la liste</a>';
     talm_banner_tab($object, 'id', $linkback, 1, 'rowid');
 
     print '<div class="fichecenter">';

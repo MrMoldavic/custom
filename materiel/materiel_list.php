@@ -401,7 +401,7 @@ print '<form action="'.$_SERVER["PHP_SELF"].'" method="post" name="formulaire">'
 	//if (in_array($massaction, array('presend', 'predelete'))) $arrayofmassactions = array();
 	$massactionbutton = $form->selectMassAction('', $arrayofmassactions);
     $picto = 'materiel';
-    if ($usercancreate) $newcardbutton = dolGetButtonTitle('Nouveau matériel', '', 'fa fa-plus-circle', DOL_URL_ROOT.'/custom/materiel/card.php?action=create', '', 1);
+    if ($usercancreate) $newcardbutton = dolGetButtonTitle('Nouveau matériel', '', 'fa fa-plus-circle', DOL_URL_ROOT.'/custom/materiel/materiel_card.php?action=create', '', 1);
 	if($resql)
 	{
 		$num = $db->num_rows($resql);

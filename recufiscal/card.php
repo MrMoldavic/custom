@@ -400,7 +400,9 @@ if ($action == 'create' && $usercancreate)
     print '<tr><td class="fieldrequired titlefieldcreate">Donateur</td>';
 	print '<td colspan="3">';
     print $form->selectarray('donateurs', getDonateurArray(), $donateurs, 1, 0, 0, 'style="min-width:200px;"', 0, 0, 0, '', '', 1);
-    print '<button>+</button>';
+    print ' <a href="'.DOL_URL_ROOT.'/custom/recufiscal/donateur/card.php'.'">';
+    print '<span class="fa fa-plus-circle valignmiddle paddingleft" title="Ajouter un type donateur"></span>';
+    print '</a>';
     print  '</td></tr>';
 
     // Type

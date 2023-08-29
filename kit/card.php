@@ -392,7 +392,7 @@ if ($action == 'create' && GETPOST('idtypekit', 'int') && $usercancreate)  // Ty
             print "\n<br>\n";
             print_titre("Description des matériels inclus");
             foreach($kit->materiel_object as $mat) {
-            $mat_link = '<a href="'.DOL_URL_ROOT.'/custom/materiel/card.php?id='.$mat->id.'" style="color:rgb(0, 123, 140);">'.$mat->ref.'</a>';
+            $mat_link = '<a href="'.DOL_URL_ROOT.'/custom/materiel/materiel_card.php?id='.$mat->id.'" style="color:rgb(0, 123, 140);">'.$mat->ref.'</a>';
             print talm_load_fiche_titre($mat_link, '', 'materiel');
             print '<div class="fichecenter">';
             print '<div class="fichehalfleft">';

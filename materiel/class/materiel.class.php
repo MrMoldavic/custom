@@ -567,7 +567,7 @@ class Materiel extends CommonObject
             $linkclose .= ' title="'.dol_escape_htmltag($label, 1, 1).'"';
             $linkclose .= ' class="nowraponall classfortooltip"';
         }
-        $url = DOL_URL_ROOT.'/custom/materiel/card.php?id='.$this->id;
+        $url = DOL_URL_ROOT.'/custom/materiel/materiel_card.php?id='.$this->id;
         $linkstart = '<a href="'.$url.'" '.$style;
         $linkstart .= $linkclose.'>';
         $linkend = '</a>';

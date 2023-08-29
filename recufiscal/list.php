@@ -189,7 +189,7 @@ $massactionbutton = $form->selectMassAction('', $arrayofmassactions);
 $picto = 'recufiscal';
 
 //talm_print_barre_liste('Reçu fiscaux', 0, $_SERVER["PHP_SELF"], '', '', '', $massactionbutton, $num, $nbtotalofrecords, $picto, 0, $morehtmlright, '', $limit, 0, 0, 1);
-if ($usercancreate) $newcardbutton = dolGetButtonTitle('Nouveau matériel', '', 'fa fa-plus-circle', DOL_URL_ROOT.'/custom/materiel/card.php?action=create', '', 1);
+if ($usercancreate) $newcardbutton = dolGetButtonTitle('Nouveau matériel', '', 'fa fa-plus-circle', DOL_URL_ROOT.'/custom/materiel/materiel_card.php?action=create', '', 1);
 if($resql)
 {
 	$num = $db->num_rows($resql);
