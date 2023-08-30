@@ -127,11 +127,14 @@ $search_array_options = $extrafields->getOptionalsFromPost($object->table_elemen
 
 // Default sort order (if not yet defined by previous GETPOST)
 if (!$sortfield) {
-	reset($object->fields);					// Reset is required to avoid key() to return null.
-	$sortfield = "t.".key($object->fields); // Set here default search field. By default 1st field in definition.
+	// reset($object->fields);					// Reset is required to avoid key() to return null.
+	// $sortfield = "t.".key($object->fields); // Set here default search field. By default 1st field in definition.
+	$sortfield = "t.stats_affectations";
+	$sortfield2 = "t.fk_famille";
 }
 if (!$sortorder) {
-	$sortorder = "ASC";
+	$sortorder = "DESC";
+	$sortorder2 = "ASC";
 }
 
 // Initialize array of search criterias
@@ -382,10 +385,10 @@ if (empty($conf->global->MAIN_DISABLE_FULL_SCANLIST)) {
 
 // Complete request and execute it with limit
 $sql .= $db->order($sortfield, $sortorder);
+$sql .= ", {$sortfield2} {$sortorder2}";
 if ($limit) {
 	$sql .= $db->plimit($limit + 1, $offset);
 }
-
 $resql = $db->query($sql);
 if (!$resql) {
 	dol_print_error($db);
@@ -708,12 +711,13 @@ while ($i < $imaxinloop) {
 					print ' title="'.dol_escape_htmltag($object->$key).'"';
 				}
 				print '>';
+				//print '<td '.($object->fk_famille == "" ? 'style="background-color: #E1593C"' : '') .'>';
 				if ($key == 'status') {
 					print $object->getLibStatut(5);
 				} elseif ($key == 'rowid') {
 					print $object->showOutputField($val, $key, $object->id, '');
 				} elseif ($key == 'prenom') {
-					print $object->getNomUrl(1);
+					print $object->getNomUrl(1).' '.($object->fk_famille == "" ? '<span class="badge badge-danger">Sans Famille liée &#9888</span>' : ($object->stats_affectations > 0 ? '<span class="badge badge-danger">Problème affectation &#9888</span>' : ''));
 				} elseif ($key == 'stats_affectations') {
 	
 					// Nombres d'affectations

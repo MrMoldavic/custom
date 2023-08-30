@@ -22,9 +22,9 @@
  *		\brief      Page to create/edit/view eleve
  */
 
-//  ini_set('display_errors', '1');
-// ini_set('display_startup_errors', '1');
-// error_reporting(E_ALL);
+ ini_set('display_errors', '1');
+ini_set('display_startup_errors', '1');
+error_reporting(E_ALL);
 
 //if (! defined('NOREQUIREDB'))              define('NOREQUIREDB', '1');				// Do not create database handler $db
 //if (! defined('NOREQUIREUSER'))            define('NOREQUIREUSER', '1');				// Do not load object $user
@@ -538,37 +538,39 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 	print '</div>';
 	$famille = "SELECT * FROM ".MAIN_DB_PREFIX."famille WHERE rowid = ".$object->fk_famille;
 	$resqlFamille = $db->query($famille);
-	$objFamille = $db->fetch_object($resqlFamille);
 
-	print '<table class="border tableforfield">';
-	print '<tbody>';
-	print '<tr>';
-	print '<td>Téléphone parent 1('.$objFamille->prenom_parent_1.' '.$objFamille->nom_parent_1.'):</td>';
-	print '<td>'.$objFamille->tel_parent_1.'</td>';
-	print '</tr>';
-	print '<tr>';
-	print '<td>Téléphone parent 2('.$objFamille->prenom_parent_2.' '.$objFamille->nom_parent_2.'):</td>';
-	print '<td>'.$objFamille->tel_parent_2.'</td>';
-	print '</tr>';	
-	print '<tr>';
-	if(!empty($objFamille->mail_parent_1))
+	if($resqlFamille->num_rows > 0)
 	{
-		print '<td>Mail parent 1('.$objFamille->prenom_parent_1.' '.$objFamille->nom_parent_1.'):</td>';
-		print '<td>'.$objFamille->mail_parent_1.'</td>';
+		$objFamille = $db->fetch_object($resqlFamille);
+
+		print '<table class="border tableforfield">';
+		print '<tbody>';
+		print '<tr>';
+		print '<td>Téléphone parent 1('.$objFamille->prenom_parent_1.' '.$objFamille->nom_parent_1.'):</td>';
+		print '<td>'.$objFamille->tel_parent_1.'</td>';
+		print '</tr>';
+		print '<tr>';
+		print '<td>Téléphone parent 2('.$objFamille->prenom_parent_2.' '.$objFamille->nom_parent_2.'):</td>';
+		print '<td>'.$objFamille->tel_parent_2.'</td>';
+		print '</tr>';	
+		print '<tr>';
+		if(!empty($objFamille->mail_parent_1))
+		{
+			print '<td>Mail parent 1('.$objFamille->prenom_parent_1.' '.$objFamille->nom_parent_1.'):</td>';
+			print '<td>'.$objFamille->mail_parent_1.'</td>';
+		}
+		print '</tr>';
+		print '<tr>';
+		if(!empty($objFamille->mail_parent_2))
+		{
+			print '<td>Mail parent 2('.$objFamille->prenom_parent_2.' '.$objFamille->nom_parent_2.'):</td>';
+			print '<td>'.$objFamille->mail_parent_2.'</td>';
+		}
+		print '</tr>';
+		print '</tbody>';
+		print '</table>';
 	}
-	print '</tr>';
-	print '<tr>';
-	if(!empty($objFamille->mail_parent_2))
-	{
-		print '<td>Mail parent 2('.$objFamille->prenom_parent_2.' '.$objFamille->nom_parent_2.'):</td>';
-		print '<td>'.$objFamille->mail_parent_2.'</td>';
-	}
-	print '</tr>';
-	print '</tbody>';
-	print '</table>';
-
-
-
+	
 
 	print '</div>';
 	
@@ -748,10 +750,6 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 			}
 			elseif($val['status'] == 9)
 			{
-				// $sql = "SELECT c.nom_creneau,c.rowid FROM ".MAIN_DB_PREFIX."creneau as c WHERE c.rowid =".("(SELECT e.fk_creneau FROM ".MAIN_DB_PREFIX."affectation as e WHERE e.fk_souhait =".$val['rowid'].")");
-				// $resql = $db->query($sql);
-				// $objectCreneau = $db->fetch_object($resql);
-
 				print '<td><span class="badge  badge-status8 badge-status" style="color:white;">Souhait désactivé</span></td>';
 				print '<td><a href="'.DOL_URL_ROOT.'/custom/scolarite/creneau_card.php?id='.$objectCreneau->rowid.'">'.$objectCreneau->nom_creneau.'</a></td>';
 			}
