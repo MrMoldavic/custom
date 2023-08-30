@@ -101,7 +101,7 @@ if ($action == 'desactivation') {
 	$affectation = "SELECT s.fk_souhait FROM ".MAIN_DB_PREFIX."affectation as s WHERE s.fk_creneau=".$id." AND date_fin IS NULL";
 	$resqlAffectation = $db->query($affectation);
 
-	if(!$resqlAffectation)
+	if($resqlAffectation->num_rows > 0)
 	{
 		setEventMessage('Vous ne pouvez pas désactiver un créneau qui contient des élèves.','errors');
 	}

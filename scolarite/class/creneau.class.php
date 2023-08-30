@@ -257,7 +257,14 @@ class Creneau extends CommonObject
 	 */
 	public function create(User $user, $notrigger = false)
 	{
-		if(!$this->nom_groupe && !$this->fk_instrument_enseigne)
+		$existingCreneau = "SELECT rowid FROM ".MAIN_DB_PREFIX."creneau WHERE fk_salle=".$this->fk_salle." AND heure_debut=".$this->heure_debut;
+		$resqlExistingCreneau = $this->db->query($existingCreneau);
+
+		if($resqlExistingCreneau->num_rows > 0)
+		{
+			return setEventMessage('Désolé, cette salle est déjà utilisée à cet horaire.','errors');
+		}
+		elseif(!$this->nom_groupe && !$this->fk_instrument_enseigne)
 		{
 			return setEventMessage('Nom de groupe ou un instrument enseigné obligatoire.','errors');
 		}
@@ -666,9 +673,15 @@ class Creneau extends CommonObject
 	 */
 	public function update(User $user, $notrigger = false)
 	{
+			$existingCreneau = "SELECT rowid FROM ".MAIN_DB_PREFIX."creneau WHERE fk_salle=".$this->fk_salle." AND heure_debut=".$this->heure_debut." AND rowid!=".$this->id;
+			$resqlExistingCreneau = $this->db->query($existingCreneau);
 
 			$nom_groupe = $this->nom_cours;
-			if(!$this->nom_groupe && !$this->fk_instrument_enseigne)
+			if($resqlExistingCreneau->num_rows > 0)
+			{
+				return setEventMessage('Désolé, cette salle est déjà utilisée à cet horaire.','errors');
+			}
+			elseif(!$this->nom_groupe && !$this->fk_instrument_enseigne)
 			{
 				return setEventMessage('Nom de groupe ou un instrument enseigné obligatoire.','errors');
 			}
