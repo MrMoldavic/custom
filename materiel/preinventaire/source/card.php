@@ -103,13 +103,12 @@ elseif ($action == 'confirm_import' && $confirm == 'yes')
 
             if ($source->source_type_id == 2 || $source->source_type_id == 3)
             {
-                $valeur = intval($line->valeur);
+                $valeur = round($line->valeur,2);
             }
             else
             {
-                $valeur = intval($line->pu_ttc);
+                $valeur = round($line->pu_ttc,2);
             }
-         
             $fksource = $source->id;
             $nombre = 1;
             $remaintospecify = $source->remaining_to_specify;
@@ -299,14 +298,14 @@ if ($id > 0) {
     }
     print '</tr>';
     print '<tr>';
-
+    
     $resqlDetail = $db->query($detail);
     $objDetail = $db->fetch_object($resqlDetail);
 
     print '<td>';
     foreach($resqlDetail as $value)
     {
-        print '- '.$value['description'].' (x'.$value['qty'].') <br>( Valeur unitaire : '.($source->source_type_id == 2 || $source->source_type_id == 3 ? round($value['valeur']) : round($value['pu_ttc'])).'€ / Valeur totale : '.($source->source_type_id == 2 || $source->source_type_id == 3 ? round($value['valeur'])*$value['qty'] : round($value['total_ttc'])).'€)<br><br>';
+        print '- '.$value['description'].' (x'.$value['qty'].') <br>( Valeur unitaire : '.($source->source_type_id == 2 || $source->source_type_id == 3 ? round($value['valeur'],2) : round($value['pu_ttc'],2)).'€ / Valeur totale : '.($source->source_type_id == 2 || $source->source_type_id == 3 ? round($value['valeur'],2) * $value['qty'] : round($value['total_ttc'],2)).'€)<br><br>';
     }
     print '</td>';
 

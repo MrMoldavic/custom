@@ -385,7 +385,7 @@ class Source extends CommonObject {
                     $sql .= $this->id . ", ";
                 }
                 $sql .= "'".$description."', ";
-                $sql .= intval($valeur).", ";
+                $sql .= round($valeur,2).", ";
                 $sql .= $inventoriable.", ";
                 $sql .= $amortissable;
                 $sql .= ')';
