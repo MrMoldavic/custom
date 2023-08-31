@@ -74,8 +74,6 @@ if(!empty(GETPOST('showdeleted', 'alpha'))){
 
 
 $confirm = GETPOST('confirm', 'alpha');
-$sortfield = GETPOST("sortfield", 'alpha');
-$sortorder = GETPOST("sortorder", 'alpha');
 $contextpage = GETPOST('contextpage', 'aZ') ? GETPOST('contextpage', 'aZ') : 'materiellist'; // To manage different context of search
 
 $search_ref = GETPOST("search_ref", 'alpha');
@@ -102,7 +100,7 @@ $pagenext = $page + 1;
 
 
 if (!$sortfield) $sortfield = "m.rowid";
-if (!$sortorder) $sortorder = "ASC";
+if (!$sortorder) $sortorder = "DESC";
 
 if (GETPOST('button_removefilter_x', 'alpha') || GETPOST('button_removefilter.x', 'alpha') || GETPOST('button_removefilter', 'alpha')) // All tests are required to be compatible with all browsers
 	{
@@ -357,8 +355,6 @@ $sql .= $db->order($sortfield, $sortorder);
 if ($limit) {
 	$sql .= $db->plimit($limit + 1, $offset);
 }
-
-
 
 
 $resql = $db->query($sql);
