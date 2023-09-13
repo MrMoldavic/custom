@@ -736,7 +736,7 @@ while ($i < $imaxinloop) {
 					$objAnneScolaire = $db->fetch_object($resqlAnneeScolaire);
 	
 					// Nombres d'affectations
-					$affectation = "SELECT COUNT(*) as total FROM ".MAIN_DB_PREFIX."souhait WHERE fk_eleve=".$object->id." AND (status=4) AND fk_annee_scolaire =".$objAnneScolaire->rowid;
+					$affectation = "SELECT COUNT(*) as total FROM ".MAIN_DB_PREFIX."souhait WHERE fk_eleve=".$object->id." AND status=4 AND fk_annee_scolaire =".$objAnneScolaire->rowid;
 					$resAffectation = $db->query($affectation);
 					$objAffectation = $db->fetch_object($resAffectation);
 	
@@ -744,6 +744,7 @@ while ($i < $imaxinloop) {
 					$souhait = "SELECT COUNT(*) as total FROM ".MAIN_DB_PREFIX."souhait WHERE fk_eleve=".$object->id." AND (status=4 OR status=0) AND fk_annee_scolaire =".$objAnneScolaire->rowid;
 					$resSouhaits = $db->query($souhait);
 					$objSouhaits = $db->fetch_object($resSouhaits);
+
 	
 					if($objAffectation->total != $objSouhaits->total)
 					{
