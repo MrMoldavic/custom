@@ -264,13 +264,32 @@ class Creneau extends CommonObject
 		if($this->fk_salle)
 		{
 			
-			$existingCreneau = "SELECT rowid FROM ".MAIN_DB_PREFIX."creneau WHERE fk_salle=".$this->fk_salle." AND heure_debut=".$this->heure_debut." AND fk_annee_scolaire =".$this->fk_annee_scolaire;
+			$existingCreneau = "SELECT rowid FROM ".MAIN_DB_PREFIX."creneau WHERE fk_salle=".$this->fk_salle." AND heure_debut=".$this->heure_debut." AND fk_annee_scolaire =".$this->fk_annee_scolaire." AND jour=".$this->jour;
 			$resqlExistingCreneau = $this->db->query($existingCreneau);
 			if($resqlExistingCreneau->num_rows > 0)
 			{
 				return setEventMessage('Désolé, cette salle est déjà utilisée à cet horaire.','errors');
 			}
 		}
+
+		$profCours = "SELECT c.fk_prof_1,c.fk_prof_2,c.fk_prof_3,c.rowid FROM ".MAIN_DB_PREFIX."creneau as c WHERE c.heure_debut =".$this->heure_debut." AND c.jour=".$this->jour." AND fk_annee_scolaire =".$this->fk_annee_scolaire;
+		$profCours .= " AND ((c.fk_prof_1=".$this->fk_prof_1." OR c.fk_prof_2=".$this->fk_prof_1." OR c.fk_prof_3=".$this->fk_prof_1.")";
+		if($this->fk_prof_2 != NULL) $profCours .= " OR (c.fk_prof_1=".$this->fk_prof_2." OR c.fk_prof_2=".$this->fk_prof_2." OR c.fk_prof_3=".$this->fk_prof_2.")";
+		if($this->fk_prof_3 != NULL) $profCours .= " OR (c.fk_prof_1=".$this->fk_prof_3." OR c.fk_prof_2=".$this->fk_prof_3." OR c.fk_prof_3=".$this->fk_prof_3.")";
+		$profCours .= ")";
+		$resqlProfsCours = $this->db->query($profCours);
+
+		if($resqlProfsCours->num_rows > 0)
+		{
+			return setEventMessage('Désolé, un des professeur séléctionné à déjà cours à cette heure-ci.','errors');
+		}
+			
+
+		if($resqlProfsCours->num_rows > 0)
+		{
+			return setEventMessage('Désolé, un des professeur séléctionné à déjà cours à cette heure-ci.','errors');
+		}
+
 
 		if(!$this->nom_groupe && !$this->fk_instrument_enseigne)
 		{
@@ -700,6 +719,19 @@ class Creneau extends CommonObject
 				{
 					return setEventMessage('Désolé, cette salle est déjà utilisée à cet horaire.','errors');
 				}
+			}
+
+			$profCours = "SELECT c.fk_prof_1,c.fk_prof_2,c.fk_prof_3,c.rowid FROM ".MAIN_DB_PREFIX."creneau as c WHERE c.heure_debut =".$this->heure_debut." AND c.jour=".$this->jour." AND fk_annee_scolaire =".$this->fk_annee_scolaire." AND rowid !=".$this->id;
+			$profCours .= " AND ((c.fk_prof_1=".$this->fk_prof_1." OR c.fk_prof_2=".$this->fk_prof_1." OR c.fk_prof_3=".$this->fk_prof_1.")";
+			if($this->fk_prof_2 != NULL) $profCours .= " OR (c.fk_prof_1=".$this->fk_prof_2." OR c.fk_prof_2=".$this->fk_prof_2." OR c.fk_prof_3=".$this->fk_prof_2.")";
+			if($this->fk_prof_3 != NULL) $profCours .= " OR (c.fk_prof_1=".$this->fk_prof_3." OR c.fk_prof_2=".$this->fk_prof_3." OR c.fk_prof_3=".$this->fk_prof_3.")";
+			$profCours .= ")";
+			$resqlProfsCours = $this->db->query($profCours);
+
+			if($resqlProfsCours->num_rows > 0)
+			{
+				$objectCours = $this->db->fetch_object($profCours);
+				return setEventMessage('Désolé, un des professeur séléctionné à déjà cours à cette heure-ci.','errors');
 			}
 			
 

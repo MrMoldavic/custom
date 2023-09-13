@@ -851,28 +851,28 @@ while ($i < $imaxinloop) {
 					}
 				} elseif ($key == 'professeurs') {
 	
-					$prof1 = "SELECT lastname, firstname, rowid FROM ".MAIN_DB_PREFIX."user WHERE rowid =".$object->fk_prof_1;
+					$prof1 = "SELECT prenom, nom, rowid FROM ".MAIN_DB_PREFIX."management_agent WHERE rowid =".$object->fk_prof_1;
 					$resqlProf1 = $db->query($prof1);
 					$objProf1 = $db->fetch_object($resqlProf1);
 					$profs = "";
 	
-					$profs .= '<a href="' . DOL_URL_ROOT . '/user/card.php?id=' . $objProf1->rowid . '">' .'👨‍🏫'. $objProf1->lastname.' '.$objProf1->firstname. '</a>'.'<br>';
+					$profs .= '<a href="' . DOL_URL_ROOT . '/user/card.php?id=' . $objProf1->rowid . '">' .'👨‍🏫'. $objProf1->nom.' '.$objProf1->prenom. '</a>'.'<br>';
 				
 					if(isset($object->fk_prof_2))
 					{
-						$prof2 = "SELECT lastname, firstname, rowid FROM ".MAIN_DB_PREFIX."user WHERE rowid =".$object->fk_prof_2;
+						$prof2 = "SELECT nom, prenom, rowid FROM ".MAIN_DB_PREFIX."management_agent WHERE rowid =".$object->fk_prof_2;
 						$resqlProf2 = $db->query($prof2);
 						$objProf2 = $db->fetch_object($resqlProf2);
 	
-						$profs .= '<a href="' . DOL_URL_ROOT . '/user/card.php?id=' . $objProf2->rowid . '">' .'👨‍🏫'. $objProf2->lastname.' '.$objProf2->firstname. '</a>'.'<br>';
+						$profs .= '<a href="' . DOL_URL_ROOT . '/user/card.php?id=' . $objProf2->rowid . '">' .'👨‍🏫'. $objProf2->nom.' '.$objProf2->prenom. '</a>'.'<br>';
 					}
 					if(isset($object->fk_prof_3))
 					{
-						$prof3 = "SELECT lastname, firstname, rowid FROM ".MAIN_DB_PREFIX."user WHERE rowid =".$object->fk_prof_3;
+						$prof3 = "SELECT nom, prenom, rowid FROM ".MAIN_DB_PREFIX."management_agent WHERE rowid =".$object->fk_prof_3;
 						$resqlProf3 = $db->query($prof3);
 						$objProf3 = $db->fetch_object($resqlProf3);
 	
-						$profs .= '<a href="' . DOL_URL_ROOT . '/user/card.php?id=' . $objProf3->rowid . '">' .'👨‍🏫'. $objProf3->lastname.' '.$objProf3->firstname. '</a>'.'<br>';
+						$profs .= '<a href="' . DOL_URL_ROOT . '/user/card.php?id=' . $objProf3->rowid . '">' .'👨‍🏫'. $objProf3->nom.' '.$objProf3->prenom. '</a>'.'<br>';
 					}
 	
 					print $profs;
