@@ -825,7 +825,7 @@ while ($i < $imaxinloop) {
 					$resqlDispositif = $db->query($dispositif);
 					$objDispositif = $db->fetch_object($resqlDispositif);
 	
-					print '<a href="' . DOL_URL_ROOT . '/custom/scolarite/dispositif_card.php?id=' . $objDispositif->rowid . '">' . $objDiminutif->diminutif.' - '.$objDispositif->nom . '</a>';
+					print $objDiminutif->diminutif.' - '.$objDispositif->nom;
 				} elseif ($key == 'fk_type_classe'){
 					$cours = "SELECT type FROM ".MAIN_DB_PREFIX."type_classe WHERE rowid =".$object->fk_type_classe;
 					$resqlCours = $db->query($cours);
