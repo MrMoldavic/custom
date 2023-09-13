@@ -103,6 +103,61 @@ $backtopage = GETPOST('backtopage', 'alpha');
 $backtopageforcancel = GETPOST('backtopageforcancel', 'alpha');
 $dol_openinpopup = GETPOST('dol_openinpopup', 'aZ09');
 
+$object = new Agent($db);
+if ($action == 'desactivation') {
+
+	$sql = "UPDATE " . MAIN_DB_PREFIX . "management_agent SET status = " . $object::STATUS_CANCELED . " WHERE rowid=" . $id;
+	$resql = $db->query($sql);
+	setEventMessage('Agent désactivé avec succès');
+
+}
+
+
+if ($action == 'activation') {
+
+	$sql = "UPDATE " . MAIN_DB_PREFIX . "management_agent SET status = " . $object::STATUS_VALIDATED . " WHERE rowid=" . $id;
+	$resql = $db->query($sql);
+
+	setEventMessage('Agent activé avec succès');
+	
+}
+
+if ($action == 'deleteStatut') {
+
+	$sql = "DELETE FROM " . MAIN_DB_PREFIX . "management_statut WHERE fk_agent=".GETPOST('id', 'aZ09')." AND fk_type_statut=".GETPOST('statut', 'aZ09');
+	$resql = $db->query($sql);
+
+	setEventMessage('Statut supprimé avec succès');
+}
+
+if ($action == 'deleteAppetence') {
+
+	$sql = "DELETE FROM " . MAIN_DB_PREFIX . "management_appetence WHERE rowid=".GETPOST('appetence', 'aZ09');
+	$resql = $db->query($sql);
+
+	setEventMessage('Appétence supprimée avec succès');
+}
+
+if (GETPOST('res', 'aZ09') == "success") {
+	setEventMessage('Statut créé avec succès');
+}
+
+if (GETPOST('res', 'aZ09') == "successAppetence") {
+	setEventMessage('Appétence ajoutée avec succès');
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
 // Initialize technical objects
 $object = new Agent($db);
 $extrafields = new ExtraFields($db);
@@ -214,32 +269,6 @@ if (empty($reshook)) {
 	include DOL_DOCUMENT_ROOT.'/core/actions_sendmails.inc.php';
 }
 
-
-
-
-if ($action == 'deleteStatut') {
-
-	$sql = "DELETE FROM " . MAIN_DB_PREFIX . "management_statut WHERE fk_agent=".GETPOST('id', 'aZ09')." AND fk_type_statut=".GETPOST('statut', 'aZ09');
-	$resql = $db->query($sql);
-
-	setEventMessage('Statut supprimé avec succès');
-}
-
-if ($action == 'deleteAppetence') {
-
-	$sql = "DELETE FROM " . MAIN_DB_PREFIX . "management_appetence WHERE rowid=".GETPOST('appetence', 'aZ09');
-	$resql = $db->query($sql);
-
-	setEventMessage('Appétence supprimée avec succès');
-}
-
-if (GETPOST('res', 'aZ09') == "success") {
-	setEventMessage('Statut créé avec succès');
-}
-
-if (GETPOST('res', 'aZ09') == "successAppetence") {
-	setEventMessage('Appétence ajoutée avec succès');
-}
 
 
 
@@ -613,12 +642,18 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 		}
 
 		if (empty($reshook)) {
+
+			if ($object->status == $object::STATUS_CANCELED) {
+				print dolGetButtonAction($langs->trans('Activer l\'agent'), '', 'danger', $_SERVER["PHP_SELF"] . '?id=' . $object->id . '&action=activation&token=' . newToken(), '', $permissiontoadd);
+			}
 			// Send
-			if($user->id == $object->fk_user)
-			{
+
+			if ($object->status == $object::STATUS_VALIDATED || $object->status == $object::STATUS_DRAFT) {
+				print dolGetButtonAction($langs->trans('Desactiver l\'agent'), '', 'error', $_SERVER["PHP_SELF"] . '?id=' . $object->id . '&action=desactivation&token=' . newToken(), '', $permissiontoadd);
 				print dolGetButtonAction($langs->trans('Modifier'), '', 'default', $_SERVER["PHP_SELF"].'?id='.$object->id.'&action=edit&token='.newToken(), '');
 			}
 			print dolGetButtonAction($langs->trans('Engager dans un groupe'), '', 'default', DOL_URL_ROOT.'/custom/organisation/engagement_card.php?fk_agent='.$object->id.'&action=create' , '', $permissiontoadd);
+
 			// Delete (need delete permission, or if draft, just need create/modify permission)
 			print dolGetButtonAction($langs->trans('Supprimer'), '', 'delete', $_SERVER['PHP_SELF'].'?id='.$object->id.'&action=delete&token='.newToken(), '', $permissiontodelete || ($object->status == $object::STATUS_DRAFT && $permissiontoadd));
 		}

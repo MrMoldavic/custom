@@ -211,6 +211,8 @@ class Eleve extends CommonObject
 			}
 		}
 
+		
+
 		// Translate some data of arrayofkeyval
 		if (is_object($langs)) {
 			foreach ($this->fields as $key => $val) {

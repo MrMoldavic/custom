@@ -240,13 +240,13 @@ if ($id > 0 || !empty($ref)) {
 	
 		$time = strtotime($value['date_creation']);
 
-		$sqlProf1 = "SELECT firstname,lastname,rowid FROM ".MAIN_DB_PREFIX."user WHERE rowid= ".$creneauObj->fk_prof_1;
+		$sqlProf1 = "SELECT prenom,nom,rowid FROM ".MAIN_DB_PREFIX."management_agent WHERE rowid= ".$creneauObj->fk_prof_1;
 		$resqlProf1 = $db->query($sqlProf1);
 
-		$sqlProf2 = "SELECT firstname,lastname,rowid FROM ".MAIN_DB_PREFIX."user WHERE rowid= ".$creneauObj->fk_prof_2;
+		$sqlProf2 = "SELECT prenom,nom,rowid FROM ".MAIN_DB_PREFIX."management_agent WHERE rowid= ".$creneauObj->fk_prof_2;
 		$resqlProf2 = $db->query($sqlProf2);
 		
-		$sqlProf3 = "SELECT firstname,lastname,rowid FROM ".MAIN_DB_PREFIX."user WHERE rowid= ".$creneauObj->fk_prof_3;
+		$sqlProf3 = "SELECT prenom,nom,rowid FROM ".MAIN_DB_PREFIX."management_agent WHERE rowid= ".$creneauObj->fk_prof_3;
 		$resqlProf3 = $db->query($sqlProf3);
 
 		print '<tr>';
@@ -257,17 +257,17 @@ if ($id > 0 || !empty($ref)) {
 		if($resqlProf1)
 		{
 			$profObject1 = $db->fetch_object($resqlProf1);
-			print $profObject1->firstname.' '.$profObject1->lastname.'<br>';
+			print $profObject1->prenom.' '.$profObject1->nom.'<br>';
 		}
 		if($resqlProf2)
 		{
 			$profObject2 = $db->fetch_object($resqlProf2);
-			print $profObject2->firstname.' '.$profObject2->lastname.'<br>';
+			print $profObject2->prenom.' '.$profObject2->nom.'<br>';
 		}
 		if($resqlProf3)
 		{
 			$profObject3 = $db->fetch_object($resqlProf3);
-			print $profObject3->firstname.' '.$profObject3->lastname.'<br>';
+			print $profObject3->prenom.' '.$profObject3->nom.'<br>';
 		}
 		
 
@@ -317,13 +317,13 @@ if ($id > 0 || !empty($ref)) {
 	
 		$time = strtotime($value['date_creation']);
 
-		$sqlProf1 = "SELECT firstname,lastname,rowid FROM ".MAIN_DB_PREFIX."user WHERE rowid= ".$creneauObj->fk_prof_1;
+		$sqlProf1 = "SELECT prenom,nom,rowid FROM ".MAIN_DB_PREFIX."management_agent WHERE rowid= ".$creneauObj->fk_prof_1;
 		$resqlProf1 = $db->query($sqlProf1);
 
-		$sqlProf2 = "SELECT firstname,lastname,rowid FROM ".MAIN_DB_PREFIX."user WHERE rowid= ".$creneauObj->fk_prof_2;
+		$sqlProf2 = "SELECT prenom,nom,rowid FROM ".MAIN_DB_PREFIX."management_agent WHERE rowid= ".$creneauObj->fk_prof_2;
 		$resqlProf2 = $db->query($sqlProf2);
 		
-		$sqlProf3 = "SELECT firstname,lastname,rowid FROM ".MAIN_DB_PREFIX."user WHERE rowid= ".$creneauObj->fk_prof_3;
+		$sqlProf3 = "SELECT prenom,nom,rowid FROM ".MAIN_DB_PREFIX."management_agent WHERE rowid= ".$creneauObj->fk_prof_3;
 		$resqlProf3 = $db->query($sqlProf3);
 
 
@@ -336,17 +336,17 @@ if ($id > 0 || !empty($ref)) {
 		if($resqlProf1)
 		{
 			$profObject1 = $db->fetch_object($resqlProf1);
-			print $profObject1->firstname.' '.$profObject1->lastname.'<br>';
+			print $profObject1->prenom.' '.$profObject1->nom.'<br>';
 		}
 		if($resqlProf2)
 		{
 			$profObject2 = $db->fetch_object($resqlProf2);
-			print $profObject2->firstname.' '.$profObject2->lastname.'<br>';
+			print $profObject2->prenom.' '.$profObject2->nom.'<br>';
 		}
 		if($resqlProf3)
 		{
 			$profObject3 = $db->fetch_object($resqlProf3);
-			print $profObject3->firstname.' '.$profObject3->lastname.'<br>';
+			print $profObject3->prenom.' '.$profObject3->nom.'<br>';
 		}
 		
 
@@ -408,13 +408,13 @@ if ($id > 0 || !empty($ref)) {
 	
 		$time = strtotime($value['date_creation']);
 
-		$sqlProf1 = "SELECT firstname,lastname,rowid FROM ".MAIN_DB_PREFIX."user WHERE rowid= ".$creneauObj->fk_prof_1;
+		$sqlProf1 = "SELECT prenom,nom,rowid FROM ".MAIN_DB_PREFIX."management_agent WHERE rowid= ".$creneauObj->fk_prof_1;
 		$resqlProf1 = $db->query($sqlProf1);
 
-		$sqlProf2 = "SELECT firstname,lastname,rowid FROM ".MAIN_DB_PREFIX."user WHERE rowid= ".$creneauObj->fk_prof_2;
+		$sqlProf2 = "SELECT prenom,nom,rowid FROM ".MAIN_DB_PREFIX."management_agent WHERE rowid= ".$creneauObj->fk_prof_2;
 		$resqlProf2 = $db->query($sqlProf2);
 		
-		$sqlProf3 = "SELECT firstname,lastname,rowid FROM ".MAIN_DB_PREFIX."user WHERE rowid= ".$creneauObj->fk_prof_3;
+		$sqlProf3 = "SELECT prenom,nom,rowid FROM ".MAIN_DB_PREFIX."management_agent WHERE rowid= ".$creneauObj->fk_prof_3;
 		$resqlProf3 = $db->query($sqlProf3);
 
 
@@ -427,17 +427,17 @@ if ($id > 0 || !empty($ref)) {
 		if($resqlProf1)
 		{
 			$profObject1 = $db->fetch_object($resqlProf1);
-			print $profObject1->firstname.' '.$profObject1->lastname.'<br>';
+			print $profObject1->prenom.' '.$profObject1->nom.'<br>';
 		}
 		if($resqlProf2)
 		{
 			$profObject2 = $db->fetch_object($resqlProf2);
-			print $profObject2->firstname.' '.$profObject2->lastname.'<br>';
+			print $profObject2->prenom.' '.$profObject2->nom.'<br>';
 		}
 		if($resqlProf3)
 		{
 			$profObject3 = $db->fetch_object($resqlProf3);
-			print $profObject3->firstname.' '.$profObject3->lastname.'<br>';
+			print $profObject3->prenom.' '.$profObject3->nom.'<br>';
 		}
 		
 

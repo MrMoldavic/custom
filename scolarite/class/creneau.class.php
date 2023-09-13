@@ -107,31 +107,28 @@ class Creneau extends CommonObject
 	 * @var array  Array with all fields and their property. Do not use it as a static var. It may be modified by constructor.
 	 */
 	public $fields=array(
-		'rowid' => array('type'=>'integer(11) ', 'label'=>'TechnicalID', 'enabled'=>'1', 'position'=>1, 'notnull'=>1, 'visible'=>0, 'noteditable'=>'1', 'index'=>1, 'css'=>'left', 'comment'=>"Id", ),
-		'fk_dispositif' => array('type'=>'integer:Dispositif:custom/scolarite/class/dispositif.class.php:1','label'=>'Dispositif', 'enabled'=>'1', 'position'=>1, 'notnull'=>1, 'visible'=>1, 'index'=>1,'searchall'=>1,  'validate'=>'1', 'css'=>'maxwidth300'),
-		'fk_type_classe' => array('type'=>'sellist:type_classe:type', 'label'=>'Type de classe', 'enabled'=>'1', 'position'=>2, 'notnull'=>1, 'visible'=>1, 'searchall'=>1, 'css'=>'minwidth300','validate'=>'1',),
-		'fk_instrument_enseigne' => array('type'=>'sellist:c_instrument_enseigne:instrument', 'label'=>'Instrument enseigné', 'enabled'=>'1', 'position'=>1, 'notnull'=>0, 'visible'=>1,'help'=>'Laissez vide si groupe'),
-		'fk_niveau' => array('type'=>'sellist:c_niveaux:niveau', 'label'=>'Niveau du cours/groupe', 'enabled'=>'1', 'position'=>2, 'notnull'=>1, 'visible'=>3,'help'=>'Niveau des élèves dans le groupe'),
-		'fk_prof_1' => array('type'=>'integer:User:user/class/user.class.php:1', 'label'=>'Professeur n°1', 'enabled'=>'1', 'position'=>5, 'notnull'=>1, 'visible'=>1, 'css'=>'maxwidth200',),
-		'fk_prof_2' => array('type'=>'integer:User:user/class/user.class.php:1', 'label'=>'Professeur n°2', 'enabled'=>'1', 'position'=>6, 'notnull'=>0, 'visible'=>1, 'css'=>'maxwidth200',),
-		'fk_prof_3' => array('type'=>'integer:User:user/class/user.class.php:1', 'label'=>'Professeur n°3', 'enabled'=>'1', 'position'=>7, 'notnull'=>0, 'visible'=>1, 'css'=>'maxwidth200',),
-		'professeurs' => array('type'=>'varchar(255)', 'label'=>'Professeurs', 'enabled'=>'1', 'position'=>4, 'notnull'=>0, 'visible'=>2,  'css'=>'minwidth200','validate'=>'1'),
-		'eleves' => array('type'=>'varchar(255)', 'label'=>'Éleves', 'enabled'=>'1', 'position'=>4, 'notnull'=>0, 'visible'=>2,  'css'=>'minwidth200','validate'=>'1'),
-
-		'infos_creneau' => array('type'=>'varchar(255)', 'label'=>'Infos créneau', 'enabled'=>'1', 'position'=>3, 'notnull'=>0, 'visible'=>2,  'css'=>'minwidth300','validate'=>'1', 'searchall'=>1,),
-
-		'nombre_places'=>array('type'=>'integer', 'label'=>'Nb élèves', 'enabled'=>'1', 'position'=>3, 'notnull'=>1, 'visible'=>1,  'css'=>'maxwidth400','validate'=>'1'),
-		'heure_debut'=>array('type'=>'sellist:c_heure:heure', 'label'=>'Heure de début', 'enabled'=>'1', 'position'=>8, 'notnull'=>1, 'visible'=>1,  'css'=>'minwidth100','validate'=>'1','help'=>'Format : 12:00 / 08:30 '),
-		'minutes_debut'=>array('type'=>'varchar(255)', 'label'=>'Minutes de début', 'enabled'=>'1', 'position'=>9, 'notnull'=>1, 'visible'=>3,  'css'=>'minwidth100','validate'=>'1','help'=>'Laissez vide si heure pile', 'arrayofkeyval'=>array('00'=>'00', '15'=>'15', '30'=>'30','45'=>'45')),
-
-		'heure_fin'=>array('type'=>'sellist:c_heure:heure', 'label'=>'Heure de fin', 'enabled'=>'1', 'position'=>10, 'notnull'=>1, 'visible'=>1,  'css'=>'minwidth100','validate'=>'1','help'=>'Format : 12:00 / 08:30 '),
-		'minutes_fin'=>array('type'=>'varchar(255)', 'label'=>'Minutes de fin', 'enabled'=>'1', 'position'=>11, 'notnull'=>1, 'visible'=>3,  'css'=>'minwidth100','validate'=>'1','help'=>'Laissez vide si heure pile', 'arrayofkeyval'=>array('00'=>'00', '15'=>'15', '30'=>'30','45'=>'45')),
-		'jour' => array('type'=>'sellist:c_jour:jour:rowid::(active=1):rowid', 'label'=>'Jour de la semaine', 'enabled'=>'1', 'position'=>8, 'notnull'=>1, 'visible'=>1, 'searchall'=>1, 'css'=>'maxwidth300', 'cssview'=>'wordbreak','validate'=>'1',),
-		'fk_salle' => array('type'=>'integer:Salle:custom/scolarite/class/salle.class.php:1', 'label'=>'Salle', 'enabled'=>'1', 'position'=>21, 'notnull'=>1, 'visible'=>3, 'searchall'=>1, 'css'=>'maxwidth200', 'cssview'=>'wordbreak',),
+		'rowid' => array('type'=>'integer(11) ', 'label'=>'TechnicalID', 'enabled'=>'1', 'position'=>1, 'notnull'=>1, 'visible'=>2, 'noteditable'=>'1', 'index'=>1, 'css'=>'left', 'comment'=>"Id"),
+		'fk_dispositif' => array('type'=>'integer:Dispositif:custom/scolarite/class/dispositif.class.php:1', 'label'=>'Dispositif', 'enabled'=>'1', 'position'=>1, 'notnull'=>1, 'visible'=>1, 'index'=>1, 'searchall'=>1, 'css'=>'maxwidth300', 'validate'=>'1',),
+		'fk_type_classe' => array('type'=>'sellist:type_classe:type', 'label'=>'Type de classe', 'enabled'=>'1', 'position'=>2, 'notnull'=>1, 'visible'=>1, 'searchall'=>1, 'css'=>'minwidth300', 'validate'=>'1',),
+		'fk_instrument_enseigne' => array('type'=>'sellist:c_instrument_enseigne:instrument', 'label'=>'Instrument enseigné', 'enabled'=>'1', 'position'=>1, 'notnull'=>0, 'visible'=>1, 'help'=>"Laissez vide si groupe",),
+		'fk_niveau' => array('type'=>'sellist:c_niveaux:niveau', 'label'=>'Niveau du cours/groupe', 'enabled'=>'1', 'position'=>2, 'notnull'=>1, 'visible'=>3, 'help'=>"Niveau des élèves dans le groupe",),
+		'fk_prof_1' => array('type'=>'integer:Agent:custom/management/class/agent.class.php:1:(t.status!=9)', 'label'=>'Professeur n°1', 'enabled'=>'1', 'position'=>5, 'notnull'=>1, 'visible'=>1, 'css'=>'maxwidth200',),
+		'fk_prof_2' => array('type'=>'integer:Agent:custom/management/class/agent.class.php:1:(t.status!=9)', 'label'=>'Professeur n°2', 'enabled'=>'1', 'position'=>6, 'notnull'=>0, 'visible'=>1, 'css'=>'maxwidth200',),
+		'fk_prof_3' => array('type'=>'integer:Agent:custom/management/class/agent.class.php:1:(t.status!=9)', 'label'=>'Professeur n°3', 'enabled'=>'1', 'position'=>7, 'notnull'=>0, 'visible'=>1, 'css'=>'maxwidth200',),
+		'professeurs' => array('type'=>'varchar(255)', 'label'=>'Professeurs', 'enabled'=>'1', 'position'=>4, 'notnull'=>0, 'visible'=>2, 'css'=>'minwidth200', 'validate'=>'1',),
+		'eleves' => array('type'=>'varchar(255)', 'label'=>'Éleves', 'enabled'=>'1', 'position'=>4, 'notnull'=>0, 'visible'=>2, 'css'=>'minwidth200', 'validate'=>'1',),
+		'infos_creneau' => array('type'=>'varchar(255)', 'label'=>'Infos créneau', 'enabled'=>'1', 'position'=>3, 'notnull'=>0, 'visible'=>2, 'searchall'=>1, 'css'=>'minwidth300', 'validate'=>'1',),
+		'nombre_places' => array('type'=>'integer', 'label'=>'Nb élèves', 'enabled'=>'1', 'position'=>3, 'notnull'=>1, 'visible'=>1, 'css'=>'maxwidth400', 'validate'=>'1',),
+		'fk_annee_scolaire' => array('type'=>'sellist:c_annee_scolaire:annee', 'label'=>'Année Scolaire', 'enabled'=>'1', 'position'=>7, 'notnull'=>1, 'visible'=>-1,),
+		'heure_debut' => array('type'=>'sellist:c_heure:heure', 'label'=>'Heure de début', 'enabled'=>'1', 'position'=>40, 'notnull'=>1, 'visible'=>1, 'css'=>'minwidth100', 'help'=>"Format : 12:00 / 08:30 ", 'validate'=>'1',),
+		'minutes_debut' => array('type'=>'varchar(255)', 'label'=>'Minutes de début', 'enabled'=>'1', 'position'=>41, 'notnull'=>1, 'visible'=>3, 'css'=>'minwidth100', 'help'=>"Laissez vide si heure pile", 'arrayofkeyval'=>array('00'=>'00', '15'=>'15', '30'=>'30', '45'=>'45'), 'validate'=>'1',),
+		'heure_fin' => array('type'=>'sellist:c_heure:heure', 'label'=>'Heure de fin', 'enabled'=>'1', 'position'=>42, 'notnull'=>1, 'visible'=>1, 'css'=>'minwidth100', 'help'=>"Format : 12:00 / 08:30 ", 'validate'=>'1',),
+		'minutes_fin' => array('type'=>'varchar(255)', 'label'=>'Minutes de fin', 'enabled'=>'1', 'position'=>43, 'notnull'=>1, 'visible'=>3, 'css'=>'minwidth100', 'help'=>"Laissez vide si heure pile", 'arrayofkeyval'=>array('00'=>'00', '15'=>'15', '30'=>'30', '45'=>'45'), 'validate'=>'1',),
+		'jour' => array('type'=>'sellist:c_jour:jour:rowid::(active=1):rowid', 'label'=>'Jour de la semaine', 'enabled'=>'1', 'position'=>39, 'notnull'=>1, 'visible'=>1, 'searchall'=>1, 'css'=>'maxwidth300', 'cssview'=>'wordbreak', 'validate'=>'1',),
+		'fk_salle' => array('type'=>'integer:Salle:custom/scolarite/class/salle.class.php:1', 'label'=>'Salle', 'enabled'=>'1', 'position'=>44, 'notnull'=>0, 'visible'=>3, 'searchall'=>1, 'css'=>'maxwidth200', 'cssview'=>'wordbreak',),
 		'commentaires' => array('type'=>'text', 'label'=>'Commentaires', 'enabled'=>'1', 'position'=>45, 'notnull'=>0, 'visible'=>3, 'isameasure'=>'1', 'css'=>'maxwidth400', 'help'=>"Help text for quantity", 'validate'=>'1',),
-		'nom_groupe' => array('type'=>'varchar(255)', 'label'=>'Nom du groupe', 'enabled'=>'1', 'position'=>1, 'notnull'=>0, 'visible'=>3,  'css'=>'maxwidth400','validate'=>'1','help'=>'Écriture : Nom pour un groupe seulement (nom de cours généré automatiquement)'),
-		'nom_creneau' => array('type'=>'varchar(255)', 'label'=>'Nom du créneau', 'enabled'=>'1', 'position'=>0, 'notnull'=>0, 'visible'=>0,  'css'=>'maxwidth400','validate'=>'1', 'showoncombobox'=>'1',),
-
+		'nom_groupe' => array('type'=>'varchar(255)', 'label'=>'Nom du groupe', 'enabled'=>'1', 'position'=>1, 'notnull'=>0, 'visible'=>3, 'css'=>'maxwidth400', 'help'=>"Écriture : Nom pour un groupe seulement (nom de cours généré automatiquement)", 'validate'=>'1',),
+		'nom_creneau' => array('type'=>'varchar(255)', 'label'=>'Nom du créneau', 'enabled'=>'1', 'position'=>0, 'notnull'=>0, 'visible'=>0, 'css'=>'maxwidth400', 'showoncombobox'=>'1', 'validate'=>'1',),
 		'note_public' => array('type'=>'text', 'label'=>'NotePublic', 'enabled'=>'1', 'position'=>61, 'notnull'=>0, 'visible'=>0, 'cssview'=>'maxwidth400', 'validate'=>'1',),
 		'note_private' => array('type'=>'text', 'label'=>'NotePrivate', 'enabled'=>'1', 'position'=>62, 'notnull'=>0, 'visible'=>0, 'cssview'=>'maxwidth400', 'validate'=>'1',),
 		'date_creation' => array('type'=>'datetime', 'label'=>'DateCreation', 'enabled'=>'1', 'position'=>500, 'notnull'=>1, 'visible'=>-2,),
@@ -141,22 +138,28 @@ class Creneau extends CommonObject
 		'last_main_doc' => array('type'=>'varchar(255)', 'label'=>'LastMainDoc', 'enabled'=>'1', 'position'=>600, 'notnull'=>0, 'visible'=>0,),
 		'model_pdf' => array('type'=>'varchar(255)', 'label'=>'Model pdf', 'enabled'=>'1', 'position'=>1010, 'notnull'=>-1, 'visible'=>0,),
 		'status' => array('type'=>'integer', 'label'=>'Status', 'enabled'=>'1', 'position'=>2000, 'notnull'=>1, 'visible'=>2, 'index'=>1, 'arrayofkeyval'=>array('0'=>'Brouillon', '1'=>'Valid&eacute;', '9'=>'Annul&eacute;'), 'validate'=>'1',),
-
 	);
-
 	public $rowid;
-	public $ref;
-	public $label;
-
 	public $fk_dispositif;
 	public $fk_type_classe;
-	public $fk_niveau;
 	public $fk_instrument_enseigne;
+	public $fk_niveau;
 	public $fk_prof_1;
 	public $fk_prof_2;
 	public $fk_prof_3;
+	public $professeurs;
+	public $eleves;
+	public $infos_creneau;
+	public $nombre_places;
+	public $heure_debut;
+	public $minutes_debut;
+	public $heure_fin;
+	public $minutes_fin;
+	public $jour;
+	public $fk_salle;
 	public $commentaires;
 	public $nom_groupe;
+	public $nom_creneau;
 	public $note_public;
 	public $note_private;
 	public $date_creation;
@@ -165,7 +168,8 @@ class Creneau extends CommonObject
 	public $fk_user_modif;
 	public $last_main_doc;
 	public $model_pdf;
-
+	public $status;
+	public $fk_annee_scolaire;
 	// END MODULEBUILDER PROPERTIES
 
 
@@ -257,20 +261,28 @@ class Creneau extends CommonObject
 	 */
 	public function create(User $user, $notrigger = false)
 	{
-		$existingCreneau = "SELECT rowid FROM ".MAIN_DB_PREFIX."creneau WHERE fk_salle=".$this->fk_salle." AND heure_debut=".$this->heure_debut;
-		$resqlExistingCreneau = $this->db->query($existingCreneau);
-
-		if($resqlExistingCreneau->num_rows > 0)
+		if($this->fk_salle)
 		{
-			return setEventMessage('Désolé, cette salle est déjà utilisée à cet horaire.','errors');
+			
+			$existingCreneau = "SELECT rowid FROM ".MAIN_DB_PREFIX."creneau WHERE fk_salle=".$this->fk_salle." AND heure_debut=".$this->heure_debut." AND fk_annee_scolaire =".$this->fk_annee_scolaire;
+			$resqlExistingCreneau = $this->db->query($existingCreneau);
+			if($resqlExistingCreneau->num_rows > 0)
+			{
+				return setEventMessage('Désolé, cette salle est déjà utilisée à cet horaire.','errors');
+			}
 		}
-		elseif(!$this->nom_groupe && !$this->fk_instrument_enseigne)
+
+		if(!$this->nom_groupe && !$this->fk_instrument_enseigne)
 		{
 			return setEventMessage('Nom de groupe ou un instrument enseigné obligatoire.','errors');
 		}
 		elseif(intval($this->nombre_places) == 0)
 		{
 			return setEventMessage('Veuillez choisir un nombre de place valide.','errors');
+		}
+		elseif(intval($this->fk_annee_scolaire) == 0)
+		{
+			return setEventMessage('Veuillez renseigner l\'année scolaire concernée.','errors');
 		}
 		elseif($this->nom_groupe && $this->fk_instrument_enseigne)
 		{
@@ -282,6 +294,8 @@ class Creneau extends CommonObject
 		}
 		else
 		{
+
+		
 			if(!$this->nom_groupe)
 			{		
 				$diminutif = "SELECT d.diminutif FROM ".MAIN_DB_PREFIX."etablissement as d WHERE d.rowid=".("(SELECT i.fk_etablissement FROM ".MAIN_DB_PREFIX."dispositif as i WHERE i.rowid =".$this->fk_dispositif.")");
@@ -329,11 +343,11 @@ class Creneau extends CommonObject
 				}
 				
 	
-				$prof = "SELECT p.firstname FROM ".MAIN_DB_PREFIX."user as p WHERE p.rowid =".$this->fk_prof_1;
+				$prof = "SELECT p.prenom FROM ".MAIN_DB_PREFIX."management_agent as p WHERE p.rowid =".$this->fk_prof_1;
 				$resql = $this->db->query($prof);
 				$object = $this->db->fetch_object($resql);
 				
-				$this->nom_creneau .= $object->firstname. "-";
+				$this->nom_creneau .= $object->prenom. "-";
 
 				$this->status = 4;
 			
@@ -377,11 +391,11 @@ class Creneau extends CommonObject
 					$this->minutes_fin = "00";
 				}
 
-				$prof = "SELECT p.firstname FROM ".MAIN_DB_PREFIX."user as p WHERE p.rowid =".$this->fk_prof_1;
+				$prof = "SELECT p.nom FROM ".MAIN_DB_PREFIX."management_agent as p WHERE p.rowid =".$this->fk_prof_1;
 				$resql = $this->db->query($prof);
 				$object = $this->db->fetch_object($resql);
 				
-				$this->nom_creneau .= $object->firstname. "-";
+				$this->nom_creneau .= $object->nom;
 			}
 
 			$affectation = "SELECT s.fk_souhait FROM ".MAIN_DB_PREFIX."affectation as s WHERE s.fk_creneau=".$this->id." AND date_fin IS NULL";
@@ -398,39 +412,43 @@ class Creneau extends CommonObject
 				}
 			}
 	
-			$salle = "SELECT s.salle FROM ".MAIN_DB_PREFIX."salles as s WHERE s.rowid =".$this->fk_salle;
-			$resql = $this->db->query($salle);
-			$object = $this->db->fetch_object($resql);
-					
-			$this->nom_creneau .= $object->salle;
+			if($this->fk_salle)
+			{
+				$salle = "SELECT s.salle FROM ".MAIN_DB_PREFIX."salles as s WHERE s.rowid =".$this->fk_salle;
+				$resql = $this->db->query($salle);
+				$object = $this->db->fetch_object($resql);
+						
+				$this->nom_creneau .= "-".$object->salle;
+			}
+			
 
 			$professeur = "";
 
 			if($this->fk_prof_1 != NULL)
 			{
-				$sqlProf1 = "SELECT firstname,lastname,rowid FROM ".MAIN_DB_PREFIX."user WHERE rowid= ".$this->fk_prof_1;
+				$sqlProf1 = "SELECT prenom,nom,rowid FROM ".MAIN_DB_PREFIX."management_agent WHERE rowid= ".$this->fk_prof_1;
 				$resqlProf1 = $this->db->query($sqlProf1);
 				$objProf1 = $this->db->fetch_object($resqlProf1);
 
-				$professeur .= $objProf1->firstname.' '.$objProf1->lastname.' ';
+				$professeur .= $objProf1->prenom.' '.$objProf1->nom.' ';
 			}
 
 			if($this->fk_prof_2 != NULL)
 			{
-				$sqlProf2 = "SELECT firstname,lastname,rowid FROM ".MAIN_DB_PREFIX."user WHERE rowid= ".$this->fk_prof_2;
+				$sqlProf2 = "SELECT prenom,nom,rowid FROM ".MAIN_DB_PREFIX."management_agent WHERE rowid= ".$this->fk_prof_2;
 				$resqlProf2 = $this->db->query($sqlProf2);
 				$objProf2 = $this->db->fetch_object($resqlProf2);
 
-				$professeur .= $objProf2->firstname.' '.$objProf2->lastname.' ';
+				$professeur .= $objProf2->prenom.' '.$objProf2->nom.' ';
 			}
 			
 			if($this->fk_prof_3 != NULL)
 			{
-				$sqlProf3 = "SELECT firstname,lastname,rowid FROM ".MAIN_DB_PREFIX."user WHERE rowid= ".$this->fk_prof_3;
+				$sqlProf3 = "SELECT prenom,nom,rowid FROM ".MAIN_DB_PREFIX."management_agent WHERE rowid= ".$this->fk_prof_3;
 				$resqlProf3 = $this->db->query($sqlProf3);
 				$objProf3 = $this->db->fetch_object($resqlProf3);
 
-				$professeur .= $objProf3->firstname.' '.$objProf3->lastname;
+				$professeur .= $objProf3->prenom.' '.$objProf3->nom;
 			}
 
 			$this->professeurs = $professeur;
@@ -673,15 +691,20 @@ class Creneau extends CommonObject
 	 */
 	public function update(User $user, $notrigger = false)
 	{
-			$existingCreneau = "SELECT rowid FROM ".MAIN_DB_PREFIX."creneau WHERE fk_salle=".$this->fk_salle." AND heure_debut=".$this->heure_debut." AND rowid!=".$this->id;
-			$resqlExistingCreneau = $this->db->query($existingCreneau);
+
+			if($this->fk_salle)
+			{
+				$existingCreneau = "SELECT rowid FROM ".MAIN_DB_PREFIX."creneau WHERE fk_salle=".$this->fk_salle." AND heure_debut=".$this->heure_debut." AND rowid!=".$this->id." AND fk_annee_scolaire =".$this->fk_annee_scolaire;
+				$resqlExistingCreneau = $this->db->query($existingCreneau);
+				if($resqlExistingCreneau->num_rows > 0)
+				{
+					return setEventMessage('Désolé, cette salle est déjà utilisée à cet horaire.','errors');
+				}
+			}
+			
 
 			$nom_groupe = $this->nom_cours;
-			if($resqlExistingCreneau->num_rows > 0)
-			{
-				return setEventMessage('Désolé, cette salle est déjà utilisée à cet horaire.','errors');
-			}
-			elseif(!$this->nom_groupe && !$this->fk_instrument_enseigne)
+			if(!$this->nom_groupe && !$this->fk_instrument_enseigne)
 			{
 				return setEventMessage('Nom de groupe ou un instrument enseigné obligatoire.','errors');
 			}
@@ -772,45 +795,48 @@ class Creneau extends CommonObject
 					$this->minutes_fin = "00";
 				}
 
-				$prof = "SELECT p.firstname FROM ".MAIN_DB_PREFIX."user as p WHERE p.rowid =".$this->fk_prof_1;
+				$prof = "SELECT p.nom FROM ".MAIN_DB_PREFIX."management_agent as p WHERE p.rowid =".$this->fk_prof_1;
 				$resql = $this->db->query($prof);
 				$object = $this->db->fetch_object($resql);
 				
-				$this->nom_creneau .= $object->firstname. '-';
+				$this->nom_creneau .= $object->nom;
 
-				$salle = "SELECT s.salle FROM ".MAIN_DB_PREFIX."salles as s WHERE s.rowid =".$this->fk_salle;
-				$resql = $this->db->query($salle);
-				$object = $this->db->fetch_object($resql);
-				
-				$this->nom_creneau .= $object->salle;
+				if($this->fk_salle)
+				{
+					$salle = "SELECT s.salle FROM ".MAIN_DB_PREFIX."salles as s WHERE s.rowid =".$this->fk_salle;
+					$resql = $this->db->query($salle);
+					$object = $this->db->fetch_object($resql);
+							
+					$this->nom_creneau .= "-".$object->salle;
+				}
 
 				$this->professeurs = "";
 
-				if($this->fk_prof_1 != "")
+				if($this->fk_prof_1 != NULL)
 				{
-					$sqlProf1 = "SELECT firstname,lastname,rowid FROM ".MAIN_DB_PREFIX."user WHERE rowid= ".$this->fk_prof_1;
+					$sqlProf1 = "SELECT prenom,nom,rowid FROM ".MAIN_DB_PREFIX."management_agent WHERE rowid= ".$this->fk_prof_1;
 					$resqlProf1 = $this->db->query($sqlProf1);
 					$objProf1 = $this->db->fetch_object($resqlProf1);
 
-					$this->professeurs .= $objProf1->firstname.' '.$objProf1->lastname.' ';
+					$professeur .= $objProf1->prenom.' '.$objProf1->nom.' ';
 				}
 
-				if($this->fk_prof_2 != "")
+				if($this->fk_prof_2 != NULL)
 				{
-					$sqlProf2 = "SELECT firstname,lastname,rowid FROM ".MAIN_DB_PREFIX."user WHERE rowid= ".$this->fk_prof_2;
+					$sqlProf2 = "SELECT prenom,nom,rowid FROM ".MAIN_DB_PREFIX."management_agent WHERE rowid= ".$this->fk_prof_2;
 					$resqlProf2 = $this->db->query($sqlProf2);
 					$objProf2 = $this->db->fetch_object($resqlProf2);
 
-					$this->professeurs .= $objProf2->firstname.' '.$objProf2->lastname.' ';
+					$professeur .= $objProf2->prenom.' '.$objProf2->nom.' ';
 				}
-
-				if($this->fk_prof_3 != "")
+			
+				if($this->fk_prof_3 != NULL)
 				{
-					$sqlProf3 = "SELECT firstname,lastname,rowid FROM ".MAIN_DB_PREFIX."user WHERE rowid= ".$this->fk_prof_3;
+					$sqlProf3 = "SELECT prenom,nom,rowid FROM ".MAIN_DB_PREFIX."management_agent WHERE rowid= ".$this->fk_prof_3;
 					$resqlProf3 = $this->db->query($sqlProf3);
 					$objProf3 = $this->db->fetch_object($resqlProf3);
 
-					$this->professeurs .= $objProf3->firstname.' '.$objProf3->lastname;
+					$professeur .= $objProf3->prenom.' '.$objProf3->nom;
 				}
 			
 			

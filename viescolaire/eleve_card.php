@@ -22,9 +22,9 @@
  *		\brief      Page to create/edit/view eleve
  */
 
- ini_set('display_errors', '1');
-ini_set('display_startup_errors', '1');
-error_reporting(E_ALL);
+//  ini_set('display_errors', '1');
+// ini_set('display_startup_errors', '1');
+// error_reporting(E_ALL);
 
 //if (! defined('NOREQUIREDB'))              define('NOREQUIREDB', '1');				// Do not create database handler $db
 //if (! defined('NOREQUIREUSER'))            define('NOREQUIREUSER', '1');				// Do not load object $user
@@ -645,10 +645,14 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 	
 	$nom = '\'%'.$object->nom.'-'.$object->prenom.'%\'';
 
-	$cours = "SELECT * FROM ".MAIN_DB_PREFIX."souhait as c WHERE c.fk_eleve = ".$object->id." AND c.status= 4";
-	$resql = $db->query($cours);
-	$obj = $db->fetch_row($resql);
-	$num = $db->num_rows($resql);
+	$anneScolaire = "SELECT annee,annee_actuelle,rowid FROM ".MAIN_DB_PREFIX."c_annee_scolaire WHERE active = 1 ORDER BY rowid DESC";
+	$resqlAnneeScolaire = $db->query($anneScolaire);
+	$objAnneScolaire = $db->fetch_object($resqlAnneeScolaire);
+
+	// $cours = "SELECT * FROM ".MAIN_DB_PREFIX."souhait as c WHERE c.fk_eleve = ".$object->id." AND c.status= 4";
+	// $resql = $db->query($cours);
+	// $obj = $db->fetch_row($resql);
+	// $num = $db->num_rows($resql);
 	
 	$souhait = "SELECT * FROM ".MAIN_DB_PREFIX."souhait as c WHERE c.fk_eleve = ".$object->id;
 	$resqlSouhait = $db->query($souhait);
@@ -673,36 +677,7 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 
 			print dolGetButtonAction($langs->trans('Modifier l\'élève'), '', 'default', ''.'?id='.$object->id.'&action=edit&token='.newToken(), '', $permissiontoadd);
 			print dolGetButtonAction($langs->trans('Delete'), '', 'delete', $_SERVER['PHP_SELF'].'?id='.$object->id.'&action=delete&token='.newToken(), '', $permissiontodelete);
-			// // Send
-			// if (empty($user->socid)) {
-			// 	print dolGetButtonAction($langs->trans('SendMail'), '', 'default', $_SERVER["PHP_SELF"].'?id='.$object->id.'&action=presend&mode=init&token='.newToken().'#formmailbeforetitle');
-			// }
-
 			
-			// if ($object->status == $object::STATUS_VALIDATED) {
-			// 	print dolGetButtonAction($langs->trans('Inscription en brouillon'), '', 'default', $_SERVER["PHP_SELF"].'?id='.$object->id.'&action=confirm_setdraft&confirm=yes&token='.newToken(), '', $permissiontoadd);
-			// 	print dolGetButtonAction($langs->trans('Annuler l\'inscription'), '', 'default', $_SERVER["PHP_SELF"] . '?id=' . $object->id . '&action=annulationInscription&token=' . newToken(), '', $permissiontoadd);
-			// }
-		
-			// if($object->status == $object::STATUS_DRAFT)
-			// {
-			// 	print dolGetButtonAction($langs->trans('Modifier l\'élève'), '', 'default', ''.'?id='.$object->id.'&action=edit&token='.newToken(), '', $permissiontoadd);
-			// 	print dolGetButtonAction($langs->trans('Annuler l\'inscription'), '', 'default', $_SERVER["PHP_SELF"] . '?id=' . $object->id . '&action=annulationInscription&token=' . newToken(), '', $permissiontoadd);
-			// 	print dolGetButtonAction($langs->trans('Valider l\'inscription'), '', 'default', $_SERVER['PHP_SELF'].'?id='.$object->id.'&action=confirm_validate&confirm=yes&token='.newToken(), '', $permissiontoadd);
-			// }
-
-			// if($object->status == $object::STATUS_VALIDATED)
-			// {
-			// 	print dolGetButtonAction($langs->trans('Modifier l\'élève'), '', 'default', ''.'?id='.$object->id.'&action=edit&token='.newToken(), '', $permissiontoadd);
-			// 	print dolGetButtonAction($langs->trans('Annuler l\'inscription'), '', 'default', $_SERVER["PHP_SELF"] . '?id=' . $object->id . '&action=annulationInscription&token=' . newToken(), '', $permissiontoadd);
-			// 	print dolGetButtonAction($langs->trans('Inscription en brouillon'), '', 'default', $_SERVER["PHP_SELF"].'?id='.$object->id.'&action=confirm_setdraft&confirm=yes&token='.newToken(), '', $permissiontoadd);
-			// }
-
-			// if($object->status == $object::STATUS_CANCELED)
-			// {
-			// 	print dolGetButtonAction($langs->trans('Valider l\'inscription'), '', 'default', $_SERVER['PHP_SELF'].'?id='.$object->id.'&action=confirm_validate&confirm=yes&token='.newToken(), '', $permissiontoadd);
-			// 	print dolGetButtonAction($langs->trans('Inscription en brouillon'), '', 'default', $_SERVER["PHP_SELF"].'?id='.$object->id.'&action=confirm_setdraft&confirm=yes&token='.newToken(), '', $permissiontoadd);
-
 			// }
 		
 			// Delete (need delete permission, or if draft, just need create/modify permission)
@@ -710,62 +685,93 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 		print '</div>'."\n";
 	}
 	
-	// print '<p>Nombre de souhaits de l\'élève: '.$numSouhait.'</p>';
-	// print '<hr>';
-	// print '<p>Nombre de cours effectifs de l\'élève: '.$num.'</p>';
 	
 	print '<hr>';
 	print '<h2><u>Liste des souhaits de l\'élève:</u></h2>';
 
 	print '<p>'.dolGetButtonAction('Ajouter un souhait', '', 'default', '/custom/viescolaire/souhait_card.php'.'?action=create&fk_eleve='.$object->id, '', $permissiontoadd).'</p>';
 
-
-
+	
 	if($obj == NULL)
 	{
-		print '<p>Aucun cours</p>';
+		print '<p>Aucun souhaits connus pour cette année scolaire.</p>';
 	}
 	else
 	{
-		print '<table class="tagtable liste">';
-		print '<tbody>';
-	
-		print '<tr class="liste_titre">
-			<th class="wrapcolumntitle liste_titre">Souhait</th>
-			<th class="wrapcolumntitle liste_titre">Etat</th>
-			<th class="wrapcolumntitle liste_titre">Créneau</th>
-			</tr>';
-		foreach($resqlSouhait as $val)
+
+		/// EN COURS -> FAIRE EN SORTE DE NE LISTER QUE LES SOUHAITS DE L'ANNEE CONCERNÉE
+		foreach($resqlAnneeScolaire as $value)
 		{
-			print '<tr class="oddeven">';
-			print '<td><a href="' . DOL_URL_ROOT . '/custom/viescolaire/souhait_card.php?id=' . $val['rowid']. '">' .'- ' . $val['nom_souhait'].'</a> <span class="badge  badge-status'.($val['details'] != "" ? "4" : "8").' badge-status" style="color:white;">'.($val['details'] != "" ? "Appréciation Faite" : "Appréciation manquante").'</span></td>';
-			if($val['status'] == 4)
+			$souhait = "SELECT * FROM ".MAIN_DB_PREFIX."souhait as c WHERE c.fk_eleve = ".$object->id." AND c.fk_annee_scolaire=".$value['rowid'];
+			$resqlSouhait = $db->query($souhait);
+	
+			print '<div class="annee-accordion'.($value['annee_actuelle'] == 1 ? '-opened' : '').'">';	
+			print '<h3><span class="badge badge-status4 badge-status">'.$value['annee'].($value['annee_actuelle'] != 1 ? ' (année précédente)' : '').'</span></h3>';
+
+			if($resqlSouhait->num_rows > 0)
 			{
-				$sql = "SELECT c.nom_creneau,c.rowid FROM ".MAIN_DB_PREFIX."creneau as c WHERE c.rowid =".("(SELECT e.fk_creneau FROM ".MAIN_DB_PREFIX."affectation as e WHERE e.fk_souhait =".$val['rowid']." AND e.status = 4)");
-				$resql = $db->query($sql);
-				$objectCreneau = $db->fetch_object($resql);
-				
-				print '<td><span class="badge  badge-status4 badge-status" style="color:white;">Affecté</span></td>';
-				print '<td><a href="'.DOL_URL_ROOT.'/custom/scolarite/creneau_card.php?id='.$objectCreneau->rowid.'">'.$objectCreneau->nom_creneau.'</a></td>';
-			}
-			elseif($val['status'] == 9)
-			{
-				print '<td><span class="badge  badge-status8 badge-status" style="color:white;">Souhait désactivé</span></td>';
-				print '<td><a href="'.DOL_URL_ROOT.'/custom/scolarite/creneau_card.php?id='.$objectCreneau->rowid.'">'.$objectCreneau->nom_creneau.'</a></td>';
+				print '<table class="tagtable liste">';
+				print '<tbody>';
+			
+				print '<tr class="liste_titre">
+					<th class="wrapcolumntitle liste_titre">Souhait</th>
+					<th class="wrapcolumntitle liste_titre">Etat</th>
+					<th class="wrapcolumntitle liste_titre">Créneau</th>
+					</tr>';
+				foreach($resqlSouhait as $val)
+				{
+					print '<tr class="oddeven">';
+					print '<td><a href="' . DOL_URL_ROOT . '/custom/viescolaire/souhait_card.php?id=' . $val['rowid']. '">' .'- ' . $val['nom_souhait'].'</a>'.($value['annee_actuelle'] != 1 ? ' <span class="badge  badge-status'.($val['details'] != ""  ? "4" : "8").' badge-status" style="color:white;">'.($val['details'] != "" && getDolGlobalString('TIME_FOR_APPRECIATION', '') ? "Appréciation Faite" : "Appréciation manquante") : '').'</span></td>';
+					if($val['status'] == 4)
+					{
+						$sql = "SELECT c.nom_creneau,c.rowid FROM ".MAIN_DB_PREFIX."creneau as c WHERE c.rowid =".("(SELECT e.fk_creneau FROM ".MAIN_DB_PREFIX."affectation as e WHERE e.fk_souhait =".$val['rowid']." AND e.status = 4)");
+						$resql = $db->query($sql);
+						$objectCreneau = $db->fetch_object($resql);
+						
+						print '<td><span class="badge  badge-status4 badge-status" style="color:white;">Affecté</span></td>';
+						print '<td><a href="'.DOL_URL_ROOT.'/custom/scolarite/creneau_card.php?id='.$objectCreneau->rowid.'">'.$objectCreneau->nom_creneau.'</a></td>';
+					}
+					elseif($val['status'] == 9)
+					{
+						print '<td><span class="badge  badge-status8 badge-status" style="color:white;">Souhait désactivé</span></td>';
+						print '<td><a href="'.DOL_URL_ROOT.'/custom/scolarite/creneau_card.php?id='.$objectCreneau->rowid.'">'.$objectCreneau->nom_creneau.'</a></td>';
+					}
+					else
+					{
+						print '<td><span class="badge  badge-status1 badge-status" style="color:white;">En attente d\'affectation</span></td>';
+						print '<td>Aucun créneau</td>';
+					}
+					print '</tr>';
+					
+				}
+				print '</tbody>';
+				print '</table>';
 			}
 			else
 			{
-				print '<td><span class="badge  badge-status1 badge-status" style="color:white;">En attente d\'affectation</span></td>';
-				print '<td>Aucun créneau</td>';
+				print '<p>Aucun souhaits connus pour cette année scolaire.</p>';
 			}
-			print '</tr>';
+
 			
+
+			print '</div>';
 		}
-		print '</tbody>';
-		print '</table>';
 	}
 
 	print dol_get_fiche_end();
+
+	print '<script>
+    $( ".annee-accordion" ).accordion({
+        collapsible: true,
+        active: 2,
+    });
+    </script>';
+
+ print '<script>
+    $( ".annee-accordion-opened" ).accordion({
+        collapsible: true,
+    });
+    </script>';
 
 }
 

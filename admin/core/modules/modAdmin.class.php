@@ -45,7 +45,7 @@ class modAdmin extends DolibarrModules
 
 		// Id for module (must be unique).
 		// Use here a free id (See in Home -> System information -> Dolibarr for list of used modules id).
-		$this->numero = 500000; // TODO Go on page https://wiki.dolibarr.org/index.php/List_of_modules_id to reserve an id number for your module
+		$this->numero = 500020; // TODO Go on page https://wiki.dolibarr.org/index.php/List_of_modules_id to reserve an id number for your module
 
 		// Key text used to identify module (for permissions, menus, etc...)
 		$this->rights_class = 'admin';
@@ -200,32 +200,29 @@ class modAdmin extends DolibarrModules
 		// 'user'             to add a tab in user view
 
 		// Dictionaries
-		$this->dictionaries = array();
-		/* Example:
 		$this->dictionaries=array(
 			'langs'=>'admin@admin',
 			// List of tables we want to see into dictonnary editor
-			'tabname'=>array("table1", "table2", "table3"),
+			'tabname'=>array(MAIN_DB_PREFIX."c_annee_scolaire"),
 			// Label of tables
-			'tablib'=>array("Table1", "Table2", "Table3"),
+			'tablib'=>array("Année Scolaire"),
 			// Request to select fields
-			'tabsql'=>array('SELECT f.rowid as rowid, f.code, f.label, f.active FROM '.MAIN_DB_PREFIX.'table1 as f', 'SELECT f.rowid as rowid, f.code, f.label, f.active FROM '.MAIN_DB_PREFIX.'table2 as f', 'SELECT f.rowid as rowid, f.code, f.label, f.active FROM '.MAIN_DB_PREFIX.'table3 as f'),
+			'tabsql'=>array('SELECT a.rowid as rowid, a.annee, a.annee_actuelle, a.active FROM '.MAIN_DB_PREFIX.'c_annee_scolaire as a'),
 			// Sort order
-			'tabsqlsort'=>array("label ASC", "label ASC", "label ASC"),
+			'tabsqlsort'=>array("rowid ASC"),
 			// List of fields (result of select to show dictionary)
-			'tabfield'=>array("code,label", "code,label", "code,label"),
+			'tabfield'=>array("annee,annee_actuelle"),
 			// List of fields (list of fields to edit a record)
-			'tabfieldvalue'=>array("code,label", "code,label", "code,label"),
+			'tabfieldvalue'=>array("annee,annee_actuelle"),
 			// List of fields (list of fields for insert)
-			'tabfieldinsert'=>array("code,label", "code,label", "code,label"),
+			'tabfieldinsert'=>array("annee,annee_actuelle"),
 			// Name of columns with primary key (try to always name it 'rowid')
-			'tabrowid'=>array("rowid", "rowid", "rowid"),
+			'tabrowid'=>array("rowid"),
 			// Condition to show each dictionary
-			'tabcond'=>array($conf->admin->enabled, $conf->admin->enabled, $conf->admin->enabled),
+			'tabcond'=>array($conf->admin->enabled),
 			// Tooltip for every fields of dictionaries: DO NOT PUT AN EMPTY ARRAY
-			'tabhelp'=>array(array('code'=>$langs->trans('CodeTooltipHelp'), 'field2' => 'field2tooltip'), array('code'=>$langs->trans('CodeTooltipHelp'), 'field2' => 'field2tooltip'), ...),
+			'tabhelp'=>array(),
 		);
-		*/
 
 		// Boxes/Widgets
 		// Add here list of php file(s) stored in admin/core/boxes that contains a class to show a widget.
@@ -299,7 +296,7 @@ class modAdmin extends DolibarrModules
 			'langs'=>'admin@admin', // Lang file to use (without .lang) by module. File must be in langs/code_CODE/ directory.
 			'position'=>1000 + $r,
 			'enabled'=>'isModEnabled("admin")', // Define condition to show or hide menu entry. Use 'isModEnabled("admin")' if entry must be visible if module is enabled.
-			'perms'=>'1', // Use 'perms'=>'$user->hasRight("admin", "myobject", "read")' if you want your menu with a permission rules
+			'perms'=>'$user->rights->admin->myobject->read', // Use 'perms'=>'$user->hasRight("admin", "myobject", "read")' if you want your menu with a permission rules
 			'target'=>'',
 			'user'=>2, // 0=Menu for internal users, 1=external users, 2=both
 		);

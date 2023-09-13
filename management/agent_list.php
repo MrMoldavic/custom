@@ -129,10 +129,11 @@ $search_array_options = $extrafields->getOptionalsFromPost($object->table_elemen
 // Default sort order (if not yet defined by previous GETPOST)
 if (!$sortfield) {
 	reset($object->fields);					// Reset is required to avoid key() to return null.
-	$sortfield = "t.".key($object->fields); // Set here default search field. By default 1st field in definition.
+	$sortfield = "t.fk_annee_scolaire"; // Set here default search field. By default 1st field in definition.
+
 }
 if (!$sortorder) {
-	$sortorder = "ASC";
+	$sortorder = "DESC";
 }
 
 // Initialize array of search criterias
@@ -741,7 +742,7 @@ while ($i < $imaxinloop) {
 				}
 				print '>';
 				if ($key == 'status') {
-					print $object->getLibStatut();
+					print $object->getLibStatut(5);
 				} elseif ($key == 'nom') {
 					print $object->getNomUrl();
 				} elseif ($key == 'rowid') {

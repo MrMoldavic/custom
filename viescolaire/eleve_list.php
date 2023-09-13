@@ -22,6 +22,10 @@
  *		\brief      List page for eleve
  */
 
+ ini_set('display_errors', '1');
+ ini_set('display_startup_errors', '1');
+ error_reporting(E_ALL);
+
 //if (! defined('NOREQUIREDB'))              define('NOREQUIREDB', '1');				// Do not create database handler $db
 //if (! defined('NOREQUIREUSER'))            define('NOREQUIREUSER', '1');				// Do not load object $user
 //if (! defined('NOREQUIRESOC'))             define('NOREQUIRESOC', '1');				// Do not load object $mysoc
@@ -102,8 +106,8 @@ $id = GETPOST('id', 'int');
 
 // Load variable for pagination
 $limit = GETPOST('limit', 'int') ? GETPOST('limit', 'int') : $conf->liste_limit;
-$sortfield = GETPOST('sortfield', 'aZ09comma');
-$sortorder = GETPOST('sortorder', 'aZ09comma');
+// $sortfield = GETPOST('sortfield', 'aZ09comma');
+// $sortorder = GETPOST('sortorder', 'aZ09comma');
 $page = GETPOSTISSET('pageplusone') ? (GETPOST('pageplusone') - 1) : GETPOST("page", 'int');
 if (empty($page) || $page < 0 || GETPOST('button_search', 'alpha') || GETPOST('button_removefilter', 'alpha')) {
 	// If $page is not defined, or '' or -1 or if we click on clear filters
@@ -126,16 +130,6 @@ $extrafields->fetch_name_optionals_label($object->table_element);
 $search_array_options = $extrafields->getOptionalsFromPost($object->table_element, '', 'search_');
 
 // Default sort order (if not yet defined by previous GETPOST)
-if (!$sortfield) {
-	// reset($object->fields);					// Reset is required to avoid key() to return null.
-	// $sortfield = "t.".key($object->fields); // Set here default search field. By default 1st field in definition.
-	$sortfield = "t.stats_affectations";
-	$sortfield2 = "t.fk_famille";
-}
-if (!$sortorder) {
-	$sortorder = "DESC";
-	$sortorder2 = "ASC";
-}
 
 // Initialize array of search criterias
 $search_all = GETPOST('search_all', 'alphanohtml');
@@ -322,6 +316,7 @@ foreach ($search as $key => $val) {
 			}
 		}
 	}
+	
 }
 if ($search_all) {
 	$sql .= natural_search(array_keys($fieldstosearchall), $search_all);
@@ -382,10 +377,26 @@ if (empty($conf->global->MAIN_DISABLE_FULL_SCANLIST)) {
 	}
 	$db->free($resql);
 }
+if (!$sortfield) {
+	// reset($object->fields);					// Reset is required to avoid key() to return null.
+	// $sortfield = "t.".key($object->fields); // Set here default search field. By default 1st field in definition.
+	$sortfield = "t.stats_affectations";
+	$sortfield2 = "t.fk_famille";
+}
+if (!$sortorder) {
+	$sortorder = "DESC";
+	$sortorder2 = "ASC";
+}
 
-// Complete request and execute it with limit
+//dump($search_all);
 $sql .= $db->order($sortfield, $sortorder);
-$sql .= ", {$sortfield2} {$sortorder2}";
+
+$count = 0;
+// Complete request and execute it with limit
+foreach($search as $val) $val != "" ? $count++ : "";
+$count == 0 ? $sql .= ", {$sortfield2} {$sortorder2}" : "";
+
+
 if ($limit) {
 	$sql .= $db->plimit($limit + 1, $offset);
 }
@@ -394,7 +405,6 @@ if (!$resql) {
 	dol_print_error($db);
 	exit;
 }
-
 $num = $db->num_rows($resql);
 
 
@@ -719,14 +729,19 @@ while ($i < $imaxinloop) {
 				} elseif ($key == 'prenom') {
 					print $object->getNomUrl(1).' '.($object->fk_famille == "" ? '<span class="badge badge-danger">Sans Famille liée &#9888</span>' : ($object->stats_affectations > 0 ? '<span class="badge badge-danger">Problème affectation &#9888</span>' : ''));
 				} elseif ($key == 'stats_affectations') {
+
+					//annee scolaire
+					$anneScolaire = "SELECT annee,annee_actuelle,rowid FROM ".MAIN_DB_PREFIX."c_annee_scolaire WHERE active = 1 AND annee_actuelle = 1 ORDER BY rowid DESC";
+					$resqlAnneeScolaire = $db->query($anneScolaire);
+					$objAnneScolaire = $db->fetch_object($resqlAnneeScolaire);
 	
 					// Nombres d'affectations
-					$affectation = "SELECT COUNT(*) as total FROM ".MAIN_DB_PREFIX."souhait WHERE fk_eleve=".$object->id." AND (status=4)";
+					$affectation = "SELECT COUNT(*) as total FROM ".MAIN_DB_PREFIX."souhait WHERE fk_eleve=".$object->id." AND (status=4) AND fk_annee_scolaire =".$objAnneScolaire->rowid;
 					$resAffectation = $db->query($affectation);
 					$objAffectation = $db->fetch_object($resAffectation);
 	
 					// Nomnbres de souhaits non-nuls
-					$souhait = "SELECT COUNT(*) as total FROM ".MAIN_DB_PREFIX."souhait WHERE fk_eleve=".$object->id." AND (status=4 OR status=0)";
+					$souhait = "SELECT COUNT(*) as total FROM ".MAIN_DB_PREFIX."souhait WHERE fk_eleve=".$object->id." AND (status=4 OR status=0) AND fk_annee_scolaire =".$objAnneScolaire->rowid;
 					$resSouhaits = $db->query($souhait);
 					$objSouhaits = $db->fetch_object($resSouhaits);
 	

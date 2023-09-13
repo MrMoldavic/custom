@@ -22,6 +22,11 @@
  *		\brief      List page for creneau
  */
 
+ ini_set('display_errors', '1');
+ini_set('display_startup_errors', '1');
+error_reporting(E_ALL);
+
+
 //if (! defined('NOREQUIREDB'))              define('NOREQUIREDB', '1');				// Do not create database handler $db
 //if (! defined('NOREQUIREUSER'))            define('NOREQUIREUSER', '1');				// Do not load object $user
 //if (! defined('NOREQUIRESOC'))             define('NOREQUIRESOC', '1');				// Do not load object $mysoc
@@ -128,11 +133,12 @@ $search_array_options = $extrafields->getOptionalsFromPost($object->table_elemen
 
 // Default sort order (if not yet defined by previous GETPOST)
 if (!$sortfield) {
-	reset($object->fields);					// Reset is required to avoid key() to return null.
-	$sortfield = "t.".key($object->fields); // Set here default search field. By default 1st field in definition.
+	// reset($object->fields);					// Reset is required to avoid key() to return null.
+	// $sortfield = "t.".key($object->fields); // Set here default search field. By default 1st field in definition.
+	$sortfield = "t.fk_annee_scolaire";
 }
 if (!$sortorder) {
-	$sortorder = "ASC";
+	$sortorder = "DESC";
 }
 
 // Initialize array of search criterias
@@ -285,8 +291,6 @@ if (empty($reshook)) {
 // 	$sql = "UPDATE llx_creneau SET professeurs='".$professeur."' WHERE rowid=". $value['rowid'];
 // 	$resql = $db->query($sql);
 // }
-
-
 
 
 /*
@@ -888,12 +892,17 @@ while ($i < $imaxinloop) {
 					$resqlheureFin = $db->query($heureFin);
 					$objheureFin = $db->fetch_object($resqlheureFin);
 	
-					$Salle = "SELECT salle, rowid FROM ".MAIN_DB_PREFIX."salles WHERE rowid =".$object->fk_salle;
-					$resqlSalle = $db->query($Salle);
-					$objSalle = $db->fetch_object($resqlSalle);
+					if($object->fk_salle)
+					{
+						$Salle = "SELECT salle, rowid FROM ".MAIN_DB_PREFIX."salles WHERE rowid =".$object->fk_salle;
+						$resqlSalle = $db->query($Salle);
+						$objSalle = $db->fetch_object($resqlSalle);
+					}
+					
 	
 	
-					$infos_creneau .= $objJour->jour.' | '.$objheure->heure.'h'.$object->minutes_debut.'-'.$objheureFin->heure.'h'.$object->minutes_fin.' | '.$objSalle->salle;
+					$infos_creneau .= $objJour->jour.' | '.$objheure->heure.'h'.$object->minutes_debut.'-'.$objheureFin->heure.'h'.$object->minutes_fin.' | ';
+					$infos_creneau .= $object->fk_salle ? $objSalle->salle : "Salle inconnue";
 	
 					print $infos_creneau;
 	

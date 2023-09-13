@@ -67,7 +67,7 @@ class Agent extends CommonObject
 
 
 	const STATUS_DRAFT = 0;
-	const STATUS_VALIDATED = 1;
+	const STATUS_VALIDATED = 4;
 	const STATUS_CANCELED = 9;
 
 
@@ -115,21 +115,21 @@ class Agent extends CommonObject
 	 */
 	public $fields=array(
 		'rowid' => array('type'=>'integer', 'label'=>'TechnicalID', 'enabled'=>'1', 'position'=>1, 'notnull'=>1, 'visible'=>0, 'noteditable'=>'1', 'index'=>1, 'css'=>'left', 'comment'=>"Id"),
-		'nom' => array('type'=>'varchar(255)', 'label'=>'Nom', 'enabled'=>'1', 'position'=>30, 'notnull'=>1, 'visible'=>1, 'index'=>1, 'searchall'=>1,'css'=>'maxwidth400', 'showoncombobox'=>'1', 'validate'=>'1'),
+		'nom' => array('type'=>'varchar(255)', 'label'=>'Nom', 'enabled'=>'1', 'position'=>30, 'notnull'=>1, 'visible'=>1, 'index'=>1, 'searchall'=>1, 'css'=>'maxwidth400', 'showoncombobox'=>'1', 'validate'=>'1',),
 		'prenom' => array('type'=>'varchar(255)', 'label'=>'Prénom', 'enabled'=>'1', 'position'=>20, 'notnull'=>1, 'visible'=>1, 'searchall'=>1, 'css'=>'maxwidth300', 'cssview'=>'wordbreak', 'showoncombobox'=>'1', 'validate'=>'1',),
-		'fk_user' => array('type'=>'integer:User:user/class/user.class.php','picto'=>'user', 'label'=>'Utilisateur lié', 'enabled'=>'1','css'=>'maxwidth300', 'position'=>40, 'notnull'=>1, 'visible'=>1, 'validate'=>'1',),
-		'adresse' => array('type'=>'varchar(255)', 'picto'=>'home','label'=>'Adresse', 'enabled'=>'1', 'position'=>45, 'notnull'=>0, 'visible'=>1,'css'=>'minwidth300', 'validate'=>'1',),
-		'code_postal' => array('type'=>'varchar(255)', 'label'=>'Code Postal', 'position'=>50, 'notnull'=>-1, 'visible'=>1, 'index'=>1, 'css'=>'maxwidth300','validate'=>'1',),
-		'discord' => array('type'=>'varchar(255)', 'label'=>'@ Discord', 'position'=>51, 'notnull'=>-1, 'visible'=>1, 'index'=>1, 'css'=>'maxwidth300','validate'=>'1',),
-
-		'commune' => array('type'=>'varchar(255)', 'label'=>'Commune', 'enabled'=>'$conf->project->enabled', 'position'=>52, 'notnull'=>-1, 'visible'=>-1, 'index'=>1, 'css'=>'maxwidth300', 'validate'=>'1',),
-		'mail_perso' => array('type'=>'varchar(255)','picto'=>'email', 'label'=>'Mail Personel', 'enabled'=>'1', 'position'=>60, 'notnull'=>0, 'visible'=>1, 'validate'=>'1',),
-		'mail_pro' => array('type'=>'varchar(255)', 'picto'=>'email', 'label'=>'Mail Professionel', 'enabled'=>'1', 'position'=>61, 'notnull'=>0, 'visible'=>1, 'cssview'=>'wordbreak', 'validate'=>'1',),
-		'telephone' => array('type'=>'varchar(255)', 'picto'=>'phone', 'label'=>'Numéro de téléphone', 'enabled'=>'1', 'position'=>62, 'notnull'=>0, 'visible'=>1, 'cssview'=>'wordbreak', 'validate'=>'1',),
-		'date_naissance' => array('type'=>'date','label'=>'Date de naissance', 'enabled'=>'1', 'position'=>500, 'notnull'=>0, 'visible'=>1,),
-		'lieu_naissance' => array('type'=>'varchar(255)', 'label'=>'Lieu de naissance', 'enabled'=>'1', 'position'=>501, 'notnull'=>0, 'visible'=>1,),		
-		'date_desactivation' => array('type'=>'date', 'label'=>'Lieu de naissance', 'enabled'=>'1', 'position'=>501, 'notnull'=>0, 'visible'=>-2,),		
-		'date_reactivation' => array('type'=>'date', 'label'=>'Lieu de naissance', 'enabled'=>'1', 'position'=>501, 'notnull'=>0, 'visible'=>-2,),		
+		'fk_user' => array('type'=>'integer:User:user/class/user.class.php:0:(t.statut != 0)', 'label'=>'Utilisateur lié', 'picto'=>'user', 'enabled'=>'1', 'position'=>40, 'notnull'=>1, 'visible'=>1, 'css'=>'maxwidth300', 'validate'=>'1',),
+		'adresse' => array('type'=>'varchar(255)', 'label'=>'Adresse', 'picto'=>'home', 'enabled'=>'1', 'position'=>45, 'notnull'=>0, 'visible'=>1, 'css'=>'minwidth300', 'validate'=>'1',),
+		'code_postal' => array('type'=>'varchar(255)', 'label'=>'Code Postal', 'enabled'=>'', 'position'=>50, 'notnull'=>-1, 'visible'=>1, 'index'=>1, 'css'=>'maxwidth300', 'validate'=>'1',),
+		'discord' => array('type'=>'varchar(255)', 'label'=>'@ Discord', 'enabled'=>'', 'position'=>51, 'notnull'=>-1, 'visible'=>1, 'index'=>1, 'css'=>'maxwidth300', 'validate'=>'1',),
+		'fk_annee_scolaire' => array('type'=>'sellist:c_annee_scolaire:annee', 'label'=>'Année Scolaire', 'enabled'=>'1', 'position'=>52, 'notnull'=>1, 'visible'=>-1,),
+		'commune' => array('type'=>'varchar(255)', 'label'=>'Commune', 'enabled'=>'$conf->project->enabled', 'position'=>53, 'notnull'=>-1, 'visible'=>-1, 'index'=>1, 'css'=>'maxwidth300', 'validate'=>'1',),
+		'mail_perso' => array('type'=>'varchar(255)', 'label'=>'Mail Personel', 'picto'=>'email', 'enabled'=>'1', 'position'=>60, 'notnull'=>0, 'visible'=>1, 'validate'=>'1',),
+		'mail_pro' => array('type'=>'varchar(255)', 'label'=>'Mail Professionel', 'picto'=>'email', 'enabled'=>'1', 'position'=>61, 'notnull'=>0, 'visible'=>1, 'cssview'=>'wordbreak', 'validate'=>'1',),
+		'telephone' => array('type'=>'varchar(255)', 'label'=>'Numéro de téléphone', 'picto'=>'phone', 'enabled'=>'1', 'position'=>62, 'notnull'=>0, 'visible'=>1, 'cssview'=>'wordbreak', 'validate'=>'1',),
+		'date_naissance' => array('type'=>'date', 'label'=>'Date de naissance', 'enabled'=>'1', 'position'=>500, 'notnull'=>0, 'visible'=>1,),
+		'lieu_naissance' => array('type'=>'varchar(255)', 'label'=>'Lieu de naissance', 'enabled'=>'1', 'position'=>501, 'notnull'=>0, 'visible'=>1,),
+		'date_desactivation' => array('type'=>'date', 'label'=>'Lieu de naissance', 'enabled'=>'1', 'position'=>501, 'notnull'=>0, 'visible'=>-2,),
+		'date_reactivation' => array('type'=>'date', 'label'=>'Lieu de naissance', 'enabled'=>'1', 'position'=>501, 'notnull'=>0, 'visible'=>-2,),
 		'note_public' => array('type'=>'text', 'label'=>'Lieu de naissance', 'enabled'=>'1', 'position'=>501, 'notnull'=>0, 'visible'=>-2,),
 		'note_private' => array('type'=>'text', 'label'=>'Lieu de naissance', 'enabled'=>'1', 'position'=>501, 'notnull'=>0, 'visible'=>-2,),
 		'date_creation' => array('type'=>'date', 'label'=>'Lieu de naissance', 'enabled'=>'1', 'position'=>501, 'notnull'=>0, 'visible'=>-2,),
@@ -139,17 +139,23 @@ class Agent extends CommonObject
 		'last_main_doc' => array('type'=>'varchar(255)', 'label'=>'LastMainDoc', 'enabled'=>'1', 'position'=>600, 'notnull'=>0, 'visible'=>0,),
 		'import_key' => array('type'=>'varchar(14)', 'label'=>'ImportId', 'enabled'=>'1', 'position'=>1000, 'notnull'=>-1, 'visible'=>-2,),
 		'model_pdf' => array('type'=>'varchar(255)', 'label'=>'Model pdf', 'enabled'=>'1', 'position'=>1010, 'notnull'=>-1, 'visible'=>0,),
-		'status' => array('type'=>'integer', 'label'=>'Status', 'enabled'=>'1', 'position'=>2000, 'notnull'=>1, 'visible'=>0, 'index'=>1, 'arrayofkeyval'=>array('0'=>'Brouillon', '1'=>'Valid&eacute;', '9'=>'Annul&eacute;'), 'validate'=>'1',),
+		'status' => array('type'=>'integer', 'label'=>'Status', 'enabled'=>'1', 'position'=>2000, 'notnull'=>1, 'visible'=>2, 'index'=>1, 'arrayofkeyval'=>array('0'=>'Brouillon', '1'=>'Valid&eacute;', '9'=>'Annul&eacute;'), 'validate'=>'1',),
 	);
-	
 	public $rowid;
-	public $ref;
-	public $label;
-	public $amount;
-	public $qty;
-	public $fk_soc;
-	public $fk_project;
-	public $description;
+	public $nom;
+	public $prenom;
+	public $fk_user;
+	public $adresse;
+	public $code_postal;
+	public $discord;
+	public $commune;
+	public $mail_perso;
+	public $mail_pro;
+	public $telephone;
+	public $date_naissance;
+	public $lieu_naissance;
+	public $date_desactivation;
+	public $date_reactivation;
 	public $note_public;
 	public $note_private;
 	public $date_creation;
@@ -160,6 +166,7 @@ class Agent extends CommonObject
 	public $import_key;
 	public $model_pdf;
 	public $status;
+	public $fk_annee_scolaire;
 	// END MODULEBUILDER PROPERTIES
 
 
@@ -255,10 +262,8 @@ class Agent extends CommonObject
 		$resqlAgent= $this->db->query($agent);
 		$objectAgent =  $this->db->fetch_object($resqlAgent);
 
-		if($objectAgent)
-		{
-			setEventMessage('Cet utilisateur possède déjà un agent lié.','errors');
-		}
+		if($objectAgent) setEventMessage('Cet utilisateur possède déjà un agent lié.','errors');
+		elseif(!$this->fk_annee_scolaire) setEventMessage('Veuillez choisir une année scolaire.','errors');
 		else
 		{
 			$userCible = "SELECT lastname, firstname, rowid FROM ".MAIN_DB_PREFIX."user WHERE rowid =".$this->fk_user;
@@ -272,7 +277,10 @@ class Agent extends CommonObject
 			}
 			else
 			{
+				$this->status = self::STATUS_VALIDATED;
 				$resultcreate = $this->createCommon($user, $notrigger);
+
+
 				return $resultcreate;
 			}
 			
@@ -577,8 +585,7 @@ class Agent extends CommonObject
 		if (!empty($num)) {
 			// Validate
 			$sql = "UPDATE ".MAIN_DB_PREFIX.$this->table_element;
-			$sql .= " SET ref = '".$this->db->escape($num)."',";
-			$sql .= " status = ".self::STATUS_VALIDATED;
+			$sql .= "SET status = ".self::STATUS_VALIDATED;
 			if (!empty($this->fields['date_validation'])) {
 				$sql .= ", date_validation = '".$this->db->idate($now)."'";
 			}

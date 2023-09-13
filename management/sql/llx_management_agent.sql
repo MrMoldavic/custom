@@ -20,6 +20,7 @@ CREATE TABLE llx_management_agent(
 	nom varchar(255) NOT NULL, 
 	prenom varchar(255) NOT NULL, 
 	discord varchar(255) NULL, 
+	fk_annee_scolaire int NULL,
 	fk_user int NULL, 
 	adresse varchar(255) NULL, 
 	code_postal varchar(255) NULL, 

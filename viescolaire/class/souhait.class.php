@@ -238,6 +238,7 @@ class Souhait extends CommonObject
 			setEventMessage('Type d\'instrument incompatible avec un cours','errors');
 			$action = "create";
 		}
+		elseif(!$this->fk_annee_scolaire) setEventMessage('Veuillez choisir une année scolaire','errors');
 		else
 		{
 			$eleve = new Eleve($this->db);
