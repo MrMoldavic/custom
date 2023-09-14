@@ -746,7 +746,7 @@ if (($action == 'create' or $action == 'modifAppel') && GETPOST('etablissementid
           print '<input type="hidden" name="etablissementid" value="' . GETPOST('etablissementid', 'id') . '">';
 
 
-          $sqlProf = "SELECT u.lastname,u.firstname,u.rowid FROM " . MAIN_DB_PREFIX . "creneau as c INNER JOIN " . MAIN_DB_PREFIX . "user as u ON c.fk_prof_1 = u.rowid OR c.fk_prof_2 = u.rowid OR c.fk_prof_3 = u.rowid WHERE c.rowid = " . $val['rowid'];
+          $sqlProf = "SELECT u.nom,u.prenom,u.rowid FROM " . MAIN_DB_PREFIX . "creneau as c INNER JOIN " . MAIN_DB_PREFIX . "management_agent as u ON c.fk_prof_1 = u.rowid OR c.fk_prof_2 = u.rowid OR c.fk_prof_3 = u.rowid WHERE c.rowid = " . $val['rowid'];
           $profCreneau = $db->query($sqlProf);
           $prof = $db->fetch_object($profCreneau);
 
@@ -768,7 +768,7 @@ if (($action == 'create' or $action == 'modifAppel') && GETPOST('etablissementid
                print '<tr class="oddeven">';
                print '<td>';
 
-               print '<a href="' . DOL_URL_ROOT . '/user/card.php?id=' . $value['rowid'] . '" target="_blank">' .'(Prof) '. $value['firstname'] . ' ' . $value['lastname']. '</a>';
+               print '<a href="' . DOL_URL_ROOT . '/custom/management/agent_card.php?id=' . $value['rowid'] . '" target="_blank">' .'(Prof) '. $value['prenom'] . ' ' . $value['nom']. '</a>';
                print '</td>';
                print '<td>';
                print '<input type="radio" ' . ($profInfo->status == 'present' ? 'checked' : '') . '  ' . ($isComplete == 1 && $action == 'modifAppel' && $creneauid == $val['rowid'] ? '' : ($isComplete ? 'disabled' : '')) . ' value="present" name="prof' . $value['rowid'] . '" id="">&nbsp;<span class="badge  badge-status4 badge-status" style="color:white;">Présent</span>';
