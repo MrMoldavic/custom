@@ -258,36 +258,39 @@ class Affectation extends CommonObject
 		$objAnneScolaire = $this->db->fetch_object($resqlAnneeScolaire);
 
 		// On récupère la liste des souhaits de l'élève
-		$souhait = "SELECT * FROM ".MAIN_DB_PREFIX."souhait as c WHERE c.fk_eleve = ".$objectEleve->fk_eleve." AND c.fk_annee_scolaire=".$objAnneScolaire->rowid." AND status = ".$souhait::STATUS_VALIDATED;
+		$souhait = "SELECT * FROM ".MAIN_DB_PREFIX."souhait as c WHERE c.fk_eleve = ".$objectEleve->fk_eleve." AND c.fk_annee_scolaire=".$objAnneScolaire->rowid." AND c.status = ".$souhait::STATUS_VALIDATED;
 		$resqlSouhait = $this->db->query($souhait);
 
 
-		if($resqlSouhait->num_rows > 0)
+			// $enabledSouhait = "SELECT * FROM ".MAIN_DB_PREFIX."souhait as c WHERE c.fk_eleve = ".$objectEleve->fk_eleve." AND c.fk_annee_scolaire=".$objAnneScolaire->rowid." AND c.status = ".$souhait::STATUS_VALIDATED;
+			// $resqlEnabledSouhait = $this->db->query($enabledSouhait);
+
+		foreach($resqlSouhait as $val)
 		{
-			foreach($resqlSouhait as $val)
-			{
-				$sql = "SELECT c.rowid,c.heure_debut,c.jour FROM ".MAIN_DB_PREFIX."creneau as c WHERE c.rowid =".("(SELECT e.fk_creneau FROM ".MAIN_DB_PREFIX."affectation as e WHERE e.fk_souhait =".$val['rowid']." AND e.status = 4)");
-				$resql = $this->db->query($sql);
+			$sql = "SELECT c.rowid,c.heure_debut,c.jour FROM ".MAIN_DB_PREFIX."creneau as c WHERE c.rowid =".("(SELECT e.fk_creneau FROM ".MAIN_DB_PREFIX."affectation as e WHERE e.fk_souhait =".$val['rowid']." AND e.status = 4)");
+			$resql = $this->db->query($sql);
 
-				foreach($resql as $value) if($value['heure_debut'] == $objectCreneau->heure_debut && $value['jour'] == $objectCreneau->jour) $error = true;
-			}
+			foreach($resql as $value) if($value['heure_debut'] == $objectCreneau->heure_debut && $value['jour'] == $objectCreneau->jour) $error = true;
+		}
 
-			if($error)
-			{
-				setEventMessage('L\'élève à déjà cours à cet horaire. Affectation impossible.','errors');
-			}
-			else
-			{
-				$souhait = new Souhait($this->db);
-				$souhait->fetch($this->fk_souhait);
-				$souhait->validate($user, $notrigger);
+		if($error)
+		{
+			setEventMessage('L\'élève à déjà cours à cet horaire. Affectation impossible.','errors');
+		}
+		else
+		{
+			$souhait = new Souhait($this->db);
+			$souhait->fetch($this->fk_souhait);
+			$souhait->validate($user, $notrigger);
+	
+			$this->validate($user, $notrigger);
+	
+			$resultcreate = $this->createCommon($user, $notrigger);
+			setEventMessage('Affectation confirmée!');
 		
-				$this->validate($user, $notrigger);
-		
-				$resultcreate = $this->createCommon($user, $notrigger);
-				setEventMessage('Affectation confirmée!');
-				return $resultcreate;
-			}
+			return $resultcreate;
+
+			
 		}
 		
 	}

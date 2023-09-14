@@ -104,6 +104,7 @@ $toselect   = GETPOST('toselect', 'array'); // Array of ids of elements selected
 $contextpage = GETPOST('contextpage', 'aZ') ? GETPOST('contextpage', 'aZ') : 'souhaitlist'; // To manage different context of search
 $backtopage = GETPOST('backtopage', 'alpha'); // Go back to a dedicated page
 $optioncss = GETPOST('optioncss', 'aZ'); // Option for the css output (always '' except when 'print')
+$allYear = GETPOST('allYear','aZ09') ? GETPOST('allYear','aZ09') : 'false';
 
 $id = GETPOST('id', 'int');
 
@@ -299,7 +300,14 @@ $reshook = $hookmanager->executeHooks('printFieldListFrom', $parameters, $object
 $sql .= $hookmanager->resPrint;
 if ($object->ismultientitymanaged == 1) {
 	$sql .= " WHERE t.entity IN (" . getEntity($object->element) . ")";
-} else {
+} elseif($allYear == 'false') {
+	$anneScolaire = "SELECT annee,annee_actuelle,rowid FROM ".MAIN_DB_PREFIX."c_annee_scolaire WHERE active = 1 AND annee_actuelle = 1";
+	$resqlAnneeScolaire = $db->query($anneScolaire);
+	$objAnneScolaire = $db->fetch_object($resqlAnneeScolaire);
+
+	$sql .= " WHERE fk_annee_scolaire = ".$objAnneScolaire->rowid;
+}
+else {
 	$sql .= " WHERE 1 = 1";
 }
 foreach ($search as $key => $val) {
@@ -479,6 +487,9 @@ if (GETPOST('nomassaction', 'int') || in_array($massaction, array('presend', 'pr
 	$arrayofmassactions = array();
 }
 $massactionbutton = $form->selectMassAction('', $arrayofmassactions);
+
+print '<a href="'.$_SERVER['PHP_SELF'].'?allYear='.($allYear == 'false' ? 'true' : 'false').'">'.($allYear == 'false' ? 'Afficher les souhaits de toutes les années' : 'Afficher seulement les souhaits de l\'année actuelle').'</a>';
+
 
 print '<form method="POST" id="searchFormList" action="' . $_SERVER["PHP_SELF"] . '">' . "\n";
 if ($optioncss != '') {
@@ -670,7 +681,8 @@ while ($i < ($limit ? min($num, $limit) : $num)) {
 		}
 
 		if (!empty($arrayfields['t.' . $key]['checked'])) {
-			print '<td' . ($cssforfield ? ' class="' . $cssforfield . '"' : '') . '>';
+			//print '<td' . ($cssforfield ? ' class="' . $cssforfield . '"' : '') . '>';
+			print '<td '.($object->status == 9 ? 'style="background-color: #BBBBBB"' : '') .'>';
 			if ($key == 'status') {
 				print $object->getLibStatut(4);
 			} elseif ($key == 'rowid') {
@@ -679,6 +691,12 @@ while ($i < ($limit ? min($num, $limit) : $num)) {
 				print '<a href="' . DOL_URL_ROOT . '/custom/viescolaire/souhait_card.php?id=' . $obj->rowid . '">' . $eleve->nom . ' ' . $eleve->prenom . '</a>';
 			} elseif ($key == 'nom_souhait') {
 				print $object->getNomUrl(1);
+			} elseif ($key == 'fk_annee_scolaire') {
+				$anneScolaire = "SELECT annee,annee_actuelle,rowid FROM ".MAIN_DB_PREFIX."c_annee_scolaire WHERE active = 1 AND annee_actuelle = 1";
+				$resqlAnneeScolaire = $db->query($anneScolaire);
+				$objAnneScolaire = $db->fetch_object($resqlAnneeScolaire);
+
+				print '<span class="badge  badge-status'.($objAnneScolaire->rowid == $object->fk_annee_scolaire ? "4" : "6").' badge-status">'.$object->showOutputField($val, $key, $object->$key, '').'</span>';
 			} else {
 				print $object->showOutputField($val, $key, $object->$key, '');
 			}
