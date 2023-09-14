@@ -833,7 +833,7 @@ class Agent extends CommonObject
 		// }
 
 		if ($withpicto != 2) {
-			$result .= $this->nom;
+			$result .= $this->prenom.' '.$this->nom;
 		}
 
 		$result .= $linkend;

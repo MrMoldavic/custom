@@ -466,6 +466,7 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 	//$keyforbreak='fieldkeytoswitchonsecondcolumn';	// We change column just before this field
 	//unset($object->fields['fk_project']);				// Hide field already shown in banner
 	//unset($object->fields['fk_soc']);					// Hide field already shown in banner
+	 
 	include DOL_DOCUMENT_ROOT.'/core/tpl/commonfields_view.tpl.php';
 
 	// Other attributes. Fields from hook formObjectOptions and Extrafields.
@@ -494,14 +495,7 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 	print '</div>';
 	
 
-	print '<div class="clearboth"></div>';
-
-	// $cours = "SELECT * FROM ".MAIN_DB_PREFIX."souhait as c WHERE c.nom_souhait LIKE ".$nom." AND c.status= 4";
-	// $resql = $db->query($cours);
-	// $obj = $db->fetch_object($resql);
-	// $num = $db->num_rows($resql);
-
-	
+	print '<div class="clearboth"></div>';	
 
 	print dol_get_fiche_end();
 

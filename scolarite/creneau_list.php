@@ -107,8 +107,8 @@ $allYear = GETPOST('allYear','aZ09') ? GETPOST('allYear','aZ09') : 'false';
 $id = GETPOST('id', 'int');
 // Load variable for pagination
 $limit = GETPOST('limit', 'int') ? GETPOST('limit', 'int') : $conf->liste_limit;
-$sortfield = GETPOST('sortfield', 'aZ09comma');
-$sortorder = GETPOST('sortorder', 'aZ09comma');
+// $sortfield = GETPOST('sortfield', 'aZ09comma');
+// $sortorder = GETPOST('sortorder', 'aZ09comma');
 $page = GETPOSTISSET('pageplusone') ? (GETPOST('pageplusone') - 1) : GETPOST("page", 'int');
 if (empty($page) || $page < 0 || GETPOST('button_search', 'alpha') || GETPOST('button_removefilter', 'alpha')) {
 	// If $page is not defined, or '' or -1 or if we click on clear filters
@@ -132,15 +132,17 @@ $extrafields->fetch_name_optionals_label($object->table_element);
 
 $search_array_options = $extrafields->getOptionalsFromPost($object->table_element, '', 'search_');
 
-// Default sort order (if not yet defined by previous GETPOST)
-if (!$sortfield) {
-	// reset($object->fields);					// Reset is required to avoid key() to return null.
-	// $sortfield = "t.".key($object->fields); // Set here default search field. By default 1st field in definition.
-	$sortfield = "t.fk_annee_scolaire";
-}
-if (!$sortorder) {
-	$sortorder = "DESC";
-}
+//Default sort order (if not yet defined by previous GETPOST)
+// if (!$sortfield) {
+// 	// reset($object->fields);					// Reset is required to avoid key() to return null.
+// 	// $sortfield = "t.".key($object->fields); // Set here default search field. By default 1st field in definition.
+// 	$sortfield = "t.fk_annee_scolaire";
+// 	$sortfield2 = "t.professeurs";
+// }
+// if (!$sortorder) {
+// 	$sortorder = "DESC";
+// 	$sortorder2 = "DESC";
+// }
 
 // Initialize array of search criterias
 $search_all = GETPOST('search_all', 'alphanohtml');
@@ -253,45 +255,6 @@ if (empty($reshook)) {
 	include DOL_DOCUMENT_ROOT.'/core/actions_massactions.inc.php';
 }
 
-
-
-// $creneau = "SELECT fk_prof_1,fk_prof_2,fk_prof_3,rowid FROM ".MAIN_DB_PREFIX."creneau";
-// $resqlCreneau = $db->query($creneau);
-
-// foreach($resqlCreneau as $value)
-// {
-// 	$professeur = "";
-
-	
-// 	if($value['fk_prof_1'] != NULL)
-// 	{
-// 		$sqlProf1 = "SELECT firstname,lastname,rowid FROM ".MAIN_DB_PREFIX."user WHERE rowid= ".$value['fk_prof_1'];
-// 		$resqlProf1 = $db->query($sqlProf1);
-// 		$objProf1 = $db->fetch_object($resqlProf1);
-
-// 		$professeur .= $objProf1->firstname.' '.$objProf1->lastname.' ';
-// 	}
-
-// 	if($value['fk_prof_2'] != NULL)
-// 	{
-// 		$sqlProf2 = "SELECT firstname,lastname,rowid FROM ".MAIN_DB_PREFIX."user WHERE rowid= ".$value['fk_prof_2'];
-// 		$resqlProf2 = $db->query($sqlProf2);
-// 		$objProf2 = $db->fetch_object($resqlProf2);
-
-// 		$professeur .= $objProf2->firstname.' '.$objProf2->lastname.' ';
-// 	}
-// 	if($value['fk_prof_3'] != NULL)
-// 	{
-// 		$sqlProf3 = "SELECT firstname,lastname,rowid FROM ".MAIN_DB_PREFIX."user WHERE rowid= ".$value['fk_prof_3'];
-// 		$resqlProf3 = $db->query($sqlProf3);
-// 		$objProf3 = $db->fetch_object($resqlProf3);
-
-// 		$professeur .= $objProf3->firstname.' '.$objProf3->lastname;
-// 	}
-
-// 	$sql = "UPDATE llx_creneau SET professeurs='".$professeur."' WHERE rowid=". $value['rowid'];
-// 	$resql = $db->query($sql);
-// }
 
 
 /*
@@ -435,7 +398,24 @@ if (empty($conf->global->MAIN_DISABLE_FULL_SCANLIST)) {
 }
 
 // Complete request and execute it with limit
+if (!$sortfield) {
+	// reset($object->fields);					// Reset is required to avoid key() to return null.
+	// $sortfield = "t.".key($object->fields); // Set here default search field. By default 1st field in definition.
+	$sortfield = "t.fk_annee_scolaire";
+	$sortfield2 = "t.fk_prof_1";
+}
+if (!$sortorder) {
+	$sortorder = "DESC";
+	$sortorder2 = "ASC";
+}
 $sql .= $db->order($sortfield, $sortorder);
+$sql .= ", {$sortfield2} {$sortorder2}";
+// foreach($search as $val) $val != "" ? $count++ : "";
+// $count != 0 ? $sql .= ", {$sortfield2} {$sortorder2}" : "";
+
+
+
+
 if ($limit) {
 	$sql .= $db->plimit($limit + 1, $offset);
 }
@@ -457,7 +437,6 @@ if ($num == 1 && !empty($conf->global->MAIN_SEARCH_DIRECT_OPEN_IF_ONLY_ONE) && $
 	header("Location: ".dol_buildpath('/scolarite/creneau_card.php', 1).'?id='.$id);
 	exit;
 }
-
 
 
 
@@ -866,14 +845,17 @@ while ($i < $imaxinloop) {
 	
 					// }
 				} elseif ($key == 'professeurs') {
-	
-					$prof1 = "SELECT prenom, nom, rowid FROM ".MAIN_DB_PREFIX."management_agent WHERE rowid =".$object->fk_prof_1;
-					$resqlProf1 = $db->query($prof1);
-					$objProf1 = $db->fetch_object($resqlProf1);
+					
 					$profs = "";
-	
-					$profs .= '<a href="' . DOL_URL_ROOT . '/user/card.php?id=' . $objProf1->rowid . '">' .'👨‍🏫'. $objProf1->nom.' '.$objProf1->prenom. '</a>'.'<br>';
-				
+					if(isset($object->fk_prof_1))
+					{
+						$prof1 = "SELECT prenom, nom, rowid FROM ".MAIN_DB_PREFIX."management_agent WHERE rowid =".$object->fk_prof_1;
+						$resqlProf1 = $db->query($prof1);
+						$objProf1 = $db->fetch_object($resqlProf1);
+						
+		
+						$profs .= '<a href="' . DOL_URL_ROOT . '/user/card.php?id=' . $objProf1->rowid . '">' .'👨‍🏫'. $objProf1->nom.' '.$objProf1->prenom. '</a>'.'<br>';
+					}
 					if(isset($object->fk_prof_2))
 					{
 						$prof2 = "SELECT nom, prenom, rowid FROM ".MAIN_DB_PREFIX."management_agent WHERE rowid =".$object->fk_prof_2;
@@ -890,6 +872,7 @@ while ($i < $imaxinloop) {
 	
 						$profs .= '<a href="' . DOL_URL_ROOT . '/user/card.php?id=' . $objProf3->rowid . '">' .'👨‍🏫'. $objProf3->nom.' '.$objProf3->prenom. '</a>'.'<br>';
 					}
+					if($profs == "") $profs = '<span class="badge badge-danger">Prof manquant &#9888</span>';
 	
 					print $profs;
 	
