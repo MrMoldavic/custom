@@ -22,9 +22,9 @@
  *		\brief      Page to create/edit/view souhait
  */
 
-// ini_set('display_errors', '1');
-// ini_set('display_startup_errors', '1');
-// error_reporting(E_ALL);
+ini_set('display_errors', '1');
+ini_set('display_startup_errors', '1');
+error_reporting(E_ALL);
 
 
 //if (! defined('NOREQUIREDB'))              define('NOREQUIREDB', '1');				// Do not create database handler $db
@@ -537,14 +537,18 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 		$resqlheureFinCreneauActuel = $db->query($heureFinCreneauActuel);
 		$objheureFinCreneauActuel = $db->fetch_object($resqlheureFinCreneauActuel);
 
-		$professeurCreneauActuel = "SELECT * FROM ".MAIN_DB_PREFIX."user WHERE rowid = ".$objectCreneauActuel->fk_prof_1;
-		$resqlUserCreneauActuel = $db->query($professeurCreneauActuel);
-		$objUserCreneauActuel = $db->fetch_object($resqlUserCreneauActuel);
+		if($objectCreneauActuel->fk_prof_1 != NULL)
+		{
+			$professeurCreneauActuel = "SELECT * FROM ".MAIN_DB_PREFIX."management_agent WHERE rowid = ".$objectCreneauActuel->fk_prof_1;
+			$resqlUserCreneauActuel = $db->query($professeurCreneauActuel);
+			$objUserCreneauActuel = $db->fetch_object($resqlUserCreneauActuel);
+		}
 		
+
 		print '<div style="background-color: #f2f2f2;border-radius: 25px;padding:1em;max-width:60%;margin:1em">';
 		print 'Jour : <span class="badge  badge-status8 badge-status" style="color:white;">'.$objJourCreneauActuel->jour.'</span><br>';
 		print 'Heure : '.$objheureDebutCreneauActuel->heure.'h / '.$objheureFinCreneauActuel->heure."h<br>";
-		print 'Professeur : '.$objUserCreneauActuel->firstname.' '.$objUserCreneauActuel->lastname."<br>";
+		print 'Professeur : '.($objUserCreneauActuel->prenom != NULL ? ($objUserCreneauActuel->prenom.' '.$objUserCreneauActuel->nom) : 'Aucun professeur pour l\'instant!')."<br>";
 		print 'Lien :'.'<a href="'.DOL_URL_ROOT.'/custom/scolarite/creneau_card.php?id='.$objectCreneauActuel->rowid.'">'.$objectCreneauActuel->nom_creneau.'</a>'; 
 		print '</div>';
 
