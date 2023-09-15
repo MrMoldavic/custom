@@ -311,6 +311,10 @@ class Creneau extends CommonObject
 		{
 			return setEventMessage('Des données sont manquantes.','errors');
 		}
+		elseif(($this->heure_debut > $this->heure_fin) || ($this->heure_debut == $this->heure_fin))
+		{
+			return setEventMessage('Veuillez chosir des horaires valides','errors');
+		}
 		else
 		{
 
@@ -754,6 +758,10 @@ class Creneau extends CommonObject
 			elseif(!$this->fk_niveau || !$this->heure_debut || !$this->heure_fin || !$this->jour || !$this->fk_type_classe)
 			{
 				return setEventMessage('Des données sont manquantes.','errors');
+			}
+			elseif(($this->heure_debut > $this->heure_fin) || ($this->heure_debut == $this->heure_fin))
+			{
+				return setEventMessage('Veuillez chosir des horaires valides','errors');
 			}
 
 			$affectation = "SELECT s.fk_souhait FROM ".MAIN_DB_PREFIX."affectation as s WHERE s.fk_creneau=".$this->id." AND date_fin IS NULL";

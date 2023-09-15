@@ -309,6 +309,14 @@ if ($action == 'create') {
 
 	print '<table class="border centpercent tableforfieldcreate">'."\n";
 
+	$anneScolaire = "SELECT annee,annee_actuelle,rowid FROM ".MAIN_DB_PREFIX."c_annee_scolaire WHERE active = 1 AND annee_actuelle = 1";
+	$resqlAnneeScolaire = $db->query($anneScolaire);
+	$objAnneScolaire = $db->fetch_object($resqlAnneeScolaire);
+
+	if (!GETPOSTISSET('minutes_debut')) $_POST['minutes_debut'] = 00;
+	if (!GETPOSTISSET('minutes_fin')) $_POST['minutes_fin'] = 00;
+	if (!GETPOSTISSET('fk_type_classe')) $_POST['fk_type_classe'] = 1;
+	if (!GETPOSTISSET('fk_annee_scolaire')) $_POST['fk_annee_scolaire'] = $objAnneScolaire->rowid;
 	// Common attributes
 	include DOL_DOCUMENT_ROOT.'/core/tpl/commonfields_add.tpl.php';
 
