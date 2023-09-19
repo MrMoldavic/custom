@@ -96,7 +96,7 @@ $langs->loadLangs(array("viescolaire@viescolaire", "other"));
 // Get parameters
 $id = GETPOST('id', 'int');
 $ref = GETPOST('ref', 'alpha');
-$action = GETPOST('action', 'aZ09');
+$action = GETPOST('action', 'alpha');
 $confirm = GETPOST('confirm', 'alpha');
 $cancel = GETPOST('cancel', 'aZ09');
 $contextpage = GETPOST('contextpage', 'aZ') ? GETPOST('contextpage', 'aZ') : 'appelcard'; // To manage different context of search
@@ -109,6 +109,7 @@ $currentHour = GETPOST('currentHour', 'alpha') ? GETPOST('currentHour', 'alpha')
 
 
 if($action == 'modifAppel') $currentHour = true;
+
 
 
 // Initialize technical objects
@@ -479,7 +480,7 @@ if ($action == 'create' && !GETPOST('etablissementid', 'int')) // SELECTION DU T
 if (($action == 'create' or $action == 'modifAppel') && GETPOST('etablissementid', 'int'))
 {
 
-
+  
      $picto = 'kit';
      $title = 'Nouvel appel';
      $linkback = "";
@@ -488,7 +489,7 @@ if (($action == 'create' or $action == 'modifAppel') && GETPOST('etablissementid
 
      print '<a href="' . DOL_URL_ROOT . '/custom/viescolaire/appel_card.php?etablissementid=' . GETPOST('etablissementid', 'int') . '&currentHour='.(GETPOST('currentHour','alpha') == true ? false : true).'&action=create">'.(GETPOST('currentHour','alpha') == false ? 'Afficher tous les créneaux' : 'Afficher seulement les créneaux de l\'heure actuelle').'</a>';
 
-     print '<form action="" method="POST">';
+     print '<form action="' . $_SERVER["PHP_SELF"] . '" method="POST">';
      print '<input type="hidden" name="action" value="add">';
      print '<input type="hidden" name="etablissementid" value="' . GETPOST('etablissementid', 'int') . '">';
 
@@ -727,7 +728,7 @@ if (($action == 'create' or $action == 'modifAppel') && GETPOST('etablissementid
 
           print '<div>';
 
-          print '<form action="">';
+          print '<form action="' . $_SERVER["PHP_SELF"] . '" method="post">';
           print '<table class="tagtable liste">';
       
           if (!$isComplete or ($action == 'modifAppel' && $creneauid == $val['rowid'])) {
@@ -832,7 +833,7 @@ if (($action == 'create' or $action == 'modifAppel') && GETPOST('etablissementid
 
           print '</table>';
           if (!$isComplete or ($action == 'modifAppel' && $creneauid == $val['rowid'])) {
-               print '<div class="center"><input type="submit" class="button" style="background-color:cadetblue"></div>';
+               print '<div class="center"><input type="submit" value="Valider l\'appel"class="button" style="background-color:cadetblue"></div>';
           } else {
                $currentHour = false;
                print '<div class="center"><input type="submit" value="Modifier l\'appel" class="button" style="background-color:lightslategray"></div>';

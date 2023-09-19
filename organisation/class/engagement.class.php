@@ -122,7 +122,7 @@ class Engagement extends CommonObject
 		'note_public' => array('type'=>'html', 'label'=>'NotePublic', 'enabled'=>'1', 'position'=>61, 'notnull'=>0, 'visible'=>0, 'cssview'=>'wordbreak', 'validate'=>'1',),
 		'note_private' => array('type'=>'html', 'label'=>'NotePrivate', 'enabled'=>'1', 'position'=>62, 'notnull'=>0, 'visible'=>0, 'cssview'=>'wordbreak', 'validate'=>'1',),
 		'date_creation' => array('type'=>'datetime', 'label'=>'DateCreation', 'enabled'=>'1', 'position'=>500, 'notnull'=>1, 'visible'=>-2,),
-		'tms' => array('type'=>'datetime', 'label'=>'Date d\'engagement', 'enabled'=>'1', 'position'=>501, 'notnull'=>0, 'visible'=>1,),
+		'tms' => array('type'=>'datetime', 'label'=>'Date d\'engagement', 'enabled'=>'1', 'position'=>501, 'notnull'=>0, 'visible'=>1,'help'=>"Par défaut la date du jour si laissé vide",),
 		'fk_user_creat' => array('type'=>'integer:User:user/class/user.class.php', 'label'=>'UserAuthor', 'picto'=>'user', 'enabled'=>'1', 'position'=>510, 'notnull'=>1, 'visible'=>-2, 'foreignkey'=>'user.rowid',),
 		'fk_user_modif' => array('type'=>'integer:User:user/class/user.class.php', 'label'=>'UserModif', 'picto'=>'user', 'enabled'=>'1', 'position'=>511, 'notnull'=>-1, 'visible'=>-2,),
 		'last_main_doc' => array('type'=>'varchar(255)', 'label'=>'LastMainDoc', 'enabled'=>'1', 'position'=>600, 'notnull'=>0, 'visible'=>0,),
@@ -240,34 +240,22 @@ class Engagement extends CommonObject
 	 */
 	public function create(User $user, $notrigger = false)
 	{
-		$error = 0;
-		if($this->fk_eleve && $this->fk_agent || !$this->fk_eleve && !$this->fk_agent)
-		{
-			setEventMessage('Veuillez choisir entre Agent et Eleve.', 'errors'); 
-			$error++;
-		}	
-
-		if($this->responsabilite && $this->fk_eleve)
-		{
-			setEventMessage('Un eleve ne peut pas être responsable.', 'errors');
-			$error++;
-		}	
-
 		$engagmement = "SELECT rowid FROM ".MAIN_DB_PREFIX."organisation_engagement WHERE ".($this->fk_agent != "" ? 'fk_agent' : "fk_eleve")."=".($this->fk_agent != "" ? $this->fk_agent : $this->fk_eleve);
 		$resqlEngagement = $this->db->query($engagmement);
-		
-		if($resqlEngagement->num_rows > 0)
-		{
-			setEventMessage('Cet Agent/Eleve est déjà présent dans le groupe.', 'errors');
-			$error++;
-		}
-		
 
-		if($error == 0)
-		{
-			$resultcreate = $this->createCommon($user, $notrigger);	
-			return $resultcreate;
-		}
+		var_dump($engagmement);
+
+		if($this->fk_eleve && $this->fk_agent || !$this->fk_eleve && !$this->fk_agent) return setEventMessage('Veuillez choisir entre Agent et Eleve.', 'errors');	
+
+		if($this->responsabilite && $this->fk_eleve) return setEventMessage('Un eleve ne peut pas être responsable.', 'errors');
+
+		if($resqlEngagement->num_rows > 0) return setEventMessage('Cet Agent/Eleve est déjà présent dans le groupe.', 'errors');
+
+		if(!$this->tms) $this->tms = time();
+		
+		$resultcreate = $this->createCommon($user, $notrigger);	
+		return $resultcreate;
+
 	}
 
 	/**
@@ -489,25 +477,14 @@ class Engagement extends CommonObject
 	 */
 	public function update(User $user, $notrigger = false)
 	{
-		$error = 0;
-		if($this->fk_eleve && $this->fk_agent)
-		{
-			setEventMessage('Veuillez choisir entre Agent et Eleve.', 'errors'); 
-			$error++;
-		}	
+		if($this->fk_eleve && $this->fk_agent) return setEventMessage('Veuillez choisir entre Agent et Eleve.', 'errors'); 
 
-		if($this->responsabilite && $this->fk_eleve)
-		{
-			setEventMessage('Un eleve ne peut pas être responsable.', 'errors');
-			$error++;
-		}	
+		if($this->responsabilite && $this->fk_eleve) return setEventMessage('Un eleve ne peut pas être responsable.', 'errors');
 
-		if($error == 0)
-		{
-			return $this->updateCommon($user, $notrigger);
-		}
+		if(!$this->tms) $this->tms = time();
 
-		
+		return $this->updateCommon($user, $notrigger);
+				
 	}
 
 	/**
