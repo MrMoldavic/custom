@@ -851,13 +851,15 @@ class Materiel extends CommonObject
         $error = 0;
         if (empty($this->precision_type)) $this->precision_type = '';
         if (empty($this->notes)) $this->notes = '';
+        if (empty($this->fk_preinventaire)) $this->fk_preinventaire = 'NULL';
         if (empty($this->fk_entrepot) || $this->fk_entrepot == -1) $this->fk_entrepot = 'NULL';
         if (empty($this->fk_proprietaire) || $this->fk_proprietaire == -1) $this->fk_proprietaire = 'NULL';
 
         $this->db->begin();
         $sql = "UPDATE ".MAIN_DB_PREFIX."materiel";
         $sql .= " SET";
-        $sql .= " fk_type_materiel = " . $this->fk_type_materiel;
+        $sql .= " fk_preinventaire = " . $this->fk_preinventaire;
+        $sql .= ", fk_type_materiel = " . $this->fk_type_materiel;
         $sql .= ", fk_etat = " . $this->fk_etat;
         $sql .= ", fk_etat_etiquette = " . $this->fk_etat_etiquette;
         $sql .= ", fk_exploitabilite = " . $this->fk_exploitabilite;

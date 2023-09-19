@@ -198,6 +198,7 @@ if ($action == 'update' && $usercancreate) {
                 $materiel->oldcopy = clone $materiel;
 
                 $materiel->fk_type_materiel         = GETPOST('fk_type_materiel', 'alphanohtml');
+                $materiel->fk_preinventaire         = GETPOST('preinventaire_line_id', 'alphanohtml') != "-1" ? GETPOST('preinventaire_line_id', 'alphanohtml') : null;
                 $materiel->fk_etat                  = GETPOST('fk_etat', 'alphanohtml');
                 $materiel->fk_etat_etiquette        = GETPOST('fk_etat_etiquette', 'alphanohtml');
                 $materiel->fk_exploitabilite        = GETPOST('fk_exploitabilite', 'alphanohtml');
@@ -208,6 +209,7 @@ if ($action == 'update' && $usercancreate) {
                 $materiel->fk_origine               = GETPOST('origine_materiel', 'alpha');
                 $materiel->fk_entrepot              = GETPOST('fk_entrepot', 'alpha');
                 $materiel->fk_proprietaire          = GETPOST('idproprietaire', 'alpha');
+
                 if ($materiel->update() > 0) {
                     setEventMessages('Données mises à jour.', null);
                     $materiel->fetch($id);
@@ -304,7 +306,6 @@ if ($action == 'confirm_reactivate' && $confirm == 'yes' && $usercandelete) {
         $action = '';
     }
 }
-
 
 
 /*
@@ -456,7 +457,7 @@ if ($action == 'create') {
     elseif ($materiel->id > 0) {
         // Fiche en mode edition
         if ($action == 'edit' && $usercancreate) {
-
+            
             llxHeader("", $langs->trans("Materiel"));
             //WYSIWYG Editor
             require_once DOL_DOCUMENT_ROOT.'/core/class/doleditor.class.php';
@@ -486,6 +487,11 @@ if ($action == 'create') {
 
             print '<tr>';
             print '</td></tr>';
+            
+            print '<tr><td class="titlefieldcreate fieldrequired" style="max-width:300px">Source préinventaire</td><td>';
+            print $form->selectarray('preinventaire_line_id', $formmateriel->getPreinventaireLinesForCreation(), $materiel->fk_preinventaire, 1, 0, 0, 'style="max-width:500px;"', 0, 0, 0, '', '', 1);
+            print '</td>';
+            print '</tr>';
 
             // Type materiel
             print '<tr><td class="titlefieldcreate fieldrequired">Type de matériel</td><td>';
@@ -604,7 +610,7 @@ if ($action == 'create') {
             print '<tr><td class="titlefield">';
             print 'Source';
             print '</td><td colspan="3">';
-            if($materiel->source_object)
+            if($materiel->source_object != NULL)
             {
                 print $materiel->source_object->getNomUrl();
             }

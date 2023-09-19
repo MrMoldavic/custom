@@ -557,13 +557,14 @@ if ($conf->materiel->enabled == 1)
 
     			print '<td class="tdoverflowmax200">';
 
-				if($materiel->source_object)
+				
+				if($materiel->fk_preinventaire != NULL)
 				{
 					print $materiel->source_object->getNomUrl();
 				}
 				else
 				{
-					print 'À rapprocher';
+					print '<span class="badge badge-status8 badge-status" style="color:white;">À rapprocher</span>';
 				}
     			
     			print "</td>\n";
