@@ -493,6 +493,10 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 	print '</table>';
 	print '<h2><u>Suivi de l\'élève:</u></h2>';
 
+	$anneScolaire = "SELECT annee,annee_actuelle,rowid FROM ".MAIN_DB_PREFIX."c_annee_scolaire WHERE active = 1 AND annee_actuelle = 1 ORDER BY rowid DESC";
+	$resqlAnneeScolaire = $db->query($anneScolaire);
+	$objAnneScolaire = $db->fetch_object($resqlAnneeScolaire);
+
 	$abscenceInj = "SELECT * FROM ".MAIN_DB_PREFIX."appel as a WHERE a.fk_eleve = ".$object->id." AND a.status= 'absenceI' AND a.treated = 1";
 	$resqlInj = $db->query($abscenceInj);
 	$numInj = $db->num_rows($resqlInj);
@@ -574,73 +578,6 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 
 	print '</div>';
 	
-	// print '<h2><u>Instruments prêtés: </u></h2>';
-
-	// print '<p>'.dolGetButtonAction('Prêter un instrument', '', 'default', '/custom/exploitation/card.php'.'?action=create&token='.newToken().'&idtypeexploitation=1&idexploitant='.$object->id, '', $permissiontoadd).'</p>';
-
-
-	// $sqlInstrumentsPretes = "SELECT fk_materiel FROM ".MAIN_DB_PREFIX."kit_content WHERE fk_kit =(SELECT fk_kit FROM ".MAIN_DB_PREFIX."exploitation_content WHERE fk_exploitation = (SELECT rowid FROM ".MAIN_DB_PREFIX."exploitation WHERE fk_exploitant = ".$object->id." AND fk_type_exploitation= 1 AND active = 1))";
-	// $resqlInstruments = $db->query($sqlInstrumentsPretes);
-
-	// if(!$resqlInstruments)
-	// {
-	// 	print '<p>Aucun prêt en cours.</p>';
-	// }
-	// else
-	// {
-	// 	print '<table class="tagtable liste">';
-	// 	print '<tbody>';
-	
-	// 	print '<tr class="liste_titre">
-	// 		<th class="wrapcolumntitle liste_titre">Marque</th>
-	// 		<th class="wrapcolumntitle liste_titre">Modele</th>
-	// 		<th class="wrapcolumntitle liste_titre">Infos</th>
-	// 		<th class="wrapcolumntitle liste_titre">Etat de l\'instrument</th>
-	// 		<th class="wrapcolumntitle liste_titre">Début/Fin de contrat</th>
-	// 		<th class="wrapcolumntitle liste_titre">Précisions</th>
-	// 		<th class="wrapcolumntitle liste_titre">Origine</th>
-	// 		<th class="wrapcolumntitle liste_titre">Action</th>
-	// 	</tr>';
-	
-	// 	foreach($resqlInstruments as $value)
-	// 	{
-	// 		$sqlInstruments = "SELECT * FROM ".MAIN_DB_PREFIX."materiel WHERE rowid=".$value['fk_materiel'];
-	// 		$resqlInstrumentListe = $db->query($sqlInstruments);
-	// 		$objInstrument = $db->fetch_object($resqlInstrumentListe);
-	
-	// 		$sqlMarque = "SELECT marque FROM ".MAIN_DB_PREFIX."c_marque WHERE rowid=".$objInstrument->fk_marque;
-	// 		$resqlMarque = $db->query($sqlMarque);
-	// 		$objMarque= $db->fetch_object($resqlMarque);
-	
-	// 		$sqlEtat = "SELECT etat, badge_status_code FROM ".MAIN_DB_PREFIX."c_etat_materiel WHERE rowid=".$objInstrument->fk_etat;
-	// 		$resqlEtat = $db->query($sqlEtat);
-	// 		$objEtat= $db->fetch_object($resqlEtat);
-	
-	// 		$sqlOrigine = "SELECT origine FROM ".MAIN_DB_PREFIX."c_origine_materiel WHERE rowid=".$objInstrument->fk_origine;
-	// 		$resqlOrigine = $db->query($sqlOrigine);
-	// 		$objOrigine= $db->fetch_object($resqlOrigine);
-
-	// 		$sqlDates = "SELECT date_debut,date_fin,rowid FROM ".MAIN_DB_PREFIX."exploitation WHERE fk_exploitant = ".$object->id." AND fk_type_exploitation= 1 AND active = 1";
-	// 		$resqlDates = $db->query($sqlDates);
-	// 		$objDates= $db->fetch_object($resqlDates);
-			
-
-		
-	// 		print '<tr class="oddeven">';
-	// 		print '<td>'.$objMarque->marque.'</td>';
-	// 		print '<td>'.$objInstrument->modele.'</td>';
-	// 		print '<td>'.$objInstrument->notes_supplementaires.'</td>';
-	// 		print '<td><span class="badge  badge-status'.$objEtat->badge_status_code.' badge-status" style="color:white;">'.$objEtat->etat.'</span></td>';
-	// 		print '<td>'.date('d-m-Y',strtotime($objDates->date_debut)).' / '.date('d-m-Y',strtotime($objDates->date_fin)).'</td>';
-	// 		print '<td>'.$objInstrument->precision_type.'</td>';
-	// 		print '<td>'.$objOrigine->origine.'</td>';
-	// 		print '<td>'.dolGetButtonAction('Voir l\'exploitation', '', 'default', '/custom/exploitation/card.php'.'?action=view&token='.newToken().'&id='.$objDates->rowid, '', $permissiontoadd).dolGetButtonAction('Voir le matériel', '', 'default', '/custom/materiel/card.php'.'?action=view&token='.newToken().'&id='.$objInstrument->rowid, '', $permissiontoadd).'</td>';
-	// 		print '</tr>';
-	// 	}
-
-	// 	print '</tbody>';
-	// 	print '</table>';
-	// }
 
 	
 	$nom = '\'%'.$object->nom.'-'.$object->prenom.'%\'';
@@ -649,10 +586,8 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 	$resqlAnneeScolaire = $db->query($anneScolaire);
 	$objAnneScolaire = $db->fetch_object($resqlAnneeScolaire);
 
-	// $cours = "SELECT * FROM ".MAIN_DB_PREFIX."souhait as c WHERE c.fk_eleve = ".$object->id." AND c.status= 4";
-	// $resql = $db->query($cours);
-	// $obj = $db->fetch_row($resql);
-	// $num = $db->num_rows($resql);
+
+
 	
 	$souhait = "SELECT * FROM ".MAIN_DB_PREFIX."souhait as c WHERE c.fk_eleve = ".$object->id;
 	$resqlSouhait = $db->query($souhait);
@@ -751,8 +686,6 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 			{
 				print '<p>Aucun souhaits connus pour cette année scolaire.</p>';
 			}
-
-			
 
 			print '</div>';
 		}

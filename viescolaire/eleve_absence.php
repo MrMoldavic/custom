@@ -211,180 +211,70 @@ if ($id > 0 || !empty($ref)) {
 	print '<div class="fichecenter">';
 	print '<div class="underbanner clearboth"></div>';
 
-	$abscenceInj = "SELECT * FROM ".MAIN_DB_PREFIX."appel as a WHERE a.fk_eleve = ".$object->id." AND a.status= 'absenceI' AND a.treated= 1";
-	$resqlInj = $db->query($abscenceInj);
-	$numInj = $db->num_rows($resqlInj);
-	$absenceInjObj = $db->fetch_object($resqlInj);
+	print '<h3>Absences de l\'élève:</h3>';
 
-	print '<h2>Liste des absences injustifiées ('.$numInj.'): </h2>';
 
-	print '<table class="border centpercent tableforfield">';
-	print '<tbody>';
-	print '<tr>';
-	print '<td>Etablissement</td>';
-	print '<td>Creneau</td>';
-	print '<td>Professeur</td>';
-	print '<td>Justification</td>';
-	print '<td>Date de l\'absence</td>';
-	print '<td>Statut</td>';
-	print '</tr>';
-	foreach($resqlInj as $value)
+	$materiels = array();
+
+	$sql = "SELECT COUNT(a.rowid) as total, status";
+	$sql .= " FROM ".MAIN_DB_PREFIX."appel as a";
+	$sql .= " WHERE a.treated = 1";
+	$sql .= ' AND a.fk_eleve = '.$object->id;
+	$sql .= " GROUP BY a.status";
+	$result = $db->query($sql);
+
+	$result = $db->query($sql);
+	while ($objp = $db->fetch_object($result))
 	{
-		$etablissement = "SELECT nom FROM ".MAIN_DB_PREFIX."etablissement WHERE rowid= ".$value['fk_etablissement'];
-		$resqlEtablissment = $db->query($etablissement);
-		$etablissementObj = $db->fetch_object($resqlEtablissment);
-
-		$creneau = "SELECT nom_creneau,fk_prof_1,fk_prof_2,fk_prof_3 FROM ".MAIN_DB_PREFIX."creneau WHERE rowid= ".$value['fk_creneau'];
-		$resqlCreneau = $db->query($creneau);
-		$creneauObj = $db->fetch_object($resqlCreneau);
-	
-		$time = strtotime($value['date_creation']);
-
-		$sqlProf1 = "SELECT prenom,nom,rowid FROM ".MAIN_DB_PREFIX."management_agent WHERE rowid= ".$creneauObj->fk_prof_1;
-		$resqlProf1 = $db->query($sqlProf1);
-
-		$sqlProf2 = "SELECT prenom,nom,rowid FROM ".MAIN_DB_PREFIX."management_agent WHERE rowid= ".$creneauObj->fk_prof_2;
-		$resqlProf2 = $db->query($sqlProf2);
-		
-		$sqlProf3 = "SELECT prenom,nom,rowid FROM ".MAIN_DB_PREFIX."management_agent WHERE rowid= ".$creneauObj->fk_prof_3;
-		$resqlProf3 = $db->query($sqlProf3);
-
-		print '<tr>';
-		print '<td>'.$etablissementObj->nom.'</td>';
-		print '<td>'.($creneauObj->nom_creneau != "" ? $creneauObj->nom_creneau : '<span class="badge  badge-status8 badge-status" style="color:white;">Erreur créneau</span>').'</td>';
-		print '<td>';
-		
-		if($resqlProf1)
-		{
-			$profObject1 = $db->fetch_object($resqlProf1);
-			print $profObject1->prenom.' '.$profObject1->nom.'<br>';
-		}
-		if($resqlProf2)
-		{
-			$profObject2 = $db->fetch_object($resqlProf2);
-			print $profObject2->prenom.' '.$profObject2->nom.'<br>';
-		}
-		if($resqlProf3)
-		{
-			$profObject3 = $db->fetch_object($resqlProf3);
-			print $profObject3->prenom.' '.$profObject3->nom.'<br>';
-		}
-		
-
-		print '</td>';
-		if(null == $value['justification'])
-		{
-			print '<td>Aucune</td>';
-		}
-		else
-		{
-			print '<td>'.$value['justification'].'</td>';
-		}
-		print '<td>'.date('d/m/Y', $time).'</td>';
-		print '<td>'.'<span class="badge  badge-status8 badge-status" style="color:white;">Injustifiée</span>'.'</td>';
-		print '</tr>';
+		$status = $objp->status == 'retard' ? 'Retard' : ($objp->status == 'absenceJ' ? 'Absence Justifiée' : 'Absence Injustifiée');
+		$materiels[$status] = $objp->total;
 	}
-	print '</tbody>';
-	print '</table>';
-
-
-
-	$abscenceJust = "SELECT * FROM ".MAIN_DB_PREFIX."appel as a WHERE a.fk_eleve = ".$object->id." AND a.status= 'absenceJ' AND a.treated= 1";
-	$resqlJust = $db->query($abscenceJust);
-	$numJust = $db->num_rows($resqlJust);
-
-	print '<h2>Liste des absences Justifiées ('.$numJust.'): </h2>';
-
-	print '<table class="border centpercent tableforfield">';
-	print '<tbody>';
-	print '<tr>';
-	print '<td>Etablissement</td>';
-	print '<td>Creneau</td>';
-	print '<td>Professeur</td>';
-	print '<td>Justification</td>';
-	print '<td>Date de l\'absence</td>';
-	print '<td>Statut</td>';
-	print '</tr>';
-	foreach($resqlJust as $value)
-	{
-		$etablissement = "SELECT nom FROM ".MAIN_DB_PREFIX."etablissement WHERE rowid= ".$value['fk_etablissement'];
-		$resqlEtablissment = $db->query($etablissement);
-		$etablissementObj = $db->fetch_object($resqlEtablissment);
-
-		$creneau = "SELECT nom_creneau,fk_prof_1,fk_prof_2,fk_prof_3 FROM ".MAIN_DB_PREFIX."creneau WHERE rowid= ".$value['fk_creneau'];
-		$resqlCreneau = $db->query($creneau);
-		$creneauObj = $db->fetch_object($resqlCreneau);
 	
-		$time = strtotime($value['date_creation']);
-
-		$sqlProf1 = "SELECT prenom,nom,rowid FROM ".MAIN_DB_PREFIX."management_agent WHERE rowid= ".$creneauObj->fk_prof_1;
-		$resqlProf1 = $db->query($sqlProf1);
-
-		$sqlProf2 = "SELECT prenom,nom,rowid FROM ".MAIN_DB_PREFIX."management_agent WHERE rowid= ".$creneauObj->fk_prof_2;
-		$resqlProf2 = $db->query($sqlProf2);
-		
-		$sqlProf3 = "SELECT prenom,nom,rowid FROM ".MAIN_DB_PREFIX."management_agent WHERE rowid= ".$creneauObj->fk_prof_3;
-		$resqlProf3 = $db->query($sqlProf3);
-
-
-
-		print '<tr>';
-		print '<td>'.$etablissementObj->nom.'</td>';
-		print '<td>'.($creneauObj->nom_creneau != "" ? $creneauObj->nom_creneau : '<span class="badge  badge-status8 badge-status" style="color:white;">Erreur créneau</span>').'</td>';
-		print '<td>';
-		
-		if($resqlProf1)
+	if ($conf->use_javascript_ajax)
+	{
+		print '<div class="div-table-responsive-no-min">';
+		print '<table class="noborder centpercent">';
+		print '<tr class="liste_titre"><th>Bilan global des absences de '.$object->prenom.'</th></tr>';
+		print '<tr><td class="center nopaddingleftimp nopaddingrightimp">';
+	
+		$total = 0;
+		$dataval = array();
+		$datalabels = array();
+		$dataseries = array();
+		$i = 0;
+	
+		foreach ($materiels as $type=>$appel_count)
 		{
-			$profObject1 = $db->fetch_object($resqlProf1);
-			print $profObject1->prenom.' '.$profObject1->nom.'<br>';
+			$total+=$appel_count;
+			$dataseries[] = array($type, $appel_count);
 		}
-		if($resqlProf2)
-		{
-			$profObject2 = $db->fetch_object($resqlProf2);
-			print $profObject2->prenom.' '.$profObject2->nom.'<br>';
-		}
-		if($resqlProf3)
-		{
-			$profObject3 = $db->fetch_object($resqlProf3);
-			print $profObject3->prenom.' '.$profObject3->nom.'<br>';
-		}
-		
-
-		print '</td>';
-		if(null == $value['justification'])
-		{
-			print '<td>Aucune</td>';
-		}
-		else
-		{
-			print '<td>'.$value['justification'].'</td>';
-		}
-		print '<td>'.date('d/m/Y', $time).'</td>';
-		print '<td>';
-		print '<form action="">';
-		print '<input type="text" name="absenceID" value="'.$value['rowid'].'" hidden>';
-		print '<select name="statut" id="statut">';
-		print '<option value=""><span class="badge  badge-status1 badge-status" style="color:white;">Jusitifiée</span></option>';
-		print '<option value=""><span class="badge  badge-status1 badge-status" style="color:white;">Injustifiée</span></option>';
-		print '<option value=""><span class="badge  badge-status1 badge-status" style="color:white;">Retard</span></option>';
-		print '</select>';
-		print '<button type="submit">modifier</button>';
-		print '</form>';
-		
-		print '</td>';
-		//print '<td>'.'<span class="badge  badge-status4 badge-status" style="color:white;">Jusitifiée</span>'.'</td>';
-		print '</tr>';
+		include_once DOL_DOCUMENT_ROOT.'/core/class/dolgraph.class.php';
+		$dolgraph = new DolGraph();
+		$dolgraph->SetData($dataseries);
+		$dolgraph->setShowLegend(2);
+		$dolgraph->setShowPercent(1);
+		$dolgraph->SetType(array('pie'));
+		$dolgraph->setHeight('200');
+		$dolgraph->draw('idgraphstatus');
+		print $dolgraph->show($total ? 0 : 1);
+	
+		print '</td></tr>';
+		print '</table>';
+		print '</div>';
 	}
-	print '</tbody>';
-	print '</table>';
 
 
-	$retard = "SELECT * FROM ".MAIN_DB_PREFIX."appel as a WHERE a.fk_eleve = ".$object->id." AND a.status= 'retard' AND a.treated= 1";
-	$retards = $db->query($retard);
-	$numInj = $db->num_rows($retards);
 
 
-	print '<h2>Liste des retards ('.$numInj.'): </h2>';
+
+	$anneScolaire = "SELECT annee,annee_actuelle,rowid FROM ".MAIN_DB_PREFIX."c_annee_scolaire WHERE active = 1 AND annee_actuelle = 1 ORDER BY rowid DESC";
+	$resqlAnneeScolaire = $db->query($anneScolaire);
+	$objAnneScolaire = $db->fetch_object($resqlAnneeScolaire);
+
+	$abscence = "SELECT * FROM ".MAIN_DB_PREFIX."appel as a WHERE a.fk_eleve = ".$object->id." AND a.treated= 1 ORDER BY a.date_creation DESC";
+	$resql = $db->query($abscence);
+	$num = $db->num_rows($resql);
+	$absenceObj = $db->fetch_object($resql);
 
 	print '<table class="border centpercent tableforfield">';
 	print '<tbody>';
@@ -396,66 +286,56 @@ if ($id > 0 || !empty($ref)) {
 	print '<td>Date de l\'absence</td>';
 	print '<td>Statut</td>';
 	print '</tr>';
-	foreach($retards as $value)
+	foreach($resql as $value)
 	{
-		$etablissement = "SELECT nom FROM ".MAIN_DB_PREFIX."etablissement WHERE rowid= ".$value['fk_etablissement'];
+		$etablissement = "SELECT nom,diminutif FROM ".MAIN_DB_PREFIX."etablissement WHERE rowid= ".$value['fk_etablissement'];
 		$resqlEtablissment = $db->query($etablissement);
 		$etablissementObj = $db->fetch_object($resqlEtablissment);
 
-		$creneau = "SELECT nom_creneau,fk_prof_1,fk_prof_2,fk_prof_3 FROM ".MAIN_DB_PREFIX."creneau WHERE rowid= ".$value['fk_creneau'];
+		$creneau = "SELECT nom_creneau,fk_prof_1,fk_prof_2,fk_prof_3,fk_annee_scolaire,rowid FROM ".MAIN_DB_PREFIX."creneau WHERE rowid= ".$value['fk_creneau'];
 		$resqlCreneau = $db->query($creneau);
 		$creneauObj = $db->fetch_object($resqlCreneau);
 	
 		$time = strtotime($value['date_creation']);
 
 		$sqlProf1 = "SELECT prenom,nom,rowid FROM ".MAIN_DB_PREFIX."management_agent WHERE rowid= ".$creneauObj->fk_prof_1;
-		$resqlProf1 = $db->query($sqlProf1);
+		if($creneauObj->fk_prof_1 != null) $resqlProf1 = $db->query($sqlProf1);
+		
 
 		$sqlProf2 = "SELECT prenom,nom,rowid FROM ".MAIN_DB_PREFIX."management_agent WHERE rowid= ".$creneauObj->fk_prof_2;
-		$resqlProf2 = $db->query($sqlProf2);
+		if($creneauObj->fk_prof_2 != null) $resqlProf2 = $db->query($sqlProf2);
 		
 		$sqlProf3 = "SELECT prenom,nom,rowid FROM ".MAIN_DB_PREFIX."management_agent WHERE rowid= ".$creneauObj->fk_prof_3;
-		$resqlProf3 = $db->query($sqlProf3);
+		if($creneauObj->fk_prof_3 != null) $resqlProf3 = $db->query($sqlProf3);
 
-
-		print '<tr>';
-		print '<td>'.$etablissementObj->nom.'</td>';
-		print '<td>'.($creneauObj->nom_creneau != "" ? $creneauObj->nom_creneau : '<span class="badge  badge-status8 badge-status" style="color:white;">Erreur créneau</span>').'</td>';
+		print '<tr '.($objAnneScolaire->rowid != $creneauObj->fk_annee_scolaire ? 'style="background-color: #BBBBBB"' : '').'">';
+		print '<td>'.$etablissementObj->diminutif.'</td>';
+		print '<td>'.($creneauObj->nom_creneau != "" ? '<a href="'.DOL_URL_ROOT.'/custom/scolarite/creneau_card.php?id='.$creneauObj->rowid.' " target="_blank">'.$creneauObj->nom_creneau.'</a>' : '<span class="badge  badge-status8 badge-status" style="color:white;">Erreur créneau</span>').'</td>';
 		print '<td>';
-
 		
 		if($resqlProf1)
 		{
 			$profObject1 = $db->fetch_object($resqlProf1);
-			print $profObject1->prenom.' '.$profObject1->nom.'<br>';
+			print '<a href="' . DOL_URL_ROOT . '/custom/management/agent_card.php?id=' .  $profObject1->rowid . '" target="_blank">' .$profObject1->prenom.' '.$profObject1->nom. '</a><br>';
 		}
 		if($resqlProf2)
 		{
 			$profObject2 = $db->fetch_object($resqlProf2);
-			print $profObject2->prenom.' '.$profObject2->nom.'<br>';
+			print '<a href="' . DOL_URL_ROOT . '/custom/management/agent_card.php?id=' .  $profObject2->rowid . '" target="_blank">' .$profObject2->prenom.' '.$profObject2->nom. '</a><br>';
+
 		}
 		if($resqlProf3)
 		{
 			$profObject3 = $db->fetch_object($resqlProf3);
-			print $profObject3->prenom.' '.$profObject3->nom.'<br>';
+			print '<a href="' . DOL_URL_ROOT . '/custom/management/agent_card.php?id=' .  $profObject3->rowid . '" target="_blank">' .$profObject3->prenom.' '.$profObject3->nom. '</a><br>';
 		}
-		
 
 		print '</td>';
-		if(null == $value['justification'])
-		{
-			print '<td>Aucune</td>';
-		}
-		else
-		{
-			print '<td>'.$value['justification'].'</td>';
-		}
-		print '<td>'.date('d/m/Y', $time).'</td>';
-		print '<td>';
-		print '<select name="" id="">';
-		print '<option value=""><span class="badge  badge-status1 badge-status" style="color:white;">Retard</span></option>';
-		print '</select>';
-		print '</td>';
+		if($value['justification'] == null) print '<td>Aucune</td>';
+		else print "<td style='overflow-wrap: normal; max-width: 30em'>{$value['justification']}</td>";
+
+		print '<td><span class="badge  badge-status'.($objAnneScolaire->rowid != $creneauObj->fk_annee_scolaire ? '9' : '4').' badge-status" style="color:white;">'.date('d/m/Y', $time).($objAnneScolaire->rowid != $creneauObj->fk_annee_scolaire ? ' / Année précédente' : ' / Année actuelle').'</span></td>';
+		print '<td>'.'<span class="badge  badge-status'.($value['status'] == 'retard' ? '1' : ($value['status'] == 'absenceJ' ? '4' : '8')).' badge-status" style="color:white;">'.($value['status'] == 'retard' ? 'Retard' : ($value['status'] == 'absenceJ' ? 'Absence Justifiée' : 'Absence Injustifiée')).'</span>'.'</td>';
 		print '</tr>';
 	}
 	print '</tbody>';
@@ -465,7 +345,6 @@ if ($id > 0 || !empty($ref)) {
 	$cssclass = "titlefield";
 
 	print '</div>';
-
 	print dol_get_fiche_end();
 }
 
