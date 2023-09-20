@@ -433,40 +433,6 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 
 	$morehtmlref = '<div class="refidno">';
 	$morehtmlref .= $object->prenom;
-	/*
-	 // Ref customer
-	 $morehtmlref.=$form->editfieldkey("RefCustomer", 'ref_client', $object->ref_client, $object, 0, 'string', '', 0, 1);
-	 $morehtmlref.=$form->editfieldval("RefCustomer", 'ref_client', $object->ref_client, $object, 0, 'string', '', null, null, '', 1);
-	 // Thirdparty
-	 $morehtmlref.='<br>'.$langs->trans('ThirdParty') . ' : ' . (is_object($object->thirdparty) ? $object->thirdparty->getNomUrl(1) : '');
-	 // Project
-	 if (! empty($conf->projet->enabled)) {
-	 $langs->load("projects");
-	 $morehtmlref .= '<br>'.$langs->trans('Project') . ' ';
-	 if ($permissiontoadd) {
-	 //if ($action != 'classify') $morehtmlref.='<a class="editfielda" href="' . $_SERVER['PHP_SELF'] . '?action=classify&token='.newToken().'&id=' . $object->id . '">' . img_edit($langs->transnoentitiesnoconv('SetProject')) . '</a> ';
-	 $morehtmlref .= ' : ';
-	 if ($action == 'classify') {
-	 //$morehtmlref .= $form->form_project($_SERVER['PHP_SELF'] . '?id=' . $object->id, $object->socid, $object->fk_project, 'projectid', 0, 0, 1, 1);
-	 $morehtmlref .= '<form method="post" action="'.$_SERVER['PHP_SELF'].'?id='.$object->id.'">';
-	 $morehtmlref .= '<input type="hidden" name="action" value="classin">';
-	 $morehtmlref .= '<input type="hidden" name="token" value="'.newToken().'">';
-	 $morehtmlref .= $formproject->select_projects($object->socid, $object->fk_project, 'projectid', $maxlength, 0, 1, 0, 1, 0, 0, '', 1);
-	 $morehtmlref .= '<input type="submit" class="button valignmiddle" value="'.$langs->trans("Modify").'">';
-	 $morehtmlref .= '</form>';
-	 } else {
-	 $morehtmlref.=$form->form_project($_SERVER['PHP_SELF'] . '?id=' . $object->id, $object->socid, $object->fk_project, 'none', 0, 0, 0, 1);
-	 }
-	 } else {
-	 if (! empty($object->fk_project)) {
-	 $proj = new Project($db);
-	 $proj->fetch($object->fk_project);
-	 $morehtmlref .= ': '.$proj->getNomUrl();
-	 } else {
-	 $morehtmlref .= '';
-	 }
-	 }
-	 }*/
 	$morehtmlref .= '</div>';
 
 	dol_banner_tab($object, 'ref', $linkback, 1, 'ref', 'nom', $morehtmlref);
@@ -491,63 +457,15 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 	include DOL_DOCUMENT_ROOT.'/core/tpl/extrafields_view.tpl.php';
 
 	print '</table>';
-	print '<h2><u>Suivi de l\'élève:</u></h2>';
-
-	$anneScolaire = "SELECT annee,annee_actuelle,rowid FROM ".MAIN_DB_PREFIX."c_annee_scolaire WHERE active = 1 AND annee_actuelle = 1 ORDER BY rowid DESC";
-	$resqlAnneeScolaire = $db->query($anneScolaire);
-	$objAnneScolaire = $db->fetch_object($resqlAnneeScolaire);
-
-	$abscenceInj = "SELECT * FROM ".MAIN_DB_PREFIX."appel as a WHERE a.fk_eleve = ".$object->id." AND a.status= 'absenceI' AND a.treated = 1";
-	$resqlInj = $db->query($abscenceInj);
-	$numInj = $db->num_rows($resqlInj);
-
-	print '<p>Nombre d\'absence <span class="badge  badge-status8 badge-status" style="color:white;">Injustifiées</span> totales : '.'<a href="' . DOL_URL_ROOT . '/custom/viescolaire/eleve_absence.php?id=' . $object->id . '&absenceI">' . $numInj . '</a>'.'</p>';
-	
-	$abscenceJus = "SELECT * FROM ".MAIN_DB_PREFIX."appel as a WHERE a.fk_eleve = ".$object->id." AND a.status= 'absenceJ' AND a.treated= 1";
-	$resqlJus = $db->query($abscenceJus);
-	$numJus = $db->num_rows($resqlJus);
-
-	print '<p>Nombre d\'absence <span class="badge  badge-status4 badge-status" style="color:white;">Justifiées</span> totales : '.$numJus.'</p>';
-
-	$retards = "SELECT * FROM ".MAIN_DB_PREFIX."appel as a WHERE a.fk_eleve = ".$object->id." AND a.status= 'retard' AND a.treated= 1";
-	$retards = $db->query($retards);
-	$numRetards = $db->num_rows($retards);
-
-	print '<p>Nombre de <span class="badge  badge-status1 badge-status" style="color:white;">retards</span> totaux: '.$numRetards.'</p>';
-	print '<h2><u>Etat de l\'inscription: </u></h2>';
-	print '<form action="/custom/viescolaire/eleve_card.php?id='.$object->id.'&action=stateModify" method="post">';
-	print '<input type="hidden" name="id_eleve" value='.$object->id.'>';
-	print '<select name="stateInscription" id="">
-			<option value="9" '.($object->status == '9' ? 'selected' : '').' >Abandon</option>
-   			<option value="1" '.($object->status == '1' ? 'selected' : '').' >Ancien à remotiver</option>
-   			<option value="3" '.($object->status == '3' ? 'selected' : '').' >Venu pour informations</option>
-			<option value="7" '.($object->status == '7' ? 'selected' : '').' >Placé (paiement incomplet)</option>
-   			<option value="4" '.($object->status == '4' ? 'selected' : '').' >Inscription terminée (payée) </option>
-			<option value="2" '.($object->status == '2' ? 'selected' : '').' >Budgétisé</option>
-			<option value="8" '.($object->status == '8' ? 'selected' : '').' >Problème</option>
-		</select>';	
-
-	if($permissiontoadd == 1)
-	{
-		print '<button type="submit">Valider</button>';
-	}
-	else
-	{
-		print '<button type="submit" disabled>Valider</button>';
-	}
-	
-	
-	print '</form>';
-
-	print '</div>';
 	$famille = "SELECT * FROM ".MAIN_DB_PREFIX."famille WHERE rowid = ".$object->fk_famille;
 	$resqlFamille = $db->query($famille);
 
 	if($resqlFamille->num_rows > 0)
 	{
+		print '<h3><u>Information famille:</u></h3>';
 		$objFamille = $db->fetch_object($resqlFamille);
 
-		print '<table class="border tableforfield">';
+		print '<table class="tagtable liste">';
 		print '<tbody>';
 		print '<tr>';
 		print '<td>Téléphone parent 1('.$objFamille->prenom_parent_1.' '.$objFamille->nom_parent_1.'):</td>';
@@ -574,20 +492,62 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 		print '</tbody>';
 		print '</table>';
 	}
+	// print '<h2><u>Suivi de l\'élève:</u></h2>';
+
+	// $anneScolaire = "SELECT annee,annee_actuelle,rowid FROM ".MAIN_DB_PREFIX."c_annee_scolaire WHERE active = 1 AND annee_actuelle = 1 ORDER BY rowid DESC";
+	// $resqlAnneeScolaire = $db->query($anneScolaire);
+	// $objAnneScolaire = $db->fetch_object($resqlAnneeScolaire);
+
+	// $abscenceInj = "SELECT * FROM ".MAIN_DB_PREFIX."appel as a WHERE a.fk_eleve = ".$object->id." AND a.status= 'absenceI' AND a.treated = 1";
+	// $resqlInj = $db->query($abscenceInj);
+	// $numInj = $db->num_rows($resqlInj);
+
+	// print '<p>Nombre d\'absence <span class="badge  badge-status8 badge-status" style="color:white;">Injustifiées</span> totales : '.'<a href="' . DOL_URL_ROOT . '/custom/viescolaire/eleve_absence.php?id=' . $object->id . '&absenceI">' . $numInj . '</a>'.'</p>';
 	
+	// $abscenceJus = "SELECT * FROM ".MAIN_DB_PREFIX."appel as a WHERE a.fk_eleve = ".$object->id." AND a.status= 'absenceJ' AND a.treated= 1";
+	// $resqlJus = $db->query($abscenceJus);
+	// $numJus = $db->num_rows($resqlJus);
+
+	// print '<p>Nombre d\'absence <span class="badge  badge-status4 badge-status" style="color:white;">Justifiées</span> totales : '.$numJus.'</p>';
+
+	// $retards = "SELECT * FROM ".MAIN_DB_PREFIX."appel as a WHERE a.fk_eleve = ".$object->id." AND a.status= 'retard' AND a.treated= 1";
+	// $retards = $db->query($retards);
+	// $numRetards = $db->num_rows($retards);
+
+	// print '<p>Nombre de <span class="badge  badge-status1 badge-status" style="color:white;">retards</span> totaux: '.$numRetards.'</p>';
+	print '<h3><u>Etat de l\'inscription: </u></h3>';
+	print '<form method="POST" action="/custom/viescolaire/eleve_card.php?id='.$object->id.'&action=stateModify" method="post">';
+	print '<input type="hidden" name="token" value="'.newToken().'">';
+	print '<input type="hidden" name="id_eleve" value='.$object->id.'>';
+	print dol_get_fiche_head(array(), '');
+	print '<table class="border centpercent ">'."\n";
+
+	print '<div class="center">';
+	print '<label>Selectionnez l\'état de l\'inscription : </label>';
+
+	$array = [9=>'Abandon',1=>'Ancien à remotiver',3=>'Venu pour informations',7=>'Placé (paiement incomplet)',4=>'Inscription terminée (payée)',2=>'Budgétisé',8=>'Problème',];
+
+
+	print $form->selectarray('stateInscription',$array,$object->status);
+	print '</div>';
+	print '</table>'."\n";
+
+	print dol_get_fiche_end();
+
+	print $form->buttonsSaveCancel("Valider");
+
+	print '</form>';
+
 
 	print '</div>';
 	
-
+	print '</div>';
 	
-	$nom = '\'%'.$object->nom.'-'.$object->prenom.'%\'';
+
 
 	$anneScolaire = "SELECT annee,annee_actuelle,rowid FROM ".MAIN_DB_PREFIX."c_annee_scolaire WHERE active = 1 ORDER BY rowid DESC";
 	$resqlAnneeScolaire = $db->query($anneScolaire);
 	$objAnneScolaire = $db->fetch_object($resqlAnneeScolaire);
-
-
-
 	
 	$souhait = "SELECT * FROM ".MAIN_DB_PREFIX."souhait as c WHERE c.fk_eleve = ".$object->id;
 	$resqlSouhait = $db->query($souhait);
@@ -608,14 +568,10 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 
 		if (empty($reshook)) {
 
-			print dolGetButtonAction($langs->trans('Engager dans un groupe'), '', 'default', DOL_URL_ROOT.'/custom/organisation/engagement_card.php?fk_eleve='.$object->id.'&action=create' , '', $permissiontoadd);
-
-			print dolGetButtonAction($langs->trans('Modifier l\'élève'), '', 'default', ''.'?id='.$object->id.'&action=edit&token='.newToken(), '', $permissiontoadd);
+			print dolGetButtonAction($langs->trans('Engager dans un groupe'), '', 'danger', DOL_URL_ROOT.'/custom/organisation/engagement_card.php?fk_eleve='.$object->id.'&action=create' , '', $permissiontoadd);
+			print dolGetButtonAction($langs->trans('Modifier l\'élève'), '', 'danger', ''.'?id='.$object->id.'&action=edit&token='.newToken(), '', $permissiontoadd);
 			print dolGetButtonAction($langs->trans('Delete'), '', 'delete', $_SERVER['PHP_SELF'].'?id='.$object->id.'&action=delete&token='.newToken(), '', $permissiontodelete);
 			
-			// }
-		
-			// Delete (need delete permission, or if draft, just need create/modify permission)
 		}
 		print '</div>'."\n";
 	}
