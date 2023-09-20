@@ -178,7 +178,7 @@ print '</div><div class="fichetwothirdright">';
 
 $NBMAX = $conf->global->MAIN_SIZE_SHORTLIST_LIMIT;
 $max = $conf->global->MAIN_SIZE_SHORTLIST_LIMIT;
-var_dump("vraiment Correctement connecté avec cpanel!");
+var_dump("caca boudin");
 /* BEGIN MODULEBUILDER LASTMODIFIED MYOBJECT
 // Last modified myobject
 if (! empty($conf->scolarite->enabled) && $user->rights->scolarite->read)
