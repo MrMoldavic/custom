@@ -1,0 +1,4 @@
+---
+deployment:
+  tasks:
+    - export DEPLOYPATH=home/rovi9061/intranet.tousalamusique.com/custom
