@@ -104,6 +104,8 @@ if (isset($user->socid) && $user->socid > 0) {
  * View
  */
 
+print "Version Git : 1.0.0";
+
 $form = new Form($db);
 $formfile = new FormFile($db);
 $souhait = new Souhait($db);
