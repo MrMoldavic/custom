@@ -2,7 +2,7 @@
 deployment:
   tasks:
     - export DEPLOYPATH=/home/rovi9061/intranet.tousalamusique.com/custom
-    - /bin cp * $DEPLOYPATH 
+    - /bin/cp -r * $DEPLOYPATH
     # - /bin/cp -R adherents $DEPLOYPATH
     # - /bin/cp -R admin $DEPLOYPATH
     # - /bin/cp -R core $DEPLOYPATH
