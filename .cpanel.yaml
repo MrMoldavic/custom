@@ -1,4 +1,11 @@
 ---
 deployment:
   tasks:
-    - export DEPLOYPATH=home/rovi9061/intranet.tousalamusique.com/custom
+    - export DEPLOYPATH=/home/rovi9061/intranet.tousalamusique.com/custom
+    - /bin/cp -R assets $DEPLOYPATH
+    - /bin/cp -R css $DEPLOYPATH
+    - /bin/cp -R fonts $DEPLOYPATH
+    - /bin/cp -R img $DEPLOYPATH
+    - /bin/cp -R js $DEPLOYPATH
+    - /bin/cp -R php $DEPLOYPATH
+    - /bin/cp index.html $DEPLOYPATH
