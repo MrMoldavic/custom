@@ -111,7 +111,7 @@ $formfile = new FormFile($db);
 $souhait = new Souhait($db);
 
 llxHeader("", $langs->trans("Admin"));
-print "Version Git : 1.0.0";
+print var_dump("Version Git : 1.0.0");
 print load_fiche_titre($langs->trans("Zone Admin"), '', $user->picto);
 
 $formconfirm = '';
