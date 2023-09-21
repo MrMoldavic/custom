@@ -112,7 +112,6 @@ $souhait = new Souhait($db);
 
 llxHeader("", $langs->trans("Admin"));
 print "<h1>Version Git : 1.0.0</h1>";
-print "<h1>Connecté avec le repo!!</h1>";
 print load_fiche_titre($langs->trans("Zone Admin"), '', $user->picto);
 
 $formconfirm = '';
