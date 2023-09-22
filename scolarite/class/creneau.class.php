@@ -723,7 +723,7 @@ class Creneau extends CommonObject
 
 			if($this->fk_salle)
 			{
-				$existingCreneau = "SELECT rowid FROM ".MAIN_DB_PREFIX."creneau WHERE fk_salle=".$this->fk_salle." AND heure_debut=".$this->heure_debut." AND rowid!=".$this->id." AND fk_annee_scolaire =".$this->fk_annee_scolaire;
+				$existingCreneau = "SELECT rowid FROM ".MAIN_DB_PREFIX."creneau WHERE fk_salle=".$this->fk_salle." AND heure_debut=".$this->heure_debut." AND rowid !=".$this->rowid." AND fk_annee_scolaire =".$this->fk_annee_scolaire;
 				$resqlExistingCreneau = $this->db->query($existingCreneau);
 				if($resqlExistingCreneau->num_rows > 0)
 				{
