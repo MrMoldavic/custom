@@ -743,8 +743,10 @@ while ($i < $imaxinloop) {
 				print '>';
 				if ($key == 'status') {
 					print $object->getLibStatut(5);
-				} elseif ($key == 'nom') {
-					print $object->getNomUrl();
+				} elseif($key == 'prenom')
+				{
+					print dolGetButtonAction($object->showOutputField($val, $key, $object->$key, ''),'', 'danger','/custom/management/agent_card.php?id=' . $object->id, '', $permissiontoadd);
+
 				} elseif ($key == 'rowid') {
 					print $object->showOutputField($val, $key, $object->id, '');
 				} else {

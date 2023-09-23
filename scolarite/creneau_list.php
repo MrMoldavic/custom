@@ -854,7 +854,7 @@ while ($i < $imaxinloop) {
 						$objProf1 = $db->fetch_object($resqlProf1);
 						
 		
-						$profs .= '<a href="' . DOL_URL_ROOT . '/user/card.php?id=' . $objProf1->rowid . '">' .'👨‍🏫'. $objProf1->nom.' '.$objProf1->prenom. '</a>'.'<br>';
+						$profs .= '<a href="' . DOL_URL_ROOT . '/custom/management/agent_card.php?id=' . $objProf1->rowid . '">' .'👨‍🏫'. $objProf1->nom.' '.$objProf1->prenom. '</a>'.'<br>';
 					}
 					if(isset($object->fk_prof_2))
 					{
@@ -862,7 +862,7 @@ while ($i < $imaxinloop) {
 						$resqlProf2 = $db->query($prof2);
 						$objProf2 = $db->fetch_object($resqlProf2);
 	
-						$profs .= '<a href="' . DOL_URL_ROOT . '/user/card.php?id=' . $objProf2->rowid . '">' .'👨‍🏫'. $objProf2->nom.' '.$objProf2->prenom. '</a>'.'<br>';
+						$profs .= '<a href="' . DOL_URL_ROOT . '/custom/management/agent_card.php?id=' . $objProf2->rowid . '">' .'👨‍🏫'. $objProf2->nom.' '.$objProf2->prenom. '</a>'.'<br>';
 					}
 					if(isset($object->fk_prof_3))
 					{
@@ -870,7 +870,7 @@ while ($i < $imaxinloop) {
 						$resqlProf3 = $db->query($prof3);
 						$objProf3 = $db->fetch_object($resqlProf3);
 	
-						$profs .= '<a href="' . DOL_URL_ROOT . '/user/card.php?id=' . $objProf3->rowid . '">' .'👨‍🏫'. $objProf3->nom.' '.$objProf3->prenom. '</a>'.'<br>';
+						$profs .= '<a href="' . DOL_URL_ROOT . '/custom/management/agent_card.php?id=' . $objProf3->rowid . '">' .'👨‍🏫'. $objProf3->nom.' '.$objProf3->prenom. '</a>'.'<br>';
 					}
 					if($profs == "") $profs = '<span class="badge badge-danger">Prof manquant &#9888</span>';
 	

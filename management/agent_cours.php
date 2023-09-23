@@ -177,7 +177,7 @@ if ($id > 0 || !empty($ref)) {
 
 	foreach($resqlJour as $value)
 	{
-		$cours = "SELECT professeurs, nom_creneau, rowid FROM ".MAIN_DB_PREFIX."creneau WHERE status=4 AND jour=".$value['rowid']." AND (fk_prof_1=".$object->fk_user." OR fk_prof_2=".$object->fk_user." OR fk_prof_3=".$object->fk_user.") ORDER BY heure_debut ASC";
+		$cours = "SELECT professeurs, nom_creneau, rowid FROM ".MAIN_DB_PREFIX."creneau WHERE status=4 AND jour=".$value['rowid']." AND (fk_prof_1=".$object->id." OR fk_prof_2=".$object->id." OR fk_prof_3=".$object->id.") ORDER BY heure_debut ASC";
 		$resqlCours = $db->query($cours);
 
 		print '<h3>'.$value['jour'].($resqlCours->num_rows > 0 ? ('    <span class="badge  badge-status4 badge-status">  '.$resqlCours->num_rows.' Cours</span>') : ('      <span class="badge  badge-status8 badge-status">  Aucun cours à ce jour</span>')).'</h3>';
@@ -210,7 +210,12 @@ if ($id > 0 || !empty($ref)) {
 					$resqlEleve = $db->query($eleve);
 					foreach($resqlEleve as $res)
 					{
-						print '<a href="' . DOL_URL_ROOT . '/custom/viescolaire/eleve_card.php?id=' . $res['rowid'] . '">' .'- '. $res['nom'].' '.$res['prenom'] . '</a>';
+						$niveau = "SELECT n.niveau FROM ".MAIN_DB_PREFIX."c_niveaux as n INNER JOIN ".MAIN_DB_PREFIX."souhait as s WHERE s.rowid=".$v['fk_souhait']." AND s.fk_niveau = n.rowid";
+						$resqlNiveau = $db->query($niveau);
+						$objectNiveau = $db->fetch_object($resqlNiveau);
+
+
+						print '<a href="' . DOL_URL_ROOT . '/custom/viescolaire/eleve_card.php?id=' . $res['rowid'] . '">' .'- '. $res['nom'].' '.$res['prenom'] . ' / '.$objectNiveau->niveau.'</a>';
 						print '<br>';
 					}
 				}
