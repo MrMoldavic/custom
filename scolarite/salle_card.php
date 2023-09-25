@@ -95,6 +95,31 @@ $backtopage = GETPOST('backtopage', 'alpha');
 $backtopageforcancel = GETPOST('backtopageforcancel', 'alpha');
 $lineid   = GETPOST('lineid', 'int');
 
+
+if($action == 'desactivation')
+{
+	$object = new Salle($db);
+	$sql = "UPDATE " . MAIN_DB_PREFIX . "salles SET status = " . $object::STATUS_CANCELED . " WHERE rowid=" . $id;
+	$resql = $db->query($sql);
+
+	setEventMessage('Salle désactivée avec succès');
+	$action = "view";
+}
+
+
+if ($action == 'activation') {
+
+	$object = new Salle($db);
+	$sql = "UPDATE " . MAIN_DB_PREFIX . "salles SET status = " . $object::STATUS_VALIDATED . " WHERE rowid=" . $id;
+	$resql = $db->query($sql);
+
+	setEventMessage('Salle activée avec succès');
+	$action = "view";
+}
+
+
+
+
 // Initialize technical objects
 $object = new Salle($db);
 $extrafields = new ExtraFields($db);
@@ -540,6 +565,14 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 				}
 			}
 			*/
+			if($permissiontoadd){
+				if ($object->status != $object::STATUS_CANCELED) {
+					print dolGetButtonAction($langs->trans('Désactiver la salle'), '', 'default', $_SERVER['PHP_SELF'].'?id='.$object->id.'&action=desactivation&token='.newToken(), '', $permissiontoadd);
+				} else {
+					print dolGetButtonAction($langs->trans('Activer la salle'), '', 'default', $_SERVER["PHP_SELF"].'?id='.$object->id.'&action=activation&token='.newToken(), '', $permissiontoadd);
+				}
+			}
+			
 
 			// Delete (need delete permission, or if draft, just need create/modify permission)
 			print dolGetButtonAction($langs->trans('Delete'), '', 'delete', $_SERVER['PHP_SELF'].'?id='.$object->id.'&action=delete&token='.newToken(), '', $permissiontodelete);

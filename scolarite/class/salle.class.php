@@ -66,7 +66,7 @@ class Salle extends CommonObject
 
 
 	const STATUS_DRAFT = 0;
-	const STATUS_VALIDATED = 1;
+	const STATUS_VALIDATED = 4;
 	const STATUS_CANCELED = 9;
 
 
@@ -108,6 +108,7 @@ class Salle extends CommonObject
 		'fk_college' => array('type'=>'integer:Etablissement:custom/scolarite/class/etablissement.class.php:1', 'label'=>'Etablissements', 'foreignkey'=>'etablissement.rowid','enabled'=>'1', 'position'=>40, 'notnull'=>1, 'visible'=>1, 'index'=>1, 'searchall'=>1, 'validate'=>'1', 'comment'=>"Reference of object", 'css'=>'maxwidth300',),
 		'nom_complet' => array('type'=>'varchar(255)', 'label'=>'nom complet de la salle', 'enabled'=>'1', 'position'=>20, 'notnull'=>0, 'visible'=>0, 'index'=>1, 'searchall'=>1, 'validate'=>'1' ,'showoncombobox'=>'1',),
 		'equipement' => array('type'=>'varchar(255)', 'label'=>'Équipement présent dans la salle', 'enabled'=>'1', 'position'=>30, 'notnull'=>0, 'visible'=>1, 'index'=>1, 'searchall'=>1, 'validate'=>'1', 'arrayofkeyval'=>array('Aucun'=>'Aucun', 'guitareE'=>'Guitares électriques (Amplis) ','MAO'=>'MAO','Piano'=>'Piano','Batterie'=>'Batterie','Groupe'=>'Groupe','Bureau'=>'Bureau','Indisponible'=>'Indisponible'), 'css'=>'maxwidth200',),
+		'status' => array('type'=>'integer', 'label'=>'Status', 'enabled'=>'1', 'position'=>2000, 'notnull'=>1, 'visible'=>2, 'index'=>1, 'arrayofkeyval'=>array('0'=>'Brouillon', '1'=>'Valid&eacute;', '9'=>'Annul&eacute;'), 'validate'=>'1',),
 	);
 	public $rowid;
 	public $ref;
@@ -827,11 +828,11 @@ class Salle extends CommonObject
 			global $langs;
 			//$langs->load("scolarite@scolarite");
 			$this->labelStatus[self::STATUS_DRAFT] = $langs->transnoentitiesnoconv('Draft');
-			$this->labelStatus[self::STATUS_VALIDATED] = $langs->transnoentitiesnoconv('Enabled');
-			$this->labelStatus[self::STATUS_CANCELED] = $langs->transnoentitiesnoconv('Disabled');
+			$this->labelStatus[self::STATUS_VALIDATED] = $langs->transnoentitiesnoconv('Salle active');
+			$this->labelStatus[self::STATUS_CANCELED] = $langs->transnoentitiesnoconv('Salle désactivée');
 			$this->labelStatusShort[self::STATUS_DRAFT] = $langs->transnoentitiesnoconv('Draft');
-			$this->labelStatusShort[self::STATUS_VALIDATED] = $langs->transnoentitiesnoconv('Enabled');
-			$this->labelStatusShort[self::STATUS_CANCELED] = $langs->transnoentitiesnoconv('Disabled');
+			$this->labelStatusShort[self::STATUS_VALIDATED] = $langs->transnoentitiesnoconv('Salle active');
+			$this->labelStatusShort[self::STATUS_CANCELED] = $langs->transnoentitiesnoconv('Salle désactivée');
 		}
 
 		$statusType = 'status'.$status;

@@ -434,10 +434,10 @@ if ($action == 'confirmAppel') {
 
                $db->query($sqlResProf);
           }
+     setEventMessage("Appel réalisé avec succès");
      }
 
   
-     setEventMessage("Appel réalisé avec succès");
      $action = 'create';
 
 }
