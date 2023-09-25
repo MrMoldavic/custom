@@ -111,7 +111,7 @@ $formfile = new FormFile($db);
 $souhait = new Souhait($db);
 
 llxHeader("", $langs->trans("Admin"));
-print "<h1>Version Git : 6a67e75</h1>";
+print "<h1>Version Git-1 : 0fe3b85</h1>";
 print load_fiche_titre($langs->trans("Zone Admin"), '', $user->picto);
 
 $formconfirm = '';
@@ -218,7 +218,40 @@ if ($action == 'cardDesactivate') {
 
 }
 
-if($action != "cardDesactivate")
+// if($action == "export")
+// {
+// 	print '<form method="POST" action="'.$_SERVER["PHP_SELF"].'">';
+// 	print '<input type="hidden" name="token" value="'.newToken().'">';
+
+// 	if(GETPOSTISSET('s','alpha'))
+// 	{
+// 		print '<input type="hidden" name="action" value="desactivate_souhait">';
+// 	}
+// 	elseif(GETPOSTISSET('c','alpha'))
+// 	{
+// 		print '<input type="hidden" name="action" value="desactivate_creneau">';
+// 	} 
+	
+// 	if ($backtopage) print '<input type="hidden" name="backtopage" value="'.$backtopage.'">';
+// 	if ($backtopageforcancel) print '<input type="hidden" name="backtopageforcancel" value="'.$backtopageforcancel.'">';
+
+// 	print dol_get_fiche_head(array(), '');
+// 	print '<table class="border centpercent tableforfieldcreate">'."\n";
+
+// 	print '<div class="center">';
+// 	print '<label>Selectionnez ce que vous voulez récupérer: </label>';
+
+// 	$item = ["Mail"=>"Mail","Téléphone"=>"Téléphone"];
+
+// 	print $form->selectarray('item',$item);
+// 	print '</div>';
+// 	print '</table>'."\n";
+
+// 	print dol_get_fiche_end();
+// 	print $form->buttonsSaveCancel("Valider");
+// 	print '</form>';
+// }
+else
 {
 	print load_fiche_titre($langs->trans("Souhaits"), '', 'object_'.$object->picto);
 	print '<div style="display;flex">';

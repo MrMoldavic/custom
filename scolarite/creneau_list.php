@@ -103,6 +103,8 @@ $contextpage = GETPOST('contextpage', 'aZ') ? GETPOST('contextpage', 'aZ') : 'cr
 $backtopage = GETPOST('backtopage', 'alpha'); // Go back to a dedicated page
 $optioncss = GETPOST('optioncss', 'aZ'); // Option for the css output (always '' except when 'print')
 $allYear = GETPOST('allYear','aZ09') ? GETPOST('allYear','aZ09') : 'false';
+$data = GETPOST('data','alpha');
+
 
 $id = GETPOST('id', 'int');
 // Load variable for pagination
@@ -495,7 +497,10 @@ $param .= $hookmanager->resPrint;
 
 // List of mass actions available
 $arrayofmassactions = array(
-	//'validate'=>img_picto('', 'check', 'class="pictofixedwidth"').$langs->trans("Validate"),
+	'mail'=>img_picto('', 'email', 'class="pictofixedwidth"').$langs->trans("Exporter les mails"),
+	'eleves'=>img_picto('', 'user', 'class="pictofixedwidth"').$langs->trans("Exporter les élèves"),
+	'telephone'=>img_picto('', 'phone', 'class="pictofixedwidth"').$langs->trans("Exporter les téléphones"),
+	'validate'=>img_picto('', 'check', 'class="pictofixedwidth"').$langs->trans("Validate"),
 	//'generate_doc'=>img_picto('', 'pdf', 'class="pictofixedwidth"').$langs->trans("ReGeneratePDF"),
 	//'builddoc'=>img_picto('', 'pdf', 'class="pictofixedwidth"').$langs->trans("PDFMerge"),
 	//'presend'=>img_picto('', 'email', 'class="pictofixedwidth"').$langs->trans("SendByMail"),
@@ -521,12 +526,106 @@ foreach($resqlInstru as $value)
 $concernes = [''=>'', 'professeurs'=>'Professeurs','eleves'=>'Élèves'];
 $date = date('Y-m-d H:i:s');
 
-//print '<button>Contacter les élèves des créneaux concernés</button>';
+
+
+
+print '<a href="'.$_SERVER['PHP_SELF'].'?allYear='.($allYear == 'false' ? 'true' : 'false').'">'.($allYear == 'false' ? 'Afficher les créneaux de toutes les années' : 'Afficher seulement les créneaux de l\'année actuelle').'</a><br>';
 
 
 
 
-print '<a href="'.$_SERVER['PHP_SELF'].'?allYear='.($allYear == 'false' ? 'true' : 'false').'">'.($allYear == 'false' ? 'Afficher les créneaux de toutes les années' : 'Afficher seulement les créneaux de l\'année actuelle').'</a>';
+if($massaction == 'telephone' || $massaction == 'mail' || $massaction == "eleves")
+{
+	//var_dump($arrayofselected);
+	//$fich = fopen("CSV/items.csv", "w");
+	print "<br>";
+	foreach($arrayofselected as $value)
+	{
+		$affectation = "SELECT s.fk_souhait FROM ".MAIN_DB_PREFIX."affectation as s WHERE s.fk_creneau=".$value." AND date_fin IS NULL";
+		$resqlAffectation = $db->query($affectation);
+	
+		foreach($resqlAffectation as $val)
+		{
+			$eleve = "SELECT e.fk_famille,e.prenom,e.nom,e.fk_classe_etablissement FROM ".MAIN_DB_PREFIX."eleve as e WHERE e.rowid=".("(SELECT s.fk_eleve FROM ".MAIN_DB_PREFIX."souhait as s WHERE s.rowid =".$val['fk_souhait'].")");
+			$resqlEleve = $db->query($eleve);
+				foreach($resqlEleve as $res)
+				{
+					
+					if($massaction == 'eleves')
+					{
+						if($res['prenom'] != NULL)
+						{
+							$classe = "SELECT classe FROM ".MAIN_DB_PREFIX."classe WHERE rowid=".$res['fk_classe_etablissement'];
+							$resqlClasse = $db->query($classe);
+							$objClasse = $db->fetch_object($resqlClasse);
+
+							print $res['prenom'].' '.$res['nom'].' / '.$objClasse->classe.'<br>';
+						}
+					}
+					else
+					{
+						$famille = "SELECT ".($massaction == 'mail' ? 'f.mail_parent_1,f.mail_parent_2' : 'f.tel_parent_1,f.tel_parent_2')." FROM ".MAIN_DB_PREFIX."famille as f WHERE f.rowid=".$res['fk_famille'];
+						$resqlFamille = $db->query($famille);
+						$objFamille = $db->fetch_object($resqlFamille);
+	
+						if($objFamille->mail_parent_1 != NULL AND $massaction == 'mail') print $objFamille->mail_parent_1."<br>";
+						if($objFamille->mail_parent_2 != NULL AND $massaction == 'mail') print $objFamille->mail_parent_2."<br>";
+						if($objFamille->tel_parent_1 != NULL AND $massaction == 'telephone') print $objFamille->tel_parent_1."<br>";
+						if($objFamille->tel_parent_2 != NULL AND $massaction == 'telephone') print $objFamille->tel_parent_2."<br>";
+					}
+					
+
+					// fwrite($fich, $mail_parent_2."\n");
+				}
+			
+		}
+	}
+	//fclose($fich);
+
+	// $fich = fopen("test.csv", "w");
+	// // $sep = ",";
+	// $i = 0;
+	// $form = "";
+	// for (; $i < sizeof($arrayofselected) - 1; $i++) {
+	// 	$form .= $arrayofselected[$i] . "\n";
+	// }
+	// fwrite($fich, $form);
+	// fclose($fich);
+
+
+	// $list = array (
+	// 	array('aaa', 'bbb', 'ccc', 'dddd'),
+	// 	array('123', '456', '789'),
+	// 	array('"aaa"', '"bbb"')
+	//  );
+	 
+	//  $fp = fopen('CSV/file.csv', 'w');
+	 
+	//  foreach ($list as $fields) {
+	// 	 fputcsv($fp, $fields);
+	//  }
+	 
+	//  fclose($fp);
+	//  $out = '<a class="documentdownload paddingright" href="'.$documenturl.'?modulepart='.$modulepart.'&amp;file=CSV/'.urlencode($relativepath).($param ? '&'.$param : '').'"';
+	//  $mime = dol_mimetype($relativepath, '', 0);
+	//  if (preg_match('/text/', $mime)) {
+	// 	 $out .= ' target="_blank" rel="noopener noreferrer"';
+	//  }
+	//  $out .= '>';
+
+	// print $out;
+
+}
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -761,21 +860,13 @@ while ($i < $imaxinloop) {
 			if (in_array($val['type'], array('double(24,8)', 'double(6,3)', 'integer', 'real', 'price')) && !in_array($key, array('rowid', 'status')) && empty($val['arrayofkeyval'])) {
 				$cssforfield .= ($cssforfield ? ' ' : '').'right';
 			}
-			//if (in_array($key, array('fk_soc', 'fk_user', 'fk_warehouse'))) $cssforfield = 'tdoverflowmax100';
 
 			if (!empty($arrayfields['t.'.$key]['checked'])) {
-				// print '<td'.($cssforfield ? ' class="'.$cssforfield.'"' : '');
-				// if (preg_match('/tdoverflow/', $cssforfield)) {
-				// 	print ' title="'.dol_escape_htmltag($object->$key).'"';
-				// }
-				// print '>';
 				print '<td '.($object->status == 4 ? 'style="background-color: #E9ffd7"' : '') .'>';
 				if ($key == 'status') {
 					print $object->getLibStatut(5);
 				} elseif ($key == 'fk_instrument_enseigne') {
 					print dolGetButtonAction($object->showOutputField($val, $key, $object->$key, '') != "" ? $object->showOutputField($val, $key, $object->$key, '') : "Groupe",'', 'danger','/custom/scolarite/creneau_card.php?id=' . $object->id, '', $permissiontoadd);
-
-					//print '<a href="' . DOL_URL_ROOT . '/custom/scolarite/creneau_card.php?id=' . $object->id . '">' .  . '</a>';
 				} elseif ($key == 'nom_creneau'){
 					print $object->getNomUrl(1);
 	
@@ -833,17 +924,6 @@ while ($i < $imaxinloop) {
 
 
 					print $objCours->type.' - '.($objCours->type == "Cours" ? $objInstru->instrument : $object->nom_groupe).' - '.$objNiveau->niveau;
-	
-					// if($objCours->type == "Cours")
-					// {
-					// 	print '<a href="' . DOL_URL_ROOT . '/custom/scolarite/creneau_card.php?id=' . $object->id . '">' .  $objCours->type.' - '.$objInstru->instrument.' - '.$objNiveau->niveau . '</a>';
-	
-					// }
-					// elseif($objCours->type == "Groupe")
-					// {
-					// 	print '<a href="' . DOL_URL_ROOT . '/custom/scolarite/creneau_card.php?id=' . $object->id . '">' . $objCours->type.' - '.$object->nom_groupe.' - '.$objNiveau->niveau . '</a>';
-	
-					// }
 				} elseif ($key == 'professeurs') {
 					
 					$profs = "";
@@ -1052,6 +1132,7 @@ if (in_array('builddoc', $arrayofmassactions) && ($nbtotalofrecords === '' || $n
 
 	print $formfile->showdocuments('massfilesarea_scolarite', '', $filedir, $urlsource, 0, $delallowed, '', 1, 1, 0, 48, 1, $param, $title, '', '', '', null, $hidegeneratedfilelistifempty);
 }
+
 
 // End of page
 llxFooter();
