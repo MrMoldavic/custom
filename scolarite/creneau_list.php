@@ -546,7 +546,7 @@ if($massaction == 'telephone' || $massaction == 'mail' || $massaction == "eleves
 	
 		foreach($resqlAffectation as $val)
 		{
-			$eleve = "SELECT e.fk_famille,e.prenom,e.nom,e.fk_classe_etablissement FROM ".MAIN_DB_PREFIX."eleve as e WHERE e.rowid=".("(SELECT s.fk_eleve FROM ".MAIN_DB_PREFIX."souhait as s WHERE s.rowid =".$val['fk_souhait'].")");
+			$eleve = "SELECT e.fk_famille,e.prenom,e.nom,e.fk_classe_etablissement FROM ".MAIN_DB_PREFIX."eleve as e WHERE e.rowid=".("(SELECT s.fk_eleve FROM ".MAIN_DB_PREFIX."souhait as s WHERE s.rowid =".$val['fk_souhait'].") ORDER BY fk_classe_etablissement ASC");
 			$resqlEleve = $db->query($eleve);
 				foreach($resqlEleve as $res)
 				{
