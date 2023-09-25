@@ -377,24 +377,25 @@ if (empty($conf->global->MAIN_DISABLE_FULL_SCANLIST)) {
 	}
 	$db->free($resql);
 }
-if (!$sortfield) {
+// if (!$sortfield) {
 	// reset($object->fields);					// Reset is required to avoid key() to return null.
 	// $sortfield = "t.".key($object->fields); // Set here default search field. By default 1st field in definition.
 	$sortfield = "t.stats_affectations";
 	$sortfield2 = "t.fk_famille";
-}
-if (!$sortorder) {
+// }
+// if (!$sortorder) {
 	$sortorder = "DESC";
 	$sortorder2 = "ASC";
-}
+// }
 
 //dump($search_all);
 $sql .= $db->order($sortfield, $sortorder);
 
 $count = 0;
 // Complete request and execute it with limit
-foreach($search as $val) $val != "" ? $count++ : "";
-$count == 0 ? $sql .= ", {$sortfield2} {$sortorder2}" : "";
+// foreach($search as $val) $val != "" ? $count++ : "";
+// $count == 0 ? 
+$sql .= ", {$sortfield2} {$sortorder2}";
 
 
 if ($limit) {
@@ -721,7 +722,6 @@ while ($i < $imaxinloop) {
 					print ' title="'.dol_escape_htmltag($object->$key).'"';
 				}
 				print '>';
-				//print '<td '.($object->fk_famille == "" ? 'style="background-color: #E1593C"' : '') .'>';
 				if ($key == 'status') {
 					print $object->getLibStatut(5);
 				} elseif ($key == 'rowid') {
