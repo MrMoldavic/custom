@@ -603,14 +603,18 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 				$resqlheureFin = $db->query($heurefin);
 				$objheureFin = $db->fetch_object($resqlheureFin);
 		
-				$professeur = "SELECT * FROM ".MAIN_DB_PREFIX."user WHERE rowid = ".$objectCreneau->fk_prof_1;
-				$resqlUser = $db->query($professeur);
-				$objUser = $db->fetch_object($resqlUser);
+				if($objectCreneau->fk_prof_1 != NULL)
+				{
+					$professeur = "SELECT * FROM ".MAIN_DB_PREFIX."management_agent WHERE rowid = ".$objectCreneau->fk_prof_1;
+					$resqlUser = $db->query($professeur);
+					$objUser = $db->fetch_object($resqlUser);
+				}
+				
 
 				print '<tr class="oddeven">';
 				print '<td>'.$objJour->jour.'</td>';
 				print '<td>'.$objheure->heure.'h / '.$objheureFin->heure.'h</td>';
-				print '<td>'.$objUser->firstname.' '.$objUser->lastname.'</td>';
+				if($objectCreneau->fk_prof_1 != NULL) print '<td>'.$objUser->prenom.' '.$objUser->nom.'</td>';
 				print '</tr>';
 			}
 		}
