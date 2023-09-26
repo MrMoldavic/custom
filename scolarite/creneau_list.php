@@ -871,31 +871,29 @@ while ($i < $imaxinloop) {
 					print $object->getNomUrl(1);
 	
 				} elseif ($key == 'nombre_places'){
-	
-					$affectation = "SELECT s.fk_souhait FROM ".MAIN_DB_PREFIX."affectation as s WHERE s.fk_creneau=".$object->id." AND date_fin IS NULL";
-					$resqlAffectation = $db->query($affectation);
-	
+
 					$count = 0;
-					foreach($resqlAffectation as $value)
-					{
-						$eleve = "SELECT e.nom,e.prenom,e.rowid FROM ".MAIN_DB_PREFIX."eleve as e WHERE e.rowid=".("(SELECT s.fk_eleve FROM ".MAIN_DB_PREFIX."souhait as s WHERE s.rowid =".$value['fk_souhait'].")");
-						$resqlEleve = $db->query($eleve);
-						foreach($resqlEleve as $res)
-						{
-							$count++;
-						}
-						
-					}
-					if($count == intval($object->showOutputField($val, $key, $object->$key, '')))
-					{
-						print '<span class="badge  badge-status8 badge-status" style="color:white;">'.$count.'/'.$object->showOutputField($val, $key, $object->$key, '').'</span>';
-					}
-					else
-					{
-						print '<span class="badge  badge-status4 badge-status" style="color:white;">'.$count.'/'.$object->showOutputField($val, $key, $object->$key, '').'</span>';
+					$sql1 = "SELECT e.nom, e.prenom,e.rowid FROM " . MAIN_DB_PREFIX . "souhait as s INNER JOIN " . MAIN_DB_PREFIX . "affectation as a ON a.fk_souhait = s.rowid INNER JOIN " . MAIN_DB_PREFIX . "eleve as e ON e.rowid = s.fk_eleve WHERE a.fk_creneau = " . $object->id . " AND a.status = 4";
+					$resqlAffectation1 = $db->query($sql1);
+
+
+					// $affectation = "SELECT s.fk_souhait FROM ".MAIN_DB_PREFIX."affectation as s WHERE s.fk_creneau=".$object->id." AND date_fin IS NULL";
+					// $resqlAffectation = $db->query($affectation);
 	
-					}
-					
+					// $count = 0;
+					// foreach($resqlAffectation as $value)
+					// {
+					// 	$eleve = "SELECT e.nom,e.prenom,e.rowid FROM ".MAIN_DB_PREFIX."eleve as e WHERE e.rowid=".("(SELECT s.fk_eleve FROM ".MAIN_DB_PREFIX."souhait as s WHERE s.rowid =".$value['fk_souhait'].")");
+					// 	$resqlEleve = $db->query($eleve);
+					// 	foreach($resqlEleve as $res)
+					// 	{
+					// 		$count++;
+					// 	}
+						
+					// }
+
+					print '<span class="badge  badge-status'.($resqlAffectation1->num_rows == intval($object->showOutputField($val, $key, $object->$key, '')) ? '8' : '4').' badge-status" style="color:white;">'.$resqlAffectation1->num_rows.'/'.$object->showOutputField($val, $key, $object->$key, '').'</span>';
+		
 	
 				} elseif ($key == 'fk_dispositif'){
 	
