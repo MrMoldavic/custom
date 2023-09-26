@@ -483,21 +483,14 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 	print '</table>';
 	print '<h3>Liste des élèves dans ce créneau:</h3>';
 
-	$affectation = "SELECT s.fk_souhait FROM ".MAIN_DB_PREFIX."affectation as s WHERE s.fk_creneau=".$object->id." AND date_fin IS NULL";
-	$resqlAffectation = $db->query($affectation);
+	$sql1 = "SELECT e.nom, e.prenom,e.rowid FROM " . MAIN_DB_PREFIX . "souhait as s INNER JOIN " . MAIN_DB_PREFIX . "affectation as a ON a.fk_souhait = s.rowid INNER JOIN " . MAIN_DB_PREFIX . "eleve as e ON e.rowid = s.fk_eleve WHERE a.fk_creneau = " . $object->id . " AND a.status = 4";
+	$resqlAffectation = $db->query($sql1);
 
 	foreach($resqlAffectation as $val)
 	{
-		$eleve = "SELECT e.nom,e.prenom,e.rowid FROM ".MAIN_DB_PREFIX."eleve as e WHERE e.rowid=".("(SELECT s.fk_eleve FROM ".MAIN_DB_PREFIX."souhait as s WHERE s.rowid =".$val['fk_souhait'].")");
-		$resqlEleve = $db->query($eleve);
-		foreach($resqlEleve as $res)
-		{
-			print '<a href="' . DOL_URL_ROOT . '/custom/viescolaire/eleve_card.php?id=' . $res['rowid'] . '">' .'- '. $res['nom'].' '.$res['prenom'] . '</a>';
-			print '<br>';
-		}
-
+		print '<a href="' . DOL_URL_ROOT . '/custom/viescolaire/eleve_card.php?id=' . $val['rowid'] . '">' .'- '. $val['nom'].' '.$val['prenom'] . '</a>';
+		print '<br>';
 	}
-
 
 	print '</div>';
 	print '</div>';
