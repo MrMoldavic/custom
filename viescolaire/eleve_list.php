@@ -106,8 +106,8 @@ $id = GETPOST('id', 'int');
 
 // Load variable for pagination
 $limit = GETPOST('limit', 'int') ? GETPOST('limit', 'int') : $conf->liste_limit;
-// $sortfield = GETPOST('sortfield', 'aZ09comma');
-// $sortorder = GETPOST('sortorder', 'aZ09comma');
+$sortfield = GETPOST('sortfield', 'aZ09comma');
+$sortorder = GETPOST('sortorder', 'aZ09comma');
 $page = GETPOSTISSET('pageplusone') ? (GETPOST('pageplusone') - 1) : GETPOST("page", 'int');
 if (empty($page) || $page < 0 || GETPOST('button_search', 'alpha') || GETPOST('button_removefilter', 'alpha')) {
 	// If $page is not defined, or '' or -1 or if we click on clear filters
@@ -377,27 +377,29 @@ if (empty($conf->global->MAIN_DISABLE_FULL_SCANLIST)) {
 	}
 	$db->free($resql);
 }
-// if (!$sortfield) {
-	// reset($object->fields);					// Reset is required to avoid key() to return null.
-	// $sortfield = "t.".key($object->fields); // Set here default search field. By default 1st field in definition.
-	$sortfield = "t.stats_affectations";
-	$sortfield2 = "t.fk_famille";
-// }
-// if (!$sortorder) {
-	$sortorder = "DESC";
-	$sortorder2 = "ASC";
-// }
 
-//dump($search_all);
+
+if (!$sortfield) {
+	reset($object->fields);					// Reset is required to avoid key() to return null.
+	$sortfield = "t.".key($object->fields); // Set here default search field. By default 1st field in definition.
+}
+// else $sortfield = "t.stats_affectations";
+
+if (!$sortorder) {
+	$sortorder = "ASC";
+}
+// else $sortorder = "DESC";
+
+
+
+
+$sortfield2 = "t.fk_famille";
+$sortorder2 = "ASC";
+
+
 $sql .= $db->order($sortfield, $sortorder);
-
-$count = 0;
-// Complete request and execute it with limit
-// foreach($search as $val) $val != "" ? $count++ : "";
-// $count == 0 ? 
 $sql .= ", {$sortfield2} {$sortorder2}";
-
-
+//if(GETPOST('sortfield','alpha')) $sql .=' ORDER BY '. GETPOST('sortfield','alpha').' '.strtoupper(GETPOSTISSET('sortorder','alpha') ? "DESC" : "ASC");
 if ($limit) {
 	$sql .= $db->plimit($limit + 1, $offset);
 }
@@ -422,22 +424,6 @@ if ($num == 1 && !empty($conf->global->MAIN_SEARCH_DIRECT_OPEN_IF_ONLY_ONE) && $
 // --------------------------------------------------------------------
 
 llxHeader('', $title, $help_url, '', 0, 0, $morejs, $morecss, '', '');
-
-// Example : Adding jquery code
-// print '<script type="text/javascript">
-// jQuery(document).ready(function() {
-// 	function init_myfunc()
-// 	{
-// 		jQuery("#myid").removeAttr(\'disabled\');
-// 		jQuery("#myid").attr(\'disabled\',\'disabled\');
-// 	}
-// 	init_myfunc();
-// 	jQuery("#mybutton").click(function() {
-// 		init_myfunc();
-// 	});
-// });
-// </script>';
-
 $arrayofselected = is_array($toselect) ? $toselect : array();
 
 $param = '';
@@ -651,7 +637,6 @@ if (isset($extrafields->attributes[$object->table_element]['computed']) && is_ar
 		}
 	}
 }
-
 
 
 // Loop on record
