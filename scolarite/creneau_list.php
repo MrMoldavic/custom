@@ -988,7 +988,6 @@ while ($i < $imaxinloop) {
 				} elseif ($key == 'eleves'){
 					$sql1 = "SELECT e.nom, e.prenom,e.rowid FROM " . MAIN_DB_PREFIX . "souhait as s INNER JOIN " . MAIN_DB_PREFIX . "affectation as a ON a.fk_souhait = s.rowid INNER JOIN " . MAIN_DB_PREFIX . "eleve as e ON e.rowid = s.fk_eleve WHERE a.fk_creneau = " . $object->id . " AND a.status = 4";
 					$resqlAffectation = $db->query($sql1);
-
 					foreach($resqlAffectation as $val)
 					{
 						print '<a href="' . DOL_URL_ROOT . '/custom/viescolaire/eleve_card.php?id=' . $val['rowid'] . '">' .'- '. $val['nom'].' '.$val['prenom'] . '</a>';

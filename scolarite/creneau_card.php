@@ -490,6 +490,7 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 	{
 		print '<a href="' . DOL_URL_ROOT . '/custom/viescolaire/eleve_card.php?id=' . $val['rowid'] . '">' .'- '. $val['nom'].' '.$val['prenom'] . '</a>';
 		print '<br>';
+		
 	}
 
 	print '</div>';
