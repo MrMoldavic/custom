@@ -355,9 +355,10 @@ if ($action == 'confirmAppel') {
      
           $db->query($sqlResProf);
           
-          
+        
           if($sqlProReal->fk_prof_2 != NULL)
           {
+              
                // Ajout de l'appel pour le professeur 2
                $sqlAppelProf2 = "SELECT fk_user FROM " . MAIN_DB_PREFIX . "appel WHERE fk_user = " . $sqlProReal->fk_prof_2;
                $sqlAppelProf2 .= " AND fk_creneau = " . GETPOST('creneauid', 'int');
@@ -376,27 +377,27 @@ if ($action == 'confirmAppel') {
                          $sqlProf2 = "UPDATE " . MAIN_DB_PREFIX . "appel SET treated = " . 0 . " WHERE fk_user=".$resProf2->fk_user." AND date_creation LIKE '" . date("Y-m-d") ."%'";
                          $resql = $db->query($sqlProf2);
                     }
-
-                    $sqlResProf = "INSERT INTO " . MAIN_DB_PREFIX . "appel (fk_etablissement, fk_creneau, fk_user, justification, action_faite, date_creation, fk_user_creat, status, treated) VALUES (";
-                    $sqlResProf .= GETPOST('etablissementid', 'int') . ",";
-                    $sqlResProf .= GETPOST('creneauid', 'int') . ",";
-                    $sqlResProf .= $sqlProReal->fk_prof_2 . ",";
-                    $sqlResProf .= "'" . GETPOST('infos' . $sqlProReal->fk_prof_2, 'alpha') . "',";
-                    $sqlResProf .= "NULL" . ",";
-                    if(GETPOST('daymonth', 'alpha'))
-                    {
-                         $sqlResProf .= "'".date('Y-m-d H:i:s', mktime(0, 0, 0, GETPOST('month', 'alpha'), GETPOST('daymonth', 'alpha'), date(GETPOST('year', 'alpha'))))."',";
-                    }
-                    else
-                    {
-                         $sqlResProf .= "'" . date('Y-m-d H:i:s'). "',";
-                    }
-                    $sqlResProf .= $user->id . ",";
-                    $sqlResProf .= "'" . GETPOST('prof' . $sqlProReal->fk_prof_2, 'alpha') . "',";
-                    $sqlResProf .= 1 .")";
-
-                    $db->query($sqlResProf);
                }
+
+               $sqlResProf = "INSERT INTO " . MAIN_DB_PREFIX . "appel (fk_etablissement, fk_creneau, fk_user, justification, action_faite, date_creation, fk_user_creat, status, treated) VALUES (";
+               $sqlResProf .= GETPOST('etablissementid', 'int') . ",";
+               $sqlResProf .= GETPOST('creneauid', 'int') . ",";
+               $sqlResProf .= $sqlProReal->fk_prof_2 . ",";
+               $sqlResProf .= "'" . GETPOST('infos' . $sqlProReal->fk_prof_2, 'alpha') . "',";
+               $sqlResProf .= "NULL" . ",";
+               if(GETPOST('daymonth', 'alpha'))
+               {
+                    $sqlResProf .= "'".date('Y-m-d H:i:s', mktime(0, 0, 0, GETPOST('month', 'alpha'), GETPOST('daymonth', 'alpha'), date(GETPOST('year', 'alpha'))))."',";
+               }
+               else
+               {
+                    $sqlResProf .= "'" . date('Y-m-d H:i:s'). "',";
+               }
+               $sqlResProf .= $user->id . ",";
+               $sqlResProf .= "'" . GETPOST('prof' . $sqlProReal->fk_prof_2, 'alpha') . "',";
+               $sqlResProf .= 1 .")";
+
+               $db->query($sqlResProf);
           }
           
 
@@ -420,27 +421,27 @@ if ($action == 'confirmAppel') {
                          $sqlProf3 = "UPDATE " . MAIN_DB_PREFIX . "appel SET treated = " . 0 . " WHERE fk_user=".$resProf3->fk_user." AND date_creation LIKE '" . date("Y-m-d") ."%'";
                          $resql = $db->query($sqlProf3);              
                     }
-
-                    $sqlResProf = "INSERT INTO " . MAIN_DB_PREFIX . "appel (fk_etablissement, fk_creneau, fk_user, justification, action_faite, date_creation, fk_user_creat, status, treated) VALUES (";
-                    $sqlResProf .= GETPOST('etablissementid', 'int') . ",";
-                    $sqlResProf .= GETPOST('creneauid', 'int') . ",";
-                    $sqlResProf .= $sqlProReal->fk_prof_3 . ",";
-                    $sqlResProf .= "'" . GETPOST('infos' . $sqlProReal->fk_prof_3, 'alpha') . "',";
-                    $sqlResProf .= "NULL" . ",";
-                    if(GETPOST('daymonth', 'alpha'))
-                    {
-                         $sqlResProf .= "'".date('Y-m-d H:i:s', mktime(0, 0, 0, GETPOST('month', 'alpha'), GETPOST('daymonth', 'alpha'), date(GETPOST('year', 'alpha'))))."',";
-                    }
-                    else
-                    {
-                         $sqlResProf .= "'" . date('Y-m-d H:i:s'). "',";
-                    }
-                    $sqlResProf .= $user->id . ",";
-                    $sqlResProf .= "'" . GETPOST('prof' . $sqlProReal->fk_prof_3, 'alpha') . "',";
-                    $sqlResProf .= 1 .")";
-
-                    $db->query($sqlResProf);
                }
+
+               $sqlResProf = "INSERT INTO " . MAIN_DB_PREFIX . "appel (fk_etablissement, fk_creneau, fk_user, justification, action_faite, date_creation, fk_user_creat, status, treated) VALUES (";
+               $sqlResProf .= GETPOST('etablissementid', 'int') . ",";
+               $sqlResProf .= GETPOST('creneauid', 'int') . ",";
+               $sqlResProf .= $sqlProReal->fk_prof_3 . ",";
+               $sqlResProf .= "'" . GETPOST('infos' . $sqlProReal->fk_prof_3, 'alpha') . "',";
+               $sqlResProf .= "NULL" . ",";
+               if(GETPOST('daymonth', 'alpha'))
+               {
+                    $sqlResProf .= "'".date('Y-m-d H:i:s', mktime(0, 0, 0, GETPOST('month', 'alpha'), GETPOST('daymonth', 'alpha'), date(GETPOST('year', 'alpha'))))."',";
+               }
+               else
+               {
+                    $sqlResProf .= "'" . date('Y-m-d H:i:s'). "',";
+               }
+               $sqlResProf .= $user->id . ",";
+               $sqlResProf .= "'" . GETPOST('prof' . $sqlProReal->fk_prof_3, 'alpha') . "',";
+               $sqlResProf .= 1 .")";
+
+               $db->query($sqlResProf);
           }
      setEventMessage("Appel réalisé avec succès");
      }
