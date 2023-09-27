@@ -82,6 +82,7 @@ if (!$res) {
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formcompany.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/date.lib.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/company.lib.php';
+require_once DOL_DOCUMENT_ROOT.'/custom/scolarite/class/etablissement.class.php';
 
 // load viescolaire libraries
 require_once __DIR__.'/class/eleve.class.php';
@@ -101,6 +102,7 @@ $toselect   = GETPOST('toselect', 'array'); // Array of ids of elements selected
 $contextpage = GETPOST('contextpage', 'aZ') ? GETPOST('contextpage', 'aZ') : 'elevelist'; // To manage different context of search
 $backtopage = GETPOST('backtopage', 'alpha'); // Go back to a dedicated page
 $optioncss = GETPOST('optioncss', 'aZ'); // Option for the css output (always '' except when 'print')
+$familyOnly = GETPOST('familyOnly', 'alpha') ? GETPOST('familyOnly','alpha') : 'false';
 
 $id = GETPOST('id', 'int');
 
@@ -288,6 +290,7 @@ if ($object->ismultientitymanaged == 1) {
 } else {
 	$sql .= " WHERE 1 = 1";
 }
+if($familyOnly == "true") $sql .= " AND t.fk_famille IS NULL";
 foreach ($search as $key => $val) {
 	if (array_key_exists($key, $object->fields)) {
 		if ($key == 'status' && $search[$key] == -1) {
@@ -391,14 +394,12 @@ if (!$sortorder) {
 // else $sortorder = "DESC";
 
 
-
-
-$sortfield2 = "t.fk_famille";
-$sortorder2 = "ASC";
+// $sortfield2 = "t.fk_famille";
+// $sortorder2 = "ASC";
 
 
 $sql .= $db->order($sortfield, $sortorder);
-$sql .= ", {$sortfield2} {$sortorder2}";
+//$sql .= ", {$sortfield2} {$sortorder2}";
 //if(GETPOST('sortfield','alpha')) $sql .=' ORDER BY '. GETPOST('sortfield','alpha').' '.strtoupper(GETPOSTISSET('sortorder','alpha') ? "DESC" : "ASC");
 if ($limit) {
 	$sql .= $db->plimit($limit + 1, $offset);
@@ -468,6 +469,10 @@ if (GETPOST('nomassaction', 'int') || in_array($massaction, array('presend', 'pr
 	$arrayofmassactions = array();
 }
 $massactionbutton = $form->selectMassAction('', $arrayofmassactions);
+
+
+print '<a href="'.$_SERVER['PHP_SELF'].'?familyOnly='.($familyOnly == 'false' ? 'true' : 'false').'">'.($familyOnly == 'false' ? 'Afficher seulement les élèves sans familles et erreur d\'affectation' : 'Tri normal').'</a><br>';
+
 
 print '<form method="POST" id="searchFormList" action="'.$_SERVER["PHP_SELF"].'">'."\n";
 if ($optioncss != '') {
@@ -730,21 +735,13 @@ while ($i < $imaxinloop) {
 					$resSouhaits = $db->query($souhait);
 					$objSouhaits = $db->fetch_object($resSouhaits);
 
-	
-					if($objAffectation->total != $objSouhaits->total)
-					{
-						print $objAffectation->total." / ".$objSouhaits->total.' <span class="badge badge-danger">&#9888</span>';
-					}
-					else
-					{
-						print $objAffectation->total." / ".$objSouhaits->total;
-					}
+
+					print "{$objAffectation->total} / {$objSouhaits->total}".($objAffectation->total != $objSouhaits->total ? ' <span class="badge badge-danger">&#9888</span>' : '');
 	
 				} elseif ($key == 'fk_etablissement') {
-					$diminutif = "SELECT * FROM ".MAIN_DB_PREFIX."etablissement WHERE rowid=".$object->fk_etablissement;
-					$resDiminutif = $db->query($diminutif);
-					$obj = $db->fetch_object($resDiminutif);
-					print '<a href="' . DOL_URL_ROOT . '/custom/scolarite/etablissement_card.php?id=' . $obj->rowid . '">' . $obj->diminutif . '</a>';
+					$etablissement = new Etablissement($db);
+					$etab = $etablissement->fetchOneField($object->fk_etablissement, 'diminutif');
+					print $etab->diminutif;
 				}else {
 					print $object->showOutputField($val, $key, $object->$key, '');
 				}

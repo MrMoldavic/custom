@@ -355,6 +355,22 @@ class Etablissement extends CommonObject
 		return $result;
 	}
 
+	public function fetchOneField(int $id,string $field)
+	{
+		$sql = "SELECT ".$field.',rowid';
+		$sql .= " FROM ".MAIN_DB_PREFIX.$this->table_element;
+		$sql .= " WHERE rowid=".$id;
+
+		$resql = $this->db->query($sql);
+		if($resql) $result = $this->db->fetch_object($resql);
+
+		return $result;
+
+	}
+
+
+
+
 	/**
 	 * Load object lines in memory from the database
 	 *
