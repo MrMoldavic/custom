@@ -357,7 +357,7 @@ class Etablissement extends CommonObject
 
 	public function fetchOneField(int $id,string $field)
 	{
-		$sql = "SELECT ".$field.',rowid';
+		$sql = "SELECT ".$this->db->sanitize($this->db->escape($field)).',rowid';
 		$sql .= " FROM ".MAIN_DB_PREFIX.$this->table_element;
 		$sql .= " WHERE rowid=".$id;
 
