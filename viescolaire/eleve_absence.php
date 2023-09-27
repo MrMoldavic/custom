@@ -271,7 +271,7 @@ if ($id > 0 || !empty($ref)) {
 	$resqlAnneeScolaire = $db->query($anneScolaire);
 	$objAnneScolaire = $db->fetch_object($resqlAnneeScolaire);
 
-	$abscence = "SELECT * FROM ".MAIN_DB_PREFIX."appel as a WHERE a.fk_eleve = ".$object->id." AND a.treated= 1 ORDER BY a.date_creation DESC";
+	$abscence = "SELECT * FROM ".MAIN_DB_PREFIX."appel as a WHERE a.fk_eleve = ".$object->id." AND a.treated= 1 AND a.status !='present' ORDER BY a.date_creation DESC";
 	$resql = $db->query($abscence);
 	$num = $db->num_rows($resql);
 	$absenceObj = $db->fetch_object($resql);
