@@ -320,6 +320,7 @@ if ($object->ismultientitymanaged == 1) {
 else {
 	$sql .= " WHERE 1 = 1";
 }
+
 foreach ($search as $key => $val) {
 	if (array_key_exists($key, $object->fields)) {
 		if ($key == 'status' && $search[$key] == -1) {
@@ -333,14 +334,15 @@ foreach ($search as $key => $val) {
 			$mode_search = 2;
 		}
 		if ($search[$key] != '') {
-			$sql .= natural_search($key, $search[$key], (($key == 'status') ? 2 : $mode_search));
+			$sql .= natural_search('t.'.$key, (($key == 'status') ? $search['t.'.$key]: $search[$key]) , (($key == 'status') ? 2 : $mode_search));
 		}
+		
 	} else {
 		if (preg_match('/(_dtstart|_dtend)$/', $key) && $search[$key] != '') {
 			$columnName = preg_replace('/(_dtstart|_dtend)$/', '', $key);
 			if (preg_match('/^(date|timestamp|datetime)/', $object->fields[$columnName]['type'])) {
 				if (preg_match('/_dtstart$/', $key)) {
-					$sql .= " AND t." . $columnName . " >= '" . $db->idate($search[$key]) . "'";
+					$sql .= " AND t." . $columnName . " >= '" . $db->idate($search[$key]) . "'";	
 				}
 				if (preg_match('/_dtend$/', $key)) {
 					$sql .= " AND t." . $columnName . " <= '" . $db->idate($search[$key]) . "'";
@@ -348,7 +350,9 @@ foreach ($search as $key => $val) {
 			}
 		}
 	}
+
 }
+
 if ($search_all) {
 	$sql .= natural_search(array_keys($fieldstosearchall), $search_all);
 }
@@ -389,6 +393,7 @@ $sql .= $db->order($sortfield, $sortorder);
 if ($limit) {
 	$sql .= $db->plimit($limit + 1, $offset);
 }
+
 
 
 
@@ -500,8 +505,6 @@ foreach ($resqlEtablissement as $val) {
 print '<form action="' . $_SERVER["PHP_SELF"] . '" method="POST">';
 
 print '<input type="hidden" name="action" value="create">';
-// $titre = "Nouvel Appel";
-// print talm_load_fiche_titre($titre, $linkback, $picto);
 dol_fiche_head('');
 print '<table class="border centpercent">';
 print '<tr>';
@@ -540,7 +543,7 @@ print '<input type="hidden" name="etablissementid" value="' . $etablissementid .
 
 $newcardbutton = dolGetButtonTitle($langs->trans('New'), '', 'fa fa-plus-circle', dol_buildpath('/viescolaire/souhait_card.php', 1) . '?action=create&backtopage=' . urlencode($_SERVER['PHP_SELF']), '', $permissiontoadd);
 
-print_barre_liste($title, $page, $_SERVER["PHP_SELF"], $param, $sortfield, $sortorder, $massactionbutton, $num, $nbtotalofrecords, 'object_' . $object->picto, 0, $newcardbutton, '', $limit, 0, 0, 1);
+print_barre_liste($title, $page, $_SERVER["PHP_SELF"], $param.'&etablissementid='.$etablissementid, $sortfield, $sortorder, $massactionbutton, $num, $nbtotalofrecords, 'object_' . $object->picto, 0, $newcardbutton, '', $limit, 0, 0, 1);
 
 // Add code for pre mass action (confirmation or email presend form)
 $topicmail = "SendSouhaitRef";
@@ -585,7 +588,6 @@ $selectedfields .= (count($arrayofmassactions) ? $form->showCheckAddButtons('che
 print '<div class="div-table-responsive">'; // You can use div-table-responsive-no-min if you dont need reserved height for your table
 print '<table class="tagtable nobottomiftotal liste' . ($moreforfilter ? " listwithfilterbefore" : "") . '">' . "\n";
 
-
 // Fields title search
 // --------------------------------------------------------------------
 print '<tr class="liste_titre">';
@@ -593,6 +595,7 @@ foreach ($object->fields as $key => $val) {
 	$cssforfield = (empty($val['csslist']) ? (empty($val['css']) ? '' : $val['css']) : $val['csslist']);
 	if ($key == 'status') {
 		$cssforfield .= ($cssforfield ? ' ' : '') . 'center';
+		$val['arrayofkeyval'] = [$object::STATUS_CANCELED=>$object->LibStatut(($object::STATUS_CANCELED)), $object::STATUS_DRAFT=>$object->LibStatut(($object::STATUS_DRAFT)), $object::STATUS_VALIDATED=>$object->LibStatut(($object::STATUS_VALIDATED))];
 	} elseif (in_array($val['type'], array('date', 'datetime', 'timestamp'))) {
 		$cssforfield .= ($cssforfield ? ' ' : '') . 'center';
 	} elseif (in_array($val['type'], array('timestamp'))) {
@@ -604,7 +607,7 @@ foreach ($object->fields as $key => $val) {
 		print '<td class="liste_titre' . ($cssforfield ? ' ' . $cssforfield : '') . '">';
 		if (!empty($val['arrayofkeyval']) && is_array($val['arrayofkeyval'])) {
 			print $form->selectarray('search_' . $key, $val['arrayofkeyval'], (isset($search[$key]) ? $search[$key] : ''), $val['notnull'], 0, 0, '', 1, 0, 0, '', 'maxwidth100', 1);
-		} elseif ((strpos($val['type'], 'integer:') === 0) || (strpos($val['type'], 'sellist:') === 0)) {
+		} elseif ((strpos($val['type'], 'integer:') === 0) || (strpos($val['type'], 'sellist:') === 0) || $key == 'status') {
 			print $object->showInputField($val, $key, (isset($search[$key]) ? $search[$key] : ''), '', '', 'search_', 'maxwidth125', 1);
 		} elseif (preg_match('/^(date|timestamp|datetime)/', $val['type'])) {
 			print '<div class="nowrap">';
