@@ -282,7 +282,7 @@ $morecss = array();
 // $sql .= " WHERE fk_annee_scolaire = 2";
 // Build and execute select
 // --------------------------------------------------------------------
-$sql = 'SELECT ';
+$sql = 'SELECT DISTINCT ';
 $sql .= $object->getFieldList('t');
 // Add fields from extrafields
 if (!empty($extrafields->attributes[$object->table_element]['label'])) {
