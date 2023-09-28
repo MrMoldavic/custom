@@ -320,10 +320,10 @@ if ($object->ismultientitymanaged == 1) {
 else {
 	$sql .= " WHERE 1 = 1";
 }
-
 foreach ($search as $key => $val) {
 	if (array_key_exists($key, $object->fields)) {
 		if ($key == 'status' && $search[$key] == -1) {
+			$key = 't.'.$key;
 			continue;
 		}
 		$mode_search = (($object->isInt($object->fields[$key]) || $object->isFloat($object->fields[$key])) ? 1 : 0);
@@ -334,9 +334,10 @@ foreach ($search as $key => $val) {
 			$mode_search = 2;
 		}
 		if ($search[$key] != '') {
-			$sql .= natural_search('t.'.$key, (($key == 'status') ? $search['t.'.$key]: $search[$key]) , (($key == 'status') ? 2 : $mode_search));
+			//$sql .= natural_search('t.'.$key, (($key == 'status') ? $search['t.'.$key]: $search[$key]) , (($key == 'status') ? 2 : $mode_search));
+			$sql .= natural_search('t.'.$key, $search[$key], (($key == 'status') ? 2 : $mode_search));
+			
 		}
-		
 	} else {
 		if (preg_match('/(_dtstart|_dtend)$/', $key) && $search[$key] != '') {
 			$columnName = preg_replace('/(_dtstart|_dtend)$/', '', $key);
@@ -352,10 +353,10 @@ foreach ($search as $key => $val) {
 	}
 
 }
-
 if ($search_all) {
 	$sql .= natural_search(array_keys($fieldstosearchall), $search_all);
 }
+
 //$sql.= dolSqlDateFilter("t.field", $search_xxxday, $search_xxxmonth, $search_xxxyear);
 // Add where from extra fields
 include DOL_DOCUMENT_ROOT . '/core/tpl/extrafields_list_search_sql.tpl.php';
@@ -387,21 +388,11 @@ if (empty($conf->global->MAIN_DISABLE_FULL_SCANLIST)) {
 	}
 	$db->free($resql);
 }
-
 // Complete request and execute it with limit
 $sql .= $db->order($sortfield, $sortorder);
 if ($limit) {
 	$sql .= $db->plimit($limit + 1, $offset);
 }
-
-
-
-
-
-
-
-
-
 
 $resql = $db->query($sql);
 if (!$resql) {
@@ -415,11 +406,8 @@ if($num == 0)
 {
 	print setEventMessage('Aucun souhait pour cet antenne, veuillez modifier votre choix.','errors');
 	$etablissementid = 0;
-	//header("Location: " . dol_buildpath('/viescolaire/souhait_list.php', 1));
 	
 }
-
-
 
 // Direct jump if only one record found
 if ($num == 1 && !empty($conf->global->MAIN_SEARCH_DIRECT_OPEN_IF_ONLY_ONE) && $search_all && !$page) {
@@ -431,23 +419,7 @@ if ($num == 1 && !empty($conf->global->MAIN_SEARCH_DIRECT_OPEN_IF_ONLY_ONE) && $
 
 // Output page
 // --------------------------------------------------------------------
-
 llxHeader('', $title, $help_url, '', 0, 0, $morejs, $morecss, '', '');
-
-// Example : Adding jquery code
-// print '<script type="text/javascript">
-// jQuery(document).ready(function() {
-// 	function init_myfunc()
-// 	{
-// 		jQuery("#myid").removeAttr(\'disabled\');
-// 		jQuery("#myid").attr(\'disabled\',\'disabled\');
-// 	}
-// 	init_myfunc();
-// 	jQuery("#mybutton").click(function() {
-// 		init_myfunc();
-// 	});
-// });
-// </script>';
 
 $arrayofselected = is_array($toselect) ? $toselect : array();
 
@@ -501,9 +473,9 @@ $etablissements = [0=>'Tous'];
 foreach ($resqlEtablissement as $val) {
 	 $etablissements[$val['rowid']] = $val['nom'];
 }
-
 print '<form action="' . $_SERVER["PHP_SELF"] . '" method="POST">';
-
+print '<input type="hidden" tyname="sortfield" value="' . $sortfield . '">';
+print '<input type="hidden" name="sortorder" value="' . $sortorder . '">';
 print '<input type="hidden" name="action" value="create">';
 dol_fiche_head('');
 print '<table class="border centpercent">';
@@ -606,7 +578,7 @@ foreach ($object->fields as $key => $val) {
 	if (!empty($arrayfields['t.' . $key]['checked'])) {
 		print '<td class="liste_titre' . ($cssforfield ? ' ' . $cssforfield : '') . '">';
 		if (!empty($val['arrayofkeyval']) && is_array($val['arrayofkeyval'])) {
-			print $form->selectarray('search_' . $key, $val['arrayofkeyval'], (isset($search[$key]) ? $search[$key] : ''), $val['notnull'], 0, 0, '', 1, 0, 0, '', 'maxwidth100', 1);
+			print $form->selectarray('search_' . $key, $val['arrayofkeyval'], (isset($search[$key]) && $key != 'status' ? $search[$key] : ''), $val['notnull'], 0, 0, '', 1, 0, 0, '', 'maxwidth100', 1);
 		} elseif ((strpos($val['type'], 'integer:') === 0) || (strpos($val['type'], 'sellist:') === 0) || $key == 'status') {
 			print $object->showInputField($val, $key, (isset($search[$key]) ? $search[$key] : ''), '', '', 'search_', 'maxwidth125', 1);
 		} elseif (preg_match('/^(date|timestamp|datetime)/', $val['type'])) {
@@ -639,8 +611,6 @@ $searchpicto = $form->showFilterButtons();
 print $searchpicto;
 print '</td>';
 print '</tr>' . "\n";
-
-
 // Fields title label
 // --------------------------------------------------------------------
 print '<tr class="liste_titre">';
