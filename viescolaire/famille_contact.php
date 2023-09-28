@@ -136,60 +136,6 @@ $userstatic = new User($db);
 
 if ($action == 'create') // SELECTION DU TYPE DE KIT
 {
-	// $sql = "SELECT * FROM ".MAIN_DB_PREFIX."salles";
-	// $resql = $db->query($sql);
-
-	// $sqlEtablissement = "SELECT rowid,nom FROM ".MAIN_DB_PREFIX."etablissement";
-	// $resqlEtablissement = $db->query($sqlEtablissement);
-
-	// $etablissements = [];
-
-	// foreach($resqlEtablissement as $value)
-	// {
-	// 	$etablissements[$value['rowid']] = $value['nom'];
-	// }
-
-	// $equipement = [''=>'Aucun', 'guitareE'=>'Guitares électriques (Amplis)','MAO'=>'MAO','Piano'=>'Piano','Batterie'=>'Batterie'];
-
-	// $date = date('Y-m-d H:i:s');
-	// //WYSIWYG Editor
-	// print '<form action="'.$_SERVER["PHP_SELF"].'" method="POST">';
-  
-	// print '<input type="hidden" name="action" value="create">';
-	// $titre = "Nouvel Appel";
-	// print talm_load_fiche_titre($title, $linkback, $picto);
-	// dol_fiche_head('');
-	// print '<table class="border centpercent">';
-	// print '<tr>';
-	// print '</td></tr>';
-	// // Type de Kit
-	// print '<tr><td class="fieldrequired titlefieldcreate">Sélectionnez une heure: </td><td>';
-	// print $form->selectDate($date,'date_evenement',1,1,0,"",1,1,0,'','','','',1,'','','auto');
-	// print ' <a href="'.DOL_URL_ROOT.'/custom/viescolaire/eleve_card.php?action=create">';
-	// print '</a>';
-	// print '</td>';
-	// print '</tr>';
-
-	// print '<tr><td class="fieldrequired titlefieldcreate">Sélectionnez un établissement : </td><td>';
-	// print $form->selectarray('etablissement', $etablissements);
-	// print ' <a href="'.DOL_URL_ROOT.'/custom/viescolaire/eleve_card.php?action=create">';
-	// print '</a>';
-	// print '</td>';
-	// print '</tr>';
-
-	// print '<tr><td class="fieldrequired titlefieldcreate">Sélectionnez un type d\'équipement : </td><td>';
-	// print $form->selectarray('equipement', $equipement);
-	// print ' <a href="'.DOL_URL_ROOT.'/custom/viescolaire/eleve_card.php?action=create">';
-	// print '</a>';
-	// print '</td>';
-	// print '</tr>';
-
-	// print "</table>"; 
-	// dol_fiche_end();
-	// print '<div class="center">';
-	// print '<input type="submit" class="button" value="Confirmer">';
-	// print '</div>';
-	// print '</form>';
 
 	$object = new Creneau($db);
 	// $object->fk_souhait = $id;

@@ -21,9 +21,7 @@
  *		\ingroup    viescolaire
  *		\brief      List page for souhait
  */
-// ini_set('display_errors', '1');
-// ini_set('display_startup_errors', '1');
-// error_reporting(E_ALL);
+
 //if (! defined('NOREQUIREDB'))              define('NOREQUIREDB', '1');				// Do not create database handler $db
 //if (! defined('NOREQUIREUSER'))            define('NOREQUIREUSER', '1');				// Do not load object $user
 //if (! defined('NOREQUIRESOC'))             define('NOREQUIRESOC', '1');				// Do not load object $mysoc
@@ -103,8 +101,10 @@ $cancel     = GETPOST('cancel', 'alpha'); // We click on a Cancel button
 $toselect   = GETPOST('toselect', 'array'); // Array of ids of elements selected into a list
 $contextpage = GETPOST('contextpage', 'aZ') ? GETPOST('contextpage', 'aZ') : 'souhaitlist'; // To manage different context of search
 $backtopage = GETPOST('backtopage', 'alpha'); // Go back to a dedicated page
-$optioncss = GETPOST('optioncss', 'aZ'); // Option for the css output (always '' except when 'print')
+$optioncss = GETPOST('optioncss', 'aZ'); // Option for the css output (always '' ex
 $allYear = GETPOST('allYear','aZ09') ? GETPOST('allYear','aZ09') : 'false';
+$etablissementid = GETPOST('etablissementid','aZ09');
+
 
 $id = GETPOST('id', 'int');
 
@@ -142,7 +142,9 @@ if (!$sortfield) {
 if (!$sortorder) {
 	$sortorder = "DESC";
 }
-
+ini_set('display_errors', '1');
+ini_set('display_startup_errors', '1');
+error_reporting(E_ALL);
 
 // Initialize array of search criterias
 $search_all = GETPOST('search_all', 'alphanohtml');
@@ -275,6 +277,9 @@ $morejs = array();
 $morecss = array();
 
 
+// $sql = "SELECT t.rowid,t.nom_souhait,t.fk_eleve,t.fk_type_classe,t.fk_instru_enseigne,t.fk_niveau,t.fk_annee_scolaire,t.disponibilite,t.details,t.note_public,t.note_private,t.date_creation,t.tms,t.fk_user_creat,t.fk_user_modif,t.last_main_doc,t.model_pdf,t.status FROM llx_souhait as t";
+
+// $sql .= " WHERE fk_annee_scolaire = 2";
 // Build and execute select
 // --------------------------------------------------------------------
 $sql = 'SELECT ';
@@ -298,6 +303,11 @@ if (isset($extrafields->attributes[$object->table_element]['label']) && is_array
 $parameters = array();
 $reshook = $hookmanager->executeHooks('printFieldListFrom', $parameters, $object); // Note that $action and $object may have been modified by hook
 $sql .= $hookmanager->resPrint;
+if($etablissementid != 0) 
+{
+	$sql .= " INNER JOIN llx_eleve as e ON t.fk_eleve=e.rowid";
+	$sql .= " INNER JOIN llx_etablissement as a ON e.fk_etablissement=".$etablissementid;
+}
 if ($object->ismultientitymanaged == 1) {
 	$sql .= " WHERE t.entity IN (" . getEntity($object->element) . ")";
 } elseif($allYear == 'false') {
@@ -350,31 +360,6 @@ $parameters = array();
 $reshook = $hookmanager->executeHooks('printFieldListWhere', $parameters, $object); // Note that $action and $object may have been modified by hook
 $sql .= $hookmanager->resPrint;
 
-/* If a group by is required
-$sql .= " GROUP BY ";
-foreach($object->fields as $key => $val) {
-	$sql .= "t.".$key.", ";
-}
-// Add fields from extrafields
-if (!empty($extrafields->attributes[$object->table_element]['label'])) {
-	foreach ($extrafields->attributes[$object->table_element]['label'] as $key => $val) {
-		$sql .= ($extrafields->attributes[$object->table_element]['type'][$key] != 'separate' ? "ef.".$key.', ' : '');
-	}
-}
-// Add where from hooks
-$parameters = array();
-$reshook = $hookmanager->executeHooks('printFieldListGroupBy', $parameters, $object);    // Note that $action and $object may have been modified by hook
-$sql .= $hookmanager->resPrint;
-$sql = preg_replace('/,\s*$/', '', $sql);
-*/
-
-// Add HAVING from hooks
-/*
-$parameters = array();
-$reshook = $hookmanager->executeHooks('printFieldListHaving', $parameters, $object); // Note that $action and $object may have been modified by hook
-$sql .= empty($hookmanager->resPrint) ? "" : " HAVING 1=1 ".$hookmanager->resPrint;
-*/
-
 // Count total nb of records
 $nbtotalofrecords = '';
 if (empty($conf->global->MAIN_DISABLE_FULL_SCANLIST)) {
@@ -405,6 +390,14 @@ if ($limit) {
 	$sql .= $db->plimit($limit + 1, $offset);
 }
 
+
+
+
+
+
+
+
+
 $resql = $db->query($sql);
 if (!$resql) {
 	dol_print_error($db);
@@ -412,6 +405,15 @@ if (!$resql) {
 }
 
 $num = $db->num_rows($resql);
+
+if($num == 0)
+{
+	print setEventMessage('Aucun souhait pour cet antenne, veuillez modifier votre choix.','errors');
+	$etablissementid = 0;
+	//header("Location: " . dol_buildpath('/viescolaire/souhait_list.php', 1));
+	
+}
+
 
 
 // Direct jump if only one record found
@@ -421,7 +423,6 @@ if ($num == 1 && !empty($conf->global->MAIN_SEARCH_DIRECT_OPEN_IF_ONLY_ONE) && $
 	header("Location: " . dol_buildpath('/viescolaire/souhait_card.php', 1) . '?id=' . $id);
 	exit;
 }
-
 
 // Output page
 // --------------------------------------------------------------------
@@ -488,7 +489,39 @@ if (GETPOST('nomassaction', 'int') || in_array($massaction, array('presend', 'pr
 }
 $massactionbutton = $form->selectMassAction('', $arrayofmassactions);
 
-print '<a href="'.$_SERVER['PHP_SELF'].'?allYear='.($allYear == 'false' ? 'true' : 'false').'">'.($allYear == 'false' ? 'Afficher les souhaits de toutes les années' : 'Afficher seulement les souhaits de l\'année actuelle').'</a>';
+$sqlEtablissement = "SELECT e.rowid,e.nom FROM " . MAIN_DB_PREFIX . "etablissement as e";
+$resqlEtablissement = $db->query($sqlEtablissement);
+$etablissements = [0=>'Tous'];
+
+foreach ($resqlEtablissement as $val) {
+	 $etablissements[$val['rowid']] = $val['nom'];
+}
+
+print '<form action="' . $_SERVER["PHP_SELF"] . '" method="POST">';
+
+print '<input type="hidden" name="action" value="create">';
+// $titre = "Nouvel Appel";
+// print talm_load_fiche_titre($titre, $linkback, $picto);
+dol_fiche_head('');
+print '<table class="border centpercent">';
+print '<tr>';
+print '</td></tr>';
+// Type de Kit
+print '<tr><td class="fieldrequired titlefieldcreate">Selectionnez votre établissement: </td><td>';
+print $form->selectarray('etablissementid', $etablissements,$etablissementid);
+print ' <a href="' . DOL_URL_ROOT . '/custom/scolarite/etablissement_card.php?action=create">';
+print '<span class="fa fa-plus-circle valignmiddle paddingleft" title="Ajouter un etablissement"></span>';
+print '</a>';
+print '</td>';
+print '</tr>';
+print "</table>";
+dol_fiche_end();
+print '<div class="center">';
+print '<input type="submit" class="button" value="Suivant">';
+print '</div>';
+print '</form>';
+
+print '<a href="'.$_SERVER['PHP_SELF'].'?allYear='.($allYear == 'false' ? 'true' : 'false').'&etablissementid='.$etablissementid.'">'.($allYear == 'false' ? 'Afficher les souhaits de toutes les années' : 'Afficher seulement les souhaits de l\'année actuelle').'</a>';
 
 
 print '<form method="POST" id="searchFormList" action="' . $_SERVER["PHP_SELF"] . '">' . "\n";
@@ -502,6 +535,8 @@ print '<input type="hidden" name="sortfield" value="' . $sortfield . '">';
 print '<input type="hidden" name="sortorder" value="' . $sortorder . '">';
 print '<input type="hidden" name="page" value="' . $page . '">';
 print '<input type="hidden" name="contextpage" value="' . $contextpage . '">';
+print '<input type="hidden" name="etablissementid" value="' . $etablissementid . '">';
+
 
 $newcardbutton = dolGetButtonTitle($langs->trans('New'), '', 'fa fa-plus-circle', dol_buildpath('/viescolaire/souhait_card.php', 1) . '?action=create&backtopage=' . urlencode($_SERVER['PHP_SELF']), '', $permissiontoadd);
 
@@ -618,7 +653,8 @@ foreach ($object->fields as $key => $val) {
 		$cssforfield .= ($cssforfield ? ' ' : '') . 'right';
 	}
 	if (!empty($arrayfields['t.' . $key]['checked'])) {
-		print getTitleFieldOfList($arrayfields['t.' . $key]['label'], 0, $_SERVER['PHP_SELF'], 't.' . $key, '', $param, ($cssforfield ? 'class="' . $cssforfield . '"' : ''), $sortfield, $sortorder, ($cssforfield ? $cssforfield . ' ' : '')) . "\n";
+		
+		print getTitleFieldOfList($arrayfields['t.' . $key]['label'], 0, $_SERVER['PHP_SELF'], 't.' . $key, '', $param.'&etablissementid='.$etablissementid, ($cssforfield ? 'class="' . $cssforfield . '"' : ''), $sortfield, $sortorder, ($cssforfield ? $cssforfield . ' ' : '')) . "\n";
 	}
 }
 // Extra fields
