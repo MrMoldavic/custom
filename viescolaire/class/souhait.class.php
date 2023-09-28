@@ -894,8 +894,8 @@ class Souhait extends CommonObject
 			$this->labelStatus[self::STATUS_DRAFT] = "En attente d'affectation";
 			$this->labelStatus[self::STATUS_VALIDATED] = "Affecté";
 			$this->labelStatus[self::STATUS_CANCELED] = $langs->transnoentitiesnoconv('Disabled');
-			$this->labelStatusShort[self::STATUS_DRAFT] = $langs->transnoentitiesnoconv('Draft');
-			$this->labelStatusShort[self::STATUS_VALIDATED] = $langs->transnoentitiesnoconv('Enabled');
+			$this->labelStatusShort[self::STATUS_DRAFT] = $langs->transnoentitiesnoconv("En attente d'affectation");
+			$this->labelStatusShort[self::STATUS_VALIDATED] = $langs->transnoentitiesnoconv("Affecté");
 			$this->labelStatusShort[self::STATUS_CANCELED] = $langs->transnoentitiesnoconv('Disabled');
 		}
 
