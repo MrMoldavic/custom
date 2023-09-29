@@ -802,8 +802,6 @@ if (isset($extrafields->attributes[$object->table_element]['computed']) && is_ar
 	}
 }
 
-
-
 // Loop on record
 // --------------------------------------------------------------------
 $i = 0;
@@ -816,10 +814,8 @@ while ($i < $imaxinloop) {
 	if (empty($obj)) {
 		break; // Should not happen
 	}
-
 	// Store properties in $object
 	$object->setVarsFromFetchObj($obj);
-	$object->update($user);
 	if ($mode == 'kanban') {
 		if ($i == 0) {
 			print '<tr><td colspan="'.$savnbfield.'">';
