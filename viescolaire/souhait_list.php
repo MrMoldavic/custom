@@ -333,7 +333,6 @@ foreach ($search as $key => $val) {
 			$mode_search = 2;
 		}
 		if ($search[$key] != '') {
-			//$sql .= natural_search('t.'.$key, (($key == 'status') ? $search['t.'.$key]: $search[$key]) , (($key == 'status') ? 2 : $mode_search));
 			$sql .= natural_search('t.'.$key, $search[$key], (($key == 'status') ? 2 : $mode_search));
 			
 		}
@@ -377,7 +376,7 @@ if (empty($conf->global->MAIN_DISABLE_FULL_SCANLIST)) {
 		$nbtotalofrecords++;
 	}*/
 	/* The fast and low memory method to get and count full list converts the sql into a sql count */
-	$sqlforcount = preg_replace('/^SELECT[a-z0-9\._\s\(\),]+FROM/i', 'SELECT COUNT(*) as nbtotalofrecords FROM', $sql);
+	$sqlforcount = preg_replace('/^SELECT[a-z0-9\._\s\(\),]+FROM/i', 'SELECT COUNT(DISTINCT t.rowid) as nbtotalofrecords FROM', $sql);
 	$resql = $db->query($sqlforcount);
 	$objforcount = $db->fetch_object($resql);
 	$nbtotalofrecords = $objforcount->nbtotalofrecords;

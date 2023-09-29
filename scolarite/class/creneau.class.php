@@ -112,10 +112,10 @@ class Creneau extends CommonObject
 		'fk_type_classe' => array('type'=>'sellist:type_classe:type', 'label'=>'Type de classe', 'enabled'=>'1', 'position'=>2, 'notnull'=>1, 'visible'=>1, 'searchall'=>1, 'css'=>'minwidth300', 'validate'=>'1',),
 		'fk_instrument_enseigne' => array('type'=>'sellist:c_instrument_enseigne:instrument', 'label'=>'Instrument enseigné', 'enabled'=>'1', 'position'=>1, 'notnull'=>0, 'visible'=>1, 'help'=>"Laissez vide si groupe",),
 		'fk_niveau' => array('type'=>'sellist:c_niveaux:niveau', 'label'=>'Niveau du cours/groupe', 'enabled'=>'1', 'position'=>2, 'notnull'=>1, 'visible'=>3, 'help'=>"Niveau des élèves dans le groupe",),
-		'fk_prof_1' => array('type'=>'integer:Agent:custom/management/class/agent.class.php:1:(t.status!=9)', 'label'=>'Professeur n°1', 'enabled'=>'1', 'position'=>5, 'notnull'=>0, 'visible'=>1, 'css'=>'maxwidth200',),
-		'fk_prof_2' => array('type'=>'integer:Agent:custom/management/class/agent.class.php:1:(t.status!=9)', 'label'=>'Professeur n°2', 'enabled'=>'1', 'position'=>6, 'notnull'=>0, 'visible'=>1, 'css'=>'maxwidth200',),
-		'fk_prof_3' => array('type'=>'integer:Agent:custom/management/class/agent.class.php:1:(t.status!=9)', 'label'=>'Professeur n°3', 'enabled'=>'1', 'position'=>7, 'notnull'=>0, 'visible'=>1, 'css'=>'maxwidth200',),
-		'professeurs' => array('type'=>'varchar(255)', 'label'=>'Professeurs', 'enabled'=>'1', 'position'=>4, 'notnull'=>0, 'visible'=>2, 'css'=>'minwidth200', 'validate'=>'1',),
+		'fk_prof_1' => array('type'=>'integer:Agent:custom/management/class/agent.class.php:1:(t.status!=9)', 'label'=>'Agent n°1', 'enabled'=>'1', 'position'=>5, 'notnull'=>0, 'visible'=>1, 'css'=>'maxwidth200',),
+		'fk_prof_2' => array('type'=>'integer:Agent:custom/management/class/agent.class.php:1:(t.status!=9)', 'label'=>'Agent n°2', 'enabled'=>'1', 'position'=>6, 'notnull'=>0, 'visible'=>1, 'css'=>'maxwidth200',),
+		'fk_prof_3' => array('type'=>'integer:Agent:custom/management/class/agent.class.php:1:(t.status!=9)', 'label'=>'Agent n°3', 'enabled'=>'1', 'position'=>7, 'notnull'=>0, 'visible'=>1, 'css'=>'maxwidth200',),
+		'professeurs' => array('type'=>'varchar(255)', 'label'=>'Agents', 'enabled'=>'1', 'position'=>4, 'notnull'=>0, 'visible'=>2, 'css'=>'minwidth200', 'validate'=>'1',),
 		'eleves' => array('type'=>'varchar(255)', 'label'=>'Éleves', 'enabled'=>'1', 'position'=>4, 'notnull'=>0, 'visible'=>2, 'css'=>'minwidth200', 'validate'=>'1',),
 		'infos_creneau' => array('type'=>'varchar(255)', 'label'=>'Infos créneau', 'enabled'=>'1', 'position'=>3, 'notnull'=>0, 'visible'=>2, 'searchall'=>1, 'css'=>'minwidth300', 'validate'=>'1',),
 		'nombre_places' => array('type'=>'integer', 'label'=>'Nb élèves', 'enabled'=>'1', 'position'=>3, 'notnull'=>1, 'visible'=>1, 'css'=>'maxwidth400', 'validate'=>'1',),
@@ -137,7 +137,7 @@ class Creneau extends CommonObject
 		'fk_user_modif' => array('type'=>'integer:User:user/class/user.class.php', 'label'=>'UserModif', 'enabled'=>'1', 'position'=>511, 'notnull'=>-1, 'visible'=>-2,),
 		'last_main_doc' => array('type'=>'varchar(255)', 'label'=>'LastMainDoc', 'enabled'=>'1', 'position'=>600, 'notnull'=>0, 'visible'=>0,),
 		'model_pdf' => array('type'=>'varchar(255)', 'label'=>'Model pdf', 'enabled'=>'1', 'position'=>1010, 'notnull'=>-1, 'visible'=>0,),
-		'status' => array('type'=>'integer', 'label'=>'Status', 'enabled'=>'1', 'position'=>2000, 'notnull'=>1, 'visible'=>2, 'index'=>1, 'arrayofkeyval'=>array('0'=>'Brouillon', '1'=>'Valid&eacute;', '9'=>'Annul&eacute;'), 'validate'=>'1',),
+		'status' => array('type'=>'integer', 'label'=>'Status', 'enabled'=>'1', 'position'=>2000, 'notnull'=>1, 'visible'=>2, 'index'=>1, 'arrayofkeyval'=>array('0'=>'Brouillon', '4'=>'Valid&eacute;', '9'=>'Annul&eacute;'), 'validate'=>'1',),
 	);
 	public $rowid;
 	public $fk_dispositif;
@@ -419,11 +419,11 @@ class Creneau extends CommonObject
 
 				if($this->fk_prof_1 != NULL)
 				{
-					$prof = "SELECT p.nom FROM ".MAIN_DB_PREFIX."management_agent as p WHERE p.rowid =".$this->fk_prof_1;
+					$prof = "SELECT p.nom,p.prenom FROM ".MAIN_DB_PREFIX."management_agent as p WHERE p.rowid =".$this->fk_prof_1;
 					$resql = $this->db->query($prof);
 					$object = $this->db->fetch_object($resql);
 					
-					$this->nom_creneau .= $object->nom;
+					$this->nom_creneau .= $object->prenom.'-'.$object->nom;
 				}
 			}
 
@@ -850,7 +850,7 @@ class Creneau extends CommonObject
 					$resql = $this->db->query($prof);
 					$object = $this->db->fetch_object($resql);
 					
-					$this->nom_creneau .= "-".$object->nom;
+					$this->nom_creneau .= "-".$object->prenom.'-'.$object->nom;
 					$professeur .= $object->prenom.' '.$object->nom.' ';
 				}
 				

@@ -371,7 +371,11 @@ llxHeader('', $title, $help_url);
 	elseif($action == 'create' && GETPOST('elevesid', 'int'))
 	{
 		
-        $Creneau = "SELECT c.nom_creneau,c.rowid FROM ".MAIN_DB_PREFIX."souhait as s INNER JOIN ".MAIN_DB_PREFIX."affectation as a ON a.fk_souhait = s.rowid INNER JOIN ".MAIN_DB_PREFIX."creneau as c ON a.fk_creneau = c.rowid WHERE s.fk_eleve=".GETPOST('elevesid', 'int')." AND a.status=4";
+		$anneScolaire = "SELECT rowid FROM ".MAIN_DB_PREFIX."c_annee_scolaire WHERE active = 1 AND annee_actuelle = 1";
+		$resqlAnneeScolaire = $db->query($anneScolaire);
+		$objAnneScolaire = $db->fetch_object($resqlAnneeScolaire);
+
+        $Creneau = "SELECT c.nom_creneau,c.rowid FROM ".MAIN_DB_PREFIX."souhait as s INNER JOIN ".MAIN_DB_PREFIX."affectation as a ON a.fk_souhait = s.rowid INNER JOIN ".MAIN_DB_PREFIX."creneau as c ON a.fk_creneau = c.rowid WHERE s.fk_eleve=".GETPOST('elevesid', 'int')." AND a.status=4 AND c.fk_annee_scolaire=".$objAnneScolaire->rowid;
 		$resqlCreneau = $db->query($Creneau);
 		$creneau = [];
 

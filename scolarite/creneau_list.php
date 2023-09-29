@@ -104,13 +104,14 @@ $backtopage = GETPOST('backtopage', 'alpha'); // Go back to a dedicated page
 $optioncss = GETPOST('optioncss', 'aZ'); // Option for the css output (always '' except when 'print')
 $allYear = GETPOST('allYear','aZ09') ? GETPOST('allYear','aZ09') : 'false';
 $data = GETPOST('data','alpha');
+$creneauErrors = GETPOST('creneauErrors','aZ09') ? GETPOST('creneauErrors','aZ09') : 'false';
 
 
 $id = GETPOST('id', 'int');
 // Load variable for pagination
 $limit = GETPOST('limit', 'int') ? GETPOST('limit', 'int') : $conf->liste_limit;
-// $sortfield = GETPOST('sortfield', 'aZ09comma');
-// $sortorder = GETPOST('sortorder', 'aZ09comma');
+$sortfield = GETPOST('sortfield', 'aZ09comma');
+$sortorder = GETPOST('sortorder', 'aZ09comma');
 $page = GETPOSTISSET('pageplusone') ? (GETPOST('pageplusone') - 1) : GETPOST("page", 'int');
 if (empty($page) || $page < 0 || GETPOST('button_search', 'alpha') || GETPOST('button_removefilter', 'alpha')) {
 	// If $page is not defined, or '' or -1 or if we click on clear filters
@@ -139,7 +140,7 @@ $search_array_options = $extrafields->getOptionalsFromPost($object->table_elemen
 // 	// reset($object->fields);					// Reset is required to avoid key() to return null.
 // 	// $sortfield = "t.".key($object->fields); // Set here default search field. By default 1st field in definition.
 // 	$sortfield = "t.fk_annee_scolaire";
-// 	$sortfield2 = "t.professeurs";
+// 	${sortfield2} = "t.professeurs";
 // }
 // if (!$sortorder) {
 // 	$sortorder = "DESC";
@@ -269,7 +270,7 @@ $now = dol_now();
 
 //$help_url="EN:Module_Creneau|FR:Module_Creneau_FR|ES:Módulo_Creneau";
 $help_url = '';
-$title = $langs->trans('ListOf', $langs->transnoentitiesnoconv("Creneau"));
+$title = $langs->trans('Liste des créneaux');
 $morejs = array();
 $morecss = array();
 
@@ -310,6 +311,12 @@ elseif($allYear == 'false') {
 else {
 	$sql .= " WHERE 1 = 1";
 }
+if($creneauErrors == 'true')
+{
+	$sql .= " AND fk_prof_1 IS NULL OR fk_salle IS NULL OR fk_salle=''";
+}
+
+
 foreach ($search as $key => $val) {
 	if (array_key_exists($key, $object->fields)) {
 		if ($key == 'status' && $search[$key] == -1) {
@@ -324,7 +331,7 @@ foreach ($search as $key => $val) {
 			$mode_search = 2;
 		}
 		if ($search[$key] != '') {
-			$sql .= natural_search($key, $search[$key], (($key == 'status') ? 2 : $mode_search));
+			$sql .= natural_search('t.'.$key, $search[$key], (($key == 'status') ? 2 : $mode_search));
 		}
 	} else {
 		if (preg_match('/(_dtstart|_dtend)$/', $key) && $search[$key] != '') {
@@ -343,6 +350,8 @@ foreach ($search as $key => $val) {
 if ($search_all) {
 	$sql .= natural_search(array_keys($fieldstosearchall), $search_all);
 }
+
+
 //$sql.= dolSqlDateFilter("t.field", $search_xxxday, $search_xxxmonth, $search_xxxyear);
 // Add where from extra fields
 include DOL_DOCUMENT_ROOT.'/core/tpl/extrafields_list_search_sql.tpl.php';
@@ -351,11 +360,7 @@ $parameters = array();
 $reshook = $hookmanager->executeHooks('printFieldListWhere', $parameters, $object); // Note that $action and $object may have been modified by hook
 $sql .= $hookmanager->resPrint;
 
-/* If a group by is required
-$sql .= " GROUP BY ";
-foreach($object->fields as $key => $val) {
-	$sql .= "t.".$key.", ";
-}
+/*
 // Add fields from extrafields
 if (!empty($extrafields->attributes[$object->table_element]['label'])) {
 	foreach ($extrafields->attributes[$object->table_element]['label'] as $key => $val) {
@@ -388,7 +393,7 @@ if (empty($conf->global->MAIN_DISABLE_FULL_SCANLIST)) {
 		$nbtotalofrecords++;
 	}*/
 	/* The fast and low memory method to get and count full list converts the sql into a sql count */
-	$sqlforcount = preg_replace('/^SELECT[a-z0-9\._\s\(\),]+FROM/i', 'SELECT COUNT(*) as nbtotalofrecords FROM', $sql);
+	$sqlforcount = preg_replace('/^SELECT[a-z0-9\._\s\(\),]+FROM/i', 'SELECT DISTINCT COUNT(DISTINCT t.rowid) as nbtotalofrecords FROM', $sql);
 	$resql = $db->query($sqlforcount);
 	$objforcount = $db->fetch_object($resql);
 	$nbtotalofrecords = $objforcount->nbtotalofrecords;
@@ -403,20 +408,16 @@ if (empty($conf->global->MAIN_DISABLE_FULL_SCANLIST)) {
 if (!$sortfield) {
 	// reset($object->fields);					// Reset is required to avoid key() to return null.
 	// $sortfield = "t.".key($object->fields); // Set here default search field. By default 1st field in definition.
-	$sortfield = "t.fk_annee_scolaire";
-	$sortfield2 = "t.fk_prof_1";
+	$sortfield = "t.fk_annee_scolaire,";
+	$sortfield .= "t.jour";
 }
+
 if (!$sortorder) {
-	$sortorder = "DESC";
-	$sortorder2 = "ASC";
+	$sortorder = "DESC,";
+	$sortorder .= "ASC";
+
 }
 $sql .= $db->order($sortfield, $sortorder);
-$sql .= ", {$sortfield2} {$sortorder2}";
-// foreach($search as $val) $val != "" ? $count++ : "";
-// $count != 0 ? $sql .= ", {$sortfield2} {$sortorder2}" : "";
-
-
-
 
 if ($limit) {
 	$sql .= $db->plimit($limit + 1, $offset);
@@ -527,6 +528,7 @@ $concernes = [''=>'', 'professeurs'=>'Professeurs','eleves'=>'Élèves'];
 $date = date('Y-m-d H:i:s');
 
 
+print '<a href="'.$_SERVER['PHP_SELF'].'?creneauErrors='.($creneauErrors == 'false' ? 'true' : 'false').'">'.($creneauErrors == 'true' ? 'Affichage normal' : 'Afficher les créneaux avec des erreurs').'</a><br>';
 
 
 print '<a href="'.$_SERVER['PHP_SELF'].'?allYear='.($allYear == 'false' ? 'true' : 'false').'">'.($allYear == 'false' ? 'Afficher les créneaux de toutes les années' : 'Afficher seulement les créneaux de l\'année actuelle').'</a><br>';
@@ -753,7 +755,7 @@ $totalarray = array();
 $totalarray['nbfield'] = 0;
 
 
-// Fields title label
+// Fields title label$arrayfields['t.'.$key]['label']
 // --------------------------------------------------------------------
 print '<tr class="liste_titre">';
 if (!empty($conf->global->MAIN_CHECKBOX_LEFT_COLUMN)) {
@@ -770,6 +772,8 @@ foreach ($object->fields as $key => $val) {
 	} elseif (in_array($val['type'], array('double(24,8)', 'double(6,3)', 'integer', 'real', 'price')) && $val['label'] != 'TechnicalID' && empty($val['arrayofkeyval'])) {
 		$cssforfield .= ($cssforfield ? ' ' : '').'right';
 	}
+	$arrayfields['t.'.$key]['label'] == "Instrument enseigné" ? $arrayfields['t.'.$key]['label'] = "Action" : "";
+
 	if (!empty($arrayfields['t.'.$key]['checked'])) {
 		print getTitleFieldOfList($arrayfields['t.'.$key]['label'], 0, $_SERVER['PHP_SELF'], 't.'.$key, '', $param, ($cssforfield ? 'class="'.$cssforfield.'"' : ''), $sortfield, $sortorder, ($cssforfield ? $cssforfield.' ' : ''))."\n";
 	}
@@ -815,7 +819,6 @@ while ($i < $imaxinloop) {
 
 	// Store properties in $object
 	$object->setVarsFromFetchObj($obj);
-
 	if ($mode == 'kanban') {
 		if ($i == 0) {
 			print '<tr><td colspan="'.$savnbfield.'">';
@@ -905,7 +908,7 @@ while ($i < $imaxinloop) {
 					$objInstru = $db->fetch_object($resqlInstrument);
 
 
-					print $objCours->type.' - '.($objCours->type == "Cours" ? $objInstru->instrument : $object->nom_groupe).' - '.$objNiveau->niveau;
+					print '<span class="badge  badge-status'.($objCours->type == 'Cours' ? '4' : '1') .' badge-status">'.$objCours->type.'</span> - '.($objCours->type == "Cours" ? $objInstru->instrument : $object->nom_groupe).' - '.$objNiveau->niveau;
 				} elseif ($key == 'professeurs') {
 					
 					$profs = "";
@@ -916,7 +919,7 @@ while ($i < $imaxinloop) {
 						$objProf1 = $db->fetch_object($resqlProf1);
 						
 		
-						$profs .= '<a href="' . DOL_URL_ROOT . '/custom/management/agent_card.php?id=' . $objProf1->rowid . '">' .'👨‍🏫'. $objProf1->nom.' '.$objProf1->prenom. '</a>'.'<br>';
+						$profs .= '<a href="' . DOL_URL_ROOT . '/custom/management/agent_card.php?id=' . $objProf1->rowid . '">' .'👨‍🏫'. $objProf1->prenom.' '.$objProf1->nom. '</a>'.'<br>';
 					}
 					if(isset($object->fk_prof_2))
 					{
@@ -924,7 +927,7 @@ while ($i < $imaxinloop) {
 						$resqlProf2 = $db->query($prof2);
 						$objProf2 = $db->fetch_object($resqlProf2);
 	
-						$profs .= '<a href="' . DOL_URL_ROOT . '/custom/management/agent_card.php?id=' . $objProf2->rowid . '">' .'👨‍🏫'. $objProf2->nom.' '.$objProf2->prenom. '</a>'.'<br>';
+						$profs .= '<a href="' . DOL_URL_ROOT . '/custom/management/agent_card.php?id=' . $objProf2->rowid . '">' .'👨‍🏫'. $objProf2->prenom.' '.$objProf2->nom. '</a>'.'<br>';
 					}
 					if(isset($object->fk_prof_3))
 					{
@@ -932,7 +935,7 @@ while ($i < $imaxinloop) {
 						$resqlProf3 = $db->query($prof3);
 						$objProf3 = $db->fetch_object($resqlProf3);
 	
-						$profs .= '<a href="' . DOL_URL_ROOT . '/custom/management/agent_card.php?id=' . $objProf3->rowid . '">' .'👨‍🏫'. $objProf3->nom.' '.$objProf3->prenom. '</a>'.'<br>';
+						$profs .= '<a href="' . DOL_URL_ROOT . '/custom/management/agent_card.php?id=' . $objProf3->rowid . '">' .'👨‍🏫'. $objProf3->prenom.' '.$objProf3->nom. '</a>'.'<br>';
 					}
 					if($profs == "") $profs = '<span class="badge badge-danger">Prof manquant &#9888</span>';
 	
@@ -960,11 +963,9 @@ while ($i < $imaxinloop) {
 						$objSalle = $db->fetch_object($resqlSalle);
 					}
 					
-	
-	
 					$infos_creneau .= $objJour->jour.' | '.$objheure->heure.'h'.$object->minutes_debut.'-'.$objheureFin->heure.'h'.$object->minutes_fin.' | ';
-					$infos_creneau .= $object->fk_salle ? $objSalle->salle : "Salle inconnue";
-	
+					$infos_creneau .= $object->fk_salle ? $objSalle->salle : "<span class='badge badge-danger'>Salle inconnue</span>";
+					//var_dump($object->fk_salle);
 					print $infos_creneau;
 	
 				} elseif ($key == 'eleves'){
