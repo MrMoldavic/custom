@@ -97,7 +97,7 @@ $lineid   = GETPOST('lineid', 'int');
 
 if ($action == 'desactivation') {
 
-	
+
 	$affectation = "SELECT s.fk_souhait FROM ".MAIN_DB_PREFIX."affectation as s WHERE s.fk_creneau=".$id." AND date_fin IS NULL";
 	$resqlAffectation = $db->query($affectation);
 
@@ -112,7 +112,7 @@ if ($action == 'desactivation') {
 		$resql = $db->query($sql);
 		setEventMessage('Creneau desactivé avec succès');
 	}
-	
+
 	// foreach($resqlAffectation as $val)
 	// {
 	// 	$eleve = "SELECT e.nom,e.prenom,e.rowid FROM ".MAIN_DB_PREFIX."eleve as e WHERE e.rowid=".("(SELECT s.fk_eleve FROM ".MAIN_DB_PREFIX."souhait as s WHERE s.rowid =".$val['fk_souhait'].")");
@@ -122,10 +122,10 @@ if ($action == 'desactivation') {
 	// 		print '<a href="' . DOL_URL_ROOT . '/custom/viescolaire/eleve_card.php?id=' . $res['rowid'] . '">' .'- '. $res['nom'].' '.$res['prenom'] . '</a>';
 	// 		print '<br>';
 	// 	}
-		
+
 	// }
 
-	
+
 }
 
 if ($action == 'activation') {
@@ -135,7 +135,7 @@ if ($action == 'activation') {
 	$resql = $db->query($sql);
 
 	setEventMessage('Creneau activé avec succès');
-	
+
 }
 
 // Initialize technical objects
@@ -468,13 +468,13 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 	print '<div class="fichehalfleft">';
 	print '<div class="underbanner clearboth"></div>';
 	print '<table class="border centpercent tableforfield">'."\n";
-	
+
 
 	// Common attributes
 	//$keyforbreak='fieldkeytoswitchonsecondcolumn';	// We change column just before this field
 	//unset($object->fields['fk_project']);				// Hide field already shown in banner
 	//unset($object->fields['fk_soc']);					// Hide field already shown in banner
-	 
+
 	include DOL_DOCUMENT_ROOT.'/core/tpl/commonfields_view.tpl.php';
 
 	// Other attributes. Fields from hook formObjectOptions and Extrafields.
@@ -490,14 +490,14 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 	{
 		print '<a href="' . DOL_URL_ROOT . '/custom/viescolaire/eleve_card.php?id=' . $val['rowid'] . '">' .'- '. $val['nom'].' '.$val['prenom'] . '</a>';
 		print '<br>';
-		
+
 	}
 
 	print '</div>';
 	print '</div>';
-	
 
-	print '<div class="clearboth"></div>';	
+
+	print '<div class="clearboth"></div>';
 
 	print dol_get_fiche_end();
 
@@ -580,7 +580,7 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 			if ($object->status == $object::STATUS_CANCELED) {
 				print dolGetButtonAction($langs->trans('Activer le creneau'), '', 'danger', $_SERVER["PHP_SELF"] . '?id=' . $object->id . '&action=activation&token=' . newToken(), '', $permissiontoadd);
 			}
-			
+
 			// Validate
 			// if ($object->status == $object::STATUS_DRAFT) {
 			// 	if (empty($object->table_element_line) || (is_array($object->lines) && count($object->lines) > 0)) {

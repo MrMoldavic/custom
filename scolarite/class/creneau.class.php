@@ -263,7 +263,7 @@ class Creneau extends CommonObject
 	{
 		if($this->fk_salle)
 		{
-			
+
 			$existingCreneau = "SELECT rowid FROM ".MAIN_DB_PREFIX."creneau WHERE fk_salle=".$this->fk_salle." AND heure_debut=".$this->heure_debut." AND fk_annee_scolaire =".$this->fk_annee_scolaire." AND jour=".$this->jour;
 			$resqlExistingCreneau = $this->db->query($existingCreneau);
 			if($resqlExistingCreneau->num_rows > 0)
@@ -280,14 +280,14 @@ class Creneau extends CommonObject
 			if($this->fk_prof_3 != NULL) $profCours .= " OR (c.fk_prof_1=".$this->fk_prof_3." OR c.fk_prof_2=".$this->fk_prof_3." OR c.fk_prof_3=".$this->fk_prof_3.")";
 			$profCours .= ")";
 			$resqlProfsCours = $this->db->query($profCours);
-	
+
 			if($resqlProfsCours->num_rows > 0)
 			{
 				return setEventMessage('Désolé, un des professeur séléctionné à déjà cours à cette heure-ci.','errors');
 			}
 		}
 
-		
+
 
 
 
@@ -318,38 +318,38 @@ class Creneau extends CommonObject
 		else
 		{
 
-		
+
 			if(!$this->nom_groupe)
-			{		
+			{
 				$diminutif = "SELECT d.diminutif FROM ".MAIN_DB_PREFIX."etablissement as d WHERE d.rowid=".("(SELECT i.fk_etablissement FROM ".MAIN_DB_PREFIX."dispositif as i WHERE i.rowid =".$this->fk_dispositif.")");
 				$resql = $this->db->query($diminutif);
 				$object = $this->db->fetch_object($resql);
-	
+
 				$this->nom_creneau = $object->diminutif . '-';
-	
+
 				$instrument_enseigne = "SELECT i.instrument FROM ".MAIN_DB_PREFIX."c_instrument_enseigne as i WHERE i.rowid =".$this->fk_instrument_enseigne;
 				$resql = $this->db->query($instrument_enseigne);
 				$object = $this->db->fetch_object($resql);
-	
+
 				$this->nom_creneau .= $object->instrument . '-';
-	
+
 				$niveau = "SELECT n.niveau FROM ".MAIN_DB_PREFIX."c_niveaux as n WHERE n.rowid =".$this->fk_niveau;
 				$resql = $this->db->query($niveau);
 				$object = $this->db->fetch_object($resql);
-	
+
 				$this->nom_creneau .= $object->niveau . '-';
-	
+
 				$jour = "SELECT j.jour FROM ".MAIN_DB_PREFIX."c_jour as j WHERE j.rowid =".$this->jour;
 				$resql = $this->db->query($jour);
 				$object = $this->db->fetch_object($resql);
-	
+
 				$this->nom_creneau .= $object->jour . '-';
-	
+
 				$heure = "SELECT h.heure FROM ".MAIN_DB_PREFIX."c_heure as h WHERE h.rowid =".$this->heure_debut;
 				$resql = $this->db->query($heure);
 				$object = $this->db->fetch_object($resql);
-	
-				
+
+
 				if(!$this->minutes_debut)
 				{
 					$this->nom_creneau .= $object->heure. 'h00-';
@@ -364,40 +364,40 @@ class Creneau extends CommonObject
 				{
 					$this->minutes_fin = "00";
 				}
-				
+
 				if($this->fk_prof_1 != NULL)
 				{
 					$prof = "SELECT p.nom FROM ".MAIN_DB_PREFIX."management_agent as p WHERE p.rowid =".$this->fk_prof_1;
 					$resql = $this->db->query($prof);
 					$object = $this->db->fetch_object($resql);
-				
+
 					$this->nom_creneau .= $object->nom;
 				}
 
 				$this->status = 4;
-			
+
 			}
 			else
 			{
-				
+
 				$diminutif = "SELECT d.diminutif FROM ".MAIN_DB_PREFIX."etablissement as d WHERE d.rowid=".("(SELECT i.fk_etablissement FROM ".MAIN_DB_PREFIX."dispositif as i WHERE i.rowid =".$this->fk_dispositif.")");
 				$resql = $this->db->query($diminutif);
 				$object = $this->db->fetch_object($resql);
-	
+
 				$this->nom_creneau = $object->diminutif . '-'.$this->nom_groupe.'-';
-	
+
 				$niveau = "SELECT n.niveau FROM ".MAIN_DB_PREFIX."c_niveaux as n WHERE n.rowid =".$this->fk_niveau;
 				$resql = $this->db->query($niveau);
 				$object = $this->db->fetch_object($resql);
-	
+
 				$this->nom_creneau .= $object->niveau . '-';
-	
+
 				$jour = "SELECT j.jour FROM ".MAIN_DB_PREFIX."c_jour as j WHERE j.rowid =".$this->jour;
 				$resql = $this->db->query($jour);
 				$object = $this->db->fetch_object($resql);
-	
+
 				$this->nom_creneau .= $object->jour . '-';
-	
+
 				$heure = "SELECT h.heure FROM ".MAIN_DB_PREFIX."c_heure as h WHERE h.rowid =".$this->heure_debut;
 				$resql = $this->db->query($heure);
 				$object = $this->db->fetch_object($resql);
@@ -422,7 +422,7 @@ class Creneau extends CommonObject
 					$prof = "SELECT p.nom,p.prenom FROM ".MAIN_DB_PREFIX."management_agent as p WHERE p.rowid =".$this->fk_prof_1;
 					$resql = $this->db->query($prof);
 					$object = $this->db->fetch_object($resql);
-					
+
 					$this->nom_creneau .= $object->prenom.'-'.$object->nom;
 				}
 			}
@@ -440,16 +440,16 @@ class Creneau extends CommonObject
 					$this->eleves .= $res['rowid']."\n";
 				}
 			}
-	
+
 			if($this->fk_salle)
 			{
 				$salle = "SELECT s.salle FROM ".MAIN_DB_PREFIX."salles as s WHERE s.rowid =".$this->fk_salle;
 				$resql = $this->db->query($salle);
 				$object = $this->db->fetch_object($resql);
-						
+
 				$this->nom_creneau .= "-".$object->salle;
 			}
-			
+
 
 			$professeur = "";
 
@@ -470,7 +470,7 @@ class Creneau extends CommonObject
 
 				$professeur .= $objProf2->prenom.' '.$objProf2->nom.' ';
 			}
-			
+
 			if($this->fk_prof_3 != NULL)
 			{
 				$sqlProf3 = "SELECT prenom,nom,rowid FROM ".MAIN_DB_PREFIX."management_agent WHERE rowid= ".$this->fk_prof_3;
@@ -483,14 +483,14 @@ class Creneau extends CommonObject
 			$this->professeurs = $professeur;
 
 			$this->status = 4;
-		
+
 			$resultcreate = $this->createCommon($user, $notrigger);
-	
+
 			// $resultvalidate = $this->validate($user, $notrigger);
-	
+
 			return $resultcreate;
 		}
-		
+
 	}
 
 	/**
@@ -613,7 +613,7 @@ class Creneau extends CommonObject
 		$object = $this->db->fetch_object($resql);
 
 		$place_restantes_cours = $this->nombre_places - $object->total;
-		
+
 		return $result;
 	}
 
@@ -720,10 +720,9 @@ class Creneau extends CommonObject
 	 */
 	public function update(User $user, $notrigger = false)
 	{
-
 			if($this->fk_salle)
 			{
-				$existingCreneau = "SELECT rowid FROM ".MAIN_DB_PREFIX."creneau WHERE fk_salle=".$this->fk_salle." AND heure_debut=".$this->heure_debut." AND rowid !=".$this->rowid." AND fk_annee_scolaire =".$this->fk_annee_scolaire;
+				$existingCreneau = "SELECT rowid FROM ".MAIN_DB_PREFIX."creneau WHERE fk_salle=".$this->fk_salle." AND heure_debut=".$this->heure_debut." AND rowid !=".$this->id." AND fk_annee_scolaire =".$this->fk_annee_scolaire;
 				$resqlExistingCreneau = $this->db->query($existingCreneau);
 				if($resqlExistingCreneau->num_rows > 0)
 				{
@@ -739,13 +738,13 @@ class Creneau extends CommonObject
 				if($this->fk_prof_3 != NULL) $profCours .= " OR (c.fk_prof_1=".$this->fk_prof_3." OR c.fk_prof_2=".$this->fk_prof_3." OR c.fk_prof_3=".$this->fk_prof_3.")";
 				$profCours .= ")";
 				$resqlProfsCours = $this->db->query($profCours);
-	
+
 				if($resqlProfsCours->num_rows > 0)
 				{
 					return setEventMessage('Désolé, un des professeur séléctionné à déjà cours à cette heure-ci.','errors');
 				}
 			}
-			
+
 
 			if(!$this->nom_groupe && !$this->fk_instrument_enseigne)
 			{
@@ -777,7 +776,7 @@ class Creneau extends CommonObject
 				{
 					$this->eleves .= $res['prenom'].' '.$res['nom'].' ';
 				}
-				
+
 			}
 
 			if($this->fk_instrument_enseigne == "0")
@@ -787,28 +786,28 @@ class Creneau extends CommonObject
 				$diminutif = "SELECT d.diminutif FROM ".MAIN_DB_PREFIX."etablissement as d WHERE d.rowid=".("(SELECT i.fk_etablissement FROM ".MAIN_DB_PREFIX."dispositif as i WHERE i.rowid =".$this->fk_dispositif.")");
 				$resql = $this->db->query($diminutif);
 				$object = $this->db->fetch_object($resql);
-	
+
 				$this->nom_creneau .= $object->diminutif . '-' . $this->nom_groupe . '-';
-					
+
 			}
 			else
 			{
-		
+
 				$this->nom_creneau = "";
 
 				$diminutif = "SELECT d.diminutif FROM ".MAIN_DB_PREFIX."etablissement as d WHERE d.rowid=".("(SELECT i.fk_etablissement FROM ".MAIN_DB_PREFIX."dispositif as i WHERE i.rowid =".$this->fk_dispositif.")");
 				$resql = $this->db->query($diminutif);
 				$object = $this->db->fetch_object($resql);
-		
+
 				$this->nom_creneau .= $object->diminutif . '-';
 
 				$instrument_enseigne = "SELECT i.instrument FROM ".MAIN_DB_PREFIX."c_instrument_enseigne as i WHERE i.rowid =".$this->fk_instrument_enseigne;
 				$resqlinstru = $this->db->query($instrument_enseigne);
 				$object = $this->db->fetch_object($resqlinstru);
-		
+
 				$this->nom_creneau .= $object->instrument . '-';
-				
-			}	
+
+			}
 
 				$this->professeurs = "";
 
@@ -849,18 +848,18 @@ class Creneau extends CommonObject
 					$prof = "SELECT p.nom,p.prenom FROM ".MAIN_DB_PREFIX."management_agent as p WHERE p.rowid =".$this->fk_prof_1;
 					$resql = $this->db->query($prof);
 					$object = $this->db->fetch_object($resql);
-					
+
 					$this->nom_creneau .= "-".$object->prenom.'-'.$object->nom;
 					$professeur .= $object->prenom.' '.$object->nom.' ';
 				}
-				
+
 
 				if($this->fk_salle)
 				{
 					$salle = "SELECT s.salle FROM ".MAIN_DB_PREFIX."salles as s WHERE s.rowid =".$this->fk_salle;
 					$resql = $this->db->query($salle);
 					$object = $this->db->fetch_object($resql);
-							
+
 					$this->nom_creneau .= "-".$object->salle;
 				}
 
@@ -873,7 +872,7 @@ class Creneau extends CommonObject
 
 					$professeur .= $objProf2->prenom.' '.$objProf2->nom.' ';
 				}
-			
+
 				if($this->fk_prof_3 != NULL)
 				{
 					$sqlProf3 = "SELECT prenom,nom,rowid FROM ".MAIN_DB_PREFIX."management_agent WHERE rowid= ".$this->fk_prof_3;
@@ -882,8 +881,8 @@ class Creneau extends CommonObject
 
 					$professeur .= $objProf3->prenom.' '.$objProf3->nom;
 				}
-			
-			
+
+
 			return $this->updateCommon($user, $notrigger);
 	}
 
