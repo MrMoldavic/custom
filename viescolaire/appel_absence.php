@@ -166,8 +166,7 @@ if($action == 'addAbsence')
 {
 	function dateToMySQL($date){
         $tabDate = explode('/' , $date);
-        $dateToAdd = $tabDate[2].'-'.$tabDate[0].'-'.$tabDate[1];
-        //$dates = date('Y-m-d H:i:s', strtotime($dates));
+        $dateToAdd = $tabDate[2].'-'.$tabDate[1].'-'.$tabDate[0];
         return $dateToAdd;
     }
 
@@ -180,12 +179,11 @@ if($action == 'addAbsence')
 	}
 
 
-	$creneau = "SELECT * FROM ".MAIN_DB_PREFIX."creneau WHERE rowid = ".GETPOST('creneauid', 'int');
+	$creneau = "SELECT jour FROM ".MAIN_DB_PREFIX."creneau WHERE rowid = ".GETPOST('creneauid', 'int');
 	$resqlCreneau = $db->query($creneau);
 	$objCreneau = $db->fetch_object($resqlCreneau);
 
 	$dateJour = date('N', strtotime(dateToMySQL(GETPOST('date_evenement'))));
-
 
 	if($objCreneau->jour != $dateJour)
 	{
@@ -211,8 +209,7 @@ if($action == 'addAbsence')
 
 	$dateToAdd = dateToMySQL(GETPOST('date_evenement'));
 
-	//$date = date('Y-m-d H:i:s', strtotime(GETPOST('date_evenement')));
-	//var_dump($dateToAdd);
+	$date = date('Y-m-d H:i:s', strtotime(GETPOST('date_evenement')));
 	for($i=0; $i<$result; $i++)
 	{
 		if($error == 0)
@@ -224,8 +221,9 @@ if($action == 'addAbsence')
 
 			$existingAbsence = "SELECT * FROM ".MAIN_DB_PREFIX."appel WHERE fk_eleve =".GETPOST('elevesid', 'int').' AND fk_creneau='.GETPOST('creneauid', 'int').' AND date_creation="'.$date.'"';
 			$resqlAbsence = $db->query($existingAbsence);
-		
-		
+
+
+
 			if($resqlAbsence->num_rows == 0)
 			{
 				$sqlres = "INSERT INTO ".MAIN_DB_PREFIX."appel (fk_etablissement, fk_creneau, fk_eleve, justification, date_creation,fk_user_creat, status, treated) VALUES (";
@@ -249,7 +247,7 @@ if($action == 'addAbsence')
 		}
 
 		$dateToAdd = date('Y-m-d H:i:s', strtotime($dateToAdd. ' + 7 days'));
-		
+
 	}
 
 	if($error == 0)
@@ -331,7 +329,7 @@ llxHeader('', $title, $help_url);
 // Part to create
 	if (($action == 'create' && !GETPOST('elevesid', 'int')) || ($action == 'fromValidation')) // SELECTION DU TYPE DE KIT
     {
-		
+
 		$sql = "SELECT e.rowid,e.nom,e.prenom FROM ".MAIN_DB_PREFIX."eleve as e";
 		$resql = $db->query($sql);
 		$eleves = [];
@@ -343,7 +341,7 @@ llxHeader('', $title, $help_url);
 		}
         //WYSIWYG Editor
 		print '<form action="'.$_SERVER["PHP_SELF"].'" method="POST">';
-      
+
         print '<input type="hidden" name="action" value="create">';
 		$titre = "Nouvel Appel";
         print talm_load_fiche_titre($title, $linkback, $picto);
@@ -366,11 +364,11 @@ llxHeader('', $title, $help_url);
 		print '<input type="submit" class="button" value="Confirmer">';
 		print '</div>';
 		print '</form>';
-		
+
     }
 	elseif($action == 'create' && GETPOST('elevesid', 'int'))
 	{
-		
+
 		$anneScolaire = "SELECT rowid FROM ".MAIN_DB_PREFIX."c_annee_scolaire WHERE active = 1 AND annee_actuelle = 1";
 		$resqlAnneeScolaire = $db->query($anneScolaire);
 		$objAnneScolaire = $db->fetch_object($resqlAnneeScolaire);
@@ -383,7 +381,7 @@ llxHeader('', $title, $help_url);
 		{
 			 $creneau[$valCreneau['rowid']]=$valCreneau['nom_creneau'];
 		}
-		
+
 		if($creneau == [])
 		{
 			setEventMessage("Aucun créneau connu pour cet élève",'errors');
@@ -395,9 +393,9 @@ llxHeader('', $title, $help_url);
 				'absenceJ' => "Absence Justifiée",
 				'retard' => "Retard"
 			];
-			
+
 			print '<form action="'.$_SERVER["PHP_SELF"].'" method="POST">';
-		  
+
 			print '<input type="hidden" name="action" value="addAbsence">';
 			print '<input type="hidden" name="elevesid" value="'.GETPOST('elevesid', 'int').'">';
 			$titre = "Nouvel Appel";
@@ -408,12 +406,12 @@ llxHeader('', $title, $help_url);
 			print $form->selectarray('creneauid', $creneau);
 			print '</td>';
 			print '</tr>';
-	
+
 			print '<tr><td class="fieldrequired titlefieldcreate">Type d\'absence: </td><td>';
 			print $form->selectarray('evenementid', $evenements);
 			print '</td>';
 			print '</tr>';
-	
+
 			print '<tr><td class="fieldrequired titlefieldcreate">Date de l\'absence <br>(Premier cours concerné): </td><td>';
 			print $form->selectDate('', 'date_evenement', '', '', '', '', 1, 1);
 			print '</td>';
@@ -423,12 +421,12 @@ llxHeader('', $title, $help_url);
 			print $form->selectDate(-1, 'date_fin_evenement', '', '', '', '', 1, 1);
 			print '</td>';
 			print '</tr>';
-	
+
 			print '<tr><td class="fieldrequired titlefieldcreate">Infos: </td><td>';
 			print '<textarea name="infos_evenement" id="infos_evenement" cols="100" rows="10"></textarea>';
 			print '</td>';
 			print '</tr>';
-	
+
 			print "</table>";
 			dol_fiche_end();
 			print '<div class="center">';
@@ -438,7 +436,7 @@ llxHeader('', $title, $help_url);
 		}
 	}
 
-	
+
 // End of page
 llxFooter();
 $db->close();
