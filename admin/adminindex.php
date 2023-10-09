@@ -74,6 +74,7 @@ if (isset($user->socid) && $user->socid > 0) {
 	$socid = $user->socid;
 }
 
+var_dump("wow");
 // Security check (enable the most restrictive one)
 //if ($user->socid > 0) accessforbidden();
 //if ($user->socid > 0) $socid = $user->socid;
@@ -174,8 +175,8 @@ if ($action == 'cardDesactivate') {
 	elseif(GETPOSTISSET('c','alpha'))
 	{
 		print '<input type="hidden" name="action" value="desactivate_creneau">';
-	} 
-	
+	}
+
 	if ($backtopage) {
 		print '<input type="hidden" name="backtopage" value="'.$backtopage.'">';
 	}
@@ -230,8 +231,8 @@ if ($action == 'cardDesactivate') {
 // 	elseif(GETPOSTISSET('c','alpha'))
 // 	{
 // 		print '<input type="hidden" name="action" value="desactivate_creneau">';
-// 	} 
-	
+// 	}
+
 // 	if ($backtopage) print '<input type="hidden" name="backtopage" value="'.$backtopage.'">';
 // 	if ($backtopageforcancel) print '<input type="hidden" name="backtopageforcancel" value="'.$backtopageforcancel.'">';
 
