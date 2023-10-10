@@ -319,7 +319,7 @@ foreach ($search as $key => $val) {
 			}
 		}
 	}
-	
+
 }
 if ($search_all) {
 	$sql .= natural_search(array_keys($fieldstosearchall), $search_all);
@@ -590,6 +590,7 @@ foreach ($object->fields as $key => $val) {
 	} elseif (in_array($val['type'], array('double(24,8)', 'double(6,3)', 'integer', 'real', 'price')) && $val['label'] != 'TechnicalID' && empty($val['arrayofkeyval'])) {
 		$cssforfield .= ($cssforfield ? ' ' : '').'right';
 	}
+	if($key == 'prenom') $arrayfields['t.'.$key]['label'] = 'Prénom/Nom';
 	if (!empty($arrayfields['t.'.$key]['checked'])) {
 		print getTitleFieldOfList($arrayfields['t.'.$key]['label'], 0, $_SERVER['PHP_SELF'], 't.'.$key, '', $param.'&familyOnly='.$familyOnly, ($cssforfield ? 'class="'.$cssforfield.'"' : ''), $sortfield, $sortorder, ($cssforfield ? $cssforfield.' ' : ''))."\n";
 	}
@@ -679,7 +680,7 @@ while ($i < $imaxinloop) {
 			if (in_array($val['type'], array('double(24,8)', 'double(6,3)', 'integer', 'real', 'price')) && !in_array($key, array('rowid', 'status')) && empty($val['arrayofkeyval'])) {
 				$cssforfield .= ($cssforfield ? ' ' : '').'right';
 			}
-		
+
 
 			if (!empty($arrayfields['t.'.$key]['checked'])) {
 				print '<td'.($cssforfield ? ' class="'.$cssforfield.'"' : '');
@@ -699,12 +700,12 @@ while ($i < $imaxinloop) {
 					$anneScolaire = "SELECT annee,annee_actuelle,rowid FROM ".MAIN_DB_PREFIX."c_annee_scolaire WHERE active = 1 AND annee_actuelle = 1 ORDER BY rowid DESC";
 					$resqlAnneeScolaire = $db->query($anneScolaire);
 					$objAnneScolaire = $db->fetch_object($resqlAnneeScolaire);
-	
+
 					// Nombres d'affectations
 					$affectation = "SELECT COUNT(*) as total FROM ".MAIN_DB_PREFIX."souhait WHERE fk_eleve=".$object->id." AND status=4 AND fk_annee_scolaire =".$objAnneScolaire->rowid;
 					$resAffectation = $db->query($affectation);
 					$objAffectation = $db->fetch_object($resAffectation);
-	
+
 					// Nomnbres de souhaits non-nuls
 					$souhait = "SELECT COUNT(*) as total FROM ".MAIN_DB_PREFIX."souhait WHERE fk_eleve=".$object->id." AND (status=4 OR status=0) AND fk_annee_scolaire =".$objAnneScolaire->rowid;
 					$resSouhaits = $db->query($souhait);
@@ -712,7 +713,7 @@ while ($i < $imaxinloop) {
 
 
 					print "{$objAffectation->total} / {$objSouhaits->total}".($objAffectation->total != $objSouhaits->total ? ' <span class="badge badge-danger">&#9888</span>' : '');
-	
+
 				} elseif ($key == 'fk_etablissement') {
 					$etablissement = new Etablissement($db);
 					$etab = $etablissement->fetchOneField($object->fk_etablissement, 'diminutif');

@@ -236,7 +236,6 @@ class Eleve extends CommonObject
 	{
 
 		$this->nom = strtoupper($this->nom);
-		$this->prenom = ucfirst(strtolower($this->prenom));
 
 		$resultcreate = $this->createCommon($user, $notrigger);
 

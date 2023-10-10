@@ -111,7 +111,6 @@ $backtopage = GETPOST('backtopage', 'alpha');
 $backtopageforcancel = GETPOST('backtopageforcancel', 'alpha');
 $lineid   = GETPOST('lineid', 'int');
 
-
 if ($action == 'confirm_clone') {
 	setEventMessage('Vous êtes bien sur le nouveau souhait.');
 }
@@ -164,7 +163,7 @@ if ($action == 'activation') {
 	$resql = $db->query($sql);
 
 	setEventMessage('Souhait activé avec succès.');
-	
+
 }
 
 if ($action == 'confirm_setdraft') {
@@ -375,7 +374,7 @@ if (($id || $ref) && $action == 'edit') {
 	print '<table class="border centpercent tableforfieldedit">' . "\n";
 
 	// Common attributes
-	
+
 	include DOL_DOCUMENT_ROOT . '/core/tpl/commonfields_edit.tpl.php';
 
 	// Other attributes
@@ -500,11 +499,11 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 
 
 	print '<div class="fichecenter">';
-	
+
 	print '<div class="fichehalfleft">';
-	
+
 	print '<div class="underbanner clearboth"></div>';
-	
+
 	print '<table class="border centpercent tableforfield">' . "\n";
 
 	// Common attributes
@@ -546,17 +545,17 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 
 		if($objectCreneauActuel->fk_prof_1 != NULL)
 		{
-			$professeurCreneauActuel = "SELECT * FROM ".MAIN_DB_PREFIX."management_agent WHERE rowid = ".$objectCreneauActuel->fk_prof_1;
+			$professeurCreneauActuel = "SELECT prenom,nom FROM ".MAIN_DB_PREFIX."management_agent WHERE rowid = ".$objectCreneauActuel->fk_prof_1;
 			$resqlUserCreneauActuel = $db->query($professeurCreneauActuel);
 			$objUserCreneauActuel = $db->fetch_object($resqlUserCreneauActuel);
 		}
-		
+
 
 		print '<div style="background-color: #f2f2f2;border-radius: 25px;padding:1em;max-width:60%;margin:1em">';
 		print 'Jour : <span class="badge  badge-status8 badge-status" style="color:white;">'.$objJourCreneauActuel->jour.'</span><br>';
 		print 'Heure : '.$objheureDebutCreneauActuel->heure.'h / '.$objheureFinCreneauActuel->heure."h<br>";
 		print 'Professeur : '.($objUserCreneauActuel->prenom != NULL ? ($objUserCreneauActuel->prenom.' '.$objUserCreneauActuel->nom) : 'Aucun professeur pour l\'instant!')."<br>";
-		print 'Lien :'.'<a href="'.DOL_URL_ROOT.'/custom/scolarite/creneau_card.php?id='.$objectCreneauActuel->rowid.'">'.$objectCreneauActuel->nom_creneau.'</a>'; 
+		print 'Lien :'.'<a href="'.DOL_URL_ROOT.'/custom/scolarite/creneau_card.php?id='.$objectCreneauActuel->rowid.'">'.$objectCreneauActuel->nom_creneau.'</a>';
 		print '</div>';
 
 	}
@@ -566,12 +565,12 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 	}
 	print '<h3>Infos anciennes affectations pour ce souhait:</h3>';
 
-	$sqlCountAffectation = "SELECT * FROM ".MAIN_DB_PREFIX."affectation WHERE fk_souhait =".$object->id." AND status = 8";
+	$sqlCountAffectation = "SELECT fk_creneau FROM ".MAIN_DB_PREFIX."affectation WHERE fk_souhait =".$object->id." AND status = 8";
 	$resqlAffectation = $db->query($sqlCountAffectation);
-	
+
 
 	print '<p>- Nombre d\'anciennes affectations : '.$resqlAffectation->num_rows.'</p>';
-	
+
 	if($resqlAffectation->num_rows > 0)
 	{
 		print '<table class="tagtable liste">';
@@ -584,7 +583,7 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 		</tr>';
 		foreach($resqlAffectation as $value)
 		{
-			$sqlOldAffectation = "SELECT * FROM ".MAIN_DB_PREFIX."creneau WHERE rowid =".$value['fk_creneau'];
+			$sqlOldAffectation = "SELECT jour,heure_debut,heure_fin,fk_prof_1 FROM ".MAIN_DB_PREFIX."creneau WHERE rowid =".$value['fk_creneau'];
 			$resqlOldAffectation = $db->query($sqlOldAffectation);
 			$objectCreneau = $db->fetch_object($resqlOldAffectation);
 
@@ -594,22 +593,22 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 				$Jour = "SELECT jour, rowid FROM ".MAIN_DB_PREFIX."c_jour WHERE rowid =".$objectCreneau->jour;
 				$resqlJour = $db->query($Jour);
 				$objJour = $db->fetch_object($resqlJour);
-		
+
 				$heure = "SELECT heure, rowid FROM ".MAIN_DB_PREFIX."c_heure WHERE rowid =".$objectCreneau->heure_debut;
 				$resqlheure = $db->query($heure);
 				$objheure = $db->fetch_object($resqlheure);
-		
+
 				$heurefin = "SELECT heure, rowid FROM ".MAIN_DB_PREFIX."c_heure WHERE rowid =".$objectCreneau->heure_fin;
 				$resqlheureFin = $db->query($heurefin);
 				$objheureFin = $db->fetch_object($resqlheureFin);
-		
+
 				if($objectCreneau->fk_prof_1 != NULL)
 				{
-					$professeur = "SELECT * FROM ".MAIN_DB_PREFIX."management_agent WHERE rowid = ".$objectCreneau->fk_prof_1;
+					$professeur = "SELECT prenom,nom FROM ".MAIN_DB_PREFIX."management_agent WHERE rowid = ".$objectCreneau->fk_prof_1;
 					$resqlUser = $db->query($professeur);
 					$objUser = $db->fetch_object($resqlUser);
 				}
-				
+
 
 				print '<tr class="oddeven">';
 				print '<td>'.$objJour->jour.'</td>';
@@ -622,62 +621,13 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 		print '</table>';
 	}
 
-	
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-	
 
 	print '</div>';
 	print '</div>';
-	
+
 
 	print '<div class="clearboth"></div>';
-	
+
 
 	print dol_get_fiche_end();
 
@@ -743,28 +693,14 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 		}
 
 		if (empty($reshook)) {
-			// Send
-			// if (empty($user->socid)) {
-			// 	print dolGetButtonAction($langs->trans('SendMail'), '', 'default', $_SERVER["PHP_SELF"].'?id='.$object->id.'&action=presend&mode=init&token='.newToken().'#formmailbeforetitle');
-			// }
 
 			// Back to draft
 			print dolGetButtonAction($langs->trans('Faire appréciation de l\'élève'), '', 'default', $_SERVER["PHP_SELF"] . '?id=' . $object->id . '&action=edit&token=' . newToken(), '', $permissionappreciation);
-			
+
 
 			if ($object->status == $object::STATUS_DRAFT) {
 				print dolGetButtonAction($langs->trans('Modifier le souhait'), '', 'default', $_SERVER["PHP_SELF"] . '?id=' . $object->id . '&action=edit&token=' . newToken(), '', $permissiontoadd);
 			}
-
-			// // Validate
-			// if ($object->status == $object::STATUS_DRAFT) {
-			// 	if (empty($object->table_element_line) || (is_array($object->lines) && count($object->lines) > 0)) {
-			// 		print dolGetButtonAction($langs->trans('Classer le souhait'), '', 'default', $_SERVER['PHP_SELF'] . '?id=' . $object->id . '&action=confirm_validate&confirm=yes&token=' . newToken(), '', $permissiontoadd);
-			// 	} else {
-			// 		$langs->load("errors");
-			// 		print dolGetButtonAction($langs->trans("ErrorAddAtLeastOneLineFirst"), $langs->trans("Validate"), 'default', '#', '', 0);
-			// 	}
-			// }
 
 			// Clone
 			if ($object->status == $object::STATUS_DRAFT) {
@@ -775,22 +711,6 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 			if ($object->status == $object::STATUS_CANCELED) {
 				print dolGetButtonAction($langs->trans('Activer le souhait'), '', 'danger', $_SERVER["PHP_SELF"] . '?id=' . $object->id . '&action=activation&token=' . newToken(), '', $permissiontoadd);
 			}
-
-			// if ($permissiontoadd) {
-			// 	if ($object->status == $object::STATUS_ENABLED) {
-			// 		print dolGetButtonAction($langs->trans('Disable'), '', 'default', $_SERVER['PHP_SELF'].'?id='.$object->id.'&action=disable&token='.newToken(), '', $permissiontoadd);
-			// 	} else {
-			// 		print dolGetButtonAction($langs->trans('Enable'), '', 'default', $_SERVER['PHP_SELF'].'?id='.$object->id.'&action=enable&token='.newToken(), '', $permissiontoadd);
-			// 	}
-			// }
-			// if ($permissiontoadd) {
-			// 	if ($object->status == $object::STATUS_VALIDATED) {
-			// 		print dolGetButtonAction($langs->trans('Cancel'), '', 'default', $_SERVER['PHP_SELF'].'?id='.$object->id.'&action=close&token='.newToken(), '', $permissiontoadd);
-			// 	} else {
-			// 		print dolGetButtonAction($langs->trans('Re-Open'), '', 'default', $_SERVER['PHP_SELF'].'?id='.$object->id.'&action=reopen&token='.newToken(), '', $permissiontoadd);
-			// 	}
-			// }
-
 
 			// Delete (need delete permission, or if draft, just need create/modify permission)
 			print dolGetButtonAction($langs->trans('Delete'), '', 'delete', $_SERVER['PHP_SELF'] . '?id=' . $object->id . '&action=delete&token=' . newToken(), '', $permissiontodelete);
@@ -853,6 +773,9 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 
 			// Set some default values
 			$_POST['fk_souhait'] = $id;
+			$_POST['date_debutmonth'] = date('m', time());
+			$_POST['date_debutday'] = date('d', time());
+			$_POST['date_debutyear'] = date('Y', time());
 
 			print '<table class="border centpercent tableforfieldcreate">' . "\n";
 

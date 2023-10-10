@@ -41,11 +41,6 @@ class Affectation extends CommonObject
 	 * @var string ID of module.
 	 */
 	public $module = 'viescolaire';
-
-
-	public $sqlAffec = "integer:Creneau:custom/scolarite/class/creneau.class.php:1:(t.nombre_places:>";
-
-
 	/**
 	 * @var string ID to identify managed object.
 	 */
@@ -76,8 +71,6 @@ class Affectation extends CommonObject
 	const STATUS_DRAFT = 0;
 	const STATUS_VALIDATED = 4;
 	const STATUS_CANCELED = 8;
-
-	const CRENEAUX_TO_SEARCH = '';
 
 
 	/**
@@ -131,7 +124,7 @@ class Affectation extends CommonObject
 		'model_pdf' => array('type'=>'varchar(255)', 'label'=>'Model pdf', 'enabled'=>'1', 'position'=>1010, 'notnull'=>-1, 'visible'=>0,),
 		'status' => array('type' => 'integer', 'label' => 'Etat', 'enabled' => '1', 'position' => 1011, 'notnull' => 1, 'visible' => 2, 'default' => 0),
 	);
-	
+
 	public $rowid;
 	public $fk_souhait;
 	public $fk_creneau;
@@ -217,7 +210,6 @@ class Affectation extends CommonObject
 				unset($this->fields[$key]);
 			}
 		}
-
 		// Translate some data of arrayofkeyval
 		if (is_object($langs)) {
 			foreach ($this->fields as $key => $val) {
@@ -282,17 +274,17 @@ class Affectation extends CommonObject
 			$souhait = new Souhait($this->db);
 			$souhait->fetch($this->fk_souhait);
 			$souhait->validate($user, $notrigger);
-	
+
 			$this->validate($user, $notrigger);
-	
+
 			$resultcreate = $this->createCommon($user, $notrigger);
 			setEventMessage('Affectation confirmée!');
-		
+
 			return $resultcreate;
 
-			
+
 		}
-		
+
 	}
 
 	/**
