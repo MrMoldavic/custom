@@ -74,7 +74,7 @@ class Eleve extends CommonObject
 	const STATUS_PROBLEME = 8;
 
 
-	
+
 	/**
 	 *  'type' field format ('integer', 'integer:ObjectClass:PathToClass[:AddCreateButtonOrNot[:Filter[:Sortfield]]]', 'sellist:TableName:LabelFieldName[:KeyFieldName[:KeyFieldParent[:Filter[:Sortfield]]]]', 'varchar(x)', 'double(24,8)', 'real', 'price', 'text', 'text:none', 'html', 'date', 'datetime', 'timestamp', 'duration', 'mail', 'phone', 'url', 'password')
 	 *         Note: Filter can be a string like "(t.ref:like:'SO-%') or (t.date_creation:<:'20160101') or (t.nature:is:NULL)"
@@ -143,7 +143,7 @@ class Eleve extends CommonObject
 	public $fk_user_creat;
 	public $fk_user_modif;
 	public $last_main_doc;
-	public $model_pdf; 
+	public $model_pdf;
 	// If this object has a subtable with lines
 
 	// /**
@@ -211,7 +211,7 @@ class Eleve extends CommonObject
 			}
 		}
 
-		
+
 
 		// Translate some data of arrayofkeyval
 		if (is_object($langs)) {
@@ -464,8 +464,7 @@ class Eleve extends CommonObject
 	public function update(User $user, $notrigger = false)
 	{
 		$this->nom = strtoupper($this->nom);
-		$this->prenom = ucfirst(strtolower($this->prenom));
-		
+
 		return $this->updateCommon($user, $notrigger);
 	}
 
@@ -858,7 +857,7 @@ class Eleve extends CommonObject
 			$this->labelStatus[self::STATUS_PLACE] = "Placé (paiement incomplet)";
 			$this->labelStatus[self::STATUS_BUDGETISE] = "Budgetisé";
 			$this->labelStatus[self::STATUS_PROBLEME] = "Problème";
-			
+
 			$this->labelStatusShort[self::STATUS_DRAFT] = "Inscription en attente";
 			$this->labelStatusShort[self::STATUS_VALIDATED] = "Inscription terminée (payée)";
 			$this->labelStatusShort[self::STATUS_CANCELED] = "Inscription annulée";
