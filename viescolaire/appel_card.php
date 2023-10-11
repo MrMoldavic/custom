@@ -290,7 +290,7 @@ if ($action == 'confirmAppel') {
                $resqlEleves = $db->query($sqlAppel);
 
                // Si appel déjà présent, cela indique que l'appel en modification et qu'on à une entrée différente de celle en BDD, donc un va modifier l'appel existant
-               if($resqlEleves->num_rows != 0)
+               if($resqlEleves->num_rows > 0)
                {
                     $resEleves = $db->fetch_object($resqlEleves);
                     // On remplace par le nouveau status
