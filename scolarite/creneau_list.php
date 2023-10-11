@@ -322,7 +322,7 @@ foreach ($search as $key => $val) {
 		if ($key == 'status' && $search[$key] == -1) {
 			continue;
 		}
-		
+
 		$mode_search = (($object->isInt($object->fields[$key]) || $object->isFloat($object->fields[$key])) ? 1 : 0);
 		if ((strpos($object->fields[$key]['type'], 'integer:') === 0) || (strpos($object->fields[$key]['type'], 'sellist:') === 0) || !empty($object->fields[$key]['arrayofkeyval'])) {
 			if ($search[$key] == '-1' || ($search[$key] === '0' && (empty($object->fields[$key]['arrayofkeyval']) || !array_key_exists('0', $object->fields[$key]['arrayofkeyval'])))) {
@@ -545,14 +545,14 @@ if($massaction == 'telephone' || $massaction == 'mail' || $massaction == "eleves
 	{
 		$affectation = "SELECT s.fk_souhait FROM ".MAIN_DB_PREFIX."affectation as s WHERE s.fk_creneau=".$value." AND date_fin IS NULL";
 		$resqlAffectation = $db->query($affectation);
-	
+
 		foreach($resqlAffectation as $val)
 		{
 			$eleve = "SELECT e.fk_famille,e.prenom,e.nom,e.fk_classe_etablissement FROM ".MAIN_DB_PREFIX."eleve as e WHERE e.rowid=".("(SELECT s.fk_eleve FROM ".MAIN_DB_PREFIX."souhait as s WHERE s.rowid =".$val['fk_souhait'].") ORDER BY fk_classe_etablissement ASC");
 			$resqlEleve = $db->query($eleve);
 				foreach($resqlEleve as $res)
 				{
-					
+
 					if($massaction == 'eleves')
 					{
 						if($res['prenom'] != NULL)
@@ -569,17 +569,17 @@ if($massaction == 'telephone' || $massaction == 'mail' || $massaction == "eleves
 						$famille = "SELECT ".($massaction == 'mail' ? 'f.mail_parent_1,f.mail_parent_2' : 'f.tel_parent_1,f.tel_parent_2')." FROM ".MAIN_DB_PREFIX."famille as f WHERE f.rowid=".$res['fk_famille'];
 						$resqlFamille = $db->query($famille);
 						$objFamille = $db->fetch_object($resqlFamille);
-	
+
 						if($objFamille->mail_parent_1 != NULL AND $massaction == 'mail') print $objFamille->mail_parent_1."<br>";
 						if($objFamille->mail_parent_2 != NULL AND $massaction == 'mail') print $objFamille->mail_parent_2."<br>";
 						if($objFamille->tel_parent_1 != NULL AND $massaction == 'telephone') print $objFamille->tel_parent_1."<br>";
 						if($objFamille->tel_parent_2 != NULL AND $massaction == 'telephone') print $objFamille->tel_parent_2."<br>";
 					}
-					
+
 
 					// fwrite($fich, $mail_parent_2."\n");
 				}
-			
+
 		}
 	}
 	//fclose($fich);
@@ -600,13 +600,13 @@ if($massaction == 'telephone' || $massaction == 'mail' || $massaction == "eleves
 	// 	array('123', '456', '789'),
 	// 	array('"aaa"', '"bbb"')
 	//  );
-	 
+
 	//  $fp = fopen('CSV/file.csv', 'w');
-	 
+
 	//  foreach ($list as $fields) {
 	// 	 fputcsv($fp, $fields);
 	//  }
-	 
+
 	//  fclose($fp);
 	//  $out = '<a class="documentdownload paddingright" href="'.$documenturl.'?modulepart='.$modulepart.'&amp;file=CSV/'.urlencode($relativepath).($param ? '&'.$param : '').'"';
 	//  $mime = dol_mimetype($relativepath, '', 0);
@@ -869,7 +869,7 @@ while ($i < $imaxinloop) {
 					print dolGetButtonAction($object->showOutputField($val, $key, $object->$key, '') != "" ? $object->showOutputField($val, $key, $object->$key, '') : "Groupe",'', 'danger','/custom/scolarite/creneau_card.php?id=' . $object->id, '', $permissiontoadd);
 				} elseif ($key == 'nom_creneau'){
 					print $object->getNomUrl(1);
-	
+
 				} elseif ($key == 'nombre_places'){
 
 					$count = 0;
@@ -877,29 +877,29 @@ while ($i < $imaxinloop) {
 					$resqlAffectation1 = $db->query($sql1);
 
 					print '<span class="badge  badge-status'.($resqlAffectation1->num_rows == intval($object->showOutputField($val, $key, $object->$key, '')) ? '8' : '4').' badge-status" style="color:white;">'.$resqlAffectation1->num_rows.'/'.$object->showOutputField($val, $key, $object->$key, '').'</span>';
-		
-	
+
+
 				} elseif ($key == 'fk_dispositif'){
-	
+
 					$diminutif = "SELECT diminutif FROM ".MAIN_DB_PREFIX."etablissement WHERE rowid = "."(SELECT fk_etablissement FROM ".MAIN_DB_PREFIX."dispositif WHERE rowid = ".$object->fk_dispositif.")";
 					$resqlDiminutif = $db->query($diminutif);
 					$objDiminutif = $db->fetch_object($resqlDiminutif);
-	
-	
+
+
 					$dispositif = "SELECT nom, rowid FROM ".MAIN_DB_PREFIX."dispositif WHERE rowid = ".$object->fk_dispositif;
 					$resqlDispositif = $db->query($dispositif);
 					$objDispositif = $db->fetch_object($resqlDispositif);
-	
+
 					print $objDiminutif->diminutif.' - '.$objDispositif->nom;
 				} elseif ($key == 'fk_type_classe'){
 					$cours = "SELECT type FROM ".MAIN_DB_PREFIX."type_classe WHERE rowid =".$object->fk_type_classe;
 					$resqlCours = $db->query($cours);
 					$objCours= $db->fetch_object($resqlCours);
-	
+
 					$niveau = "SELECT niveau FROM ".MAIN_DB_PREFIX."c_niveaux WHERE rowid =".$object->fk_niveau;
 					$resqlNiveau = $db->query($niveau);
 					$objNiveau= $db->fetch_object($resqlNiveau);
-	
+
 					$instrument = "SELECT instrument FROM ".MAIN_DB_PREFIX."c_instrument_enseigne WHERE rowid =".$object->fk_instrument_enseigne;
 					$resqlInstrument = $db->query($instrument);
 					$objInstru = $db->fetch_object($resqlInstrument);
@@ -907,15 +907,15 @@ while ($i < $imaxinloop) {
 
 					print '<span class="badge  badge-status'.($objCours->type == 'Cours' ? '4' : '1') .' badge-status">'.$objCours->type.'</span> - '.($objCours->type == "Cours" ? $objInstru->instrument : $object->nom_groupe).' - '.$objNiveau->niveau;
 				} elseif ($key == 'professeurs') {
-					
+
 					$profs = "";
 					if(isset($object->fk_prof_1))
 					{
 						$prof1 = "SELECT prenom, nom, rowid FROM ".MAIN_DB_PREFIX."management_agent WHERE rowid =".$object->fk_prof_1;
 						$resqlProf1 = $db->query($prof1);
 						$objProf1 = $db->fetch_object($resqlProf1);
-						
-		
+
+
 						$profs .= '<a href="' . DOL_URL_ROOT . '/custom/management/agent_card.php?id=' . $objProf1->rowid . '">' .'👨‍🏫'. $objProf1->prenom.' '.$objProf1->nom. '</a>'.'<br>';
 					}
 					if(isset($object->fk_prof_2))
@@ -923,7 +923,7 @@ while ($i < $imaxinloop) {
 						$prof2 = "SELECT nom, prenom, rowid FROM ".MAIN_DB_PREFIX."management_agent WHERE rowid =".$object->fk_prof_2;
 						$resqlProf2 = $db->query($prof2);
 						$objProf2 = $db->fetch_object($resqlProf2);
-	
+
 						$profs .= '<a href="' . DOL_URL_ROOT . '/custom/management/agent_card.php?id=' . $objProf2->rowid . '">' .'👨‍🏫'. $objProf2->prenom.' '.$objProf2->nom. '</a>'.'<br>';
 					}
 					if(isset($object->fk_prof_3))
@@ -931,40 +931,40 @@ while ($i < $imaxinloop) {
 						$prof3 = "SELECT nom, prenom, rowid FROM ".MAIN_DB_PREFIX."management_agent WHERE rowid =".$object->fk_prof_3;
 						$resqlProf3 = $db->query($prof3);
 						$objProf3 = $db->fetch_object($resqlProf3);
-	
+
 						$profs .= '<a href="' . DOL_URL_ROOT . '/custom/management/agent_card.php?id=' . $objProf3->rowid . '">' .'👨‍🏫'. $objProf3->prenom.' '.$objProf3->nom. '</a>'.'<br>';
 					}
 					if($profs == "") $profs = '<span class="badge badge-danger">Prof manquant &#9888</span>';
-	
+
 					print $profs;
-	
+
 				} elseif ($key == 'infos_creneau'){
 					$infos_creneau = "";
-	
+
 					$Jour = "SELECT jour, rowid FROM ".MAIN_DB_PREFIX."c_jour WHERE rowid =".$object->jour;
 					$resqlJour = $db->query($Jour);
 					$objJour = $db->fetch_object($resqlJour);
-					
+
 					$heure = "SELECT heure, rowid FROM ".MAIN_DB_PREFIX."c_heure WHERE rowid =".$object->heure_debut;
 					$resqlheure = $db->query($heure);
 					$objheure = $db->fetch_object($resqlheure);
-	
+
 					$heureFin = "SELECT heure, rowid FROM ".MAIN_DB_PREFIX."c_heure WHERE rowid =".$object->heure_fin;
 					$resqlheureFin = $db->query($heureFin);
 					$objheureFin = $db->fetch_object($resqlheureFin);
-	
+
 					if($object->fk_salle)
 					{
 						$Salle = "SELECT salle, rowid FROM ".MAIN_DB_PREFIX."salles WHERE rowid =".$object->fk_salle;
 						$resqlSalle = $db->query($Salle);
 						$objSalle = $db->fetch_object($resqlSalle);
 					}
-					
+
 					$infos_creneau .= $objJour->jour.' | '.$objheure->heure.'h'.$object->minutes_debut.'-'.$objheureFin->heure.'h'.$object->minutes_fin.' | ';
 					$infos_creneau .= $object->fk_salle ? $objSalle->salle : "<span class='badge badge-danger'>Salle inconnue</span>";
 					//var_dump($object->fk_salle);
 					print $infos_creneau;
-	
+
 				} elseif ($key == 'eleves'){
 					$sql1 = "SELECT e.nom, e.prenom,e.rowid FROM " . MAIN_DB_PREFIX . "souhait as s INNER JOIN " . MAIN_DB_PREFIX . "affectation as a ON a.fk_souhait = s.rowid INNER JOIN " . MAIN_DB_PREFIX . "eleve as e ON e.rowid = s.fk_eleve WHERE a.fk_creneau = " . $object->id . " AND a.status = 4";
 					$resqlAffectation = $db->query($sql1);

@@ -115,8 +115,8 @@ class Agent extends CommonObject
 	 */
 	public $fields=array(
 		'rowid' => array('type'=>'integer', 'label'=>'TechnicalID', 'enabled'=>'1', 'position'=>1, 'notnull'=>1, 'visible'=>0, 'noteditable'=>'1', 'index'=>1, 'css'=>'left', 'comment'=>"Id"),
-		'nom' => array('type'=>'varchar(255)', 'label'=>'Nom', 'enabled'=>'1', 'position'=>30, 'notnull'=>1, 'visible'=>1, 'index'=>1, 'searchall'=>1, 'css'=>'maxwidth400', 'showoncombobox'=>'1', 'validate'=>'1',),
 		'prenom' => array('type'=>'varchar(255)', 'label'=>'Prénom', 'enabled'=>'1', 'position'=>20, 'notnull'=>1, 'visible'=>1, 'searchall'=>1, 'css'=>'maxwidth300', 'cssview'=>'wordbreak', 'showoncombobox'=>'1', 'validate'=>'1',),
+		'nom' => array('type'=>'varchar(255)', 'label'=>'Nom', 'enabled'=>'1', 'position'=>30, 'notnull'=>1, 'visible'=>1, 'searchall'=>1, 'css'=>'maxwidth400', 'showoncombobox'=>'1', 'validate'=>'1',),
 		'fk_user' => array('type'=>'integer:User:user/class/user.class.php:0:(t.statut != 0)', 'label'=>'Utilisateur lié', 'picto'=>'user', 'enabled'=>'1', 'position'=>40, 'notnull'=>1, 'visible'=>1, 'css'=>'maxwidth300', 'validate'=>'1',),
 		'adresse' => array('type'=>'varchar(255)', 'label'=>'Adresse', 'picto'=>'home', 'enabled'=>'1', 'position'=>45, 'notnull'=>0, 'visible'=>1, 'css'=>'minwidth300', 'validate'=>'1',),
 		'code_postal' => array('type'=>'varchar(255)', 'label'=>'Code Postal', 'enabled'=>'', 'position'=>50, 'notnull'=>-1, 'visible'=>1, 'index'=>1, 'css'=>'maxwidth300', 'validate'=>'1',),
@@ -283,7 +283,7 @@ class Agent extends CommonObject
 
 				return $resultcreate;
 			}
-			
+
 		}
 	}
 
