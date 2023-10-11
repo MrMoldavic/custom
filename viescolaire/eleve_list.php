@@ -22,9 +22,9 @@
  *		\brief      List page for eleve
  */
 
- ini_set('display_errors', '1');
+/* ini_set('display_errors', '1');
  ini_set('display_startup_errors', '1');
- error_reporting(E_ALL);
+ error_reporting(E_ALL);*/
 
 //if (! defined('NOREQUIREDB'))              define('NOREQUIREDB', '1');				// Do not create database handler $db
 //if (! defined('NOREQUIREUSER'))            define('NOREQUIREUSER', '1');				// Do not load object $user
@@ -252,12 +252,11 @@ if (empty($reshook)) {
  */
 
 $form = new Form($db);
-
 $now = dol_now();
 
 //$help_url="EN:Module_Eleve|FR:Module_Eleve_FR|ES:Módulo_Eleve";
 $help_url = '';
-$title = $langs->trans('ListOf', $langs->transnoentitiesnoconv("Eleves"));
+$title = "Liste des Élèves";
 $morejs = array();
 $morecss = array();
 
@@ -362,21 +361,12 @@ if (!$sortfield) {
 	reset($object->fields);					// Reset is required to avoid key() to return null.
 	$sortfield = "t.".key($object->fields); // Set here default search field. By default 1st field in definition.
 }
-// else $sortfield = "t.stats_affectations";
-
 if (!$sortorder) {
 	$sortorder = "ASC";
 }
-// else $sortorder = "DESC";
-
-
-// $sortfield2 = "t.fk_famille";
-// $sortorder2 = "ASC";
 
 
 $sql .= $db->order($sortfield, $sortorder);
-//$sql .= ", {$sortfield2} {$sortorder2}";
-//if(GETPOST('sortfield','alpha')) $sql .=' ORDER BY '. GETPOST('sortfield','alpha').' '.strtoupper(GETPOSTISSET('sortorder','alpha') ? "DESC" : "ASC");
 if ($limit) {
 	$sql .= $db->plimit($limit + 1, $offset);
 }
@@ -618,7 +608,6 @@ if (isset($extrafields->attributes[$object->table_element]['computed']) && is_ar
 		}
 	}
 }
-
 
 // Loop on record
 // --------------------------------------------------------------------

@@ -792,7 +792,7 @@ class Eleve extends CommonObject
 		}
 
 		if ($withpicto != 2) {
-			$result .= $this->nom.' '.$this->prenom;
+			$result .= $this->prenom.' '.$this->nom;
 		}
 
 		$result .= $linkend;

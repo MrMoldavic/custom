@@ -47,32 +47,32 @@
 // Load Dolibarr environment
 $res = 0;
 // Try main.inc.php into web root known defined into CONTEXT_DOCUMENT_ROOT (not always defined)
-if (!$res && !empty($_SERVER["CONTEXT_DOCUMENT_ROOT"])) {
-	$res = @include $_SERVER["CONTEXT_DOCUMENT_ROOT"]."/main.inc.php";
+if (!$res && !empty($_SERVER['CONTEXT_DOCUMENT_ROOT'])) {
+	$res = @include $_SERVER['CONTEXT_DOCUMENT_ROOT']. '/main.inc.php';
 }
 // Try main.inc.php into web root detected using web root calculated from SCRIPT_FILENAME
 $tmp = empty($_SERVER['SCRIPT_FILENAME']) ? '' : $_SERVER['SCRIPT_FILENAME']; $tmp2 = realpath(__FILE__); $i = strlen($tmp) - 1; $j = strlen($tmp2) - 1;
 while ($i > 0 && $j > 0 && isset($tmp[$i]) && isset($tmp2[$j]) && $tmp[$i] == $tmp2[$j]) {
 	$i--; $j--;
 }
-if (!$res && $i > 0 && file_exists(substr($tmp, 0, ($i + 1))."/main.inc.php")) {
-	$res = @include substr($tmp, 0, ($i + 1))."/main.inc.php";
+if (!$res && $i > 0 && file_exists(substr($tmp, 0, ($i + 1)). '/main.inc.php')) {
+	$res = @include substr($tmp, 0, ($i + 1)). '/main.inc.php';
 }
-if (!$res && $i > 0 && file_exists(dirname(substr($tmp, 0, ($i + 1)))."/main.inc.php")) {
-	$res = @include dirname(substr($tmp, 0, ($i + 1)))."/main.inc.php";
+if (!$res && $i > 0 && file_exists(dirname(substr($tmp, 0, ($i + 1))). '/main.inc.php')) {
+	$res = @include dirname(substr($tmp, 0, ($i + 1))). '/main.inc.php';
 }
 // Try main.inc.php using relative path
-if (!$res && file_exists("../main.inc.php")) {
-	$res = @include "../main.inc.php";
+if (!$res && file_exists('../main.inc.php')) {
+	$res = @include '../main.inc.php';
 }
-if (!$res && file_exists("../../main.inc.php")) {
-	$res = @include "../../main.inc.php";
+if (!$res && file_exists('../../main.inc.php')) {
+	$res = @include '../../main.inc.php';
 }
-if (!$res && file_exists("../../../main.inc.php")) {
-	$res = @include "../../../main.inc.php";
+if (!$res && file_exists('../../../main.inc.php')) {
+	$res = @include '../../../main.inc.php';
 }
 if (!$res) {
-	die("Include of main fails");
+	die('Include of main fails');
 }
 
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formcompany.class.php';
@@ -82,7 +82,7 @@ dol_include_once('/scolarite/class/creneau.class.php');
 dol_include_once('/scolarite/lib/scolarite_creneau.lib.php');
 
 // Load translation files required by the page
-$langs->loadLangs(array("scolarite@scolarite", "other"));
+$langs->loadLangs(array('scolarite@scolarite', 'other'));
 
 // Get parameters
 $id = GETPOST('id', 'int');
@@ -98,7 +98,7 @@ $lineid   = GETPOST('lineid', 'int');
 if ($action == 'desactivation') {
 
 
-	$affectation = "SELECT s.fk_souhait FROM ".MAIN_DB_PREFIX."affectation as s WHERE s.fk_creneau=".$id." AND date_fin IS NULL";
+	$affectation = 'SELECT s.fk_souhait FROM ' .MAIN_DB_PREFIX. 'affectation as s WHERE s.fk_creneau=' .$id. ' AND date_fin IS NULL';
 	$resqlAffectation = $db->query($affectation);
 
 	if($resqlAffectation->num_rows > 0)
@@ -108,30 +108,16 @@ if ($action == 'desactivation') {
 	else
 	{
 		$creneau = new Creneau($db);
-		$sql = "UPDATE " . MAIN_DB_PREFIX . "creneau SET status = " . $creneau::STATUS_CANCELED . " WHERE rowid=" . $id;
+		$sql = 'UPDATE ' . MAIN_DB_PREFIX . 'creneau SET status = ' . $creneau::STATUS_CANCELED . ' WHERE rowid=' . $id;
 		$resql = $db->query($sql);
 		setEventMessage('Creneau desactivé avec succès');
 	}
-
-	// foreach($resqlAffectation as $val)
-	// {
-	// 	$eleve = "SELECT e.nom,e.prenom,e.rowid FROM ".MAIN_DB_PREFIX."eleve as e WHERE e.rowid=".("(SELECT s.fk_eleve FROM ".MAIN_DB_PREFIX."souhait as s WHERE s.rowid =".$val['fk_souhait'].")");
-	// 	$resqlEleve = $db->query($eleve);
-	// 	foreach($resqlEleve as $res)
-	// 	{
-	// 		print '<a href="' . DOL_URL_ROOT . '/custom/viescolaire/eleve_card.php?id=' . $res['rowid'] . '">' .'- '. $res['nom'].' '.$res['prenom'] . '</a>';
-	// 		print '<br>';
-	// 	}
-
-	// }
-
-
 }
 
 if ($action == 'activation') {
 
 	$creneau = new Creneau($db);
-	$sql = "UPDATE " . MAIN_DB_PREFIX . "creneau SET status = " . $creneau::STATUS_VALIDATED . " WHERE rowid=" . $id;
+	$sql = 'UPDATE ' . MAIN_DB_PREFIX . 'creneau SET status = ' . $creneau::STATUS_VALIDATED . ' WHERE rowid=' . $id;
 	$resql = $db->query($sql);
 
 	setEventMessage('Creneau activé avec succès');
@@ -150,7 +136,7 @@ $extrafields->fetch_name_optionals_label($object->table_element);
 $search_array_options = $extrafields->getOptionalsFromPost($object->table_element, '', 'search_');
 
 // Initialize array of search criterias
-$search_all = GETPOST("search_all", 'alpha');
+$search_all = GETPOST('search_all', 'alpha');
 $search = array();
 foreach ($object->fields as $key => $val) {
 	if (GETPOST('search_'.$key, 'alpha')) {
@@ -263,7 +249,7 @@ $form = new Form($db);
 $formfile = new FormFile($db);
 $formproject = new FormProjets($db);
 
-$title = $langs->trans("Creneau");
+$title = $langs->trans('Creneau');
 $help_url = '';
 llxHeader('', $title, $help_url);
 
@@ -290,9 +276,9 @@ if ($action == 'create') {
 		exit;
 	}
 
-	print load_fiche_titre($langs->trans("NewObject", $langs->transnoentitiesnoconv("Creneau")), '', 'object_'.$object->picto);
+	print load_fiche_titre($langs->trans('NewObject', $langs->transnoentitiesnoconv('Creneau')), '', 'object_'.$object->picto);
 
-	print '<form method="POST" action="'.$_SERVER["PHP_SELF"].'">';
+	print '<form method="POST" action="'.$_SERVER['PHP_SELF'].'">';
 	print '<input type="hidden" name="token" value="'.newToken().'">';
 	print '<input type="hidden" name="action" value="add">';
 	if ($backtopage) {
@@ -309,7 +295,7 @@ if ($action == 'create') {
 
 	print '<table class="border centpercent tableforfieldcreate">'."\n";
 
-	$anneScolaire = "SELECT annee,annee_actuelle,rowid FROM ".MAIN_DB_PREFIX."c_annee_scolaire WHERE active = 1 AND annee_actuelle = 1";
+	$anneScolaire = 'SELECT annee,annee_actuelle,rowid FROM ' .MAIN_DB_PREFIX. 'c_annee_scolaire WHERE active = 1 AND annee_actuelle = 1';
 	$resqlAnneeScolaire = $db->query($anneScolaire);
 	$objAnneScolaire = $db->fetch_object($resqlAnneeScolaire);
 
@@ -327,7 +313,7 @@ if ($action == 'create') {
 
 	print dol_get_fiche_end();
 
-	print $form->buttonsSaveCancel("Create");
+	print $form->buttonsSaveCancel('Create');
 
 	print '</form>';
 
@@ -336,9 +322,9 @@ if ($action == 'create') {
 
 // Part to edit record
 if (($id || $ref) && $action == 'edit') {
-	print load_fiche_titre($langs->trans("Creneau"), '', 'object_'.$object->picto);
+	print load_fiche_titre($langs->trans('Creneau'), '', 'object_'.$object->picto);
 
-	print '<form method="POST" action="'.$_SERVER["PHP_SELF"].'">';
+	print '<form method="POST" action="'.$_SERVER['PHP_SELF'].'">';
 	print '<input type="hidden" name="token" value="'.newToken().'">';
 	print '<input type="hidden" name="action" value="update">';
 	print '<input type="hidden" name="id" value="'.$object->id.'">';
@@ -373,22 +359,43 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 	$res = $object->fetch_optionals();
 
 	$head = creneauPrepareHead($object);
-	print dol_get_fiche_head($head, 'card', $langs->trans("Creneau"), -1, $object->picto);
+	print dol_get_fiche_head($head, 'card', $langs->trans('Creneau'), -1, $object->picto);
 
 	$formconfirm = '';
 	// Confirmation to delete
 	if ($action == 'delete') {
-		$formconfirm = $form->formconfirm($_SERVER["PHP_SELF"].'?id='.$object->id, $langs->trans('DeleteCreneau'), $langs->trans('ConfirmDeleteObject'), 'confirm_delete', '', 0, 1);
+
+		$formconfirm = $form->formconfirm($_SERVER['PHP_SELF'].'?id='.$object->id, $langs->trans('DeleteCreneau'), $langs->trans('ConfirmDeleteObject'), 'confirm_delete', '', 0, 1);
 	}
+
+	/*if ($action == 'Update') {
+
+		if(GETPOST('fk_salle','int'))
+		{
+			$existingCreneau = 'SELECT rowid FROM ' .MAIN_DB_PREFIX. 'creneau WHERE fk_salle=' .GETPOST('fk_salle','int'). ' AND heure_debut=' .GETPOST('heure_debut','alpha'). ' AND rowid !=' .$id. ' AND fk_annee_scolaire =' .GETPOST('fk_annee_scolaire','int');
+			$resqlExistingCreneau = $db->query($existingCreneau);
+			if($resqlExistingCreneau->num_rows > 0)
+			{
+				$formconfirm = $form->formconfirm($_SERVER['PHP_SELF'].'?id='.$id, $langs->trans('Modifier salle'), 'Cette salle est prise à cet horaire. Êtes-vous sûr de vouloir forcer la mise à jour?', 'update', '', 0, 1);
+
+			}
+			else
+			{
+				if ($object->update($user) < 0) {
+					setEventMessage('Une erreur est survenue', 'error');
+				}
+			}
+		}
+	}*/
 	// Confirmation to delete line
 	if ($action == 'deleteline') {
-		$formconfirm = $form->formconfirm($_SERVER["PHP_SELF"].'?id='.$object->id.'&lineid='.$lineid, $langs->trans('DeleteLine'), $langs->trans('ConfirmDeleteLine'), 'confirm_deleteline', '', 0, 1);
+		$formconfirm = $form->formconfirm($_SERVER['PHP_SELF'].'?id='.$object->id.'&lineid='.$lineid, $langs->trans('DeleteLine'), $langs->trans('ConfirmDeleteLine'), 'confirm_deleteline', '', 0, 1);
 	}
 	// Clone confirmation
 	if ($action == 'clone') {
 		// Create an array for form
 		$formquestion = array();
-		$formconfirm = $form->formconfirm($_SERVER["PHP_SELF"].'?id='.$object->id, $langs->trans('ToClone'), $langs->trans('ConfirmCloneAsk', $object->ref), 'confirm_clone', $formquestion, 'yes', 1);
+		$formconfirm = $form->formconfirm($_SERVER['PHP_SELF'].'?id='.$object->id, $langs->trans('ToClone'), $langs->trans('ConfirmCloneAsk', $object->ref), 'confirm_clone', $formquestion, 'yes', 1);
 	}
 
 	// Confirmation of action xxxx
@@ -404,7 +411,7 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 			// array('type' => 'other',    'name' => 'idwarehouse',   'label' => $langs->trans("SelectWarehouseForStockDecrease"), 'value' => $formproduct->selectWarehouses(GETPOST('idwarehouse')?GETPOST('idwarehouse'):'ifone', 'idwarehouse', '', 1, 0, 0, '', 0, $forcecombo))
 		);
 		*/
-		$formconfirm = $form->formconfirm($_SERVER["PHP_SELF"].'?id='.$object->id, $langs->trans('XXX'), $text, 'confirm_xxx', $formquestion, 0, 1, 220);
+		$formconfirm = $form->formconfirm($_SERVER['PHP_SELF'].'?id='.$object->id, $langs->trans('XXX'), $text, 'confirm_xxx', $formquestion, 0, 1, 220);
 	}
 
 	// Call Hook formConfirm
@@ -421,7 +428,7 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 
 	// Object card
 	// ------------------------------------------------------------
-	$linkback = '<a href="'.dol_buildpath('/scolarite/creneau_list.php', 1).'?restore_lastsearch_values=1'.(!empty($socid) ? '&socid='.$socid : '').'">'.$langs->trans("BackToList").'</a>';
+	$linkback = '<a href="'.dol_buildpath('/scolarite/creneau_list.php', 1).'?restore_lastsearch_values=1'.(!empty($socid) ? '&socid='.$socid : '').'">'.$langs->trans('BackToList').'</a>';
 
 	$morehtmlref = '<div class="refidno">';
 	/*
@@ -483,14 +490,17 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 	print '</table>';
 	print '<h3>Liste des élèves dans ce créneau:</h3>';
 
-	$sql1 = "SELECT e.nom, e.prenom,e.rowid FROM " . MAIN_DB_PREFIX . "souhait as s INNER JOIN " . MAIN_DB_PREFIX . "affectation as a ON a.fk_souhait = s.rowid INNER JOIN " . MAIN_DB_PREFIX . "eleve as e ON e.rowid = s.fk_eleve WHERE a.fk_creneau = " . $object->id . " AND a.status = 4";
+	$sql1 = 'SELECT s.fk_instru_enseigne,e.nom, e.prenom,e.rowid FROM ' . MAIN_DB_PREFIX . 'souhait as s INNER JOIN ' . MAIN_DB_PREFIX . 'affectation as a ON a.fk_souhait = s.rowid INNER JOIN ' . MAIN_DB_PREFIX . 'eleve as e ON e.rowid = s.fk_eleve WHERE a.fk_creneau = ' . $object->id . ' AND a.status = 4';
 	$resqlAffectation = $db->query($sql1);
 
 	foreach($resqlAffectation as $val)
 	{
-		print '<a href="' . DOL_URL_ROOT . '/custom/viescolaire/eleve_card.php?id=' . $val['rowid'] . '">' .'- '. $val['nom'].' '.$val['prenom'] . '</a>';
-		print '<br>';
+		$sqlIntstru = 'SELECT instrument FROM '.MAIN_DB_PREFIX .'c_instrument_enseigne WHERE rowid='.$val['fk_instru_enseigne'];
+		$resqlInstru = $db->query($sqlIntstru);
+		$objectInstru = $db->fetch_object($resqlInstru);
 
+		print '<a href="' . DOL_URL_ROOT . '/custom/viescolaire/eleve_card.php?id=' . $val['rowid'] . '">' .'- '. $val['nom'].' '.$val['prenom'].' / '.($objectInstru->instrument ? : 'Aucun instrument connu').'</a>';
+		print '<br>';
 	}
 
 	print '</div>';
@@ -510,7 +520,7 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 		// Show object lines
 		$result = $object->getLinesArray();
 
-		print '	<form name="addproduct" id="addproduct" action="'.$_SERVER["PHP_SELF"].'?id='.$object->id.(($action != 'editline') ? '' : '#line_'.GETPOST('lineid', 'int')).'" method="POST">
+		print '<form name="addproduct" id="addproduct" action="'.$_SERVER['PHP_SELF'].'?id='.$object->id.(($action != 'editline') ? '' : '#line_'.GETPOST('lineid', 'int')).'" method="POST">
 		<input type="hidden" name="token" value="' . newToken().'">
 		<input type="hidden" name="action" value="' . (($action != 'editline') ? 'addline' : 'updateline').'">
 		<input type="hidden" name="mode" value="">
@@ -564,54 +574,18 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 		}
 
 		if (empty($reshook)) {
-			// Send
-			// if (empty($user->socid)) {
-			// 	print dolGetButtonAction($langs->trans('SendMail'), '', 'default', $_SERVER["PHP_SELF"].'?id='.$object->id.'&action=presend&mode=init&token='.newToken().'#formmailbeforetitle');
-			// }
 
-			// Back to draft
-			//print dolGetButtonAction($langs->trans('SetToDraft'), '', 'default', $_SERVER["PHP_SELF"].'?id='.$object->id.'&action=confirm_setdraft&confirm=yes&token='.newToken(), '', $permissiontoadd);
 			if ($object->status == $object::STATUS_VALIDATED) {
-				print dolGetButtonAction($langs->trans('Desactiver le creneau'), '', 'error', $_SERVER["PHP_SELF"] . '?id=' . $object->id . '&action=desactivation&token=' . newToken(), '', $permissiontoadd);
-				print dolGetButtonAction($langs->trans('Modifier le creneau'), '', 'default', $_SERVER["PHP_SELF"] . '?id=' . $object->id . '&action=edit&token=' . newToken(), '', $permissiontoadd);
-
+				print dolGetButtonAction($langs->trans('Desactiver le creneau'), '', 'error', $_SERVER['PHP_SELF'] . '?id=' . $object->id . '&action=desactivation&token=' . newToken(), '', $permissiontoadd);
+				print dolGetButtonAction($langs->trans('Modifier le creneau'), '', 'default', $_SERVER['PHP_SELF'] . '?id=' . $object->id . '&action=edit&token=' . newToken(), '', $permissiontoadd);
 			}
 
 			if ($object->status == $object::STATUS_CANCELED) {
-				print dolGetButtonAction($langs->trans('Activer le creneau'), '', 'danger', $_SERVER["PHP_SELF"] . '?id=' . $object->id . '&action=activation&token=' . newToken(), '', $permissiontoadd);
+				print dolGetButtonAction($langs->trans('Activer le creneau'), '', 'danger', $_SERVER['PHP_SELF'] . '?id=' . $object->id . '&action=activation&token=' . newToken(), '', $permissiontoadd);
 			}
 
-			// Validate
-			// if ($object->status == $object::STATUS_DRAFT) {
-			// 	if (empty($object->table_element_line) || (is_array($object->lines) && count($object->lines) > 0)) {
-			// 		print dolGetButtonAction($langs->trans('Validate'), '', 'default', $_SERVER['PHP_SELF'].'?id='.$object->id.'&action=confirm_validate&confirm=yes&token='.newToken(), '', $permissiontoadd);
-			// 	} else {
-			// 		$langs->load("errors");
-			// 		print dolGetButtonAction($langs->trans("ErrorAddAtLeastOneLineFirst"), $langs->trans("Validate"), 'default', '#', '', 0);
-			// 	}
-			// }
+			print dolGetButtonAction($langs->trans('Dupliquer'), '', 'default', $_SERVER['PHP_SELF'].'?action=create&token='.newToken().'&fk_dispositif='.$object->fk_dispositif.'&fk_niveau='.$object->fk_niveau.'&jour='.$object->jour.'&nombre_places='.$object->nombre_places.'&heure_debut='.$object->heure_debut.'&heure_fin='.$object->heure_fin.'&nom_groupe='.$object->nom_groupe.'&fk_salle='.$object->fk_salle.($object->fk_instrument_enseigne ? ('&fk_instrument_enseigne='.$object->fk_instrument_enseigne) : ('&fk_nom_groupe='.$object->fk_nom_groupe)), '', $permissiontoadd);
 
-			// Clone
-			// print dolGetButtonAction($langs->trans('ToClone'), '', 'default', $_SERVER['PHP_SELF'].'?id='.$object->id.(!empty($object->socid)?'&socid='.$object->socid:'').'&action=clone&token='.newToken(), '', $permissiontoadd);
-
-			/*
-			if ($permissiontoadd) {
-				if ($object->status == $object::STATUS_ENABLED) {
-					print dolGetButtonAction($langs->trans('Disable'), '', 'default', $_SERVER['PHP_SELF'].'?id='.$object->id.'&action=disable&token='.newToken(), '', $permissiontoadd);
-				} else {
-					print dolGetButtonAction($langs->trans('Enable'), '', 'default', $_SERVER['PHP_SELF'].'?id='.$object->id.'&action=enable&token='.newToken(), '', $permissiontoadd);
-				}
-			}
-			if ($permissiontoadd) {
-				if ($object->status == $object::STATUS_VALIDATED) {
-					print dolGetButtonAction($langs->trans('Cancel'), '', 'default', $_SERVER['PHP_SELF'].'?id='.$object->id.'&action=close&token='.newToken(), '', $permissiontoadd);
-				} else {
-					print dolGetButtonAction($langs->trans('Re-Open'), '', 'default', $_SERVER['PHP_SELF'].'?id='.$object->id.'&action=reopen&token='.newToken(), '', $permissiontoadd);
-				}
-			}
-			*/
-
-			// Delete (need delete permission, or if draft, just need create/modify permission)
 			print dolGetButtonAction($langs->trans('Delete'), '', 'delete', $_SERVER['PHP_SELF'].'?id='.$object->id.'&action=delete&token='.newToken(), '', $permissiontodelete);
 		}
 		print '</div>'."\n";
@@ -634,7 +608,7 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 			$objref = dol_sanitizeFileName($object->ref);
 			$relativepath = $objref.'/'.$objref.'.pdf';
 			$filedir = $conf->scolarite->dir_output.'/'.$object->element.'/'.$objref;
-			$urlsource = $_SERVER["PHP_SELF"]."?id=".$object->id;
+			$urlsource = $_SERVER['PHP_SELF']. '?id=' .$object->id;
 			$genallowed = $permissiontoread; // If you can read, you can build the PDF to read content
 			$delallowed = $permissiontoadd; // If you can create/edit, you can remove a file on card
 			print $formfile->showdocuments('scolarite:Creneau', $object->element.'/'.$objref, $filedir, $urlsource, $genallowed, $delallowed, $object->model_pdf, 1, 0, 0, 28, 0, '', '', '', $langs->defaultlang);
