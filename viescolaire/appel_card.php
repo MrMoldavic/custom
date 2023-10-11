@@ -177,7 +177,7 @@ if ($reshook < 0) {
 }
 
 if (empty($reshook)) {
-     $error = 0;
+	/*$error = 0;*/
 
      $backurlforlist = dol_buildpath('/viescolaire/appel_list.php', 1);
 
@@ -247,11 +247,11 @@ if ($action == 'confirmAppel') {
      $sql = "SELECT e.nom, e.prenom,e.rowid FROM " . MAIN_DB_PREFIX . "souhait as s INNER JOIN " . MAIN_DB_PREFIX . "affectation as a ON a.fk_souhait = s.rowid INNER JOIN " . MAIN_DB_PREFIX . "eleve as e ON e.rowid = s.fk_eleve WHERE a.fk_creneau = " . GETPOST('creneauid', 'int') . " AND a.status = 4";
      $sqlEleves = $db->query($sql);
 
-
      $sqlProf = "SELECT p.fk_prof_1, p.fk_prof_2, p.fk_prof_3 FROM " . MAIN_DB_PREFIX . "creneau as p WHERE p.rowid=" . $creneauid;
      $sqlProf = $db->query($sqlProf);
      $sqlProReal = $db->fetch_object($sqlProf);
 
+	 $error = 0;
      if(GETPOST('day', 'alpha'))
      {
           print '<input type="hidden" name="day" value="'.GETPOST('day', 'alpha').'">';
@@ -271,7 +271,7 @@ if ($action == 'confirmAppel') {
 
      // Si on ne detecte pas de professeur dans l'appel en POST du créneau, on renvoie une erreur
      if (!GETPOST('prof' . $sqlProReal->fk_prof_1, 'alpha')) $check = false;
-     
+
      if (!$check) {
           setEventMessage("Veuillez renseigner tous les champs.", 'errors');
           $creneauid = GETPOST('creneauid', 'int');
@@ -286,16 +286,18 @@ if ($action == 'confirmAppel') {
                $sqlAppel .= " AND treated = " . 1;
                $sqlAppel .= " AND status != '" . GETPOST('presence' . $val['rowid'], 'alpha') . "'";
                $sqlAppel .= " ORDER BY rowid DESC LIMIT 1";
-         
+
                $resqlEleves = $db->query($sqlAppel);
 
-               // Si appel déjà présent, cela indique que l'appel en modification et qu'on à une entrée diffénte de celle en BDD, donc un va modifier l'appel existant
+               // Si appel déjà présent, cela indique que l'appel en modification et qu'on à une entrée différente de celle en BDD, donc un va modifier l'appel existant
                if($resqlEleves->num_rows != 0)
                {
                     $resEleves = $db->fetch_object($resqlEleves);
                     // On remplace par le nouveau status
                     $sqlUpdateEleve = "UPDATE " . MAIN_DB_PREFIX . "appel SET status = '".GETPOST('presence' . $val['rowid'], 'alpha')."' WHERE rowid=".$resEleves->rowid;
-                    $resql = $db->query($sqlUpdateEleve);
+                   	if(!$db->query($sqlUpdateEleve)){
+						   $error++;
+					};
 
                }
                // Sinon, cela veut dire que c'est la première fois que l'appel est fait aujourd'hui
@@ -318,11 +320,12 @@ if ($action == 'confirmAppel') {
                     $sqlres .= $user->id . ",";
                     $sqlres .= "'" . GETPOST('presence' . $val['rowid'], 'alpha') . "',";
                     $sqlres .= 1 .")";
-     
-                    $db->query($sqlres);
-               }
 
-               
+                    if(!$db->query($sqlres))
+					{
+						$error++;
+					};
+               }
           }
 
           //Ajout de l'appel pour le professeur 1
@@ -340,7 +343,9 @@ if ($action == 'confirmAppel') {
                $resProf = $db->fetch_object($resqlProf1);
                // On remplace par le nouveau status
                $sqlUpdateProf = "UPDATE " . MAIN_DB_PREFIX . "appel SET status = '".GETPOST('prof' . $sqlProReal->fk_prof_1, 'alpha')."' WHERE rowid=".$resProf->rowid;
-               $resql = $db->query($sqlUpdateProf);
+               if(!$db->query($sqlUpdateProf)){
+				   $error++;
+			   };
 
           }
           else
@@ -362,15 +367,17 @@ if ($action == 'confirmAppel') {
                $sqlResProf .= $user->id . ",";
                $sqlResProf .= "'" . GETPOST('prof' . $sqlProReal->fk_prof_1, 'alpha') . "',";
                $sqlResProf .= 1 .")";
-          
-               $db->query($sqlResProf);
+
+               if(!$db->query($sqlResProf)){
+				   $error++;
+			   };
           }
- 
-          
+
+
           //Ajout de l'appel pour le professeur 2
           if($sqlProReal->fk_prof_2 != NULL)
           {
-              
+
                $sqlAppelProf2 = "SELECT status,rowid FROM " . MAIN_DB_PREFIX . "appel WHERE fk_user = " . $sqlProReal->fk_prof_2;
                $sqlAppelProf2 .= " AND fk_creneau = " . GETPOST('creneauid', 'int');
                $sqlAppelProf2 .= " AND treated = " . 1;
@@ -385,7 +392,9 @@ if ($action == 'confirmAppel') {
                     $resProf2 = $db->fetch_object($resqlProf2);
                     // On remplace par le nouveau status
                     $sqlUpdateProf = "UPDATE " . MAIN_DB_PREFIX . "appel SET status = '".GETPOST('prof' . $sqlProReal->fk_prof_2, 'alpha')."' WHERE rowid=".$resProf2->rowid;
-                    $resql = $db->query($sqlUpdateProf);
+                    if(!$db->query($sqlUpdateProf)){
+						$error++;
+					};
 
                }
                else
@@ -407,17 +416,19 @@ if ($action == 'confirmAppel') {
                     $sqlResProf .= $user->id . ",";
                     $sqlResProf .= "'" . GETPOST('prof' . $sqlProReal->fk_prof_2, 'alpha') . "',";
                     $sqlResProf .= 1 .")";
-               
-                    $db->query($sqlResProf);
+
+                    if(!$db->query($sqlResProf)){
+						$error++;
+					};
                }
- 
+
           }
-          
+
 
           //Ajout de l'appel pour le professeur 3
           if($sqlProReal->fk_prof_3 != NULL)
           {
-              
+
                $sqlAppelProf3 = "SELECT status,rowid FROM " . MAIN_DB_PREFIX . "appel WHERE fk_user = " . $sqlProReal->fk_prof_3;
                $sqlAppelProf3 .= " AND fk_creneau = " . GETPOST('creneauid', 'int');
                $sqlAppelProf3 .= " AND treated = " . 1;
@@ -432,7 +443,9 @@ if ($action == 'confirmAppel') {
                     $resProf3 = $db->fetch_object($resqlProf3);
                     // On remplace par le nouveau status
                     $sqlUpdateProf = "UPDATE " . MAIN_DB_PREFIX . "appel SET status = '".GETPOST('prof' . $sqlProReal->fk_prof_3, 'alpha')."' WHERE rowid=".$resProf3->rowid;
-                    $resql = $db->query($sqlUpdateProf);
+                    if(!$db->query($sqlUpdateProf)){
+						$error++;
+					};
 
                }
                else
@@ -454,13 +467,16 @@ if ($action == 'confirmAppel') {
                     $sqlResProf .= $user->id . ",";
                     $sqlResProf .= "'" . GETPOST('prof' . $sqlProReal->fk_prof_3, 'alpha') . "',";
                     $sqlResProf .= 1 .")";
-               
-                    $db->query($sqlResProf);
+
+                    if(!$db->query($sqlResProf)){
+						$error++;
+					};
                }
- 
+
           }
 
-          setEventMessage("Appel réalisé avec succès!");
+		  if($error > 0) setEventMessage("Une erreur est survenue",'errors');
+		  else setEventMessage("Appel réalisé avec succès!");
      }
 
      if($creneauid && !$check) $action = 'returnFromError';
@@ -518,7 +534,7 @@ if (($action == 'create' or $action == 'modifAppel' or $action == 'returnFromErr
      print '<input type="hidden" name="action" value="add">';
      print '<input type="hidden" name="etablissementid" value="' . GETPOST('etablissementid', 'int') . '">';
 
-     
+
      // Si on viens du sommaire on affiche d'un coups tout les créneaux
      if(GETPOST('day', 'alpha'))
      {
@@ -550,8 +566,8 @@ if (($action == 'create' or $action == 'modifAppel' or $action == 'returnFromErr
 
      $resqlAffectation = $db->query($sql);
 
-     foreach ($resqlAffectation as $val) 
-     { 
+     foreach ($resqlAffectation as $val)
+     {
           $sqlheure = "SELECT heure,rowid FROM ".MAIN_DB_PREFIX."c_heure WHERE rowid= ".$val['heure_debut'];
           $resqlheure = $db->query($sqlheure);
           $objHeure = $db->fetch_object($resqlheure);
@@ -569,7 +585,7 @@ if (($action == 'create' or $action == 'modifAppel' or $action == 'returnFromErr
           // requête qui va chercher tout les élèves d'un créneau à un horaire donné
           $sql1 = "SELECT e.nom, e.prenom,e.rowid FROM " . MAIN_DB_PREFIX . "souhait as s INNER JOIN " . MAIN_DB_PREFIX . "affectation as a ON a.fk_souhait = s.rowid INNER JOIN " . MAIN_DB_PREFIX . "eleve as e ON e.rowid = s.fk_eleve WHERE a.fk_creneau = " . $val['rowid'] . " AND a.status = 4";
           $resql = $db->query($sql1);
-          
+
           // variables nécessaires pour la validation
           $isComplete = true;
           $injustifiee = false;
@@ -595,13 +611,13 @@ if (($action == 'create' or $action == 'modifAppel' or $action == 'returnFromErr
                          if($value['status'] == 'absenceI' && $value['treated'] == 1){
                               $injustifiee = true;
                               $countInj++;
-                         } 
+                         }
                          if($value['status'] == 'absenceI' && $value['justification'] == "" && $value['treated'] == 1) $treated = true;
                     }
                }
           }
-         
-          
+
+
           // On va chercher les professeurs du créneau
           $sqlProf = "SELECT p.fk_prof_1, p.fk_prof_2, p.fk_prof_3 FROM " . MAIN_DB_PREFIX . "creneau as p WHERE p.rowid=" . $val['rowid'];
           $sqlProf = $db->query($sqlProf);
@@ -618,9 +634,9 @@ if (($action == 'create' or $action == 'modifAppel' or $action == 'returnFromErr
                $userCreatAppel = $db->fetch_object($resqlCountprof);
                if($resqlCountprof->num_rows == 0) $isComplete = false;
           }
-          
+
           if ($sqlProReal->fk_prof_2) {
-               
+
                $checkProf = "SELECT * FROM " . MAIN_DB_PREFIX . "appel WHERE fk_user = " . $sqlProReal->fk_prof_2 . " AND YEAR(date_creation) = " . $year;
                $checkProf .= " AND MONTH(date_creation) = " . $month;
                $checkProf .= " AND DAY(date_creation) = " . $day;
@@ -638,8 +654,8 @@ if (($action == 'create' or $action == 'modifAppel' or $action == 'returnFromErr
 
                $resqlCountprof = $db->query($checkProf);
                if($resqlCountprof->num_rows == 0) $isComplete = false;
-          }   
-         
+          }
+
           print '<div class="appel-accordion'.(($action == 'modifAppel' || $action == 'returnFromError') && ($creneauid == $val['rowid']) ? '-opened' : '').'" id="appel-' . $val['rowid'] . '">';
           print '<h3>';
 
@@ -649,7 +665,7 @@ if (($action == 'create' or $action == 'modifAppel' or $action == 'returnFromErr
                $resqlAppelCreat = $db->query($sqlAppelCreat);
                $appelObjectCreat = $db->fetch_object($resqlAppelCreat);
           }
-          
+
           if ($isComplete && ($action == 'modifAppel' && $creneauid == $val['rowid'])) {
                print '<span class="badge  badge-status10 badge-status" style="color:white;">Appel en cours de modification</span> ';
           } elseif (!$isComplete) {
@@ -658,7 +674,7 @@ if (($action == 'create' or $action == 'modifAppel' or $action == 'returnFromErr
                print '<span class="badge  badge-status4 badge-status" style="color:white;">Appel Fait par '.$appelObjectCreat->firstname.' '.$appelObjectCreat->lastname.'</span>&nbsp;&nbsp;&nbsp;<span class="badge  badge-status8 badge-status" style="color:white;">'.$countInj.' Absence Injustifiée(s)</span>&nbsp;&nbsp;&nbsp;</span><span class="badge  badge-status4 badge-status" style="color:white;">Traitées</span> ';
           } elseif ($isComplete && $injustifiee && $treated) {
                print '<span class="badge  badge-status4 badge-status" style="color:white;">Appel Fait par '.$appelObjectCreat->firstname.' '.$appelObjectCreat->lastname.'</span>&nbsp;&nbsp;&nbsp;<span class="badge  badge-status8 badge-status" style="color:white;">'.$countInj.' Absence Injustifiée(s)</span>&nbsp;&nbsp;&nbsp;</span><span class="badge  badge-status1 badge-status" style="color:white;">Non traitée(s) </span> ';
-          } 
+          }
           else {
                print '<span class="badge  badge-status4 badge-status" style="color:white;">Appel Fait par '.$appelObjectCreat->firstname.' '.$appelObjectCreat->lastname.'</span> ';
           }
@@ -671,7 +687,7 @@ if (($action == 'create' or $action == 'modifAppel' or $action == 'returnFromErr
 
           print '<form action="' . $_SERVER["PHP_SELF"] . '" method="post">';
           print '<table class="tagtable liste">';
-      
+
           if (!$isComplete or ($action == 'modifAppel' && $creneauid == $val['rowid'])) {
                print '<input type="hidden" name="action" value="confirmAppel">';
           } else {
@@ -783,9 +799,9 @@ if (($action == 'create' or $action == 'modifAppel' or $action == 'returnFromErr
           print '</form>';
 
           print '</div>';
-          
+
           print '</div>';
-         
+
      }
 
      print '<script>
