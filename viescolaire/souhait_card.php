@@ -22,9 +22,9 @@
  *		\brief      Page to create/edit/view souhait
  */
 
-ini_set('display_errors', '1');
+/*ini_set('display_errors', '1');
 ini_set('display_startup_errors', '1');
-error_reporting(E_ALL);
+error_reporting(E_ALL);*/
 
 
 //if (! defined('NOREQUIREDB'))              define('NOREQUIREDB', '1');				// Do not create database handler $db
@@ -180,6 +180,7 @@ $extrafields = new ExtraFields($db);
 $diroutputmassaction = $conf->viescolaire->dir_output . '/temp/massgeneration/' . $user->id;
 $hookmanager->initHooks(array('souhaitcard', 'globalcard')); // Note that conf->hooks_modules contains array
 
+$instruEnseigne = $object->fk_instru_enseigne;
 // Fetch optionals attributes and labels
 $extrafields->fetch_name_optionals_label($object->table_element);
 
@@ -454,10 +455,10 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 	$linkback = '<a href="' . dol_buildpath('/viescolaire/souhait_list.php', 1) . '?restore_lastsearch_values=1' . (!empty($socid) ? '&socid=' . $socid : '') . '">' . $langs->trans("BackToList") . '</a>';
 
 	$morehtmlref = '<div class="refidno">';
-	$sqlEtablissement = "SELECT nom FROM ".MAIN_DB_PREFIX."etablissement WHERE rowid=".("(SELECT fk_etablissement FROM ".MAIN_DB_PREFIX."eleve WHERE rowid=".$object->fk_eleve).")";
+	$sqlEtablissement = "SELECT nom,diminutif FROM ".MAIN_DB_PREFIX."etablissement WHERE rowid=".("(SELECT fk_etablissement FROM ".MAIN_DB_PREFIX."eleve WHERE rowid=".$object->fk_eleve).")";
 	$resqlEtablissement = $db->query($sqlEtablissement);
-	$res = $db->fetch_object($resqlEtablissement);
-	$morehtmlref.= $res->nom;
+	$resEtablissement = $db->fetch_object($resqlEtablissement);
+	$morehtmlref.= $resEtablissement->nom;
 
 	/*
 	 // Ref customer"
@@ -755,7 +756,10 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 		// $somethingshown = $formactions->showactions($object, $object->element . '@' . $object->module, (is_object($object->thirdparty) ? $object->thirdparty->id : 0), 1, '', $MAXEVENT, '', $morehtmlcenter);
 
 		if ($object->status == 0) {
+			$instruEnseigne = $object->fk_instru_enseigne;
+
 			$object = new Affectation($db);
+
 			$object->fk_souhait = $id;
 			print load_fiche_titre($langs->trans("NewObject", $langs->transnoentitiesnoconv("Affectation")), '', 'object_' . $object->picto);
 
@@ -768,8 +772,9 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 			if ($backtopageforcancel) {
 				print '<input type="hidden" name="backtopageforcancel" value="' . $backtopageforcancel . '">';
 			}
-
+			//var_dump($object->fields);
 			print dol_get_fiche_head(array(), '');
+
 
 			// Set some default values
 			$_POST['fk_souhait'] = $id;
@@ -779,8 +784,80 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 
 			print '<table class="border centpercent tableforfieldcreate">' . "\n";
 
+			// Copie d'un code existant (commonfields_add.tpl.php) afin de modifier la clause qui nous intéresse
+			foreach ($object->fields as $key => $val) {
+				// Discard if field is a hidden field on form
+				if (abs($val['visible']) != 1 && abs($val['visible']) != 3) {
+					continue;
+				}
+
+				if (array_key_exists('enabled', $val) && isset($val['enabled']) && !verifCond($val['enabled'])) {
+					continue; // We don't want this field
+				}
+
+				print '<tr class="field_'.$key.'">';
+				print '<td';
+				print ' class="titlefieldcreate';
+				if (isset($val['notnull']) && $val['notnull'] > 0) {
+					print ' fieldrequired';
+				}
+				if ($val['type'] == 'text' || $val['type'] == 'html') {
+					print ' tdtop';
+				}
+				print '"';
+				print '>';
+				if (!empty($val['help'])) {
+					print $form->textwithpicto($langs->trans($val['label']), $langs->trans($val['help']));
+				} else {
+					print $langs->trans($val['label']);
+				}
+				print '</td>';
+				print '<td class="valuefieldcreate">';
+				if (!empty($val['picto'])) {
+					print img_picto('', $val['picto'], '', false, 0, 0, '', 'pictofixedwidth');
+				}
+				if (in_array($val['type'], array('int', 'integer'))) {
+					$value = GETPOST($key, 'int');
+				} elseif ($val['type'] == 'double') {
+					$value = price2num(GETPOST($key, 'alphanohtml'));
+				} elseif ($val['type'] == 'text' || $val['type'] == 'html') {
+					$value = GETPOST($key, 'restricthtml');
+				} elseif ($val['type'] == 'date') {
+					$value = dol_mktime(12, 0, 0, GETPOST($key.'month', 'int'), GETPOST($key.'day', 'int'), GETPOST($key.'year', 'int'));
+				} elseif ($val['type'] == 'datetime') {
+					$value = dol_mktime(GETPOST($key.'hour', 'int'), GETPOST($key.'min', 'int'), 0, GETPOST($key.'month', 'int'), GETPOST($key.'day', 'int'), GETPOST($key.'year', 'int'));
+				} elseif ($val['type'] == 'boolean') {
+					$value = (GETPOST($key) == 'on' ? 1 : 0);
+				} elseif ($val['type'] == 'price') {
+					$value = price2num(GETPOST($key));
+				} elseif ($key == 'lang') {
+					$value = GETPOST($key, 'aZ09');
+				} else {
+					$value = GETPOST($key, 'alphanohtml');
+				}
+				if (!empty($val['noteditable'])) {
+					print $object->showOutputField($val, $key, $value, '', '', '', 0);
+				} else {
+					if ($key == 'lang') {
+						print img_picto('', 'language', 'class="pictofixedwidth"');
+						print $formadmin->select_language($value, $key, 0, null, 1, 0, 0, 'minwidth300', 2);
+					} else {
+						// Si on est sur l'input fk_creneau, on rentre dans la boucle
+						if($key == 'fk_creneau') {
+							// On supprime le champ Type de fk_creneau
+							unset($object->fields['fk_creneau']['type']);
+							// On ajoute le notre, avec nos conditions
+							$object->fields['fk_creneau']['type'] = "integer:Creneau:custom/scolarite/class/creneau.class.php:1:(t.nombre_places>(SELECT COUNT(*) FROM llx_affectation as c WHERE c.fk_creneau=t.rowid AND c.status = 4 AND DATE(NOW()) >= DATE(c.date_debut) AND (DATE(NOW()) <= DATE(c.date_fin) OR ISNULL(c.date_fin))) AND t.status = 4 AND (t.nom_creneau LIKE '%".$resEtablissement->diminutif."%') AND t.fk_instrument_enseigne = ".$instruEnseigne.") ";
+						}
+						print $object->showInputField($val, $key, $value, '', '', '', 0);
+					}
+				}
+				print '</td>';
+				print '</tr>';
+			}
+
 			// Common attributes
-			include DOL_DOCUMENT_ROOT . '/core/tpl/commonfields_add.tpl.php';
+			//include DOL_DOCUMENT_ROOT . '/core/tpl/commonfields_add.tpl.php';
 
 			// Other attributes
 			include DOL_DOCUMENT_ROOT . '/core/tpl/extrafields_add.tpl.php';
