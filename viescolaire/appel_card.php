@@ -280,6 +280,7 @@ if ($action == 'confirmAppel') {
           // pour chaque élève, ajout de l'appel
           foreach ($sqlEleves as $val) {
 
+			  var_dump($val);
                // requête qui va chercher un appel déjà présent pour ce créneau
                $sqlAppel = "SELECT justification,status,rowid FROM " . MAIN_DB_PREFIX . "appel WHERE fk_eleve = " . $val['rowid'];
                $sqlAppel .= " AND fk_creneau = " . GETPOST('creneauid', 'int');
@@ -289,6 +290,8 @@ if ($action == 'confirmAppel') {
 
                $resqlEleves = $db->query($sqlAppel);
 
+			   var_dump($sqlAppel);
+			  var_dump($resqlEleves->num_rows);
                // Si appel déjà présent, cela indique que l'appel en modification et qu'on à une entrée différente de celle en BDD, donc un va modifier l'appel existant
                if($resqlEleves->num_rows > 0)
                {
