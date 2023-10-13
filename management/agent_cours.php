@@ -200,7 +200,7 @@ if ($id > 0 || !empty($ref)) {
 				print '<td style="width:30%"><a href="' . DOL_URL_ROOT . '/custom/scolarite/creneau_card.php?id=' . $val['rowid'] . '">'.$val['nom_creneau'].'</a></td>';
 				print '<td>'.$val['professeurs'].'</td>';
 
-				$affectation = "SELECT s.fk_souhait FROM ".MAIN_DB_PREFIX."affectation as s WHERE s.fk_creneau=".$val['rowid']." AND date_fin IS NULL";
+				$affectation = "SELECT s.fk_souhait FROM ".MAIN_DB_PREFIX."affectation as s WHERE s.fk_creneau=".$val['rowid']." AND s.date_fin IS NULL";
 				$resqlAffectation = $db->query($affectation);
 
 				print '<td>';
