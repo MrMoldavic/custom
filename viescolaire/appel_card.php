@@ -283,12 +283,12 @@ if ($action == 'confirmAppel') {
                $sqlAppel = "SELECT justification,status,rowid FROM " . MAIN_DB_PREFIX . "appel WHERE fk_eleve = " . $val['rowid'];
                $sqlAppel .= " AND fk_creneau = " . GETPOST('creneauid', 'int');
                $sqlAppel .= " AND treated = " . 1;
-			   $sqlAppel .=" AND date_creation='" . date('Y-m-d'). "',";
+			   $sqlAppel .= " AND date_creation LIKE '" . date('Y-m-d'). "%'";
                //$sqlAppel .= " AND status != '" . GETPOST('presence' . $val['rowid'], 'alpha') . "'";
                $sqlAppel .= " ORDER BY rowid DESC LIMIT 1";
 
                $resqlEleves = $db->query($sqlAppel);
-
+			  var_dump($sqlAppel);
                // Si appel déjà présent, cela indique que l'appel en modification et qu'on à une entrée différente de celle en BDD, donc un va modifier l'appel existant
                if($resqlEleves->num_rows > 0)
                {
@@ -332,7 +332,7 @@ if ($action == 'confirmAppel') {
 			 $sqlAppelProf1 = "SELECT justification,status,rowid FROM " . MAIN_DB_PREFIX . "appel WHERE fk_user = " . $sqlProReal->fk_prof_1;
 			 $sqlAppelProf1 .= " AND fk_creneau = " . GETPOST('creneauid', 'int');
 			 $sqlAppelProf1 .= " AND treated = " . 1;
-			 $sqlAppelProf1 .=" AND date_creation='" . date('Y-m-d'). "',";
+			 $sqlAppelProf1 .= " AND date_creation LIKE '" . date('Y-m-d'). "%'";
 			 //$sqlAppelProf1 .= " AND status != '" . GETPOST('prof' . $sqlProReal->fk_prof_1, 'alpha') . "'";
 			 $sqlAppelProf1 .= " ORDER BY rowid DESC limit 1";
 
@@ -373,7 +373,7 @@ if ($action == 'confirmAppel') {
                $sqlAppelProf2 = "SELECT justification,status,rowid FROM " . MAIN_DB_PREFIX . "appel WHERE fk_user = " . $sqlProReal->fk_prof_2;
                $sqlAppelProf2 .= " AND fk_creneau = " . GETPOST('creneauid', 'int');
                $sqlAppelProf2 .= " AND treated = " . 1;
-			   $sqlAppelProf2 .=" AND date_creation='" . date('Y-m-d'). "',";
+			   $sqlAppelProf2 .= " AND date_creation LIKE '" . date('Y-m-d'). "%'";
               // $sqlAppelProf2 .= " AND status != '" . GETPOST('prof' . $sqlProReal->fk_prof_2, 'alpha')  . "'";
                $sqlAppelProf2 .= " ORDER BY rowid DESC limit 1";
 
@@ -422,7 +422,7 @@ if ($action == 'confirmAppel') {
                $sqlAppelProf3 = "SELECT justification,status,rowid FROM " . MAIN_DB_PREFIX . "appel WHERE fk_user = " . $sqlProReal->fk_prof_3;
                $sqlAppelProf3 .= " AND fk_creneau = " . GETPOST('creneauid', 'int');
                $sqlAppelProf3 .= " AND treated = " . 1;
-			   $sqlAppelProf3 .=" AND date_creation='" . date('Y-m-d'). "',";
+			   $sqlAppelProf3 .= " AND date_creation LIKE '" . date('Y-m-d'). "%'";
                //$sqlAppelProf3 .= " AND status != '" . GETPOST('prof' . $sqlProReal->fk_prof_3, 'alpha')  . "'";
                $sqlAppelProf3 .= " ORDER BY rowid DESC limit 1";
 
@@ -581,11 +581,13 @@ if (($action == 'create' or $action == 'modifAppel' or $action == 'returnFromErr
           // boucle pour chaque élève
           foreach ($resql as $res) {
                // va chercher tout les appels présents pour savoir si l'appel est terminé ou non
-               $sql = "SELECT fk_creneau,status,treated,justification,rowid FROM " . MAIN_DB_PREFIX . "appel WHERE fk_eleve = " . $res['rowid'] . " AND YEAR(date_creation) = " . $year;
+               $sql = "SELECT DISTINCT fk_creneau,status,treated,justification,rowid FROM " . MAIN_DB_PREFIX . "appel WHERE fk_eleve = " . $res['rowid'] . " AND YEAR(date_creation) = " . $year;
                $sql .= " AND MONTH(date_creation) = " . $month;
                $sql .= " AND DAY(date_creation) = " . $day;
                $sql .= " AND fk_creneau = " . $val['rowid'];
                $sql .= " AND treated = " . 1;
+
+
 
                $resqlCountAppelEleve = $db->query($sql);
                // Si aucun résultat, l'appel l'appel n'as pas été fait
