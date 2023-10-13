@@ -162,15 +162,15 @@ $upload_dir = $conf->viescolaire->multidir_output[isset($object->entity) ? $obje
 //if ($user->socid > 0) $socid = $user->socid;
 //$isdraft = (isset($object->status) && ($object->status == $object::STATUS_DRAFT) ? 1 : 0);
 //restrictedArea($user, $object->element, $object->id, $object->table_element, '', 'fk_soc', 'rowid', $isdraft);
-if (empty($conf->viescolaire->enabled)) accessforbidden();
-if (!$permissiontoread) accessforbidden();
+/*if (empty($conf->viescolaire->enabled)) accessforbidden();
+if (!$permissiontoread) accessforbidden();*/
 
-
+/**
 /*
  * Actions
  */
 
-$parameters = array();
+/*$parameters = array();
 $reshook = $hookmanager->executeHooks('doActions', $parameters, $object, $action); // Note that $action and $object may have been modified by some hooks
 if ($reshook < 0) {
      setEventMessages($hookmanager->error, $hookmanager->errors, 'errors');
@@ -179,7 +179,7 @@ if ($reshook < 0) {
 if (empty($reshook)) {
 	/*$error = 0;*/
 
-     $backurlforlist = dol_buildpath('/viescolaire/appel_list.php', 1);
+     /*$backurlforlist = dol_buildpath('/viescolaire/appel_list.php', 1);
 
      if (empty($backtopage) || ($cancel && empty($id))) {
           if (empty($backtopage) || ($cancel && strpos($backtopage, '__ID__'))) {
@@ -189,12 +189,12 @@ if (empty($reshook)) {
                     $backtopage = dol_buildpath('/viescolaire/appel_card.php', 1) . '?id=' . ((!empty($id) && $id > 0) ? $id : '__ID__');
                }
           }
-     }
+     }*/
 
-     $triggermodname = 'VIESCOLAIRE_APPEL_MODIFY'; // Name of trigger action code to execute when we modify record
+     //$triggermodname = 'VIESCOLAIRE_APPEL_MODIFY'; // Name of trigger action code to execute when we modify record
 
      // Actions cancel, add, update, update_extras, confirm_validate, confirm_delete, confirm_deleteline, confirm_clone, confirm_close, confirm_setdraft, confirm_reopen
-     include DOL_DOCUMENT_ROOT . '/core/actions_addupdatedelete.inc.php';
+     /*include DOL_DOCUMENT_ROOT . '/core/actions_addupdatedelete.inc.php';
 
      // Actions when linking object each other
      include DOL_DOCUMENT_ROOT . '/core/actions_dellink.inc.php';
@@ -206,23 +206,21 @@ if (empty($reshook)) {
      //include DOL_DOCUMENT_ROOT.'/core/actions_lineupdown.inc.php';
 
      // Action to build doc
-     include DOL_DOCUMENT_ROOT . '/core/actions_builddoc.inc.php';
+     include DOL_DOCUMENT_ROOT . '/core/actions_builddoc.inc.php';*/
 
-     if ($action == 'set_thirdparty' && $permissiontoadd) {
+   /*  if ($action == 'set_thirdparty' && $permissiontoadd) {
           $object->setValueFrom('fk_soc', GETPOST('fk_soc', 'int'), '', '', 'date', '', $user, $triggermodname);
      }
      if ($action == 'classin' && $permissiontoadd) {
           $object->setProject(GETPOST('projectid', 'int'));
-     }
+     }*/
 
      // Actions to send emails
-     $triggersendname = 'VIESCOLAIRE_APPEL_SENTBYMAIL';
+   /*  $triggersendname = 'VIESCOLAIRE_APPEL_SENTBYMAIL';
      $autocopy = 'MAIN_MAIL_AUTOCOPY_APPEL_TO';
      $trackid = 'appel' . $object->id;
-     include DOL_DOCUMENT_ROOT . '/core/actions_sendmails.inc.php';
-}
-
-
+     include DOL_DOCUMENT_ROOT . '/core/actions_sendmails.inc.php';*/
+//}
 
 
 /*
@@ -247,6 +245,8 @@ if ($action == 'confirmAppel') {
      $sql = "SELECT e.nom, e.prenom,e.rowid FROM " . MAIN_DB_PREFIX . "souhait as s INNER JOIN " . MAIN_DB_PREFIX . "affectation as a ON a.fk_souhait = s.rowid INNER JOIN " . MAIN_DB_PREFIX . "eleve as e ON e.rowid = s.fk_eleve WHERE a.fk_creneau = " . GETPOST('creneauid', 'int') . " AND a.status = 4";
      $sqlEleves = $db->query($sql);
 
+
+
      $sqlProf = "SELECT p.fk_prof_1, p.fk_prof_2, p.fk_prof_3 FROM " . MAIN_DB_PREFIX . "creneau as p WHERE p.rowid=" . $creneauid;
      $sqlProf = $db->query($sqlProf);
      $sqlProReal = $db->fetch_object($sqlProf);
@@ -269,8 +269,8 @@ if ($action == 'confirmAppel') {
           if (!GETPOST('presence' . $val['rowid'], 'alpha')) $check = false;
      }
 
-     // Si on ne detecte pas de professeur dans l'appel en POST du créneau, on renvoie une erreur
-     if (!GETPOST('prof' . $sqlProReal->fk_prof_1, 'alpha')) $check = false;
+     // Si on ne detecte pas de professeur dans l'appel en POST du créneau, on renvoie une erreur (Pour l'instant en pause)
+    // if (!GETPOST('prof' . $sqlProReal->fk_prof_1, 'alpha')) $check = false;
 
      if (!$check) {
           setEventMessage("Veuillez renseigner tous les champs.", 'errors');
@@ -281,10 +281,10 @@ if ($action == 'confirmAppel') {
           foreach ($sqlEleves as $val) {
 
                // requête qui va chercher un appel déjà présent pour ce créneau
-               $sqlAppel = "SELECT status,rowid FROM " . MAIN_DB_PREFIX . "appel WHERE fk_eleve = " . $val['rowid'];
+               $sqlAppel = "SELECT justification,status,rowid FROM " . MAIN_DB_PREFIX . "appel WHERE fk_eleve = " . $val['rowid'];
                $sqlAppel .= " AND fk_creneau = " . GETPOST('creneauid', 'int');
                $sqlAppel .= " AND treated = " . 1;
-               $sqlAppel .= " AND status != '" . GETPOST('presence' . $val['rowid'], 'alpha') . "'";
+               //$sqlAppel .= " AND status != '" . GETPOST('presence' . $val['rowid'], 'alpha') . "'";
                $sqlAppel .= " ORDER BY rowid DESC LIMIT 1";
 
                $resqlEleves = $db->query($sqlAppel);
@@ -293,11 +293,12 @@ if ($action == 'confirmAppel') {
                if($resqlEleves->num_rows > 0)
                {
                     $resEleves = $db->fetch_object($resqlEleves);
-                    // On remplace par le nouveau status
-                    $sqlUpdateEleve = "UPDATE " . MAIN_DB_PREFIX . "appel SET status = '".GETPOST('presence' . $val['rowid'], 'alpha')."' WHERE rowid=".$resEleves->rowid;
-                   	if(!$db->query($sqlUpdateEleve)){
-						   $error++;
-					};
+					if($resEleves->status != GETPOST('presence' . $val['rowid'], 'alpha') || $resEleves->justification != GETPOST('infos' . $val['rowid'], 'alpha'))
+					{
+						// On remplace par le nouveau status
+						$sqlUpdateEleve = "UPDATE " . MAIN_DB_PREFIX . "appel SET status = '".GETPOST('presence' . $val['rowid'], 'alpha')."',justification='" . GETPOST('infos' . $val['rowid'], 'alpha') . "' WHERE rowid=".$resEleves->rowid;
+						if(!$db->query($sqlUpdateEleve)) $error++;
+					}
 
                }
                // Sinon, cela veut dire que c'est la première fois que l'appel est fait aujourd'hui
@@ -321,67 +322,57 @@ if ($action == 'confirmAppel') {
                     $sqlres .= "'" . GETPOST('presence' . $val['rowid'], 'alpha') . "',";
                     $sqlres .= 1 .")";
 
-                    if(!$db->query($sqlres))
-					{
-						$error++;
-					};
+                    if(!$db->query($sqlres)) $error++;
                }
           }
 
-          //Ajout de l'appel pour le professeur 1
-          $sqlAppelProf1 = "SELECT status,rowid FROM " . MAIN_DB_PREFIX . "appel WHERE fk_user = " . $sqlProReal->fk_prof_1;
-          $sqlAppelProf1 .= " AND fk_creneau = " . GETPOST('creneauid', 'int');
-          $sqlAppelProf1 .= " AND treated = " . 1;
-          $sqlAppelProf1 .= " AND status != '" . GETPOST('prof' . $sqlProReal->fk_prof_1, 'alpha')  . "'";
-          $sqlAppelProf1 .= " ORDER BY rowid DESC limit 1";
+		  if($sqlProReal->fk_prof_1 != NULL) {
 
-          $resqlProf1 = $db->query($sqlAppelProf1);
+			 //Ajout de l'appel pour le professeur 1
+			 $sqlAppelProf1 = "SELECT justification,status,rowid FROM " . MAIN_DB_PREFIX . "appel WHERE fk_user = " . $sqlProReal->fk_prof_1;
+			 $sqlAppelProf1 .= " AND fk_creneau = " . GETPOST('creneauid', 'int');
+			 $sqlAppelProf1 .= " AND treated = " . 1;
+			 //$sqlAppelProf1 .= " AND status != '" . GETPOST('prof' . $sqlProReal->fk_prof_1, 'alpha') . "'";
+			 $sqlAppelProf1 .= " ORDER BY rowid DESC limit 1";
 
-          // Si appel déjà présent, cela indique que l'appel en modification et qu'on à une entrée diffénte de celle en BDD, donc un va modifier l'appel existant
-          if($resqlProf1->num_rows != 0)
-          {
-               $resProf = $db->fetch_object($resqlProf1);
-               // On remplace par le nouveau status
-               $sqlUpdateProf = "UPDATE " . MAIN_DB_PREFIX . "appel SET status = '".GETPOST('prof' . $sqlProReal->fk_prof_1, 'alpha')."' WHERE rowid=".$resProf->rowid;
-               if(!$db->query($sqlUpdateProf)){
-				   $error++;
-			   };
+			 $resqlProf1 = $db->query($sqlAppelProf1);
 
-          }
-          else
-          {
-               $sqlResProf = "INSERT INTO " . MAIN_DB_PREFIX . "appel (fk_etablissement, fk_creneau, fk_user, justification, action_faite, date_creation, fk_user_creat, status, treated) VALUES (";
-               $sqlResProf .= GETPOST('etablissementid', 'int') . ",";
-               $sqlResProf .= GETPOST('creneauid', 'int') . ",";
-               $sqlResProf .= $sqlProReal->fk_prof_1 . ",";
-               $sqlResProf .= "'" . GETPOST('infos' . $sqlProReal->fk_prof_1, 'alpha') . "',";
-               $sqlResProf .= "NULL" . ",";
-               if(GETPOST('daymonth', 'alpha'))
-               {
-                    $sqlResProf .= "'".date('Y-m-d H:i:s', mktime(0, 0, 0, GETPOST('month', 'alpha'), GETPOST('daymonth', 'alpha'), date(GETPOST('year', 'alpha'))))."',";
-               }
-               else
-               {
-                    $sqlResProf .= "'" . date('Y-m-d H:i:s'). "',";
-               }
-               $sqlResProf .= $user->id . ",";
-               $sqlResProf .= "'" . GETPOST('prof' . $sqlProReal->fk_prof_1, 'alpha') . "',";
-               $sqlResProf .= 1 .")";
+			 // Si appel déjà présent, cela indique que l'appel en modification et qu'on à une entrée diffénte de celle en BDD, donc un va modifier l'appel existant
+			 if ($resqlProf1->num_rows != 0) {
+				 $resProf = $db->fetch_object($resqlProf1);
+				 if($resProf->status != GETPOST('prof' . $sqlProReal->fk_prof_1, 'alpha') || $resProf->justification != GETPOST('infos' . $sqlProReal->fk_prof_1, 'alpha')){
+					 // On remplace par le nouveau status
+					 $sqlUpdateProf = "UPDATE " . MAIN_DB_PREFIX . "appel SET status = '" . GETPOST('prof' . $sqlProReal->fk_prof_1, 'alpha') . "',justification='" . GETPOST('infos' . $sqlProReal->fk_prof_1, 'alpha') . "' WHERE rowid=" . $resProf->rowid;
+					 if (!$db->query($sqlUpdateProf)) $error++;
+				 }
+			 } else {
+				 $sqlResProf = "INSERT INTO " . MAIN_DB_PREFIX . "appel (fk_etablissement, fk_creneau, fk_user, justification, action_faite, date_creation, fk_user_creat, status, treated) VALUES (";
+				 $sqlResProf .= GETPOST('etablissementid', 'int') . ",";
+				 $sqlResProf .= GETPOST('creneauid', 'int') . ",";
+				 $sqlResProf .= $sqlProReal->fk_prof_1 . ",";
+				 $sqlResProf .= "'" . GETPOST('infos' . $sqlProReal->fk_prof_1, 'alpha') . "',";
+				 $sqlResProf .= "NULL" . ",";
+				 if (GETPOST('daymonth', 'alpha')) {
+					 $sqlResProf .= "'" . date('Y-m-d H:i:s', mktime(0, 0, 0, GETPOST('month', 'alpha'), GETPOST('daymonth', 'alpha'), date(GETPOST('year', 'alpha')))) . "',";
+				 } else {
+					 $sqlResProf .= "'" . date('Y-m-d H:i:s') . "',";
+				 }
+				 $sqlResProf .= $user->id . ",";
+				 $sqlResProf .= "'" . GETPOST('prof' . $sqlProReal->fk_prof_1, 'alpha') . "',";
+				 $sqlResProf .= 1 . ")";
 
-               if(!$db->query($sqlResProf)){
-				   $error++;
-			   };
-          }
-
+				 if (!$db->query($sqlResProf)) $error++;
+			 }
+		  }
 
           //Ajout de l'appel pour le professeur 2
           if($sqlProReal->fk_prof_2 != NULL)
           {
 
-               $sqlAppelProf2 = "SELECT status,rowid FROM " . MAIN_DB_PREFIX . "appel WHERE fk_user = " . $sqlProReal->fk_prof_2;
+               $sqlAppelProf2 = "SELECT justification,status,rowid FROM " . MAIN_DB_PREFIX . "appel WHERE fk_user = " . $sqlProReal->fk_prof_2;
                $sqlAppelProf2 .= " AND fk_creneau = " . GETPOST('creneauid', 'int');
                $sqlAppelProf2 .= " AND treated = " . 1;
-               $sqlAppelProf2 .= " AND status != '" . GETPOST('prof' . $sqlProReal->fk_prof_2, 'alpha')  . "'";
+              // $sqlAppelProf2 .= " AND status != '" . GETPOST('prof' . $sqlProReal->fk_prof_2, 'alpha')  . "'";
                $sqlAppelProf2 .= " ORDER BY rowid DESC limit 1";
 
                $resqlProf2 = $db->query($sqlAppelProf2);
@@ -391,11 +382,10 @@ if ($action == 'confirmAppel') {
                {
                     $resProf2 = $db->fetch_object($resqlProf2);
                     // On remplace par le nouveau status
-                    $sqlUpdateProf = "UPDATE " . MAIN_DB_PREFIX . "appel SET status = '".GETPOST('prof' . $sqlProReal->fk_prof_2, 'alpha')."' WHERE rowid=".$resProf2->rowid;
-                    if(!$db->query($sqlUpdateProf)){
-						$error++;
-					};
-
+				   if($resProf2 != GETPOST('prof' . $sqlProReal->fk_prof_2, 'alpha') || $resProf2->justification != GETPOST('infos' . $sqlProReal->fk_prof_2, 'alpha')){
+					   $sqlUpdateProf = "UPDATE " . MAIN_DB_PREFIX . "appel SET status = '".GETPOST('prof' . $sqlProReal->fk_prof_2, 'alpha')."',justification='" . GETPOST('infos' . $sqlProReal->fk_prof_2, 'alpha') . "' WHERE rowid=".$resProf2->rowid;
+					   if(!$db->query($sqlUpdateProf)) $error++;
+				   }
                }
                else
                {
@@ -417,9 +407,7 @@ if ($action == 'confirmAppel') {
                     $sqlResProf .= "'" . GETPOST('prof' . $sqlProReal->fk_prof_2, 'alpha') . "',";
                     $sqlResProf .= 1 .")";
 
-                    if(!$db->query($sqlResProf)){
-						$error++;
-					};
+                    if(!$db->query($sqlResProf)) $error++;
                }
 
           }
@@ -429,10 +417,10 @@ if ($action == 'confirmAppel') {
           if($sqlProReal->fk_prof_3 != NULL)
           {
 
-               $sqlAppelProf3 = "SELECT status,rowid FROM " . MAIN_DB_PREFIX . "appel WHERE fk_user = " . $sqlProReal->fk_prof_3;
+               $sqlAppelProf3 = "SELECT justification,status,rowid FROM " . MAIN_DB_PREFIX . "appel WHERE fk_user = " . $sqlProReal->fk_prof_3;
                $sqlAppelProf3 .= " AND fk_creneau = " . GETPOST('creneauid', 'int');
                $sqlAppelProf3 .= " AND treated = " . 1;
-               $sqlAppelProf3 .= " AND status != '" . GETPOST('prof' . $sqlProReal->fk_prof_3, 'alpha')  . "'";
+               //$sqlAppelProf3 .= " AND status != '" . GETPOST('prof' . $sqlProReal->fk_prof_3, 'alpha')  . "'";
                $sqlAppelProf3 .= " ORDER BY rowid DESC limit 1";
 
                $resqlProf3 = $db->query($sqlAppelProf3);
@@ -441,12 +429,11 @@ if ($action == 'confirmAppel') {
                if($resqlProf3->num_rows != 0)
                {
                     $resProf3 = $db->fetch_object($resqlProf3);
-                    // On remplace par le nouveau status
-                    $sqlUpdateProf = "UPDATE " . MAIN_DB_PREFIX . "appel SET status = '".GETPOST('prof' . $sqlProReal->fk_prof_3, 'alpha')."' WHERE rowid=".$resProf3->rowid;
-                    if(!$db->query($sqlUpdateProf)){
-						$error++;
-					};
-
+					if( $resProf3->status != GETPOST('prof' . $sqlProReal->fk_prof_3, 'alpha') || $resProf3->justification != GETPOST('infos' . $sqlProReal->fk_prof_3, 'alpha')){
+						// On remplace par le nouveau status
+						$sqlUpdateProf = "UPDATE " . MAIN_DB_PREFIX . "appel SET status = '".GETPOST('prof' . $sqlProReal->fk_prof_3, 'alpha')."',justification='" . GETPOST('infos' . $sqlProReal->fk_prof_3, 'alpha') . "' WHERE rowid=".$resProf3->rowid;
+						if(!$db->query($sqlUpdateProf)) $error++;
+					}
                }
                else
                {
@@ -468,13 +455,10 @@ if ($action == 'confirmAppel') {
                     $sqlResProf .= "'" . GETPOST('prof' . $sqlProReal->fk_prof_3, 'alpha') . "',";
                     $sqlResProf .= 1 .")";
 
-                    if(!$db->query($sqlResProf)){
-						$error++;
-					};
+                    if(!$db->query($sqlResProf)) $error++;
                }
 
           }
-
 		  if($error > 0) setEventMessage("Une erreur est survenue",'errors');
 		  else setEventMessage("Appel réalisé avec succès!");
      }
@@ -562,8 +546,7 @@ if (($action == 'create' or $action == 'modifAppel' or $action == 'returnFromErr
 
 
      // Requête qui va chercher tous les créneaux d'une heure donné, selon le dispositif sélectionné plus tôt
-     $sql = "SELECT c.rowid,c.nom_creneau,c.fk_dispositif,c.heure_debut FROM " . MAIN_DB_PREFIX . "creneau as c INNER JOIN " . MAIN_DB_PREFIX . "dispositif as d ON c.fk_dispositif = d.rowid INNER JOIN " . MAIN_DB_PREFIX . "c_heure as h ON c.heure_debut = h.rowid WHERE d.fk_etablissement =" . GETPOST('etablissementid', 'int') . " AND c.jour=" . $JourSemaine . " AND (h.heure ".($currentHour == false ? '=': '<=').$heureActuelle. ($minuteActuelle > 49 ? ' OR h.heure='.($heureActuelle+1): '').") AND c.status =" . 4 ." ORDER BY h.rowid DESC";
-
+     $sql = "SELECT c.rowid,c.nom_creneau,c.fk_dispositif,c.heure_debut FROM " . MAIN_DB_PREFIX . "creneau as c INNER JOIN " . MAIN_DB_PREFIX . "dispositif as d ON c.fk_dispositif = d.rowid INNER JOIN " . MAIN_DB_PREFIX . "c_heure as h ON c.heure_debut = h.rowid WHERE d.fk_etablissement =" . GETPOST('etablissementid', 'int') . " AND c.jour=" . $JourSemaine . " AND (h.heure ".($currentHour == false ? '=': '<=').$heureActuelle. ($minuteActuelle > 49 ? ' OR h.heure='.($heureActuelle+1): '').") AND c.status =" . 4 ." ORDER BY h.rowid DESC, c.fk_instrument_enseigne ASC";
      $resqlAffectation = $db->query($sql);
 
      foreach ($resqlAffectation as $val)
