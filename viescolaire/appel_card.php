@@ -288,7 +288,6 @@ if ($action == 'confirmAppel') {
                $sqlAppel .= " ORDER BY rowid DESC LIMIT 1";
 
                $resqlEleves = $db->query($sqlAppel);
-			  var_dump($sqlAppel);
                // Si appel déjà présent, cela indique que l'appel en modification et qu'on à une entrée différente de celle en BDD, donc un va modifier l'appel existant
                if($resqlEleves->num_rows > 0)
                {
