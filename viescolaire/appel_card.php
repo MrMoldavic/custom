@@ -298,6 +298,8 @@ if ($action == 'confirmAppel') {
 						// On remplace par le nouveau status
 						$sqlUpdateEleve = "UPDATE " . MAIN_DB_PREFIX . "appel SET status = '".GETPOST('presence' . $val['rowid'], 'alpha')."',justification='" . GETPOST('infos' . $val['rowid'], 'alpha') . "' WHERE rowid=".$resEleves->rowid;
 						if(!$db->query($sqlUpdateEleve)) $error++;
+
+						var_dump($sqlUpdateEleve);
 					}
 
                }
@@ -321,6 +323,8 @@ if ($action == 'confirmAppel') {
                     $sqlres .= $user->id . ",";
                     $sqlres .= "'" . GETPOST('presence' . $val['rowid'], 'alpha') . "',";
                     $sqlres .= 1 .")";
+
+					var_dump($sqlres);
 
                     if(!$db->query($sqlres)) $error++;
                }
