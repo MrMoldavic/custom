@@ -849,7 +849,7 @@ class Eleve extends CommonObject
 			//$langs->load("viescolaire@viescolaire");
 			$this->labelStatus[self::STATUS_DRAFT] = "Inscription en attente";
 			$this->labelStatus[self::STATUS_VALIDATED] = "Inscription terminée (payée)";
-			$this->labelStatus[self::STATUS_CANCELED] = "Inscription annulée";
+			$this->labelStatus[self::STATUS_CANCELED] = "Élève désactivé";
 			$this->labelStatus[self::STATUS_ABANDON] = "Abandon";
 			$this->labelStatus[self::STATUS_ANCIEN] = "Ancien à remotiver";
 			$this->labelStatus[self::STATUS_VENU] = "Venu pour informations";
@@ -859,7 +859,7 @@ class Eleve extends CommonObject
 
 			$this->labelStatusShort[self::STATUS_DRAFT] = "Inscription en attente";
 			$this->labelStatusShort[self::STATUS_VALIDATED] = "Inscription terminée (payée)";
-			$this->labelStatusShort[self::STATUS_CANCELED] = "Inscription annulée";
+			$this->labelStatusShort[self::STATUS_CANCELED] = "Élève désactivé";
 			$this->labelStatusShort[self::STATUS_ABANDON] = "Abandon";
 			$this->labelStatusShort[self::STATUS_ANCIEN] = "Ancien à remotiver";
 			$this->labelStatusShort[self::STATUS_VENU] = "Venu pour informations";

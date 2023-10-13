@@ -100,13 +100,22 @@ $backtopageforcancel = GETPOST('backtopageforcancel', 'alpha');
 $lineid   = GETPOST('lineid', 'int');
 
 
-if ($action == 'annulationInscription') {
+if ($action == 'confirm_desactivation') {
 
 	$eleve = new Eleve($db);
 	$sql = "UPDATE " . MAIN_DB_PREFIX . "eleve SET status = " . $eleve::STATUS_CANCELED . " WHERE rowid=" . $id;
 	$resql = $db->query($sql);
 
-	setEventMessage('Inscription annulée avec succès');
+	setEventMessage('Élève désactivé avec succès!');
+}
+
+if ($action == 'confirm_activation') {
+
+	$eleve = new Eleve($db);
+	$sql = "UPDATE " . MAIN_DB_PREFIX . "eleve SET status = " . $eleve::STATUS_DRAFT . " WHERE rowid=" . $id;
+	$resql = $db->query($sql);
+
+	setEventMessage('Élève activé avec succès!');
 }
 
 
@@ -114,9 +123,9 @@ if ($action == 'annulationInscription') {
 if( $action == 'stateModify')
 {
 	$object = new Eleve($db);
-	$souhait = "SELECT * FROM ".MAIN_DB_PREFIX."souhait as c WHERE c.fk_eleve = ".$id;
+	$souhait = "SELECT status,rowid FROM ".MAIN_DB_PREFIX."souhait as c WHERE c.fk_eleve = ".$id;
 	$resqlSouhait = $db->query($souhait);
-	
+
 	$count = 0;
 	foreach($resqlSouhait as $val)
 	{
@@ -145,7 +154,7 @@ if( $action == 'stateModify')
 
 		setEventMessage('Status modifié avec succès!');
 	}
-	
+
 }
 
 // Initialize technical objects
@@ -260,7 +269,7 @@ if (empty($reshook)) {
 	include DOL_DOCUMENT_ROOT.'/core/actions_sendmails.inc.php';
 
 
-	
+
 }
 
 
@@ -386,7 +395,13 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 
 	// Confirmation to delete
 	if ($action == 'delete') {
-		$formconfirm = $form->formconfirm($_SERVER["PHP_SELF"].'?id='.$object->id, $langs->trans('DeleteEleve'), $langs->trans('ConfirmDeleteObject'), 'confirm_delete', '', 0, 1);
+		$formconfirm = $form->formconfirm($_SERVER["PHP_SELF"].'?id='.$object->id, 'Suppréssion d\'un élève', 'Voulez-vous supprimer cet élève? Cette action est irréversible.', 'confirm_delete', '', 0, 1);
+	}
+	if ($action == 'desactivation') {
+		$formconfirm = $form->formconfirm($_SERVER["PHP_SELF"].'?id='.$object->id, 'Désactivation d\'un élève', 'Voulez-vous désactiver cet élève? Cette action est réversible sur le card de l\'élève.', 'confirm_desactivation', '', 0, 1);
+	}
+	if ($action == 'activation') {
+		$formconfirm = $form->formconfirm($_SERVER["PHP_SELF"].'?id='.$object->id, 'Activation d\'un élève', 'Voulez-vous activer cet élève? Cette action est réversible sur le card de l\'élève.', 'confirm_activation', '', 0, 1);
 	}
 	// Confirmation to delete line
 	if ($action == 'deleteline') {
@@ -440,13 +455,13 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 
 	print '<div class="fichecenter">';
 	print '<div class="fichehalfleft">';
-	
+
 
 	print '<div class="underbanner clearboth"></div>';
-	
+
 
 	print '<table class="border centpercent tableforfield">'."\n";
-	
+
 	// Common attributes
 	//$keyforbreak='fieldkeytoswitchonsecondcolumn';	// We change column just before this field
 	//unset($object->fields['fk_project']);				// Hide field already shown in banner
@@ -457,14 +472,15 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 	include DOL_DOCUMENT_ROOT.'/core/tpl/extrafields_view.tpl.php';
 
 	print '</table>';
-	$famille = "SELECT * FROM ".MAIN_DB_PREFIX."famille WHERE rowid = ".$object->fk_famille;
-	$resqlFamille = $db->query($famille);
 
-	if($resqlFamille->num_rows > 0)
+
+	if($object->fk_famille)
 	{
-		print '<h3><u>Information famille:</u></h3>';
+		$famille = "SELECT nom_prenom_1,prenom_parent_1,tel_parent_1,mail_parent_1,nom_parent_2,prenom_parent_2,tel_parent_2,mail_parent_2 FROM ".MAIN_DB_PREFIX."famille WHERE rowid = ".$object->fk_famille;
+		$resqlFamille = $db->query($famille);
 		$objFamille = $db->fetch_object($resqlFamille);
 
+		print '<h3><u>Information famille:</u></h3>';
 		print '<table class="tagtable liste">';
 		print '<tbody>';
 		print '<tr>';
@@ -474,7 +490,7 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 		print '<tr>';
 		print '<td>Téléphone parent 2('.$objFamille->prenom_parent_2.' '.$objFamille->nom_parent_2.'):</td>';
 		print '<td>'.$objFamille->tel_parent_2.'</td>';
-		print '</tr>';	
+		print '</tr>';
 		print '<tr>';
 		if(!empty($objFamille->mail_parent_1))
 		{
@@ -492,27 +508,6 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 		print '</tbody>';
 		print '</table>';
 	}
-	// print '<h2><u>Suivi de l\'élève:</u></h2>';
-
-	// $anneScolaire = "SELECT annee,annee_actuelle,rowid FROM ".MAIN_DB_PREFIX."c_annee_scolaire WHERE active = 1 AND annee_actuelle = 1 ORDER BY rowid DESC";
-	// $resqlAnneeScolaire = $db->query($anneScolaire);
-	// $objAnneScolaire = $db->fetch_object($resqlAnneeScolaire);
-
-	// $abscenceInj = "SELECT * FROM ".MAIN_DB_PREFIX."appel as a WHERE a.fk_eleve = ".$object->id." AND a.status= 'absenceI' AND a.treated = 1";
-	// $resqlInj = $db->query($abscenceInj);
-	// $numInj = $db->num_rows($resqlInj);
-
-	// print '<p>Nombre d\'absence <span class="badge  badge-status8 badge-status" style="color:white;">Injustifiées</span> totales : '.'<a href="' . DOL_URL_ROOT . '/custom/viescolaire/eleve_absence.php?id=' . $object->id . '&absenceI">' . $numInj . '</a>'.'</p>';
-	
-	// $abscenceJus = "SELECT * FROM ".MAIN_DB_PREFIX."appel as a WHERE a.fk_eleve = ".$object->id." AND a.status= 'absenceJ' AND a.treated= 1";
-	// $resqlJus = $db->query($abscenceJus);
-	// $numJus = $db->num_rows($resqlJus);
-
-	// print '<p>Nombre d\'absence <span class="badge  badge-status4 badge-status" style="color:white;">Justifiées</span> totales : '.$numJus.'</p>';
-
-	// $retards = "SELECT * FROM ".MAIN_DB_PREFIX."appel as a WHERE a.fk_eleve = ".$object->id." AND a.status= 'retard' AND a.treated= 1";
-	// $retards = $db->query($retards);
-	// $numRetards = $db->num_rows($retards);
 
 	// print '<p>Nombre de <span class="badge  badge-status1 badge-status" style="color:white;">retards</span> totaux: '.$numRetards.'</p>';
 	print '<h3><u>Etat de l\'inscription: </u></h3>';
@@ -540,24 +535,22 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 
 
 	print '</div>';
-	
+
 	print '</div>';
-	
+
 
 
 	$anneScolaire = "SELECT annee,annee_actuelle,rowid FROM ".MAIN_DB_PREFIX."c_annee_scolaire WHERE active = 1 ORDER BY annee_actuelle DESC, rowid ASC";
 	$resqlAnneeScolaire = $db->query($anneScolaire);
 	$objAnneScolaire = $db->fetch_object($resqlAnneeScolaire);
-	
-	$souhait = "SELECT * FROM ".MAIN_DB_PREFIX."souhait as c WHERE c.fk_eleve = ".$object->id;
+
+	$souhait = "SELECT rowid FROM ".MAIN_DB_PREFIX."souhait as c WHERE c.fk_eleve = ".$object->id;
 	$resqlSouhait = $db->query($souhait);
-	$obj = $db->fetch_object($resqlSouhait);
-	$numSouhait = $db->num_rows($resqlSouhait);
-	
+
 
 	print '<div class="clearboth"></div>';
 
-	
+
 	if ($action != 'presend' && $action != 'editline') {
 		print '<div class="tabsAction">'."\n";
 		$parameters = array();
@@ -568,22 +561,32 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 
 		if (empty($reshook)) {
 
-			print dolGetButtonAction($langs->trans('Engager dans un groupe'), '', 'danger', DOL_URL_ROOT.'/custom/organisation/engagement_card.php?fk_eleve='.$object->id.'&action=create' , '', $permissiontoadd);
-			print dolGetButtonAction($langs->trans('Modifier l\'élève'), '', 'danger', ''.'?id='.$object->id.'&action=edit&token='.newToken(), '', $permissiontoadd);
+			if($object->status != $object::STATUS_CANCELED)
+			{
+				print dolGetButtonAction($langs->trans('Engager dans un groupe'), '', '', DOL_URL_ROOT.'/custom/organisation/engagement_card.php?fk_eleve='.$object->id.'&action=create' , '', $permissiontoadd);
+				print dolGetButtonAction($langs->trans('Modifier l\'élève'), '', '', '?id='.$object->id.'&action=edit&token='.newToken(), '', $permissiontoadd);
+			}
+
+			if($object->status == $object::STATUS_CANCELED)
+			{
+				print dolGetButtonAction($langs->trans('Activer l\'élève'), '', 'delete', $_SERVER["PHP_SELF"] . '?id=' . $object->id . '&action=activation&token=' . newToken(), '', $permissiontoadd);
+			}
+			else print dolGetButtonAction($langs->trans('Desactiver l\'élève'), '', 'delete', $_SERVER["PHP_SELF"] . '?id=' . $object->id . '&action=desactivation&token=' . newToken(), '', $permissiontoadd);
+
 			print dolGetButtonAction($langs->trans('Delete'), '', 'delete', $_SERVER['PHP_SELF'].'?id='.$object->id.'&action=delete&token='.newToken(), '', $permissiontodelete);
-			
+
 		}
 		print '</div>'."\n";
 	}
-	
-	
+
+
 	print '<hr>';
 	print '<h2><u>Liste des souhaits de l\'élève:</u></h2>';
 
 	print '<p>'.dolGetButtonAction('Ajouter un souhait', '', 'default', '/custom/viescolaire/souhait_card.php'.'?action=create&fk_eleve='.$object->id, '', $permissiontoadd).'</p>';
 
-	
-	if($obj == NULL)
+
+	if($resqlSouhait->num_rows == 0)
 	{
 		print '<p>Aucun souhaits connus pour cette année scolaire.</p>';
 	}
@@ -593,17 +596,17 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 		/// EN COURS -> FAIRE EN SORTE DE NE LISTER QUE LES SOUHAITS DE L'ANNEE CONCERNÉE
 		foreach($resqlAnneeScolaire as $value)
 		{
-			$souhait = "SELECT * FROM ".MAIN_DB_PREFIX."souhait as c WHERE c.fk_eleve = ".$object->id." AND c.fk_annee_scolaire=".$value['rowid'];
+			$souhait = "SELECT rowid,nom_souhait,status,details FROM ".MAIN_DB_PREFIX."souhait as c WHERE c.fk_eleve = ".$object->id." AND c.fk_annee_scolaire=".$value['rowid'];
 			$resqlSouhait = $db->query($souhait);
-	
-			print '<div class="annee-accordion'.($value['annee_actuelle'] == 1 ? '-opened' : '').'">';	
+
+			print '<div class="annee-accordion'.($value['annee_actuelle'] == 1 ? '-opened' : '').'">';
 			print '<h3><span class="badge badge-status4 badge-status">'.$value['annee'].($value['annee_actuelle'] != 1 ? ' (année précédente)' : '').'</span></h3>';
 
 			if($resqlSouhait->num_rows > 0)
 			{
 				print '<table class="tagtable liste">';
 				print '<tbody>';
-			
+
 				print '<tr class="liste_titre">
 					<th class="wrapcolumntitle liste_titre">Souhait</th>
 					<th class="wrapcolumntitle liste_titre">Etat</th>
@@ -618,7 +621,7 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 						$sql = "SELECT c.nom_creneau,c.rowid FROM ".MAIN_DB_PREFIX."creneau as c WHERE c.rowid =".("(SELECT e.fk_creneau FROM ".MAIN_DB_PREFIX."affectation as e WHERE e.fk_souhait =".$val['rowid']." AND e.status = 4)");
 						$resql = $db->query($sql);
 						$objectCreneau = $db->fetch_object($resql);
-						
+
 						print '<td><span class="badge  badge-status4 badge-status" style="color:white;">Affecté</span></td>';
 						print '<td><a href="'.DOL_URL_ROOT.'/custom/scolarite/creneau_card.php?id='.$objectCreneau->rowid.'">'.$objectCreneau->nom_creneau.'</a></td>';
 					}
@@ -633,7 +636,7 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 						print '<td>Aucun créneau</td>';
 					}
 					print '</tr>';
-					
+
 				}
 				print '</tbody>';
 				print '</table>';
