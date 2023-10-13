@@ -164,7 +164,7 @@ if ($id > 0 || !empty($ref)) {
 	$morehtmlref .= $object->prenom;
 
 
-	
+
 	$morehtmlref .= '</div>';
 
 	dol_banner_tab($object, 'ref', $linkback, 1, 'ref', 'nom', $morehtmlref);
@@ -184,7 +184,7 @@ if ($id > 0 || !empty($ref)) {
 
 		print '<table class="tagtable liste">';
 		print '<tbody>';
-		
+
 
 		if($resqlCours->num_rows != 0)
 		{
@@ -197,12 +197,12 @@ if ($id > 0 || !empty($ref)) {
 			foreach($resqlCours as $val)
 			{
 				print '<tr class="oddeven">';
-				print '<td style="width:30%">'.$val['nom_creneau'].'</td>';
+				print '<td style="width:30%"><a href="' . DOL_URL_ROOT . '/custom/scolarite/creneau_card.php?id=' . $val['rowid'] . '">'.$val['nom_creneau'].'</a></td>';
 				print '<td>'.$val['professeurs'].'</td>';
-	
+
 				$affectation = "SELECT s.fk_souhait FROM ".MAIN_DB_PREFIX."affectation as s WHERE s.fk_creneau=".$val['rowid']." AND date_fin IS NULL";
 				$resqlAffectation = $db->query($affectation);
-				
+
 				print '<td>';
 				foreach($resqlAffectation as $v)
 				{
@@ -221,20 +221,20 @@ if ($id > 0 || !empty($ref)) {
 				}
 				print '</td>';
 				print '<td>';
-	
+
 
 				$count = 0;
 				foreach($resqlAffectation as $v)
 				{
 					$eleve = "SELECT e.nom,e.prenom,e.rowid FROM ".MAIN_DB_PREFIX."eleve as e WHERE e.rowid=".("(SELECT s.fk_eleve FROM ".MAIN_DB_PREFIX."souhait as s WHERE s.rowid =".$v['fk_souhait'].")");
 					$resqlEleve = $db->query($eleve);
-	
+
 					foreach($resqlEleve as $res)
 					{
 						$date = date('Y-m-d H:i:s');
 						$absence = "SELECT rowid, date_creation, justification  FROM ".MAIN_DB_PREFIX."appel WHERE fk_creneau=".$val['rowid']." AND fk_eleve=".$res['rowid']." AND date_creation >='".$date."'";
 						$resqlAbsence = $db->query($absence);
-	
+
 						foreach($resqlAbsence as $r)
 						{
 							$count++;
@@ -242,16 +242,16 @@ if ($id > 0 || !empty($ref)) {
 						}
 					}
 				}
-				
+
 				print $count > 0 ? ('<a href="' . DOL_URL_ROOT . $_SERVER['PHP_SELF'].'?id=' . $object->id . '&idCours='.$val['rowid'].'&checkAbsences">' .$count.' absences futurs connues' . '</a>') : 'Aucune absences futurs connues à ce jour pour ces élèves.';
 				print '</td>';
-		
+
 				print '</tr>';
 			}
 		}
 		else
 		print '<p></p>';
-		
+
 		print '</tbody>';
 		print '</table>';
 	}
