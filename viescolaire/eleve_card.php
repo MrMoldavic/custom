@@ -22,9 +22,9 @@
  *		\brief      Page to create/edit/view eleve
  */
 
-//  ini_set('display_errors', '1');
-// ini_set('display_startup_errors', '1');
-// error_reporting(E_ALL);
+/*ini_set('display_errors', '1');
+ini_set('display_startup_errors', '1');
+error_reporting(E_ALL);*/
 
 //if (! defined('NOREQUIREDB'))              define('NOREQUIREDB', '1');				// Do not create database handler $db
 //if (! defined('NOREQUIREUSER'))            define('NOREQUIREUSER', '1');				// Do not load object $user
@@ -476,7 +476,7 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 
 	if($object->fk_famille)
 	{
-		$famille = "SELECT nom_prenom_1,prenom_parent_1,tel_parent_1,mail_parent_1,nom_parent_2,prenom_parent_2,tel_parent_2,mail_parent_2 FROM ".MAIN_DB_PREFIX."famille WHERE rowid = ".$object->fk_famille;
+		$famille = "SELECT nom_parent_1,prenom_parent_1,tel_parent_1,mail_parent_1,nom_parent_2,prenom_parent_2,tel_parent_2,mail_parent_2 FROM ".MAIN_DB_PREFIX."famille WHERE rowid = ".$object->fk_famille;
 		$resqlFamille = $db->query($famille);
 		$objFamille = $db->fetch_object($resqlFamille);
 
