@@ -809,79 +809,80 @@ class Creneau extends CommonObject
 
 			}
 
-				$this->professeurs = "";
 
-				$niveau = "SELECT n.niveau FROM ".MAIN_DB_PREFIX."c_niveaux as n WHERE n.rowid =".$this->fk_niveau;
-				$resql = $this->db->query($niveau);
+			$niveau = "SELECT n.niveau FROM ".MAIN_DB_PREFIX."c_niveaux as n WHERE n.rowid =".$this->fk_niveau;
+			$resql = $this->db->query($niveau);
+			$object = $this->db->fetch_object($resql);
+
+			$this->nom_creneau .= $object->niveau . '-';
+
+			$jour = "SELECT j.jour FROM ".MAIN_DB_PREFIX."c_jour as j WHERE j.rowid =".$this->jour;
+			$resql = $this->db->query($jour);
+			$object = $this->db->fetch_object($resql);
+
+			$this->nom_creneau .= $object->jour . '-';
+
+			$heure = "SELECT h.heure FROM ".MAIN_DB_PREFIX."c_heure as h WHERE h.rowid =".$this->heure_debut;
+			$resql = $this->db->query($heure);
+			$object = $this->db->fetch_object($resql);
+
+
+			if(!$this->minutes_debut)
+			{
+				$this->nom_creneau .= $object->heure. 'h00-';
+				$this->minutes_debut = "00";
+			}
+			else
+			{
+				$this->nom_creneau .= $object->heure. 'h'.$this->minutes_debut;
+			}
+
+			if(!$this->minutes_fin)
+			{
+				$this->minutes_fin = "00";
+			}
+
+			$professeur = "";
+			if($this->fk_prof_1 != NULL)
+			{
+				$prof = "SELECT p.nom,p.prenom FROM ".MAIN_DB_PREFIX."management_agent as p WHERE p.rowid =".$this->fk_prof_1;
+				$resql = $this->db->query($prof);
 				$object = $this->db->fetch_object($resql);
 
-				$this->nom_creneau .= $object->niveau . '-';
+				$this->nom_creneau .= "-".$object->prenom.'-'.$object->nom;
+				$professeur .= $object->prenom.' '.$object->nom.' ';
+			}
 
-				$jour = "SELECT j.jour FROM ".MAIN_DB_PREFIX."c_jour as j WHERE j.rowid =".$this->jour;
-				$resql = $this->db->query($jour);
+
+			if($this->fk_salle)
+			{
+				$salle = "SELECT s.salle FROM ".MAIN_DB_PREFIX."salles as s WHERE s.rowid =".$this->fk_salle;
+				$resql = $this->db->query($salle);
 				$object = $this->db->fetch_object($resql);
 
-				$this->nom_creneau .= $object->jour . '-';
-
-				$heure = "SELECT h.heure FROM ".MAIN_DB_PREFIX."c_heure as h WHERE h.rowid =".$this->heure_debut;
-				$resql = $this->db->query($heure);
-				$object = $this->db->fetch_object($resql);
+				$this->nom_creneau .= "-".$object->salle;
+			}
 
 
-				if(!$this->minutes_debut)
-				{
-					$this->nom_creneau .= $object->heure. 'h00-';
-					$this->minutes_debut = "00";
-				}
-				else
-				{
-					$this->nom_creneau .= $object->heure. 'h'.$this->minutes_debut;
-				}
+			if($this->fk_prof_2 != NULL)
+			{
+				$sqlProf2 = "SELECT prenom,nom,rowid FROM ".MAIN_DB_PREFIX."management_agent WHERE rowid= ".$this->fk_prof_2;
+				$resqlProf2 = $this->db->query($sqlProf2);
+				$objProf2 = $this->db->fetch_object($resqlProf2);
 
-				if(!$this->minutes_fin)
-				{
-					$this->minutes_fin = "00";
-				}
+				$professeur .= $objProf2->prenom.' '.$objProf2->nom.' ';
+			}
 
-				if($this->fk_prof_1 != NULL)
-				{
-					$prof = "SELECT p.nom,p.prenom FROM ".MAIN_DB_PREFIX."management_agent as p WHERE p.rowid =".$this->fk_prof_1;
-					$resql = $this->db->query($prof);
-					$object = $this->db->fetch_object($resql);
+			if($this->fk_prof_3 != NULL)
+			{
+				$sqlProf3 = "SELECT prenom,nom,rowid FROM ".MAIN_DB_PREFIX."management_agent WHERE rowid= ".$this->fk_prof_3;
+				$resqlProf3 = $this->db->query($sqlProf3);
+				$objProf3 = $this->db->fetch_object($resqlProf3);
 
-					$this->nom_creneau .= "-".$object->prenom.'-'.$object->nom;
-					$professeur .= $object->prenom.' '.$object->nom.' ';
-				}
+				$professeur .= $objProf3->prenom.' '.$objProf3->nom;
+			}
 
-
-				if($this->fk_salle)
-				{
-					$salle = "SELECT s.salle FROM ".MAIN_DB_PREFIX."salles as s WHERE s.rowid =".$this->fk_salle;
-					$resql = $this->db->query($salle);
-					$object = $this->db->fetch_object($resql);
-
-					$this->nom_creneau .= "-".$object->salle;
-				}
-
-
-				if($this->fk_prof_2 != NULL)
-				{
-					$sqlProf2 = "SELECT prenom,nom,rowid FROM ".MAIN_DB_PREFIX."management_agent WHERE rowid= ".$this->fk_prof_2;
-					$resqlProf2 = $this->db->query($sqlProf2);
-					$objProf2 = $this->db->fetch_object($resqlProf2);
-
-					$professeur .= $objProf2->prenom.' '.$objProf2->nom.' ';
-				}
-
-				if($this->fk_prof_3 != NULL)
-				{
-					$sqlProf3 = "SELECT prenom,nom,rowid FROM ".MAIN_DB_PREFIX."management_agent WHERE rowid= ".$this->fk_prof_3;
-					$resqlProf3 = $this->db->query($sqlProf3);
-					$objProf3 = $this->db->fetch_object($resqlProf3);
-
-					$professeur .= $objProf3->prenom.' '.$objProf3->nom;
-				}
-
+			$this->professeurs = $professeur;
 
 			return $this->updateCommon($user, $notrigger);
 	}
