@@ -566,9 +566,13 @@ if($massaction == 'telephone' || $massaction == 'mail' || $massaction == "eleves
 					}
 					else
 					{
-						$famille = "SELECT ".($massaction == 'mail' ? 'f.mail_parent_1,f.mail_parent_2' : 'f.tel_parent_1,f.tel_parent_2')." FROM ".MAIN_DB_PREFIX."famille as f WHERE f.rowid=".$res['fk_famille'];
+						$famille = "SELECT identifiant_famille,".($massaction == 'mail' ? 'f.mail_parent_1,f.mail_parent_2' : 'f.tel_parent_1,f.tel_parent_2')." FROM ".MAIN_DB_PREFIX."famille as f WHERE f.rowid=".$res['fk_famille'];
 						$resqlFamille = $db->query($famille);
-						$objFamille = $db->fetch_object($resqlFamille);
+						if($resqlFamille->num_rows == 0)
+						{
+							print $res['prenom'].' '.$res['nom'].": Aucune famille connue<br>";
+						}
+						else $objFamille = $db->fetch_object($resqlFamille);
 
 						if($objFamille->mail_parent_1 != NULL AND $massaction == 'mail') print $objFamille->mail_parent_1."<br>";
 						if($objFamille->mail_parent_2 != NULL AND $massaction == 'mail') print $objFamille->mail_parent_2."<br>";
