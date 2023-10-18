@@ -589,7 +589,7 @@ if($massaction == 'telephone' || $massaction == 'mail' || $massaction == "eleves
 									$out .= ' / '.($objFamille->mail_parent_2 ? : '<strong>Aucun mail parent 2</strong>');
 									$out .= ' / '.($objFamille->tel_parent_2 ? : '<strong>Aucun tel parent 2</strong>');
 								} else $out .= ' / <strong>Aucun parent 2</strong>';
-								$out .= "\n";
+								$out .= "<br>";
 							}
 							else
 							{
