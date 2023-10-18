@@ -22,9 +22,9 @@
  *		\brief      List page for creneau
  */
 
- ini_set('display_errors', '1');
+/* ini_set('display_errors', '1');
 ini_set('display_startup_errors', '1');
-error_reporting(E_ALL);
+error_reporting(E_ALL);*/
 
 
 //if (! defined('NOREQUIREDB'))              define('NOREQUIREDB', '1');				// Do not create database handler $db
@@ -502,9 +502,8 @@ $arrayofmassactions = array(
 	'eleves'=>img_picto('', 'user', 'class="pictofixedwidth"').$langs->trans("Exporter les élèves"),
 	'telephone'=>img_picto('', 'phone', 'class="pictofixedwidth"').$langs->trans("Exporter les téléphones"),
 	'validate'=>img_picto('', 'check', 'class="pictofixedwidth"').$langs->trans("Validate"),
-	//'generate_doc'=>img_picto('', 'pdf', 'class="pictofixedwidth"').$langs->trans("ReGeneratePDF"),
-	//'builddoc'=>img_picto('', 'pdf', 'class="pictofixedwidth"').$langs->trans("PDFMerge"),
-	//'presend'=>img_picto('', 'email', 'class="pictofixedwidth"').$langs->trans("SendByMail"),
+	'coordonnee'=>img_picto('', 'location', 'class="pictofixedwidth"').$langs->trans("Coordonnées par enfants"),
+
 );
 if ($permissiontodelete) {
 	$arrayofmassactions['predelete'] = img_picto('', 'delete', 'class="pictofixedwidth"').$langs->trans("Delete");
@@ -536,19 +535,19 @@ print '<a href="'.$_SERVER['PHP_SELF'].'?allYear='.($allYear == 'false' ? 'true'
 
 
 
-if($massaction == 'telephone' || $massaction == 'mail' || $massaction == "eleves")
+if($massaction == 'telephone' || $massaction == 'mail' || $massaction == "eleves" || $massaction == "coordonnee")
 {
 	//var_dump($arrayofselected);
 	//$fich = fopen("CSV/items.csv", "w");
 	print "<br>";
 	foreach($arrayofselected as $value)
 	{
-		$affectation = "SELECT s.fk_souhait FROM ".MAIN_DB_PREFIX."affectation as s WHERE s.fk_creneau=".$value." AND date_fin IS NULL";
+		$affectation = "SELECT s.fk_souhait FROM ".MAIN_DB_PREFIX."affectation as s WHERE s.fk_creneau={$value} AND date_fin IS NULL";
 		$resqlAffectation = $db->query($affectation);
 
 		foreach($resqlAffectation as $val)
 		{
-			$eleve = "SELECT e.fk_famille,e.prenom,e.nom,e.fk_classe_etablissement FROM ".MAIN_DB_PREFIX."eleve as e WHERE e.rowid=".("(SELECT s.fk_eleve FROM ".MAIN_DB_PREFIX."souhait as s WHERE s.rowid =".$val['fk_souhait'].") ORDER BY fk_classe_etablissement ASC");
+			$eleve = "SELECT e.fk_famille,e.prenom,e.nom,e.fk_classe_etablissement FROM ".MAIN_DB_PREFIX."eleve as e WHERE e.rowid=".("(SELECT s.fk_eleve FROM ".MAIN_DB_PREFIX."souhait as s WHERE s.rowid ={$val['fk_souhait']}) ORDER BY fk_classe_etablissement ASC");
 			$resqlEleve = $db->query($eleve);
 				foreach($resqlEleve as $res)
 				{
@@ -557,27 +556,52 @@ if($massaction == 'telephone' || $massaction == 'mail' || $massaction == "eleves
 					{
 						if($res['prenom'] != NULL)
 						{
-							$classe = "SELECT classe FROM ".MAIN_DB_PREFIX."classe WHERE rowid=".$res['fk_classe_etablissement'];
+							$classe = "SELECT classe FROM ".MAIN_DB_PREFIX."classe WHERE rowid={$res['fk_classe_etablissement']}";
 							$resqlClasse = $db->query($classe);
 							$objClasse = $db->fetch_object($resqlClasse);
 
-							print $res['prenom'].' '.$res['nom'].' / '.$objClasse->classe.'<br>';
+							print "{$res['prenom']} {$res['nom']} / $objClasse->classe<br>";
 						}
 					}
 					else
 					{
-						$famille = "SELECT identifiant_famille,".($massaction == 'mail' ? 'f.mail_parent_1,f.mail_parent_2' : 'f.tel_parent_1,f.tel_parent_2')." FROM ".MAIN_DB_PREFIX."famille as f WHERE f.rowid=".$res['fk_famille'];
+						$out = "";
+						$famille = "SELECT identifiant_famille,".($massaction == 'mail' ? 'f.mail_parent_1,f.mail_parent_2' : ($massaction == 'telephone' ? 'f.tel_parent_1,f.tel_parent_2' : 'f.mail_parent_1,f.mail_parent_2,f.tel_parent_1,f.tel_parent_2,prenom_parent_1,nom_parent_1,prenom_parent_2,nom_parent_2'))." FROM ".MAIN_DB_PREFIX."famille as f WHERE f.rowid=".$res['fk_famille'];
 						$resqlFamille = $db->query($famille);
+
+
 						if($resqlFamille->num_rows == 0)
 						{
-							print $res['prenom'].' '.$res['nom'].": Aucune famille connue<br>";
+							print "{$res['prenom']} {$res['nom']}<strong style='color:red'>: Aucune famille connue</strong><br>";
 						}
-						else $objFamille = $db->fetch_object($resqlFamille);
+						else
+						{
+							$objFamille = $db->fetch_object($resqlFamille);
+							if($massaction == 'coordonnee')
+							{
+								$out .= "{$res['prenom']} {$res['nom']}";
+								$out .= " / $objFamille->prenom_parent_1 $objFamille->nom_parent_1";
+								$out .= ' / '.($objFamille->mail_parent_1 ? : '<strong>Aucun mail parent 1</strong>');
+								$out .= ' / '.($objFamille->tel_parent_1 ? : '<strong>Aucun tel parent 1</strong>');
+								if($objFamille->prenom_parent_2 && $objFamille->nom_parent_2)
+								{
+									$out .= " / $objFamille->prenom_parent_2 $objFamille->nom_parent_2";
+									$out .= ' / '.($objFamille->mail_parent_2 ? : '<strong>Aucun mail parent 2</strong>');
+									$out .= ' / '.($objFamille->tel_parent_2 ? : '<strong>Aucun tel parent 2</strong>');
+								} else $out .= ' / <strong>Aucun parent 2</strong>';
+								$out .= "\n";
+							}
+							else
+							{
+								if($objFamille->mail_parent_1 != NULL AND $massaction == 'mail') $out .= "$objFamille->mail_parent_1 <br>";
+								if($objFamille->mail_parent_2 != NULL AND $massaction == 'mail') $out .= "$objFamille->mail_parent_2 <br>";
+								if($objFamille->tel_parent_1 != NULL AND $massaction == 'telephone') $out .= "$objFamille->tel_parent_1 <br>";
+								if($objFamille->tel_parent_2 != NULL AND $massaction == 'telephone') $out .= "$objFamille->tel_parent_2 <br>";
+							}
+						}
 
-						if($objFamille->mail_parent_1 != NULL AND $massaction == 'mail') print $objFamille->mail_parent_1."<br>";
-						if($objFamille->mail_parent_2 != NULL AND $massaction == 'mail') print $objFamille->mail_parent_2."<br>";
-						if($objFamille->tel_parent_1 != NULL AND $massaction == 'telephone') print $objFamille->tel_parent_1."<br>";
-						if($objFamille->tel_parent_2 != NULL AND $massaction == 'telephone') print $objFamille->tel_parent_2."<br>";
+						print $out;
+
 					}
 
 
@@ -974,7 +998,7 @@ while ($i < $imaxinloop) {
 					$resqlAffectation = $db->query($sql1);
 					foreach($resqlAffectation as $val)
 					{
-						print '<a href="' . DOL_URL_ROOT . '/custom/viescolaire/eleve_card.php?id=' . $val['rowid'] . '">' .'- '. $val['nom'].' '.$val['prenom'] . '</a>';
+						print '<a href="' . DOL_URL_ROOT . '/custom/viescolaire/eleve_card.php?id=' . $val['rowid'] . '">' .'- '. $val['prenom'].' '.$val['nom'] . '</a>';
 						print '<br>';
 					}
 				} else {
