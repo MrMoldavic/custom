@@ -107,11 +107,11 @@ class Souhait extends CommonObject
 	public $fields = array(
 		'rowid' => array('type' => 'integer(11)', 'label' => 'TechnicalID', 'enabled' => '1', 'position' => 1, 'notnull' => 1, 'visible' => 0, 'noteditable' => '1', 'index' => 1, 'css' => 'left', 'comment' => "Id"),
 		'nom_souhait' => array('type' => 'varchar(255)', 'label' => 'Nom du souhait', 'enabled' => '1', 'position' => 1, 'notnull' => 0, 'visible' => 0,'help'=>'','showoncombobox'=>'1', 'css' => 'maxwidth400', ),
-		'fk_eleve' => array('type' => 'integer:Eleve:custom/viescolaire/class/eleve.class.php:1', 'label' => 'Élève', 'enabled' => '1', 'position' => 1, 'notnull' => 1, 'visible' => 1, 'index' => 1, 'searchall' => 1, 'foreignkey' => 'eleve.rowid', 'validate' => '1', 'css' => 'maxwidth250'),
+		'fk_eleve' => array('type' => 'integer:Eleve:custom/viescolaire/class/eleve.class.php:1:(t.status!=9)', 'label' => 'Élève', 'enabled' => '1', 'position' => 1, 'notnull' => 1, 'visible' => 1, 'index' => 1, 'searchall' => 1, 'foreignkey' => 'eleve.rowid', 'validate' => '1', 'css' => 'maxwidth250'),
 		'fk_type_classe' => array('type' => 'sellist:type_classe:type', 'label' => 'Type de classe', 'enabled' => '1', 'position' => 2, 'notnull' => 1, 'visible' => 1, 'searchall' => 1, 'css' => 'maxwidth300', 'validate' => '1',),
-		'fk_instru_enseigne' => array('type' => 'sellist:c_instrument_enseigne:instrument', 'label' => 'Instrument souhaité', 'enabled' => '1', 'position' => 3, 'notnull' => 1, 'visible' => 1, 'validate' => '1',),	
-		'fk_niveau' => array('type' => 'sellist:c_niveaux:niveau', 'label' => 'Niveau de l\'élève', 'enabled' => '1', 'position' => 3, 'notnull' => 1, 'visible' => 1, 'validate' => '1',),		
-		'fk_annee_scolaire' => array('type' => 'sellist:c_annee_scolaire:annee', 'label' => 'Année scolaire concernée', 'enabled' => '1', 'position' => 4, 'notnull' => 1, 'visible' => 1, 'validate' => '1',),		
+		'fk_instru_enseigne' => array('type' => 'sellist:c_instrument_enseigne:instrument', 'label' => 'Instrument souhaité', 'enabled' => '1', 'position' => 3, 'notnull' => 1, 'visible' => 1, 'validate' => '1',),
+		'fk_niveau' => array('type' => 'sellist:c_niveaux:niveau', 'label' => 'Niveau de l\'élève', 'enabled' => '1', 'position' => 3, 'notnull' => 1, 'visible' => 1, 'validate' => '1',),
+		'fk_annee_scolaire' => array('type' => 'sellist:c_annee_scolaire:annee', 'label' => 'Année scolaire concernée', 'enabled' => '1', 'position' => 4, 'notnull' => 1, 'visible' => 1, 'validate' => '1',),
 		'details' => array('type' => 'text', 'label' => 'Appréciation de l\'élève (fin d\'année)', 'enabled' => '1', 'position' => 5, 'notnull' => 0, 'visible' => 1, 'css' => 'maxwidth75imp', 'validate' => '1', ),
 		'disponibilite' => array('type' => 'text', 'label' => 'Disponibilitées', 'enabled' => '1', 'position' => 4, 'notnull' => 0, 'visible' => 1, 'index' => 1, 'css' => 'maxwidth500 widthcentpercentminusxx', 'help' => "Disponibilitées de l'élèves, sous forme de texte.", 'validate' => '1',),
 		'note_public' => array('type' => 'html', 'label' => 'NotePublic', 'enabled' => '1', 'position' => 61, 'notnull' => 0, 'visible' => 0, 'cssview' => 'wordbreak', 'validate' => '1',),
@@ -234,7 +234,7 @@ class Souhait extends CommonObject
 	public function create(User $user, $notrigger = false)
 	{
 		if($this->fk_type_classe == "1" && $this->fk_instru_enseigne == "5")
-		{	
+		{
 			setEventMessage('Type d\'instrument incompatible avec un cours','errors');
 		}
 		elseif(!$this->fk_annee_scolaire) setEventMessage('Veuillez choisir une année scolaire','errors');
@@ -245,28 +245,28 @@ class Souhait extends CommonObject
 			$type_cours = "SELECT t.type FROM ".MAIN_DB_PREFIX."type_classe as t WHERE t.rowid =".$this->fk_type_classe;
 			$resql = $this->db->query($type_cours);
 			$obj = $this->db->fetch_object($resql);
-	
+
 			// $niveau = "SELECT n.niveau FROM ".MAIN_DB_PREFIX."eleve as e INNER JOIN ".MAIN_DB_PREFIX."c_niveaux as n ON n.rowid = e.fk_niveau WHERE e.rowid =".$this->fk_eleve;
 			// $resql = $this->db->query($niveau);
 			// $object2 = $this->db->fetch_object($resql);
-				
+
 			$instrument_enseigne = "SELECT i.instrument FROM ".MAIN_DB_PREFIX."c_instrument_enseigne as i WHERE i.rowid =".$this->fk_instru_enseigne;
 			$resql = $this->db->query($instrument_enseigne);
 			$object = $this->db->fetch_object($resql);
-	
+
 			$niveau = "SELECT n.niveau FROM ".MAIN_DB_PREFIX."c_niveaux as n WHERE n.rowid =".$this->fk_niveau;
 			$resql = $this->db->query($niveau);
 			$object1 = $this->db->fetch_object($resql);
-	
+
 			$this->nom_souhait=$eleve->nom .'-'. $eleve->prenom .'-'. $obj->type .'-'. $object->instrument . '-' . $object1->niveau;
-	
+
 			$resultcreate = $this->createCommon($user, $notrigger);
-	
+
 			//$resultvalidate = $this->validate($user, $notrigger);
-	
+
 			return $resultcreate;
 		}
-		
+
 	}
 
 	/**
@@ -496,7 +496,7 @@ class Souhait extends CommonObject
 		$type_cours = "SELECT t.type FROM ".MAIN_DB_PREFIX."type_classe as t WHERE t.rowid =".$this->fk_type_classe;
 		$resql = $this->db->query($type_cours);
 		$obj = $this->db->fetch_object($resql);
-			
+
 		$instrument_enseigne = "SELECT i.instrument FROM ".MAIN_DB_PREFIX."c_instrument_enseigne as i WHERE i.rowid =".$this->fk_instru_enseigne;
 		$resql = $this->db->query($instrument_enseigne);
 		$object = $this->db->fetch_object($resql);

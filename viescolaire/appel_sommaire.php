@@ -25,6 +25,10 @@
  *		\brief      Page to create/edit/view appel
  */
 
+ ini_set('display_errors', '1');
+ ini_set('display_startup_errors', '1');
+ error_reporting(E_ALL);
+
 //if (! defined('NOREQUIREDB'))              define('NOREQUIREDB', '1');				// Do not create database handler $db
 //if (! defined('NOREQUIREUSER'))            define('NOREQUIREUSER', '1');				// Do not load object $user
 //if (! defined('NOREQUIRESOC'))             define('NOREQUIRESOC', '1');				// Do not load object $mysoc
@@ -348,7 +352,7 @@ if ($action == 'create' && GETPOST('etablissementid', 'int') && GETPOST('appelda
                if ($profs->fk_prof_3) $prof_count++;
           }
 
-          $sqlProfPresent = "SELECT * FROM " . MAIN_DB_PREFIX . "appel as a INNER JOIN " . MAIN_DB_PREFIX . "creneau as c ON c.rowid=a.fk_creneau WHERE nom_creneau LIKE '%" . $jour . '-' . $i . "h%' AND a.status!='absent' AND a.fk_user IS NOT NULL AND YEAR(a.date_creation)=" . intval(GETPOST("appelyear", "alpha")) . " AND MONTH(a.date_creation)=" . intval(GETPOST("appelmonth", "alpha")) . " AND DAY(a.date_creation)=" . intval(GETPOST("appelday", "alpha"));
+          $sqlProfPresent = "SELECT fk_user,fk_creneau FROM " . MAIN_DB_PREFIX . "appel as a INNER JOIN " . MAIN_DB_PREFIX . "creneau as c ON c.rowid=a.fk_creneau WHERE nom_creneau LIKE '%" . $jour . '-' . $i . "h%' AND a.status!='absent' AND a.fk_user IS NOT NULL AND YEAR(a.date_creation)=" . intval(GETPOST("appelyear", "alpha")) . " AND MONTH(a.date_creation)=" . intval(GETPOST("appelmonth", "alpha")) . " AND DAY(a.date_creation)=" . intval(GETPOST("appelday", "alpha"));
           $sqlProfPresent .= " AND a.fk_etablissement = " . GETPOST("etablissementid", "int")." AND c.status = 4";
 
           $resqlProfPresent = $db->query($sqlProfPresent);
@@ -368,11 +372,11 @@ if ($action == 'create' && GETPOST('etablissementid', 'int') && GETPOST('appelda
           $resqlNombreEleve = $db->query($sqlNombreEleve);
           $nombreEleve = $resqlNombreEleve->fetch_object();
 
-          $sqlElevePresent = "SELECT * FROM " . MAIN_DB_PREFIX . "appel as a INNER JOIN " . MAIN_DB_PREFIX . "creneau as c ON c.rowid=a.fk_creneau WHERE c.nom_creneau LIKE '%" . $jour . '-' . $i . "h%' AND a.fk_eleve IS NOT NULL AND YEAR(a.date_creation)=" . intval(GETPOST("appelyear", "alpha")) . " AND MONTH(a.date_creation)=" . intval(GETPOST("appelmonth", "alpha")) . " AND DAY(a.date_creation)=" . intval(GETPOST("appelday", "alpha"));
+          $sqlElevePresent = "SELECT fk_eleve,fk_creneau FROM " . MAIN_DB_PREFIX . "appel as a INNER JOIN " . MAIN_DB_PREFIX . "creneau as c ON c.rowid=a.fk_creneau WHERE c.nom_creneau LIKE '%" . $jour . '-' . $i . "h%' AND a.fk_eleve IS NOT NULL AND YEAR(a.date_creation)=" . intval(GETPOST("appelyear", "alpha")) . " AND MONTH(a.date_creation)=" . intval(GETPOST("appelmonth", "alpha")) . " AND DAY(a.date_creation)=" . intval(GETPOST("appelday", "alpha"));
           $sqlElevePresent .= " AND a.fk_etablissement = " . GETPOST("etablissementid", "int")." AND c.status = 4";
 
           $resqlElevePresent = $db->query($sqlElevePresent);
-          // 
+          //
           $eleve_present_count = 0;
           $filter = [];
           for ($j = 0; $j < $resqlElevePresent->num_rows; $j++) {
@@ -395,7 +399,7 @@ if ($action == 'create' && GETPOST('etablissementid', 'int') && GETPOST('appelda
 
                // Compte des appels à cette date pour chaque élève
                foreach ($resql as $res) {
-                    $sqll = "SELECT * FROM " . MAIN_DB_PREFIX . "appel WHERE fk_eleve = " . $res['rowid'] . " AND YEAR(date_creation) = " . strftime('%Y', strtotime($datedemerde));
+                    $sqll = "SELECT rowid FROM " . MAIN_DB_PREFIX . "appel WHERE fk_eleve = " . $res['rowid'] . " AND YEAR(date_creation) = " . strftime('%Y', strtotime($datedemerde));
                     $sqll .= " AND MONTH(date_creation) = " . strftime('%m', strtotime($datedemerde));
                     $sqll .= " AND DAY(date_creation) = " . $daymonth;
                     $sqll .= " AND fk_creneau = " . $val['rowid'];
@@ -416,7 +420,7 @@ if ($action == 'create' && GETPOST('etablissementid', 'int') && GETPOST('appelda
 
                // Compte des appels à cette date pour le prof 1
                if ($sqlProReal->fk_prof_1) {
-                    $checkProf = "SELECT * FROM " . MAIN_DB_PREFIX . "appel WHERE fk_user = " . $sqlProReal->fk_prof_1 . " AND YEAR(date_creation) = " . strftime('%Y', strtotime($datedemerde));
+                    $checkProf = "SELECT rowid FROM " . MAIN_DB_PREFIX . "appel WHERE fk_user = " . $sqlProReal->fk_prof_1 . " AND YEAR(date_creation) = " . strftime('%Y', strtotime($datedemerde));
                     $checkProf .= " AND MONTH(date_creation) = " . strftime('%m', strtotime($datedemerde));
                     $checkProf .= " AND DAY(date_creation) = " . $daymonth;
                     $checkProf .= " AND fk_creneau = " . $val['rowid'];
@@ -432,7 +436,7 @@ if ($action == 'create' && GETPOST('etablissementid', 'int') && GETPOST('appelda
 
                // Compte des appels à cette date pour le prof 2
                if ($sqlProReal->fk_prof_2) {
-                    $checkProf = "SELECT * FROM " . MAIN_DB_PREFIX . "appel WHERE fk_user = " . $sqlProReal->fk_prof_2 . " AND YEAR(date_creation) = " . strftime('%Y', strtotime($datedemerde));
+                    $checkProf = "SELECT rowid FROM " . MAIN_DB_PREFIX . "appel WHERE fk_user = " . $sqlProReal->fk_prof_2 . " AND YEAR(date_creation) = " . strftime('%Y', strtotime($datedemerde));
                     $checkProf .= " AND MONTH(date_creation) = " . strftime('%m', strtotime($datedemerde));
                     $checkProf .= " AND DAY(date_creation) = " . $daymonth;
                     $checkProf .= " AND fk_creneau = " . $val['rowid'];
@@ -448,7 +452,7 @@ if ($action == 'create' && GETPOST('etablissementid', 'int') && GETPOST('appelda
 
                // Compte des appels à cette date pour le prof 3
                if ($sqlProReal->fk_prof_3) {
-                    $checkProf = "SELECT * FROM " . MAIN_DB_PREFIX . "appel WHERE fk_user = " . $sqlProReal->fk_prof_3 . " AND YEAR(date_creation) = " . strftime('%Y', strtotime($datedemerde));
+                    $checkProf = "SELECT rowid FROM " . MAIN_DB_PREFIX . "appel WHERE fk_user = " . $sqlProReal->fk_prof_3 . " AND YEAR(date_creation) = " . strftime('%Y', strtotime($datedemerde));
                     $checkProf .= " AND MONTH(date_creation) = " . strftime('%m', strtotime($datedemerde));
                     $checkProf .= " AND DAY(date_creation) = " . $daymonth;
                     $checkProf .= " AND fk_creneau = " . $val['rowid'];
@@ -464,8 +468,8 @@ if ($action == 'create' && GETPOST('etablissementid', 'int') && GETPOST('appelda
 
                if ($isComplete) $completeAppelCount += 1;
           }
-        
-          print '<tr class="oddeven"> 
+
+          print '<tr class="oddeven">
 			<td>'. $jour . ' ' . $i . 'h-' . ($i + 1) . 'h' .'</td>
 			<td>' . $completeAppelCount . '/' . $totalCreneauCount . '</td>
 			<td>' . $eleve_present_count . "/" . $nombreEleve->count . '</td>
@@ -474,7 +478,7 @@ if ($action == 'create' && GETPOST('etablissementid', 'int') && GETPOST('appelda
 
           if ($totalCreneauCount == 0) {
                print '<td><span class="badge  badge-status6 badge-status" style="color:white;">Pas de cours à cette heure</span></td>';
-          } elseif (mktime($i, 0, 0, GETPOST('appelmonth'), GETPOST('appelday'), GETPOST('appelyear')) > time()) {
+          } elseif (mktime($i, 0, 0, GETPOST('appelmonth'), GETPOST('appelday'), GETPOST('appelyear')) > time() && $completeAppelCount != $totalCreneauCount) {
                print '<td><span class="badge  badge-status5 badge-status" style="color:white;">Appel(s) à venir</span></td>';
           } elseif ($completeAppelCount == $totalCreneauCount) {
                print '<td><span class="badge  badge-status4 badge-status" style="color:white;">Appel(s) complet(s)</span></td>';

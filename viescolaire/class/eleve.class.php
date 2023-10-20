@@ -865,7 +865,7 @@ class Eleve extends CommonObject
 			$this->labelStatusShort[self::STATUS_VENU] = "Venu pour informations";
 			$this->labelStatusShort[self::STATUS_PLACE] = "Placé (paiement incomplet)";
 			$this->labelStatusShort[self::STATUS_BUDGETISE] = "Budgetisé";
-			$this->labelStatusShort[self::STATUS_BUDGETISE] = "Problème";
+			$this->labelStatusShort[self::STATUS_PROBLEME] = "Problème";
 		}
 
 		$statusType = 'status' . $status;
