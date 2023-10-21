@@ -24,6 +24,10 @@
  *	\brief      Home page of viescolaire top menu
  */
 
+ini_set('display_errors', '1');
+ini_set('display_startup_errors', '1');
+error_reporting(E_ALL);
+
 // Load Dolibarr environment
 $res = 0;
 // Try main.inc.php into web root known defined into CONTEXT_DOCUMENT_ROOT (not always defined)
@@ -56,6 +60,8 @@ if (!$res) {
 }
 
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formfile.class.php';
+require_once DOL_DOCUMENT_ROOT.'/custom/viescolaire/class/eleve.class.php';
+
 
 // Load translation files required by the page
 $langs->loadLangs(array("viescolaire@viescolaire"));
@@ -90,47 +96,43 @@ $now = dol_now();
 
 $form = new Form($db);
 $formfile = new FormFile($db);
+$eleve = new Eleve($db);
 
-llxHeader("", $langs->trans("VieScolaireArea"));
+llxHeader("", "Module Vie scolaire");
 
-print load_fiche_titre($langs->trans("VieScolaireArea"), '', 'viescolaire.png@viescolaire');
+print load_fiche_titre("Module Vie scolaire", '', 'viescolaire.png@viescolaire');
 
-print '<div class="fichecenter"><div class="fichethirdleft">';
-// Compte des élèves de chaques antennes 
-
-// CZ
-$sql = "SELECT * FROM ".MAIN_DB_PREFIX."eleve WHERE fk_etablissement = 2";
-$resql = $db->query($sql);
-$obj = $db->fetch_object($resql);
-$nombreEleveCz = $db->num_rows($resql);
-
-// VM
-$sql = "SELECT * FROM ".MAIN_DB_PREFIX."eleve WHERE fk_etablissement = 3";
-$resql = $db->query($sql);
-$obj = $db->fetch_object($resql);
-$nombreEleveVm = $db->num_rows($resql);
-
-// Dahlias
-$sql = "SELECT * FROM ".MAIN_DB_PREFIX."eleve WHERE fk_etablissement = 4";
-$resql = $db->query($sql);
-$obj = $db->fetch_object($resql);
-$nombreEleveDahlias = $db->num_rows($resql);
-
+print '<div class="fichecenter"><div >';
+// Compte des élèves de chaques antennes
 
 // camenbaire
 if ($conf->use_javascript_ajax)
 {
+	$totalEleves = 0;
+	$dataseries = array();
+	$sql = "SELECT rowid,nom FROM ".MAIN_DB_PREFIX."etablissement";
+	$resql = $db->query($sql);
+
+	foreach($resql as $value){
+		$sql = "SELECT COUNT(*) as total FROM ".MAIN_DB_PREFIX."eleve WHERE fk_etablissement = ". $value['rowid']." AND status !=".$eleve::STATUS_CANCELED;
+		$resql = $db->query($sql);
+		$obj = $db->fetch_object($resql);
+
+		$totalEleves .= $obj->total;
+		array_push($dataseries, [$value['nom'],$obj->total]);
+
+	}
+
 	print '<div class="div-table-responsive-no-min">';
 	print '<table class="noborder centpercent">';
-	print '<tr class="liste_titre"><th>'.$langs->trans("Statistics").'</th></tr>';
+	print '<tr class="liste_titre"><th>Statistiques nombre d\'élèves</th></tr>';
 	print '<tr><td class="center nopaddingleftimp nopaddingrightimp">';
 
-	$total = $nombreEleveCz + $nombreEleveDahlias + $nombreEleveVm;
+
 	$dataval = array();
 	$datalabels = array();
-	$dataseries = array(['Collège Clemenceau', $nombreEleveCz],['Collège Jean de Verazzane', $nombreEleveVm],['Ecole des Dahlias', $nombreEleveDahlias]);
 	$i = 0;
- 
+
 	include_once DOL_DOCUMENT_ROOT.'/core/class/dolgraph.class.php';
 	$dolgraph = new DolGraph();
 	$dolgraph->SetData($dataseries);
@@ -139,25 +141,124 @@ if ($conf->use_javascript_ajax)
 	$dolgraph->SetType(array('pie'));
 	$dolgraph->setHeight('200');
 	$dolgraph->draw('idgraphstatus');
-	print $dolgraph->show($total ? 0 : 1);
+	print $dolgraph->show($totalEleves ? 0 : 1);
 
 	print '</td></tr>';
 	print '</table>';
 	print '</div>';
 }
 
-print '</div><div class="fichetwothirdright"><div class="ficheaddleft">';
+print load_fiche_titre("Cours de l'agent", '', 'viescolaire.png@viescolaire');
 
-print '<p>Nombre d\'élèves Inscrits au Collège Clemenceau : '.$nombreEleveCz.'</p>';
+print "<pre>( Vous avez ici accès aux mêmes informations que la scolarité, pour ce qui est des absences. <br> Si vous constatez un cours vide, rapprochez-vous de la scolarité pour plus d'informations. )</pre>";
+$Jour = "SELECT jour, rowid FROM ".MAIN_DB_PREFIX."c_jour WHERE active=1";
+$resqlJour = $db->query($Jour);
+
+foreach($resqlJour as $value)
+{
+	$cours = "SELECT professeurs, nom_creneau, rowid FROM ".MAIN_DB_PREFIX."creneau WHERE status=4 AND jour=".$value['rowid']." AND (fk_prof_1={$user->id} OR fk_prof_2={$user->id} OR fk_prof_3={$user->id}) ORDER BY heure_debut ASC";
+	$resqlCours = $db->query($cours);
+
+	print '<h3>'.$value['jour'].($resqlCours->num_rows > 0 ? ('    <span class="badge  badge-status4 badge-status">  '.$resqlCours->num_rows.' Cours</span>') : ('      <span class="badge  badge-status8 badge-status">  Aucun cours à ce jour</span>')).'</h3>';
+
+	print '<table class="tagtable liste">';
+	print '<tbody>';
+
+
+	if($resqlCours->num_rows != 0)
+	{
+		print '<tr class="liste_titre">
+			<th class="wrapcolumntitle liste_titre">Créneau</th>
+			<th class="wrapcolumntitle liste_titre">Professeurs</th>
+			<th class="wrapcolumntitle liste_titre">Élèves</th>
+			<th class="wrapcolumntitle liste_titre">Absences à venir</th>
+			</tr>';
+		foreach($resqlCours as $val)
+		{
+			print '<tr class="oddeven">';
+			print '<td style="width:30%"><a href="' . DOL_URL_ROOT . '/custom/scolarite/creneau_card.php?id=' . $val['rowid'] . '">'.$val['nom_creneau'].'</a></td>';
+			print '<td>'.$val['professeurs'].'</td>';
+
+			$affectation = "SELECT s.fk_souhait FROM ".MAIN_DB_PREFIX."affectation as s WHERE s.fk_creneau=".$val['rowid']." AND s.date_fin IS NULL";
+			$resqlAffectation = $db->query($affectation);
+
+			print '<td>';
+			foreach($resqlAffectation as $v)
+			{
+				$eleve = "SELECT e.nom,e.prenom,e.rowid FROM ".MAIN_DB_PREFIX."eleve as e WHERE e.rowid=".("(SELECT s.fk_eleve FROM ".MAIN_DB_PREFIX."souhait as s WHERE s.rowid =".$v['fk_souhait'].")");
+				$resqlEleve = $db->query($eleve);
+				foreach($resqlEleve as $res)
+				{
+					$niveau = "SELECT n.niveau FROM ".MAIN_DB_PREFIX."c_niveaux as n INNER JOIN ".MAIN_DB_PREFIX."souhait as s WHERE s.rowid=".$v['fk_souhait']." AND s.fk_niveau = n.rowid";
+					$resqlNiveau = $db->query($niveau);
+					$objectNiveau = $db->fetch_object($resqlNiveau);
+
+
+					print '<a href="' . DOL_URL_ROOT . '/custom/viescolaire/eleve_card.php?id=' . $res['rowid'] . '">' .'- '. $res['prenom'].' '.$res['nom'] . ' / '.$objectNiveau->niveau.'</a>';
+					print '<br>';
+				}
+			}
+			print '</td>';
+			print '<td>';
+
+
+			$count = 0;
+			foreach($resqlAffectation as $v)
+			{
+				$eleve = "SELECT e.nom,e.prenom,e.rowid FROM ".MAIN_DB_PREFIX."eleve as e WHERE e.rowid=".("(SELECT s.fk_eleve FROM ".MAIN_DB_PREFIX."souhait as s WHERE s.rowid =".$v['fk_souhait'].")");
+				$resqlEleve = $db->query($eleve);
+
+				foreach($resqlEleve as $res)
+				{
+					$date = date('Y-m-d H:i:s');
+					$absence = "SELECT rowid, date_creation, justification  FROM ".MAIN_DB_PREFIX."appel WHERE fk_creneau=".$val['rowid']." AND fk_eleve=".$res['rowid']." AND date_creation >='".$date."'";
+					$resqlAbsence = $db->query($absence);
+
+					foreach($resqlAbsence as $r)
+					{
+						$dateDuJour = date('d/m/Y');
+						$count++;
+						print '- '.$res['prenom'].' '.$res['nom'].' sera absente le: '.date('d/m/Y', strtotime($r['date_creation'])).(date('d/m/Y', strtotime($r['date_creation'])) == $dateDuJour ? ' <span class="badge  badge-status4 badge-status">Aujourd\'hui</span>' : '').'<br>Justification : '.$r['justification'].'<br><hr>';
+					}
+				}
+			}
+
+			 if($count == 0) print 'Aucune absences futurs connues à ce jour pour ces élèves.';
+			print '</td>';
+
+			print '</tr>';
+		}
+	}
+	else
+		print '<p></p>';
+
+	print '</tbody>';
+	print '</table>';
+}
+
+
+
+
+
+
+
+
+
+
+/*print '</div><div class="fichetwothirdright"><div class="ficheaddleft">';
+
+print '<p>Nombre d\'élèves Inscrits au Collège Clemenceau : '.$objCZ->total.'</p>';
 print '<hr>';
 print '<p>Nombre d\'élèves Inscrits au Collège Jean de Verazzane : '.$nombreEleveVm.'</p>';
 print '<hr>';
 print '<p>Nombre d\'élèves Inscrits à l\'école des Dahlias : '.$nombreEleveDahlias.'</p>';
 print '<hr>';
 print '<div class="fichecenter"><div class="fichethirdleft">';
-
-
 print '</div></div></div>';
+
+
+print '<div class="fichecenter"><div class="ficheaddleft">';*/
+
 
 
 

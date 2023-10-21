@@ -237,13 +237,14 @@ if ($id > 0 || !empty($ref)) {
 
 						foreach($resqlAbsence as $r)
 						{
+							$dateDuJour = date('d/m/Y');
 							$count++;
-							//print $res['prenom'].' '.$res['nom'].' '.date('d/m/Y', strtotime($r['date_creation'])).' - '.$r['justification'].'<br>';
+							print '- '.$res['prenom'].' '.$res['nom'].' sera absente le: '.date('d/m/Y', strtotime($r['date_creation'])).(date('d/m/Y', strtotime($r['date_creation'])) == $dateDuJour ? ' <span class="badge  badge-status4 badge-status">Aujourd\'hui</span>' : '').'<br>Justification : '.$r['justification'].'<br><hr>';
 						}
 					}
 				}
 
-				print $count > 0 ? ('<a href="' . DOL_URL_ROOT . $_SERVER['PHP_SELF'].'?id=' . $object->id . '&idCours='.$val['rowid'].'&checkAbsences">' .$count.' absences futurs connues' . '</a>') : 'Aucune absences futurs connues à ce jour pour ces élèves.';
+				if($count == 0) print 'Aucune absences futurs connues à ce jour pour ces élèves.';
 				print '</td>';
 
 				print '</tr>';
