@@ -602,7 +602,7 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 			/// EN COURS -> FAIRE EN SORTE DE NE LISTER QUE LES SOUHAITS DE L'ANNEE CONCERNÉE
 			foreach($resqlAnneeScolaire as $value)
 			{
-				$souhait = "SELECT rowid,nom_souhait,status,details FROM ".MAIN_DB_PREFIX."souhait as c WHERE c.fk_eleve = ".$object->id." AND c.fk_annee_scolaire=".$value['rowid'];
+				$souhait = "SELECT rowid,nom_souhait,status,details FROM ".MAIN_DB_PREFIX."souhait as c WHERE c.fk_eleve = ".$object->id." AND c.fk_annee_scolaire=".$value['rowid']." ORDER BY c.status ASC";
 				$resqlSouhait = $db->query($souhait);
 
 				print '<div class="annee-accordion'.($value['annee_actuelle'] == 1 ? '-opened' : '').'">';
@@ -634,7 +634,7 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 						elseif($val['status'] == 9)
 						{
 							print '<td><span class="badge  badge-status8 badge-status" style="color:white;">Souhait désactivé</span></td>';
-							print '<td><a href="'.DOL_URL_ROOT.'/custom/scolarite/creneau_card.php?id='.$objectCreneau->rowid.'">'.$objectCreneau->nom_creneau.'</a></td>';
+							print '<td>Aucun créneau</td>';
 						}
 						else
 						{

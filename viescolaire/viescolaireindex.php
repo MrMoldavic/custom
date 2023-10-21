@@ -24,9 +24,9 @@
  *	\brief      Home page of viescolaire top menu
  */
 
-ini_set('display_errors', '1');
+/*ini_set('display_errors', '1');
 ini_set('display_startup_errors', '1');
-error_reporting(E_ALL);
+error_reporting(E_ALL);*/
 
 // Load Dolibarr environment
 $res = 0;
@@ -102,7 +102,7 @@ llxHeader("", "Module Vie scolaire");
 
 print load_fiche_titre("Module Vie scolaire", '', 'viescolaire.png@viescolaire');
 
-print '<div class="fichecenter"><div >';
+print '<div class="fichecenter"><div style="width:40%" class="fichethirdleft">';
 // Compte des élèves de chaques antennes
 
 // camenbaire
@@ -148,7 +148,54 @@ if ($conf->use_javascript_ajax)
 	print '</div>';
 }
 
-print load_fiche_titre("Cours de l'agent", '', 'viescolaire.png@viescolaire');
+
+print '</div><div style="width:55%" class="fichetwothirdright"><div class="ficheaddleft">';
+
+
+$date = date('Y-m-d');
+$absence = "SELECT rowid, justification,fk_eleve,fk_creneau  FROM ".MAIN_DB_PREFIX."appel WHERE date_creation LIKE '".$date."%'";
+$resqlAbsenceDuJour = $db->query($absence);
+
+if($resqlAbsenceDuJour->num_rows > 0){
+	print load_fiche_titre("Absences connues du jour <span class='badge badge-status4 badge-status'>{$resqlAbsenceDuJour->num_rows}</span>", '', 'fa-warning');
+		print '<table class="tagtable liste">';
+		print '<tbody>';
+		print '<tr class="liste_titre">
+			<th class="wrapcolumntitle liste_titre">Élève</th>
+			<th class="wrapcolumntitle liste_titre">Justification</th>
+			<th class="wrapcolumntitle liste_titre">Créneau</th>
+			</tr>';
+		foreach ($resqlAbsenceDuJour as $value)
+		{
+			$eleve = "SELECT e.nom,e.prenom,e.rowid FROM ".MAIN_DB_PREFIX."eleve as e WHERE e.rowid={$value['fk_eleve']}";
+			$resqlEleve = $db->query($eleve);
+			$objectNiveau = $db->fetch_object($resqlEleve);
+
+			$creneau = "SELECT c.rowid,c.nom_creneau FROM ".MAIN_DB_PREFIX."creneau as c WHERE c.rowid={$value['fk_creneau']}";
+			$resqlCreneau = $db->query($creneau);
+			$objectCreneau = $db->fetch_object($resqlCreneau);
+
+			print "<tr class='oddeven'>";
+			print "<td style='width:20%'>{$objectNiveau->prenom} {$objectNiveau->nom}</td>";
+			print "<td style='width:20%'>{$value['justification']}</td>";
+			print "<td style='width:45%'><a href=".DOL_URL_ROOT."/custom/scolarite/creneau_card.php?id={$objectCreneau->rowid}>{$objectCreneau->nom_creneau}</a></td>";
+			print '</tr>';
+		}
+		print '</tbody>';
+		print '</table>';
+}
+else print "Aucune absence connue pour aujourd'hui!";
+
+
+
+
+
+
+
+print '</div></div>';
+
+
+print load_fiche_titre("Cours de l'agent", '', 'fa-user');
 
 print "<pre>( Vous avez ici accès aux mêmes informations que la scolarité, pour ce qui est des absences. <br> Si vous constatez un cours vide, rapprochez-vous de la scolarité pour plus d'informations. )</pre>";
 $Jour = "SELECT jour, rowid FROM ".MAIN_DB_PREFIX."c_jour WHERE active=1";
