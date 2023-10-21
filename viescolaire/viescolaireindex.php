@@ -184,7 +184,11 @@ if($resqlAbsenceDuJour->num_rows > 0){
 		print '</tbody>';
 		print '</table>';
 }
-else print "Aucune absence connue pour aujourd'hui!";
+else
+{
+	print load_fiche_titre("Absences connues du jour <span class='badge badge-status4 badge-status'>0</span>", '', 'fa-warning');
+	print "Aucune absence connue pour aujourd'hui!";
+}
 
 
 
