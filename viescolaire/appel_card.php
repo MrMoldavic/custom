@@ -85,10 +85,13 @@ require_once DOL_DOCUMENT_ROOT . '/core/class/html.formcompany.class.php';
 require_once DOL_DOCUMENT_ROOT . '/core/class/html.formfile.class.php';
 require_once DOL_DOCUMENT_ROOT . '/core/class/html.formprojet.class.php';
 require_once DOL_DOCUMENT_ROOT . '/custom/materiel/core/lib/functions.lib.php';
+//require_once DOL_DOCUMENT_ROOT . '/custom/viescolaire/scripts/loader.css';
+
 dol_include_once('/viescolaire/class/appel.class.php');
 dol_include_once('/scolarite/class/dispositif.class.php');
 
 dol_include_once('/viescolaire/lib/viescolaire_appel.lib.php');
+//dol_include_once('/viescolaire/scripts/loader.css');
 
 // Load translation files required by the page
 $langs->loadLangs(array("viescolaire@viescolaire", "other"));
@@ -228,7 +231,28 @@ if (empty($reshook)) {
  *
  * Put here all code to build page
  */
+print '<style>
+.loader {
+  border: 8px solid #f3f3f3;
+  border-radius: 50%;
+  border-top: 8px solid #3498db;
+  width: 20px;
+  height:  20px;
+  -webkit-animation: spin 2s linear infinite; /* Safari */
+  animation: spin 2s linear infinite;
+}
 
+/* Safari */
+@-webkit-keyframes spin {
+	0% { -webkit-transform: rotate(0deg); }
+  100% { -webkit-transform: rotate(360deg); }
+}
+
+@keyframes spin {
+	0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+</style>';
 $form = new Form($db);
 $formfile = new FormFile($db);
 $formproject = new FormProjets($db);
@@ -283,10 +307,15 @@ if ($action == 'confirmAppel') {
                $sqlAppel = "SELECT justification,status,rowid FROM " . MAIN_DB_PREFIX . "appel WHERE fk_eleve = " . $val['rowid'];
                $sqlAppel .= " AND fk_creneau = " . GETPOST('creneauid', 'int');
                $sqlAppel .= " AND treated = " . 1;
-			   $sqlAppel .= " AND date_creation LIKE '" . date('Y-m-d'). "%'";
-               //$sqlAppel .= " AND status != '" . GETPOST('presence' . $val['rowid'], 'alpha') . "'";
+			   if(GETPOST('daymonth', 'alpha'))
+			   {
+				   $sqlAppel .= " AND date_creation LIKE '".date('Y-m-d', mktime(0, 0, 0, GETPOST('month', 'alpha'), GETPOST('daymonth', 'alpha'), date(GETPOST('year', 'alpha'))))."%'";
+			   }
+			   else
+			   {
+				   $sqlAppel .=" AND date_creation LIKE '" . date('Y-m-d'). "%'";
+			   }
                $sqlAppel .= " ORDER BY rowid DESC LIMIT 1";
-
                $resqlEleves = $db->query($sqlAppel);
                // Si appel déjà présent, cela indique que l'appel en modification et qu'on à une entrée différente de celle en BDD, donc un va modifier l'appel existant
                if($resqlEleves->num_rows > 0)
@@ -331,8 +360,14 @@ if ($action == 'confirmAppel') {
 			 $sqlAppelProf1 = "SELECT justification,status,rowid FROM " . MAIN_DB_PREFIX . "appel WHERE fk_user = " . $sqlProReal->fk_prof_1;
 			 $sqlAppelProf1 .= " AND fk_creneau = " . GETPOST('creneauid', 'int');
 			 $sqlAppelProf1 .= " AND treated = " . 1;
-			 $sqlAppelProf1 .= " AND date_creation LIKE '" . date('Y-m-d'). "%'";
-			 //$sqlAppelProf1 .= " AND status != '" . GETPOST('prof' . $sqlProReal->fk_prof_1, 'alpha') . "'";
+			  if(GETPOST('daymonth', 'alpha'))
+			  {
+				  $sqlAppelProf1 .= " AND date_creation LIKE '".date('Y-m-d', mktime(0, 0, 0, GETPOST('month', 'alpha'), GETPOST('daymonth', 'alpha'), date(GETPOST('year', 'alpha'))))."%'";
+			  }
+			  else
+			  {
+				  $sqlAppelProf1 .=" AND date_creation LIKE '" . date('Y-m-d'). "%'";
+			  }
 			 $sqlAppelProf1 .= " ORDER BY rowid DESC limit 1";
 
 			 $resqlProf1 = $db->query($sqlAppelProf1);
@@ -372,10 +407,15 @@ if ($action == 'confirmAppel') {
                $sqlAppelProf2 = "SELECT justification,status,rowid FROM " . MAIN_DB_PREFIX . "appel WHERE fk_user = " . $sqlProReal->fk_prof_2;
                $sqlAppelProf2 .= " AND fk_creneau = " . GETPOST('creneauid', 'int');
                $sqlAppelProf2 .= " AND treated = " . 1;
-			   $sqlAppelProf2 .= " AND date_creation LIKE '" . date('Y-m-d'). "%'";
-              // $sqlAppelProf2 .= " AND status != '" . GETPOST('prof' . $sqlProReal->fk_prof_2, 'alpha')  . "'";
+			   if(GETPOST('daymonth', 'alpha'))
+			   {
+				   $sqlAppelProf2 .= " AND date_creation LIKE '".date('Y-m-d', mktime(0, 0, 0, GETPOST('month', 'alpha'), GETPOST('daymonth', 'alpha'), date(GETPOST('year', 'alpha'))))."%'";
+			   }
+			   else
+			   {
+				   $sqlAppelProf2 .=" AND date_creation LIKE '" . date('Y-m-d'). "%'";
+			   }
                $sqlAppelProf2 .= " ORDER BY rowid DESC limit 1";
-
                $resqlProf2 = $db->query($sqlAppelProf2);
 
                // Si appel déjà présent, cela indique que l'appel en modification et qu'on à une entrée diffénte de celle en BDD, donc un va modifier l'appel existant
@@ -421,8 +461,14 @@ if ($action == 'confirmAppel') {
                $sqlAppelProf3 = "SELECT justification,status,rowid FROM " . MAIN_DB_PREFIX . "appel WHERE fk_user = " . $sqlProReal->fk_prof_3;
                $sqlAppelProf3 .= " AND fk_creneau = " . GETPOST('creneauid', 'int');
                $sqlAppelProf3 .= " AND treated = " . 1;
-			   $sqlAppelProf3 .= " AND date_creation LIKE '" . date('Y-m-d'). "%'";
-               //$sqlAppelProf3 .= " AND status != '" . GETPOST('prof' . $sqlProReal->fk_prof_3, 'alpha')  . "'";
+			   if(GETPOST('daymonth', 'alpha'))
+			   {
+				   $sqlAppelProf3 .= " AND date_creation LIKE '".date('Y-m-d', mktime(0, 0, 0, GETPOST('month', 'alpha'), GETPOST('daymonth', 'alpha'), date(GETPOST('year', 'alpha'))))."%'";
+			   }
+			   else
+			   {
+				   $sqlAppelProf3 .=" AND date_creation LIKE '" . date('Y-m-d'). "%'";
+			   };
                $sqlAppelProf3 .= " ORDER BY rowid DESC limit 1";
 
                $resqlProf3 = $db->query($sqlAppelProf3);
@@ -534,6 +580,7 @@ if (($action == 'create' or $action == 'modifAppel' or $action == 'returnFromErr
           $heureActuelle = intval(strftime('%k'));
           $minuteActuelle = intval(strftime('%M'));
      }
+
      if($action == 'modifAppel') $heureActuelle = GETPOST('heure', 'alpha');
 
      if(GETPOST('daymonth', 'alpha'))  $day = GETPOST('daymonth', 'alpha');
@@ -777,19 +824,36 @@ if (($action == 'create' or $action == 'modifAppel' or $action == 'returnFromErr
 
           print '</table>';
           if (!$isComplete or ($action == 'modifAppel' && $creneauid == $val['rowid'])) {
-               print '<div class="center"><input type="submit" value="Valider l\'appel"class="button" style="background-color:cadetblue"></div>';
+			   /*print '<div class="center" style="display: flex; align-items: center; justify-content: center;"><div id="loader"></div></div>';
+               print '<div class="center"><input type="submit" id="appelButton" value="Valider l\'appel"class="button appelButton" style="background-color:cadetblue"></div>';*/
+
+			  print '<div class="center" style="display: flex; align-items: center; justify-content: center; flex-direction: column">';
+			  print '<div id="loader-'.$val['rowid'].'"></div>';
+			  print '<input type="submit" id="'.$val['rowid'].'" value="Valider l\'appel" class="button appelButton" style="background-color:lightslategray">';
+			  print '</div>';
+
           } else {
                $currentHour = false;
-               print '<div class="center"><input type="submit" value="Modifier l\'appel" class="button" style="background-color:lightslategray"></div>';
+			   print '<div class="center" style="display: flex; align-items: center; justify-content: center; flex-direction: column">';
+			   print '<div id="loader-'.$val['rowid'].'"></div>';
+               print '<input type="submit" id="'.$val['rowid'].'" value="Modifier l\'appel" class="button appelButton" style="background-color:lightslategray">';
+			   print '</div>';
           }
 
           print '</form>';
 
           print '</div>';
-
           print '</div>';
 
      }
+
+	print '<script>
+		$( ".appelButton" ).on( "click", function() {
+		  this.style.opacity = 0;
+		 $( "#loader-"+this.id).addClass("loader");
+		 $( "#loader-"+this.id).style.opacity = 1;
+		});
+		</script>';
 
      print '<script>
 		$( ".appel-accordion" ).accordion({
@@ -807,7 +871,7 @@ if (($action == 'create' or $action == 'modifAppel' or $action == 'returnFromErr
 
 }
 
-
+//print '<script src="scripts/script_appel.js" defer></script>';
 
 // End of page
 llxFooter();
