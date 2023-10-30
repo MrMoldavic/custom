@@ -344,6 +344,7 @@ if ($action == 'create') {
 	// Other attributes
 	include DOL_DOCUMENT_ROOT . '/core/tpl/extrafields_add.tpl.php';
 
+
 	print '</table>' . "\n";
 
 	print dol_get_fiche_end();
@@ -849,7 +850,9 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 							// On ajoute le notre, avec nos conditions
 							$object->fields['fk_creneau']['type'] = "integer:Creneau:custom/scolarite/class/creneau.class.php:1:(t.nombre_places>(SELECT COUNT(*) FROM llx_affectation as c WHERE c.fk_creneau=t.rowid AND c.status = 4 AND DATE(NOW()) >= DATE(c.date_debut) AND (DATE(NOW()) <= DATE(c.date_fin) OR ISNULL(c.date_fin))) AND t.status = 4 AND (t.nom_creneau LIKE '%".substr($resEtablissement->diminutif, 0,2)."%') ".($typeClasse == 2 ? "AND t.fk_type_classe=".$typeClasse : "AND t.fk_instrument_enseigne = ".$instruEnseigne).") ";
 						}
+						//var_dump($object->fields['fk_creneau']['type']);
 						print $object->showInputField($val, $key, $value, '', '', '', 0);
+						//var_dump($object->showInputField($val, $key, $value, '', '', '', 0));
 					}
 				}
 				print '</td>';
@@ -866,7 +869,9 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 
 			print dol_get_fiche_end();
 
+			print '<div id="div-creneau">';
 			print $form->buttonsSaveCancel("Créer affectation");
+			print '</div>';
 
 			print '</form>';
 
@@ -886,6 +891,7 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 	$trackid = 'souhait' . $object->id;
 
 	include DOL_DOCUMENT_ROOT . '/core/tpl/card_presend.tpl.php';
+	print '<script src="/custom/viescolaire/scripts/selectCreneaux.js" defer ></script>';
 }
 
 // End of page
