@@ -153,7 +153,9 @@ print '</div><div style="width:55%" class="fichetwothirdright"><div class="fiche
 
 
 $date = date('Y-m-d');
-$absence = "SELECT DISTINCT rowid, justification,fk_eleve,fk_creneau FROM ".MAIN_DB_PREFIX."appel WHERE date_creation > '".$date."' AND treated=1 AND fk_eleve != '' AND status !='present' ORDER BY date_creation ASC";
+$tomorrow = date('Y-m-d', strtotime($date. ' + 1 day'));
+
+$absence = "SELECT DISTINCT rowid, justification,fk_eleve,fk_creneau FROM ".MAIN_DB_PREFIX."appel WHERE date_creation > '".$date."' AND date_creation < '".$tomorrow."' AND treated=1 AND fk_eleve != '' AND status !='present' ORDER BY date_creation ASC";
 $resqlAbsenceDuJour = $db->query($absence);
 
 if($resqlAbsenceDuJour->num_rows > 0){
