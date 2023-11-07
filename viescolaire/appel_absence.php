@@ -166,7 +166,7 @@ if($action == 'addAbsence')
 {
 	function dateToMySQL($date){
         $tabDate = explode('/' , $date);
-        $dateToAdd = $tabDate[2].'-'.$tabDate[1].'-'.$tabDate[0];
+        $dateToAdd = $tabDate[2].'-'.$tabDate[1].'-'.$tabDate[0].' 23:59:59';
         return $dateToAdd;
     }
 

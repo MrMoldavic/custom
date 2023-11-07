@@ -264,13 +264,13 @@ llxHeader('', $title, $help_url);
 		$sql = "SELECT e.rowid,e.nom FROM " . MAIN_DB_PREFIX . "etablissement as e";
 		$resql = $db->query($sql);
 		$etablissements = [];
-   
+
 		foreach ($resql as $val) {
 			 $etablissements[$val['rowid']] = $val['nom'];
 		}
-   
+
 		print '<form action="' . $_SERVER["PHP_SELF"] . '" method="POST">';
-   
+
 		print '<input type="hidden" name="action" value="create">';
 		$titre = "Nouvel Appel";
 		print talm_load_fiche_titre($title, $linkback, $picto);
@@ -291,12 +291,12 @@ llxHeader('', $title, $help_url);
 		print '<input type="submit" class="button" value="Suivant">';
 		print '</div>';
 		print '</form>';
-		
+
     }
 	elseif($action == 'create' && !empty($etablissementid))
 	{
 		$date = date('Y-m-d');
-		$absences = "SELECT c.fk_eleve,c.fk_creneau,c.date_creation,c.justification,c.status,c.tms,c.fk_user_creat,c.rowid FROM ".MAIN_DB_PREFIX."appel as c WHERE fk_etablissement =".GETPOST('etablissementid', 'int')." AND date_creation >='".$date."'";
+		$absences = "SELECT c.fk_eleve,c.fk_creneau,c.date_creation,c.justification,c.status,c.tms,c.fk_user_creat,c.rowid FROM ".MAIN_DB_PREFIX."appel as c WHERE fk_etablissement =".GETPOST('etablissementid', 'int')." AND date_creation >='".$date."' AND fk_eleve != '' AND status != 'present'";
 		$resqlAbsences = $db->query($absences);
 
 		print '<h3>Liste des absences à venir</h3>';
@@ -315,7 +315,7 @@ llxHeader('', $title, $help_url);
 
 		foreach($resqlAbsences as $value)
 		{
-			
+
 			$eleve = "SELECT prenom,nom,rowid FROM ".MAIN_DB_PREFIX."eleve WHERE rowid =".$value['fk_eleve'];
 			$resqlEleve = $db->query($eleve);
 			$objEleve = $db->fetch_object($resqlEleve);
@@ -329,7 +329,7 @@ llxHeader('', $title, $help_url);
 			$objScola = $db->fetch_object($resqlScola);
 
 			$dateAbsence = date('d/m/Y', strtotime($value['date_creation']));
-			$tms = date('d/m/Y', strtotime($value['tms'])); 
+			$tms = date('d/m/Y', strtotime($value['tms']));
 
 			print '<tr>';
 			print '<td style="padding:1em"><a href="' . DOL_URL_ROOT . '/custom/viescolaire/eleve_card.php?id=' . $objEleve->rowid . '" target="_blank">' . $objEleve->prenom . ' ' . $objEleve->nom . '</a></td>';
@@ -343,10 +343,10 @@ llxHeader('', $title, $help_url);
 			print '</tr>';
 		}
 		print '</table>';
-	
+
 	}
 
-	
+
 // End of page
 llxFooter();
 $db->close();
