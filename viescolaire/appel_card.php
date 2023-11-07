@@ -321,10 +321,10 @@ if ($action == 'confirmAppel') {
                if($resqlEleves->num_rows > 0)
                {
                     $resEleves = $db->fetch_object($resqlEleves);
-					if($resEleves->status != GETPOST('presence' . $val['rowid'], 'alpha') || $resEleves->justification != GETPOST('infos' . $val['rowid'], 'alpha'))
+					if($resEleves->status != GETPOST('presence' . $val['rowid'], 'alpha') || $resEleves->justification != str_replace("'",'`',GETPOST('infos' . $val['rowid'], 'alpha')))
 					{
 						// On remplace par le nouveau status
-						$sqlUpdateEleve = "UPDATE " . MAIN_DB_PREFIX . "appel SET status = '".GETPOST('presence' . $val['rowid'], 'alpha')."',justification='" . GETPOST('infos' . $val['rowid'], 'alpha') . "' WHERE rowid=".$resEleves->rowid;
+						$sqlUpdateEleve = "UPDATE " . MAIN_DB_PREFIX . "appel SET status = '".GETPOST('presence' . $val['rowid'], 'alpha')."',justification='" . str_replace("'",'`',GETPOST('infos' . $val['rowid'], 'alpha')) . "' WHERE rowid=".$resEleves->rowid;
 						if(!$db->query($sqlUpdateEleve)) $error++;
 					}
 
@@ -336,7 +336,7 @@ if ($action == 'confirmAppel') {
                     $sqlres .= GETPOST('etablissementid', 'int') . ",";
                     $sqlres .= GETPOST('creneauid', 'int') . ",";
                     $sqlres .= $val['rowid'] . ",";
-                    $sqlres .= "'" . GETPOST('infos' . $val['rowid'], 'alpha') . "',";
+                    $sqlres .= "'" . str_replace("'",'`',GETPOST('infos' . $val['rowid'], 'alpha')) . "',";
                     $sqlres .= "NULL" . ",";
                     if(GETPOST('daymonth', 'alpha'))
                     {
@@ -350,7 +350,7 @@ if ($action == 'confirmAppel') {
                     $sqlres .= "'" . GETPOST('presence' . $val['rowid'], 'alpha') . "',";
                     $sqlres .= 1 .")";
 
-                    if(!$db->query($sqlres)) $error++;
+                  	if(!$db->query($sqlres)) $error++;
                }
           }
 
@@ -375,9 +375,9 @@ if ($action == 'confirmAppel') {
 			 // Si appel déjà présent, cela indique que l'appel en modification et qu'on à une entrée diffénte de celle en BDD, donc un va modifier l'appel existant
 			 if ($resqlProf1->num_rows != 0) {
 				 $resProf = $db->fetch_object($resqlProf1);
-				 if($resProf->status != GETPOST('prof' . $sqlProReal->fk_prof_1, 'alpha') || $resProf->justification != GETPOST('infos' . $sqlProReal->fk_prof_1, 'alpha')){
+				 if($resProf->status != GETPOST('prof' . $sqlProReal->fk_prof_1, 'alpha') || $resProf->justification != str_replace("'",'`',GETPOST('infos' . $sqlProReal->fk_prof_1, 'alpha'))){
 					 // On remplace par le nouveau status
-					 $sqlUpdateProf = "UPDATE " . MAIN_DB_PREFIX . "appel SET status = '" . GETPOST('prof' . $sqlProReal->fk_prof_1, 'alpha') . "',justification='" . GETPOST('infos' . $sqlProReal->fk_prof_1, 'alpha') . "' WHERE rowid=" . $resProf->rowid;
+					 $sqlUpdateProf = "UPDATE " . MAIN_DB_PREFIX . "appel SET status = '" . GETPOST('prof' . $sqlProReal->fk_prof_1, 'alpha') . "',justification='" . str_replace("'",'`',GETPOST('infos' . $sqlProReal->fk_prof_1, 'alpha')) . "' WHERE rowid=" . $resProf->rowid;
 					 if (!$db->query($sqlUpdateProf)) $error++;
 				 }
 			 } else {
@@ -385,7 +385,7 @@ if ($action == 'confirmAppel') {
 				 $sqlResProf .= GETPOST('etablissementid', 'int') . ",";
 				 $sqlResProf .= GETPOST('creneauid', 'int') . ",";
 				 $sqlResProf .= $sqlProReal->fk_prof_1 . ",";
-				 $sqlResProf .= "'" . GETPOST('infos' . $sqlProReal->fk_prof_1, 'alpha') . "',";
+				 $sqlResProf .= "'" . str_replace("'",'`',GETPOST('infos' . $sqlProReal->fk_prof_1, 'alpha')) . "',";
 				 $sqlResProf .= "NULL" . ",";
 				 if (GETPOST('daymonth', 'alpha')) {
 					 $sqlResProf .= "'" . date('Y-m-d H:i:s', mktime(0, 0, 0, GETPOST('month', 'alpha'), GETPOST('daymonth', 'alpha'), date(GETPOST('year', 'alpha')))) . "',";
@@ -423,8 +423,8 @@ if ($action == 'confirmAppel') {
                {
                     $resProf2 = $db->fetch_object($resqlProf2);
                     // On remplace par le nouveau status
-				   if($resProf2 != GETPOST('prof' . $sqlProReal->fk_prof_2, 'alpha') || $resProf2->justification != GETPOST('infos' . $sqlProReal->fk_prof_2, 'alpha')){
-					   $sqlUpdateProf = "UPDATE " . MAIN_DB_PREFIX . "appel SET status = '".GETPOST('prof' . $sqlProReal->fk_prof_2, 'alpha')."',justification='" . GETPOST('infos' . $sqlProReal->fk_prof_2, 'alpha') . "' WHERE rowid=".$resProf2->rowid;
+				   if($resProf2 != GETPOST('prof' . $sqlProReal->fk_prof_2, 'alpha') || $resProf2->justification != str_replace("'",'`',GETPOST('infos' . $sqlProReal->fk_prof_2, 'alpha'))){
+					   $sqlUpdateProf = "UPDATE " . MAIN_DB_PREFIX . "appel SET status = '".GETPOST('prof' . $sqlProReal->fk_prof_2, 'alpha')."',justification='" . str_replace("'",'`',GETPOST('infos' . $sqlProReal->fk_prof_2, 'alpha')) . "' WHERE rowid=".$resProf2->rowid;
 					   if(!$db->query($sqlUpdateProf)) $error++;
 				   }
                }
@@ -434,7 +434,7 @@ if ($action == 'confirmAppel') {
                     $sqlResProf .= GETPOST('etablissementid', 'int') . ",";
                     $sqlResProf .= GETPOST('creneauid', 'int') . ",";
                     $sqlResProf .= $sqlProReal->fk_prof_2 . ",";
-                    $sqlResProf .= "'" . GETPOST('infos' . $sqlProReal->fk_prof_2, 'alpha') . "',";
+                    $sqlResProf .= "'" . str_replace("'",'`',GETPOST('infos' . $sqlProReal->fk_prof_2, 'alpha')) . "',";
                     $sqlResProf .= "NULL" . ",";
                     if(GETPOST('daymonth', 'alpha'))
                     {
@@ -477,9 +477,9 @@ if ($action == 'confirmAppel') {
                if($resqlProf3->num_rows != 0)
                {
                     $resProf3 = $db->fetch_object($resqlProf3);
-					if( $resProf3->status != GETPOST('prof' . $sqlProReal->fk_prof_3, 'alpha') || $resProf3->justification != GETPOST('infos' . $sqlProReal->fk_prof_3, 'alpha')){
+					if( $resProf3->status != GETPOST('prof' . $sqlProReal->fk_prof_3, 'alpha') || $resProf3->justification != str_replace("'",'`',GETPOST('infos' . $sqlProReal->fk_prof_3, 'alpha'))){
 						// On remplace par le nouveau status
-						$sqlUpdateProf = "UPDATE " . MAIN_DB_PREFIX . "appel SET status = '".GETPOST('prof' . $sqlProReal->fk_prof_3, 'alpha')."',justification='" . GETPOST('infos' . $sqlProReal->fk_prof_3, 'alpha') . "' WHERE rowid=".$resProf3->rowid;
+						$sqlUpdateProf = "UPDATE " . MAIN_DB_PREFIX . "appel SET status = '".GETPOST('prof' . $sqlProReal->fk_prof_3, 'alpha')."',justification='" . str_replace("'",'`',GETPOST('infos' . $sqlProReal->fk_prof_3, 'alpha')) . "' WHERE rowid=".$resProf3->rowid;
 						if(!$db->query($sqlUpdateProf)) $error++;
 					}
                }
@@ -489,7 +489,7 @@ if ($action == 'confirmAppel') {
                     $sqlResProf .= GETPOST('etablissementid', 'int') . ",";
                     $sqlResProf .= GETPOST('creneauid', 'int') . ",";
                     $sqlResProf .= $sqlProReal->fk_prof_2 . ",";
-                    $sqlResProf .= "'" . GETPOST('infos' . $sqlProReal->fk_prof_3, 'alpha') . "',";
+                    $sqlResProf .= "'" . str_replace("'",'`',GETPOST('infos' . $sqlProReal->fk_prof_3, 'alpha')) . "',";
                     $sqlResProf .= "NULL" . ",";
                     if(GETPOST('daymonth', 'alpha'))
                     {
