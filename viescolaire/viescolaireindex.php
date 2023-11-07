@@ -152,10 +152,9 @@ if ($conf->use_javascript_ajax)
 print '</div><div style="width:55%" class="fichetwothirdright"><div class="ficheaddleft">';
 
 
-$date = date('Y-m-d 00:00');
-$absence = "SELECT DISTINCT rowid, justification,fk_eleve,fk_creneau FROM ".MAIN_DB_PREFIX."appel WHERE date_creation > '".$date."' AND treated=1 AND fk_eleve != '' ORDER BY date_creation ASC";
+$date = date('Y-m-d');
+$absence = "SELECT DISTINCT rowid, justification,fk_eleve,fk_creneau FROM ".MAIN_DB_PREFIX."appel WHERE date_creation > '".$date."' AND treated=1 AND fk_eleve != '' AND status !='present' ORDER BY date_creation ASC";
 $resqlAbsenceDuJour = $db->query($absence);
-
 
 if($resqlAbsenceDuJour->num_rows > 0){
 	print load_fiche_titre("Absences connues aujourd'hui <span class='badge badge-status4 badge-status'>{$resqlAbsenceDuJour->num_rows}</span>", '', 'fa-warning');
