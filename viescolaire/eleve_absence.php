@@ -140,6 +140,13 @@ if (empty($reshook)) {
 	include DOL_DOCUMENT_ROOT.'/core/actions_setnotes.inc.php'; // Must be include, not include_once
 }
 
+if ($action == 'deleteAbsence') {
+	$sql = "DELETE FROM " . MAIN_DB_PREFIX . "appel WHERE rowid=".GETPOST('idAppel', 'int');
+	$resql = $db->query($sql);
+
+	setEventMessage('Absence supprimée avec succès');
+}
+
 
 /*
  * View
@@ -229,20 +236,20 @@ if ($id > 0 || !empty($ref)) {
 		$status = $objp->status == 'retard' ? 'Retard' : ($objp->status == 'absenceJ' ? 'Absence Justifiée' : 'Absence Injustifiée');
 		$materiels[$status] = $objp->total;
 	}
-	
+
 	if ($conf->use_javascript_ajax)
 	{
 		print '<div class="div-table-responsive-no-min">';
 		print '<table class="noborder centpercent">';
 		print '<tr class="liste_titre"><th>Bilan global des absences de '.$object->prenom.'</th></tr>';
 		print '<tr><td class="center nopaddingleftimp nopaddingrightimp">';
-	
+
 		$total = 0;
 		$dataval = array();
 		$datalabels = array();
 		$dataseries = array();
 		$i = 0;
-	
+
 		foreach ($materiels as $type=>$appel_count)
 		{
 			$total+=$appel_count;
@@ -257,7 +264,7 @@ if ($id > 0 || !empty($ref)) {
 		$dolgraph->setHeight('200');
 		$dolgraph->draw('idgraphstatus');
 		print $dolgraph->show($total ? 0 : 1);
-	
+
 		print '</td></tr>';
 		print '</table>';
 		print '</div>';
@@ -285,6 +292,7 @@ if ($id > 0 || !empty($ref)) {
 	print '<td>Justification</td>';
 	print '<td>Date de l\'absence</td>';
 	print '<td>Statut</td>';
+	print '<td>Action</td>';
 	print '</tr>';
 	foreach($resql as $value)
 	{
@@ -295,16 +303,16 @@ if ($id > 0 || !empty($ref)) {
 		$creneau = "SELECT nom_creneau,fk_prof_1,fk_prof_2,fk_prof_3,fk_annee_scolaire,rowid FROM ".MAIN_DB_PREFIX."creneau WHERE rowid= ".$value['fk_creneau'];
 		$resqlCreneau = $db->query($creneau);
 		$creneauObj = $db->fetch_object($resqlCreneau);
-	
+
 		$time = strtotime($value['date_creation']);
 
 		$sqlProf1 = "SELECT prenom,nom,rowid FROM ".MAIN_DB_PREFIX."management_agent WHERE rowid= ".$creneauObj->fk_prof_1;
 		if($creneauObj->fk_prof_1 != null) $resqlProf1 = $db->query($sqlProf1);
-		
+
 
 		$sqlProf2 = "SELECT prenom,nom,rowid FROM ".MAIN_DB_PREFIX."management_agent WHERE rowid= ".$creneauObj->fk_prof_2;
 		if($creneauObj->fk_prof_2 != null) $resqlProf2 = $db->query($sqlProf2);
-		
+
 		$sqlProf3 = "SELECT prenom,nom,rowid FROM ".MAIN_DB_PREFIX."management_agent WHERE rowid= ".$creneauObj->fk_prof_3;
 		if($creneauObj->fk_prof_3 != null) $resqlProf3 = $db->query($sqlProf3);
 
@@ -312,7 +320,7 @@ if ($id > 0 || !empty($ref)) {
 		print '<td>'.$etablissementObj->diminutif.'</td>';
 		print '<td>'.($creneauObj->nom_creneau != "" ? '<a href="'.DOL_URL_ROOT.'/custom/scolarite/creneau_card.php?id='.$creneauObj->rowid.' " target="_blank">'.$creneauObj->nom_creneau.'</a>' : '<span class="badge  badge-status8 badge-status" style="color:white;">Erreur créneau</span>').'</td>';
 		print '<td>';
-		
+
 		if($resqlProf1)
 		{
 			$profObject1 = $db->fetch_object($resqlProf1);
@@ -336,11 +344,13 @@ if ($id > 0 || !empty($ref)) {
 
 		print '<td><span class="badge  badge-status'.($objAnneScolaire->rowid != $creneauObj->fk_annee_scolaire ? '9' : '4').' badge-status" style="color:white;">'.date('d/m/Y', $time).($objAnneScolaire->rowid != $creneauObj->fk_annee_scolaire ? ' / Année précédente' : ' / Année actuelle').'</span></td>';
 		print '<td>'.'<span class="badge  badge-status'.($value['status'] == 'retard' ? '1' : ($value['status'] == 'absenceJ' ? '4' : '8')).' badge-status" style="color:white;">'.($value['status'] == 'retard' ? 'Retard' : ($value['status'] == 'absenceJ' ? 'Absence Justifiée' : 'Absence Injustifiée')).'</span>'.'</td>';
+		print '<td style="padding:1em; "><a href="'.$_SERVER['PHP_SELF'].'?id='.$object->id.'&idAppel='.$value['rowid'].'&action=deleteAbsence">'.'❌'.'</a></td>';
+
 		print '</tr>';
 	}
 	print '</tbody>';
 	print '</table>';
-	
+
 
 	$cssclass = "titlefield";
 
