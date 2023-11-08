@@ -448,22 +448,6 @@ if ($num == 1 && !empty($conf->global->MAIN_SEARCH_DIRECT_OPEN_IF_ONLY_ONE) && $
 
 llxHeader('', $title, $help_url, '', 0, 0, $morejs, $morecss, '', '');
 
-// Example : Adding jquery code
-// print '<script type="text/javascript">
-// jQuery(document).ready(function() {
-// 	function init_myfunc()
-// 	{
-// 		jQuery("#myid").removeAttr(\'disabled\');
-// 		jQuery("#myid").attr(\'disabled\',\'disabled\');
-// 	}
-// 	init_myfunc();
-// 	jQuery("#mybutton").click(function() {
-// 		init_myfunc();
-// 	});
-// });
-// </script>';
-
-
 
 
 $arrayofselected = is_array($toselect) ? $toselect : array();
@@ -503,7 +487,6 @@ $arrayofmassactions = array(
 	'telephone'=>img_picto('', 'phone', 'class="pictofixedwidth"').$langs->trans("Exporter les téléphones"),
 	'validate'=>img_picto('', 'check', 'class="pictofixedwidth"').$langs->trans("Validate"),
 	'coordonnee'=>img_picto('', 'location', 'class="pictofixedwidth"').$langs->trans("Coordonnées par enfants"),
-
 );
 if ($permissiontodelete) {
 	$arrayofmassactions['predelete'] = img_picto('', 'delete', 'class="pictofixedwidth"').$langs->trans("Delete");
@@ -529,7 +512,6 @@ $date = date('Y-m-d H:i:s');
 
 print '<a href="'.$_SERVER['PHP_SELF'].'?creneauErrors='.($creneauErrors == 'false' ? 'true' : 'false').'">'.($creneauErrors == 'true' ? 'Affichage normal' : 'Afficher les créneaux avec des erreurs').'</a><br>';
 
-
 print '<a href="'.$_SERVER['PHP_SELF'].'?allYear='.($allYear == 'false' ? 'true' : 'false').'">'.($allYear == 'false' ? 'Afficher les créneaux de toutes les années' : 'Afficher seulement les créneaux de l\'année actuelle').'</a><br>';
 
 
@@ -537,8 +519,6 @@ print '<a href="'.$_SERVER['PHP_SELF'].'?allYear='.($allYear == 'false' ? 'true'
 
 if($massaction == 'telephone' || $massaction == 'mail' || $massaction == "eleves" || $massaction == "coordonnee")
 {
-	//var_dump($arrayofselected);
-	//$fich = fopen("CSV/items.csv", "w");
 	print "<br>";
 	foreach($arrayofselected as $value)
 	{
@@ -603,61 +583,10 @@ if($massaction == 'telephone' || $massaction == 'mail' || $massaction == "eleves
 						print $out;
 
 					}
-
-
-					// fwrite($fich, $mail_parent_2."\n");
 				}
-
 		}
 	}
-	//fclose($fich);
-
-	// $fich = fopen("test.csv", "w");
-	// // $sep = ",";
-	// $i = 0;
-	// $form = "";
-	// for (; $i < sizeof($arrayofselected) - 1; $i++) {
-	// 	$form .= $arrayofselected[$i] . "\n";
-	// }
-	// fwrite($fich, $form);
-	// fclose($fich);
-
-
-	// $list = array (
-	// 	array('aaa', 'bbb', 'ccc', 'dddd'),
-	// 	array('123', '456', '789'),
-	// 	array('"aaa"', '"bbb"')
-	//  );
-
-	//  $fp = fopen('CSV/file.csv', 'w');
-
-	//  foreach ($list as $fields) {
-	// 	 fputcsv($fp, $fields);
-	//  }
-
-	//  fclose($fp);
-	//  $out = '<a class="documentdownload paddingright" href="'.$documenturl.'?modulepart='.$modulepart.'&amp;file=CSV/'.urlencode($relativepath).($param ? '&'.$param : '').'"';
-	//  $mime = dol_mimetype($relativepath, '', 0);
-	//  if (preg_match('/text/', $mime)) {
-	// 	 $out .= ' target="_blank" rel="noopener noreferrer"';
-	//  }
-	//  $out .= '>';
-
-	// print $out;
-
 }
-
-
-
-
-
-
-
-
-
-
-
-
 
 print '<form method="POST" id="searchFormList" action="'.$_SERVER["PHP_SELF"].'">'."\n";
 if ($optioncss != '') {
@@ -693,9 +622,7 @@ if ($search_all) {
 }
 
 $moreforfilter = '';
-/*$moreforfilter.='<div class="divsearchfield">';
-$moreforfilter.= $langs->trans('MyFilter') . ': <input type="text" name="search_myfield" value="'.dol_escape_htmltag($search_myfield).'">';
-$moreforfilter.= '</div>';*/
+
 
 $parameters = array();
 $reshook = $hookmanager->executeHooks('printFieldPreListTitle', $parameters, $object); // Note that $action and $object may have been modified by hook

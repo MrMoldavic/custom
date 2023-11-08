@@ -117,7 +117,7 @@ class Dispositif extends CommonObject
 		'model_pdf' => array('type'=>'varchar(255)', 'label'=>'Model pdf', 'enabled'=>'1', 'position'=>1010, 'notnull'=>0, 'visible'=>0),
 		'description' => array('type'=>'text', 'label'=>'Description', 'enabled'=>'1', 'position'=>60, 'notnull'=>0, 'visible'=>3, 'validate'=>'1'),
 	);
-	public $rowid;	
+	public $rowid;
 	public $nom;
 	public $fk_etablissement;
 	public $fk_type_classe;
@@ -227,6 +227,59 @@ class Dispositif extends CommonObject
 		//$resultvalidate = $this->validate($user, $notrigger);
 
 		return $resultcreate;
+	}
+
+
+	/**
+	 * Delete object in database
+	 *
+	 * @param array $parameters array of column to fetch
+	 * @param int $id id of item requested for direct fetch
+	 * @param string $column string column requested for direct fetch
+	 * @return int <0 if KO, >0 if OK
+	 */
+	public function fetchBy(array $parameters, int $id = 0, string $column = '')
+	{
+		$sql = "SELECT ";
+		for($i=0;$i<count($parameters);$i++)
+		{
+			$sql .= $this->db->escape($parameters[$i]).', ';
+		}
+		$sql = substr($sql, 0, -2);
+		$sql .= " FROM ".MAIN_DB_PREFIX.$this->table_element;
+
+		if($id)
+		{
+			$sql .= " WHERE ".$this->db->sanitize($this->db->escape($column))." = ".$this->db->sanitize($this->db->escape($id));
+		}
+		$resql = $this->db->query($sql);
+
+		if ($resql) {
+			$num = $this->db->num_rows($resql);
+			$i = 0;
+			if($num == 1)
+			{
+				$records = $this->db->fetch_object($resql);
+			}
+			else
+			{
+				$records = array();
+				while ($i < ($limit ? min($limit, $num) : $num)) {
+					$obj = $this->db->fetch_object($resql);
+					$records[$obj->rowid] = $obj;
+					$i++;
+				}
+			}
+
+			$this->db->free($resql);
+
+			return $records;
+		} else {
+			$this->errors[] = 'Error '.$this->db->lasterror();
+			dol_syslog(__METHOD__.' '.join(',', $this->errors), LOG_ERR);
+
+			return -1;
+		}
 	}
 
 	/**

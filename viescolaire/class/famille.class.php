@@ -258,10 +258,10 @@ class Famille extends CommonObject
 		{
 			$this->identifiant_famille = strtoupper($this->nom_parent_1) . ' ' .ucfirst(strtolower($this->prenom_parent_1));
 		}
-		
+
 		if(!empty($this->tel_parent_1) && strlen($this->tel_parent_1) != 10)
 		{
-			setEventMessage('Le numéro de téléphone ne fait pas 10 chiffres.','errors');	
+			setEventMessage('Le numéro de téléphone ne fait pas 10 chiffres.','errors');
 		}
 		else
 		{
@@ -277,7 +277,7 @@ class Famille extends CommonObject
 			$resultcreate = $this->createCommon($user, $notrigger);
 			return $resultcreate;
 		}
-		
+
 	}
 
 	/**
@@ -396,6 +396,62 @@ class Famille extends CommonObject
 	}
 
 	/**
+	 * Delete object in database
+	 *
+	 * @param array $parameters array of column to fetch
+	 * @param int $id id of item requested for direct fetch
+	 * @param string $column string column requested for direct fetch
+	 * @return int <0 if KO, >0 if OK
+	 */
+	public function fetchBy(array $parameters, int $id = 0, string $column = '')
+	{
+		$sql = "SELECT ";
+		for($i=0;$i<count($parameters);$i++)
+		{
+			$sql .= $this->db->sanitize($this->db->escape($parameters[$i])).', ';
+		}
+		$sql = substr($sql, 0, -2);
+		$sql .= " FROM ".MAIN_DB_PREFIX.$this->table_element;
+
+		if($id)
+		{
+			$sql .= " WHERE ".$this->db->sanitize($this->db->escape($column))." = ".$this->db->sanitize($this->db->escape($id));
+		}
+		$resql = $this->db->query($sql);
+
+
+		if ($resql) {
+			$num = $this->db->num_rows($resql);
+			$i = 0;
+			if($num == 1)
+			{
+				$records = $this->db->fetch_object($resql);
+			}
+			else
+			{
+				while ($i < ($limit ? min($limit, $num) : $num)) {
+
+					$obj = $this->db->fetch_object($resql);
+					$record = new self($this->db);
+					$record->setVarsFromFetchObj($obj);
+
+					$records[$record->id] = $record;
+
+					$i++;
+				}
+			}
+
+			$this->db->free($resql);
+			return $records;
+		} else {
+			$this->errors[] = 'Error '.$this->db->lasterror();
+			dol_syslog(__METHOD__.' '.join(',', $this->errors), LOG_ERR);
+
+			return -1;
+		}
+	}
+
+	/**
 	 * Load object lines in memory from the database
 	 *
 	 * @return int         <0 if KO, 0 if not found, >0 if OK
@@ -508,10 +564,10 @@ class Famille extends CommonObject
 		{
 			$this->identifiant_famille = strtoupper($this->nom_parent_1) . ' ' .ucfirst(strtolower($this->prenom_parent_1));
 		}
-		
+
 		if(strlen($this->tel_parent_1) != 10)
 		{
-			setEventMessage('Le numéro de téléphone ne fait pas 10 chiffres.','errors');	
+			setEventMessage('Le numéro de téléphone ne fait pas 10 chiffres.','errors');
 		}
 		else
 		{

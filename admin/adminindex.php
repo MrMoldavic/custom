@@ -23,6 +23,9 @@
  *	\ingroup    admin
  *	\brief      Home page of admin top menu
  */
+/*ini_set('display_errors', '1');
+ ini_set('display_startup_errors', '1');
+ error_reporting(E_ALL);*/
 
 // Load Dolibarr environment
 $res = 0;
@@ -58,11 +61,18 @@ if (!$res) {
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formfile.class.php';
 
 dol_include_once('viescolaire/class/souhait.class.php');
+dol_include_once('scolarite/class/dispositif.class.php');
+dol_include_once('scolarite/class/etablissement.class.php');
+dol_include_once('scolarite/class/classe.class.php');
+dol_include_once('viescolaire/class/famille.class.php');
 // Load translation files required by the page
 $langs->loadLangs(array("admin@admin"));
 
 $action = GETPOST('action', 'aZ09');
 $anneeFromForm = GETPOST('annee', 'aZ09');
+$etabFromForm = GETPOST('etablissement', 'aZ09');
+$docName = str_replace(' ','_',GETPOST('doc_name', 'alpha'));
+
 
 $max = 5;
 $now = dol_now();
@@ -74,23 +84,7 @@ if (isset($user->socid) && $user->socid > 0) {
 	$socid = $user->socid;
 }
 
-// Security check (enable the most restrictive one)
-//if ($user->socid > 0) accessforbidden();
-//if ($user->socid > 0) $socid = $user->socid;
-//if (!isModEnabled('admin')) {
-//	accessforbidden('Module not enabled');
-//}
-//if (! $user->hasRight('admin', 'myobject', 'read')) {
-//	accessforbidden();
-//}
-//restrictedArea($user, 'admin', 0, 'admin_myobject', 'myobject', '', 'rowid');
-//if (empty($user->admin)) {
-//	accessforbidden('Must be admin');
-//}
 
-// ini_set('display_errors', '1');
-// ini_set('display_startup_errors', '1');
-// error_reporting(E_ALL);
 
 
 /*
@@ -106,12 +100,171 @@ if (isset($user->socid) && $user->socid > 0) {
 
 
 
+if($action == 'confirmExport')
+{
+	$souhait = new Souhait($db);
+	//$sql = "SELECT DISTINCT e.nom, e.prenom,e.fk_famille,e.rowid,e.fk_etablissement,e.fk_classe_etablissement,e.genre,s.rowid COUNT(c.fk_dispositif) as total FROM " . MAIN_DB_PREFIX . "souhait as s INNER JOIN " . MAIN_DB_PREFIX . "eleve as e ON s.fk_eleve=e.rowid INNER JOIN " . MAIN_DB_PREFIX . "affectation as a ON a.fk_souhait=s.rowid INNER JOIN " . MAIN_DB_PREFIX . "creneau as c ON c.rowid=a.fk_creneau WHERE s.fk_annee_scolaire ={$anneeFromForm} AND ".($etabFromForm != 0 ? "e.fk_etablissement=$etabFromForm AND ": '')." s.status=".$souhait::STATUS_VALIDATED;
+	$sql = "SELECT e.nom, e.prenom,e.fk_famille,e.rowid,e.fk_etablissement,e.fk_classe_etablissement,e.genre,e.geographie_prioritaire FROM " . MAIN_DB_PREFIX . "eleve as e INNER JOIN " . MAIN_DB_PREFIX . "souhait as s ON e.rowid=s.fk_eleve INNER JOIN " . MAIN_DB_PREFIX . "affectation as a ON s.rowid=a.fk_souhait INNER JOIN " . MAIN_DB_PREFIX . "creneau as c ON c.rowid=a.fk_creneau WHERE s.fk_annee_scolaire={$anneeFromForm} AND ".($etabFromForm != 0 ? "e.fk_etablissement=$etabFromForm AND ": '')." s.status=4 GROUP BY e.rowid ORDER BY e.prenom ASC";
+	$resqlEleve = $db->query($sql);
+
+
+	/*var_dump($sql);*/
+	$dispositif = new Dispositif($db);
+	$resqlDispositif = $dispositif->fetchBy(['rowid','nom'], 0, '');
+
+
+	$customers_data = array();
+
+	$count = 0;
+	foreach($resqlEleve as $value)
+	{
+		$array['Prenom élève'] = $value['prenom'];
+		$array['Nom élève'] = $value['nom'];
+
+		$geo = "SELECT emplacement FROM " . MAIN_DB_PREFIX . "c_geographie_prioritaire WHERE rowid=" . $value['geographie_prioritaire'];
+		$resqlGeo = $db->query($geo);
+		if($resqlGeo) $objGeo = $db->fetch_object($resqlGeo);
+
+		$array['Géographie prioritaire'] = ($objGeo->emplacement ? : 'Inconnue');
+
+		$etablissementClass = new Etablissement($db);
+		$antenne = $etablissementClass->fetchBy(['nom'], $value['fk_etablissement'], 'rowid');
+		$array['Antenne'] = $antenne->nom;
+
+		$classeClass = new Classe($db);
+		$classe = $classeClass->fetchBy(['classe'], $value['fk_classe_etablissement'], 'rowid');
+		$array['Classe'] = $classe->classe;
+
+		switch ($value['genre']) {
+			case 1:
+				$array['Genre'] = "Masculin";
+				break;
+			case 2:
+				$array['Genre'] = "Féminin";
+				break;
+			case 3:
+				$array['Genre'] = "Autre";
+				break;
+		}
+
+		foreach ($resqlDispositif as $val)
+		{
+			$souhaitClass = new Souhait($db);
+			$sql = "SELECT COUNT(DISTINCT s.rowid) as total FROM ".MAIN_DB_PREFIX."souhait as s INNER JOIN " . MAIN_DB_PREFIX . "affectation as a ON s.rowid=a.fk_souhait INNER JOIN " . MAIN_DB_PREFIX . "creneau as c ON c.rowid=a.fk_creneau WHERE c.fk_dispositif=$val->rowid AND s.fk_annee_scolaire=$anneeFromForm AND s.fk_eleve={$value['rowid']} AND s.status=".$souhait::STATUS_VALIDATED;
+			$resql = $db->query($sql);
+
+			$obj = $db->fetch_object($resql);
+
+			$array["Dispositif {$val->nom}"] = $obj->total;
+		}
+
+		/*		$array["Stage"] = "TEST";
+				$array["Instrument prêté"] = "Aucun";*/
+
+		if($value['fk_famille'])
+		{
+			$familleClass = new Famille($db);
+			$famille = $familleClass->fetchBy(['nom_parent_1','prenom_parent_1','tel_parent_1','mail_parent_1','adresse_parent_1','csp_parent_1','nom_parent_2','prenom_parent_2','tel_parent_2','mail_parent_2'], $value['fk_famille'], 'rowid');
+
+			$array['Nom parent 1'] = ($famille->nom_parent_1 ? : 'Inconnu');
+			$array['Prénom parent 1'] = ($famille->prenom_parent_1 ? : 'Inconnu');
+			$array['Adresse parent 1'] = ($famille->adresse_parent_1 ? : 'Inconnue');
+			$array['Téléphone parent 1'] = ($famille->tel_parent_1 ? 0+$famille->tel_parent_1 : 'Inconnu');
+			$array['Mail parent 1'] = ($famille->mail_parent_1 ? : 'Inconnu');
+			$cspParent1 = "Inconnue";
+			if($famille->csp_parent_1)
+			{
+				$csp = "SELECT categorie FROM " . MAIN_DB_PREFIX . "c_csp WHERE rowid=" . $famille->csp_parent_1;
+				$resqlGeo = $db->query($csp);
+				$objGeo = $db->fetch_object($resqlGeo);
+
+				$cspParent1 = $objGeo->categorie;
+			}
+			$array['CSP parent 1'] = $cspParent1;
+			$array['Nom parent 2'] = ($famille->nom_parent_2 ? : 'Inconnu');
+			$array['Prénom parent 2'] = ($famille->prenom_parent_2 ? : 'Inconnu');
+			$array['Adresse parent 2'] = ($famille->adresse_parent_2 ? : 'Inconnue');
+			$array['Téléphone parent 2'] = ($famille->tel_parent_2 ? 0+$famille->tel_parent_2 : 'Inconnu');
+			$array['Mail parent 2'] = ($famille->mail_parent_2 ? : 'Inconnu');
+			$cspParent2 = "Inconnue";
+			if($famille->csp_parent_2)
+			{
+				$csp = "SELECT categorie FROM " . MAIN_DB_PREFIX . "c_csp WHERE rowid=" . $famille->csp_parent_2;
+				$resqlGeo = $db->query($csp);
+				$objGeo = $db->fetch_object($resqlGeo);
+
+				$cspParent2 = $objGeo->categorie;
+			}
+			$array['CSP parent 2'] = $cspParent2;
+
+		}else $array['famille'] = "Aucune famille connue";
+
+
+		array_push($customers_data, $array);
+	}
+
+	// Filter Customer Data
+	function filterCustomerData(&$str) {
+		$str = preg_replace("/\t/", "\\t", $str);
+		$str = preg_replace("/\r?\n/", "\\n", $str);
+		if (strstr($str, '"'))
+			$str = '"' . str_replace('"', '""', $str) . '"';
+	}
+
+	// File Name & Content Header For Download
+	header("Content-Disposition: attachment; filename=\"$docName\".xls");
+	header("Content-Type: application/vnd.ms-excel");
+
+
+	//To define column name in first row.
+	$column_names = false;
+	$count = 0;
+	// run loop through each row in $customers_data
+	foreach ($customers_data as $row) {
+		if (!$column_names) {
+			echo implode("\t", array_keys($row)) . "\n";
+			$column_names = true;
+		}
+		// The array_walk() function runs each array element in a user-defined function.
+		array_walk($row, 'filterCustomerData');
+		echo implode("\t", array_values($row)) . "\n";
+		$count++;
+
+	}
+	exit;
+}
+
+print '<style>
+.loader {
+  border: 8px solid #f3f3f3;
+  border-radius: 50%;
+  border-top: 8px solid #3498db;
+  width: 20px;
+  height:  20px;
+  -webkit-animation: spin 2s linear infinite; /* Safari */
+  animation: spin 2s linear infinite;
+}
+
+/* Safari */
+@-webkit-keyframes spin {
+	0% { -webkit-transform: rotate(0deg); }
+  100% { -webkit-transform: rotate(360deg); }
+}
+
+@keyframes spin {
+	0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+</style>';
+
+
+
 $form = new Form($db);
 $formfile = new FormFile($db);
 $souhait = new Souhait($db);
+$object = new User($db);
 
 llxHeader("", $langs->trans("Admin"));
-print "<h1>Version Git-1 : 0fe3b85</h1>";
 print load_fiche_titre($langs->trans("Zone Admin"), '', $user->picto);
 
 $formconfirm = '';
@@ -217,40 +370,80 @@ if ($action == 'cardDesactivate') {
 	print '</form>';
 
 }
+if ($action == 'export') {
 
-// if($action == "export")
-// {
-// 	print '<form method="POST" action="'.$_SERVER["PHP_SELF"].'">';
-// 	print '<input type="hidden" name="token" value="'.newToken().'">';
+	print load_fiche_titre("Exporter des données", '', 'object_'.$object->picto);
 
-// 	if(GETPOSTISSET('s','alpha'))
-// 	{
-// 		print '<input type="hidden" name="action" value="desactivate_souhait">';
-// 	}
-// 	elseif(GETPOSTISSET('c','alpha'))
-// 	{
-// 		print '<input type="hidden" name="action" value="desactivate_creneau">';
-// 	}
+	print '<form method="POST" action="'.$_SERVER["PHP_SELF"].'">';
+	print '<input type="hidden" name="token" value="'.newToken().'">';
+	print '<input type="hidden" name="action" value="confirmExport">';
+	if ($backtopage) {
+		print '<input type="hidden" name="backtopage" value="'.$backtopage.'">';
+	}
+	if ($backtopageforcancel) {
+		print '<input type="hidden" name="backtopageforcancel" value="'.$backtopageforcancel.'">';
+	}
 
-// 	if ($backtopage) print '<input type="hidden" name="backtopage" value="'.$backtopage.'">';
-// 	if ($backtopageforcancel) print '<input type="hidden" name="backtopageforcancel" value="'.$backtopageforcancel.'">';
+	print dol_get_fiche_head(array(), '');
 
-// 	print dol_get_fiche_head(array(), '');
-// 	print '<table class="border centpercent tableforfieldcreate">'."\n";
+	// Set some default values
+	//if (! GETPOSTISSET('fieldname')) $_POST['fieldname'] = 'myvalue';
 
-// 	print '<div class="center">';
-// 	print '<label>Selectionnez ce que vous voulez récupérer: </label>';
+	print '<table class="border centpercent tableforfieldcreate">'."\n";
+	print '<div class="center">';
+	print '<label>Nom du document après export (sans extension) : </label>';
+	print '<input type="text" name="doc_name">';
+	print '</div><br>';
 
-// 	$item = ["Mail"=>"Mail","Téléphone"=>"Téléphone"];
+	print '<div class="center">';
+	print '<label>Selectionnez l\'année concernée : </label>';
 
-// 	print $form->selectarray('item',$item);
-// 	print '</div>';
-// 	print '</table>'."\n";
+	$annee = array();
+	$annee_scolaire = "SELECT c.rowid, c.annee FROM ".MAIN_DB_PREFIX."c_annee_scolaire as c";
+	$resqlAnneeScolaire = $db->query($annee_scolaire);
+	$num = $db->num_rows($resqlAnneeScolaire);
 
-// 	print dol_get_fiche_end();
-// 	print $form->buttonsSaveCancel("Valider");
-// 	print '</form>';
-// }
+	$i = 0;
+	while ($i < $num)
+	{
+		$objAnneeScolaire = $db->fetch_object($resqlAnneeScolaire);
+		$annee[$objAnneeScolaire->rowid] = $objAnneeScolaire->annee;
+		$i++;
+	}
+
+	print $form->selectarray('annee',$annee);
+	print '</div><br>';
+
+
+	print '<div class="center">';
+	print '<label>Selectionnez l\'établissement concerné : </label>';
+
+	$etablissement = array(0=>"Tout les établissements");
+	$sqlEtablissement = "SELECT e.rowid, e.nom FROM ".MAIN_DB_PREFIX."etablissement as e";
+	$resqlEtablissement = $db->query($sqlEtablissement);
+	$numEtablissement = $db->num_rows($resqlEtablissement);
+
+	$i = 0;
+	while ($i < $numEtablissement)
+	{
+		$objEtablissement = $db->fetch_object($resqlEtablissement);
+		$etablissement[$objEtablissement->rowid] = $objEtablissement->nom;
+		$i++;
+	}
+
+	print $form->selectarray('etablissement',$etablissement);
+	print '</div><br>';
+	print '</table>'."\n";
+
+	print dol_get_fiche_end();
+	print '<div class="center">';
+	print '<div id="loader"></div>';
+	print $form->buttonsSaveCancel("Valider",'',[],0,'validExport');
+	print '</div>';
+
+	print '</form>';
+
+}
 else
 {
 	print load_fiche_titre($langs->trans("Souhaits"), '', 'object_'.$object->picto);
@@ -271,18 +464,29 @@ else
 	print '<a href="'.$_SERVER['PHP_SELF'].'?action=cardDesactivate&s&token='.newToken().'" class="button">Activer tout les agents d\'une année</a><br>';
 	print '</div>';
 	print '<hr>';
+	print load_fiche_titre($langs->trans("Export"), '', 'object_'.$object->picto);
+
+	print '<div style="display;flex">';
+	print '<div id="loader"></div>';
+	print '<a href="'.$_SERVER['PHP_SELF'].'?action=export" class="button validExport">Créer un export</a><br>';
+	print '</div>';
+	print '<hr>';
+
+
+
+
 }
-
-
-
-
 print '</div><div class="fichetwothirdright">';
 
-
-
-
-
 print '</div></div>';
+
+print '<script>
+		$( ".validExport" ).on( "click", function() {
+		  this.style.opacity = 0;
+		 $( "#loader").addClass("loader");
+		 $( "#loader").style.opacity = 1;
+		});
+		</script>';
 
 // End of page
 llxFooter();
