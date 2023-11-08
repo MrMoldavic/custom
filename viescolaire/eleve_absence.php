@@ -223,14 +223,14 @@ if ($id > 0 || !empty($ref)) {
 
 	$materiels = array();
 
-	$sql = "SELECT COUNT(a.rowid) as total, status";
+	$sql = "SELECT COUNT(DISTINCT a.rowid) as total, status";
 	$sql .= " FROM ".MAIN_DB_PREFIX."appel as a";
 	$sql .= " WHERE a.treated = 1";
 	$sql .= ' AND a.fk_eleve = '.$object->id;
+	$sql .= " AND a.status != 'present'";
 	$sql .= " GROUP BY a.status";
 	$result = $db->query($sql);
 
-	$result = $db->query($sql);
 	while ($objp = $db->fetch_object($result))
 	{
 		$status = $objp->status == 'retard' ? 'Retard' : ($objp->status == 'absenceJ' ? 'Absence Justifiée' : 'Absence Injustifiée');
@@ -278,10 +278,9 @@ if ($id > 0 || !empty($ref)) {
 	$resqlAnneeScolaire = $db->query($anneScolaire);
 	$objAnneScolaire = $db->fetch_object($resqlAnneeScolaire);
 
-	$abscence = "SELECT * FROM ".MAIN_DB_PREFIX."appel as a WHERE a.fk_eleve = ".$object->id." AND a.treated= 1 AND a.status !='present' ORDER BY a.date_creation DESC";
+	$abscence = "SELECT fk_etablissement,fk_creneau,date_creation,justification,status,rowid FROM ".MAIN_DB_PREFIX."appel as a WHERE a.fk_eleve = ".$object->id." AND a.treated= 1 AND a.status !='present' ORDER BY a.date_creation DESC";
 	$resql = $db->query($abscence);
 	$num = $db->num_rows($resql);
-	$absenceObj = $db->fetch_object($resql);
 
 	print '<table class="border centpercent tableforfield">';
 	print '<tbody>';
