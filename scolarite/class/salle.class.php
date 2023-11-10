@@ -210,7 +210,7 @@ class Salle extends CommonObject
 		$diminutif = $this->db->fetch_object($resql);
 
 		$this->nom_complet .= $diminutif->diminutif.' - '.$this->salle;
-		
+		$this->status = self::STATUS_VALIDATED;
 		$resultcreate = $this->createCommon($user, $notrigger);
 
 		return $resultcreate;
@@ -532,6 +532,7 @@ class Salle extends CommonObject
 			}
 			$sql .= " WHERE rowid = ".((int) $this->id);
 
+			var_dump($sql);
 			dol_syslog(get_class($this)."::validate()", LOG_DEBUG);
 			$resql = $this->db->query($sql);
 			if (!$resql) {
@@ -586,6 +587,7 @@ class Salle extends CommonObject
 				}
 			}
 		}
+
 
 		// Set new ref and current status
 		if (!$error) {
@@ -699,7 +701,7 @@ class Salle extends CommonObject
 		if (isset($this->status)) {
 			$label .= ' '.$this->getLibStatut(5);
 		}
-		// $label .= '<br>'; 
+		// $label .= '<br>';
 		// $label .= '<b>'.$langs->trans('Ref').':</b> '.$this->salle;
 
 		$url = dol_buildpath('/scolarite/salle_card.php', 1).'?id='.$this->id;

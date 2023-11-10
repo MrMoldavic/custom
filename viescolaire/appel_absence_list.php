@@ -231,8 +231,6 @@ if (empty($reshook)) {
 
 /*
  * View
- *
- * Put here all code to build page
  */
 
 $form = new Form($db);
@@ -242,21 +240,6 @@ $formproject = new FormProjets($db);
 $title = $langs->trans("Absences à venir");
 $help_url = '';
 llxHeader('', $title, $help_url);
-
-// Example : Adding jquery code
-// print '<script type="text/javascript">
-// jQuery(document).ready(function() {
-// 	function init_myfunc()
-// 	{
-// 		jQuery("#myid").removeAttr(\'disabled\');
-// 		jQuery("#myid").attr(\'disabled\',\'disabled\');
-// 	}
-// 	init_myfunc();
-// 	jQuery("#mybutton").click(function() {
-// 		init_myfunc();
-// 	});
-// });
-// </script>';
 
 // Part to create
 	if ($action == 'create' && empty($etablissementid)) // SELECTION DU TYPE DE KIT
@@ -270,7 +253,7 @@ llxHeader('', $title, $help_url);
 		}
 
 		print '<form action="' . $_SERVER["PHP_SELF"] . '" method="POST">';
-
+		print '<input type="hidden" name="token" value="'.newToken().'">';
 		print '<input type="hidden" name="action" value="create">';
 		$titre = "Nouvel Appel";
 		print talm_load_fiche_titre($title, $linkback, $picto);
