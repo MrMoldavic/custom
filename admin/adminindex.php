@@ -103,15 +103,11 @@ if (isset($user->socid) && $user->socid > 0) {
 if($action == 'confirmExport')
 {
 	$souhait = new Souhait($db);
-	//$sql = "SELECT DISTINCT e.nom, e.prenom,e.fk_famille,e.rowid,e.fk_etablissement,e.fk_classe_etablissement,e.genre,s.rowid COUNT(c.fk_dispositif) as total FROM " . MAIN_DB_PREFIX . "souhait as s INNER JOIN " . MAIN_DB_PREFIX . "eleve as e ON s.fk_eleve=e.rowid INNER JOIN " . MAIN_DB_PREFIX . "affectation as a ON a.fk_souhait=s.rowid INNER JOIN " . MAIN_DB_PREFIX . "creneau as c ON c.rowid=a.fk_creneau WHERE s.fk_annee_scolaire ={$anneeFromForm} AND ".($etabFromForm != 0 ? "e.fk_etablissement=$etabFromForm AND ": '')." s.status=".$souhait::STATUS_VALIDATED;
-	$sql = "SELECT e.nom, e.prenom,e.fk_famille,e.rowid,e.fk_etablissement,e.fk_classe_etablissement,e.genre,e.geographie_prioritaire FROM " . MAIN_DB_PREFIX . "eleve as e INNER JOIN " . MAIN_DB_PREFIX . "souhait as s ON e.rowid=s.fk_eleve INNER JOIN " . MAIN_DB_PREFIX . "affectation as a ON s.rowid=a.fk_souhait INNER JOIN " . MAIN_DB_PREFIX . "creneau as c ON c.rowid=a.fk_creneau WHERE s.fk_annee_scolaire={$anneeFromForm} AND ".($etabFromForm != 0 ? "e.fk_etablissement=$etabFromForm AND ": '')." s.status=4 GROUP BY e.rowid ORDER BY e.prenom ASC";
+	$sql = "SELECT e.nom, e.prenom,e.fk_famille,e.rowid,e.fk_etablissement,e.fk_classe_etablissement,e.genre,e.geographie_prioritaire FROM " . MAIN_DB_PREFIX . "eleve as e INNER JOIN " . MAIN_DB_PREFIX . "souhait as s ON e.rowid=s.fk_eleve INNER JOIN " . MAIN_DB_PREFIX . "affectation as a ON s.rowid=a.fk_souhait INNER JOIN " . MAIN_DB_PREFIX . "creneau as c ON c.rowid=a.fk_creneau WHERE s.fk_annee_scolaire={$anneeFromForm} AND ".($etabFromForm != 0 ? "e.fk_etablissement=$etabFromForm AND ": '')." s.status=4 GROUP BY e.rowid ORDER BY e.fk_etablissement, e.prenom ASC";
 	$resqlEleve = $db->query($sql);
 
-
-	/*var_dump($sql);*/
 	$dispositif = new Dispositif($db);
 	$resqlDispositif = $dispositif->fetchBy(['rowid','nom'], 0, '');
-
 
 	$customers_data = array();
 
@@ -158,9 +154,6 @@ if($action == 'confirmExport')
 			$array["Dispositif {$val->nom}"] = $obj->total;
 		}
 
-		/*		$array["Stage"] = "TEST";
-				$array["Instrument prêté"] = "Aucun";*/
-
 		if($value['fk_famille'])
 		{
 			$familleClass = new Famille($db);
@@ -205,7 +198,7 @@ if($action == 'confirmExport')
 
 	// Filter Customer Data
 	function filterCustomerData(&$str) {
-		$str = preg_replace("/\t/", "\\t", $str);
+	$str = preg_replace("/\t/", "\\t", $str);
 		$str = preg_replace("/\r?\n/", "\\n", $str);
 		if (strstr($str, '"'))
 			$str = '"' . str_replace('"', '""', $str) . '"';

@@ -334,7 +334,7 @@ if ($action == 'create' && GETPOST('etablissementid', 'int') && GETPOST('appelda
 		</tr>';
      // Boucle pour lister une ligne par heure, de 8h à 18h
      for ($i = 8; $i <= 20; $i++) {
-          $sql = "SELECT COUNT(*) as total FROM " . MAIN_DB_PREFIX . "creneau as c INNER JOIN " . MAIN_DB_PREFIX . "dispositif as d ON c.fk_dispositif=d.rowid  WHERE nom_creneau LIKE '%" . $jour . '-' . $i . "h%' AND d.fk_etablissement=" . GETPOST("etablissementid", "int") . " AND c.status = 4";
+          $sql = "SELECT COUNT(DISTINCT c.rowid) as total FROM " . MAIN_DB_PREFIX . "creneau as c INNER JOIN " . MAIN_DB_PREFIX . "dispositif as d ON c.fk_dispositif=d.rowid  WHERE nom_creneau LIKE '%" . $jour . '-' . $i . "h%' AND d.fk_etablissement=" . GETPOST("etablissementid", "int") . " AND c.status = 4";
           $resql = $db->query($sql);
           $res = $db->fetch_object($resql);
 
@@ -352,7 +352,7 @@ if ($action == 'create' && GETPOST('etablissementid', 'int') && GETPOST('appelda
                if ($profs->fk_prof_3) $prof_count++;
           }
 
-          $sqlProfPresent = "SELECT fk_user,fk_creneau FROM " . MAIN_DB_PREFIX . "appel as a INNER JOIN " . MAIN_DB_PREFIX . "creneau as c ON c.rowid=a.fk_creneau WHERE nom_creneau LIKE '%" . $jour . '-' . $i . "h%' AND a.status!='absent' AND a.fk_user IS NOT NULL AND YEAR(a.date_creation)=" . intval(GETPOST("appelyear", "alpha")) . " AND MONTH(a.date_creation)=" . intval(GETPOST("appelmonth", "alpha")) . " AND DAY(a.date_creation)=" . intval(GETPOST("appelday", "alpha"));
+          $sqlProfPresent = "SELECT fk_user,fk_creneau FROM " . MAIN_DB_PREFIX . "appel as a INNER JOIN " . MAIN_DB_PREFIX . "creneau as c ON c.rowid=a.fk_creneau WHERE c.nom_creneau LIKE '%" . $jour . '-' . $i . "h%' AND a.status!='absent' AND a.fk_user IS NOT NULL AND YEAR(a.date_creation)=" . intval(GETPOST("appelyear", "alpha")) . " AND MONTH(a.date_creation)=" . intval(GETPOST("appelmonth", "alpha")) . " AND DAY(a.date_creation)=" . intval(GETPOST("appelday", "alpha"));
           $sqlProfPresent .= " AND a.fk_etablissement = " . GETPOST("etablissementid", "int")." AND c.status = 4";
 
           $resqlProfPresent = $db->query($sqlProfPresent);
@@ -366,7 +366,7 @@ if ($action == 'create' && GETPOST('etablissementid', 'int') && GETPOST('appelda
           }
 
           // Select nombre d'eleve
-          $sqlNombreEleve = "SELECT COUNT(*) as count FROM " . MAIN_DB_PREFIX . "affectation as a INNER JOIN " . MAIN_DB_PREFIX . "creneau as c ON c.rowid=a.fk_creneau INNER JOIN " . MAIN_DB_PREFIX . "dispositif as d ON d.rowid=c.fk_dispositif WHERE a.status=4 AND c.nom_creneau LIKE '%" . $jour . '-' . $i . "h%' ";
+          $sqlNombreEleve = "SELECT COUNT(DISTINCT a.rowid) as count FROM " . MAIN_DB_PREFIX . "affectation as a INNER JOIN " . MAIN_DB_PREFIX . "creneau as c ON c.rowid=a.fk_creneau INNER JOIN " . MAIN_DB_PREFIX . "dispositif as d ON d.rowid=c.fk_dispositif WHERE a.status=4 AND c.nom_creneau LIKE '%" . $jour . '-' . $i . "h%' ";
           $sqlNombreEleve .= " AND d.fk_etablissement = " . GETPOST("etablissementid", "int")." AND c.status = 4";
 
           $resqlNombreEleve = $db->query($sqlNombreEleve);
@@ -469,12 +469,15 @@ if ($action == 'create' && GETPOST('etablissementid', 'int') && GETPOST('appelda
                if ($isComplete) $completeAppelCount += 1;
           }
 
-          print '<tr class="oddeven">
-			<td>'. $jour . ' ' . $i . 'h-' . ($i + 1) . 'h' .'</td>
-			<td>' . $completeAppelCount . '/' . $totalCreneauCount . '</td>
-			<td>' . $eleve_present_count . "/" . $nombreEleve->count . '</td>
-			<td>' . $prof_present_count . "/" . $prof_count . '</td>
-			<td>' . $totalCreneauCount . '</td>';
+          print '<tr class="oddeven">';
+
+		  print '<td>'.($totalCreneauCount > 0 ? '<a href="' . DOL_URL_ROOT . '/custom/viescolaire/appel_card.php?day=' . $JourSemaine . '&month=' . GETPOST('appelmonth', 'alpha') . '&year=' . GETPOST('appelyear', 'alpha') . '&action=create&daymonth=' . GETPOST('appelday', 'alpha') . '&etablissementid=' . GETPOST('etablissementid', 'int') .'&heureActuelle='.$i.'">' : ''). $jour . ' ' . $i . 'h-' . ($i + 1) . 'h' .($totalCreneauCount > 0 ? '</a>' : '').'</td>';
+
+		  print '</td>
+		  <td>' . $completeAppelCount . '/' . $totalCreneauCount . '</td>
+		  <td>' . $eleve_present_count . "/" . $nombreEleve->count . '</td>
+		  <td>' . $prof_present_count . "/" . $prof_count . '</td>
+		  <td>' . $totalCreneauCount . '</td>';
 
           if ($totalCreneauCount == 0) {
                print '<td><span class="badge  badge-status6 badge-status" style="color:white;">Pas de cours à cette heure</span></td>';

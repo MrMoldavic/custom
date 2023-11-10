@@ -114,7 +114,7 @@ if ($conf->use_javascript_ajax)
 	$resql = $db->query($sql);
 
 	foreach($resql as $value){
-		$sql = "SELECT COUNT(*) as total FROM ".MAIN_DB_PREFIX."eleve WHERE fk_etablissement = ". $value['rowid']." AND status !=".$eleve::STATUS_CANCELED;
+		$sql = "SELECT COUNT(DISTINCT rowid) as total FROM ".MAIN_DB_PREFIX."eleve WHERE fk_etablissement = ". $value['rowid']." AND status !=".$eleve::STATUS_CANCELED;
 		$resql = $db->query($sql);
 		$obj = $db->fetch_object($resql);
 
