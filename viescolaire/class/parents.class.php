@@ -126,14 +126,14 @@ class Parents extends CommonObject
 		'quotient_familial' => array('type'=>'integer', 'label'=>'Quotient familial', 'enabled'=>'1', 'position'=>55, 'notnull'=>0, 'visible'=>-1,),
 		'description' => array('type'=>'text', 'label'=>'Description', 'enabled'=>'1', 'position'=>60, 'notnull'=>0, 'visible'=>-1,),
 		'fk_type_parent' => array('type'=>'sellist:c_type_parent:type', 'label'=>'Type de parent', 'enabled'=>'1', 'position'=>61, 'notnull'=>0, 'visible'=>-1,),
-		'contact_preferentiel' => array('type'=>'boolean', 'label'=>'Contact Préférentiel ?', 'enabled'=>'1', 'position'=>22, 'notnull'=>1, 'visible'=>1,),
+		'contact_preferentiel' => array('type'=>'boolean', 'label'=>'Contact Préférentiel ?', 'enabled'=>'1', 'position'=>22, 'notnull'=>0, 'visible'=>1,),
 		'fk_famille' => array('type'=>'integer:Famille:custom/viescolaire/class/famille.class.php', 'label'=>'Famille liée', 'enabled'=>'1', 'position'=>2, 'notnull'=>0, 'visible'=>-1, 'css'=>'maxwidth200',),
 		'fk_tiers' => array('type'=>'integer:Societe:societe/class/societe.class.php', 'label'=>'Tiers lié', 'enabled'=>'1', 'position'=>63, 'notnull'=>0, 'visible'=>-1, 'css'=>'maxwidth200',),
 		'fk_adherent' => array('type'=>'integer:Adherent:adherents/class/adherent.class.php', 'label'=>'Adhérent lié', 'enabled'=>'1', 'position'=>64, 'notnull'=>0, 'visible'=>-1, 'css'=>'maxwidth200',),
 
 		'date_creation' => array('type'=>'datetime', 'label'=>'Datecreation', 'enabled'=>'1', 'position'=>70, 'notnull'=>1, 'visible'=>0,),
 		'tms' => array('type'=>'timestamp', 'label'=>'DateModification', 'enabled'=>'1', 'position'=>75, 'notnull'=>1, 'visible'=>0,),
-		'fk_user_create' => array('type'=>'integer:User:user/class/user.class.php', 'label'=>'Fkusercreate', 'enabled'=>'1', 'position'=>80, 'notnull'=>0, 'visible'=>0, 'css'=>'maxwidth500 widthcentpercentminusxx', 'csslist'=>'tdoverflowmax150',),
+		'fk_user_creat' => array('type'=>'integer:User:user/class/user.class.php', 'label'=>'Fkusercreate', 'enabled'=>'1', 'position'=>80, 'notnull'=>0, 'visible'=>0, 'css'=>'maxwidth500 widthcentpercentminusxx', 'csslist'=>'tdoverflowmax150',),
 		'fk_user_modif' => array('type'=>'integer:User:user/class/user.class.php', 'label'=>'UserModif', 'enabled'=>'1', 'position'=>85, 'notnull'=>-1, 'visible'=>0, 'css'=>'maxwidth500 widthcentpercentminusxx', 'csslist'=>'tdoverflowmax150',),
 		'status' => array('type'=>'integer', 'label'=>'Status', 'enabled'=>'1', 'position'=>500, 'notnull'=>0, 'visible'=>0,),
 	);
@@ -152,7 +152,7 @@ class Parents extends CommonObject
 	public $fk_famille;
 	public $date_creation;
 	public $tms;
-	public $fk_user_create;
+	public $fk_user_creat;
 	public $fk_user_modif;
 	public $status;
 	// END MODULEBUILDER PROPERTIES
