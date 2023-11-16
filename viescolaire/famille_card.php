@@ -484,12 +484,15 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 		foreach($result as $val)
 		{
 			$dictionaryClass = new Dictionary($db);
-			$typeParent = $dictionaryClass->fetchByDictionary('c_type_parent',['type','rowid'],$val->fk_type_parent,'rowid');
+			if($val->fk_type_parent != null)
+			{
+				$typeParent = $dictionaryClass->fetchByDictionary('c_type_parent',['type','rowid'],$val->fk_type_parent,'rowid');
+			}
 
 			print '<tr class="oddeven">';
 			print '<td><a href=' . DOL_URL_ROOT . '/custom/viescolaire/parents_card.php?id=' . $val->rowid . '&action=edit'. '>' .$val->firstname. '</td>';
 			print "<td>".$val->lastname."</td>";
-			print "<td>".($typeParent->type ? : 'Type Inconnu')."</td>";
+			print "<td>".($typeParent != null ? $typeParent->type : 'Type Inconnu')."</td>";
 			print "<td><span class='badge  badge-status".($val->contact_preferentiel == 1 ? '4': '8')." badge-status'>".($val->contact_preferentiel == 1 ? 'Oui': 'Non').'</td>';
 			print "<td>".$val->phone."</td>";
 			print "<td>".$val->mail."</td>";
