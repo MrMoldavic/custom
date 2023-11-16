@@ -29,14 +29,14 @@ class Dictionary extends CommonObject
 		}*/
 
 		// Unset fields that are disabled
-		foreach ($this->fields as $key => $val) {
+		/*foreach ($this->fields as $key => $val) {
 			if (isset($val['enabled']) && empty($val['enabled'])) {
 				unset($this->fields[$key]);
 			}
-		}
+		}*/
 
 		// Translate some data of arrayofkeyval
-		if (is_object($langs)) {
+		/*if (is_object($langs)) {
 			foreach ($this->fields as $key => $val) {
 				if (!empty($val['arrayofkeyval']) && is_array($val['arrayofkeyval'])) {
 					foreach ($val['arrayofkeyval'] as $key2 => $val2) {
@@ -44,7 +44,7 @@ class Dictionary extends CommonObject
 					}
 				}
 			}
-		}
+		}*/
 	}
 
 
