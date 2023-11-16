@@ -1,4 +1,4 @@
--- Copyright (C) ---Put here your own copyright and developer email---
+-- Copyright (C) 2023 Baptiste Diodati <baptiste.diodati@gmail.com>
 --
 -- This program is free software: you can redistribute it and/or modify
 -- it under the terms of the GNU General Public License as published by
@@ -14,33 +14,25 @@
 -- along with this program.  If not, see https://www.gnu.org/licenses/.
 
 
-CREATE TABLE llx_famille(
+CREATE TABLE llx_contribution(
 	-- BEGIN MODULEBUILDER FIELDS
-	rowid integer AUTO_INCREMENT PRIMARY KEY NOT NULL, 
-	identifiant_famille varchar(255),
-	fk_antenne integer,
-	enfants varchar(255),
-	quotient_familial integer NULL,
-	nom_parent_1 varchar(255) NOT NULL, 
-	prenom_parent_1 varchar(255) NOT NULL,
-	csp_parent_1 integer NULL,
-	tel_parent_1 varchar(255) NULL,
-	mail_parent_1 varchar(255) NULL,
-	adresse_parent_1 varchar(255) NULL,
-	nom_parent_2 varchar(255) NULL, 
-	prenom_parent_2 varchar(255) NULL,
-	csp_parent_2 integer NULL,
-	tel_parent_2 varchar(255) NULL,
-	mail_parent_2 varchar(255) NULL,
-	adresse_parent_2 varchar(255) NULL,
-	description text, 
-	note_public text, 
+	rowid integer AUTO_INCREMENT PRIMARY KEY NOT NULL,
+	ref varchar(255) NOT NULL,
+	fk_antenne integer NOT NULL,
+    fk_famille integer NOT NULL,
+    fk_annee_scolaire integer NOT NULL,
+    montant_total float NOT NULL,
+	description text,
+    imposable tinyint(1) text,
+    note_public text,
 	note_private text, 
 	date_creation datetime NOT NULL, 
 	tms timestamp DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, 
 	fk_user_creat integer NOT NULL, 
 	fk_user_modif integer, 
 	last_main_doc varchar(255), 
-	model_pdf varchar(255)
+	import_key varchar(14), 
+	model_pdf varchar(255), 
+	status integer NOT NULL
 	-- END MODULEBUILDER FIELDS
 ) ENGINE=innodb;

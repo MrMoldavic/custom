@@ -87,11 +87,15 @@ if (!$res) {
 require_once DOL_DOCUMENT_ROOT . '/core/class/html.formcompany.class.php';
 require_once DOL_DOCUMENT_ROOT . '/core/class/html.formfile.class.php';
 require_once DOL_DOCUMENT_ROOT . '/core/class/html.formprojet.class.php';
+require_once DOL_DOCUMENT_ROOT .  '/user/class/user.class.php';
 
 dol_include_once('viescolaire/class/souhait.class.php');
 dol_include_once('viescolaire/lib/viescolaire_souhait.lib.php');
 
 dol_include_once('viescolaire/class/affectation.class.php');
+dol_include_once('viescolaire/class/dictionary.class.php');
+dol_include_once('management/class/agent.class.php');
+dol_include_once('scolarite/class/creneau.class.php');
 // dol_include_once('viescolaire/class/eleve.class.php');
 
 
@@ -177,6 +181,7 @@ if ($action == 'confirm_setdraft') {
 // Initialize technical objects
 $object = new Souhait($db);
 $extrafields = new ExtraFields($db);
+$dictionaryClass = new Dictionary($db);
 $diroutputmassaction = $conf->viescolaire->dir_output . '/temp/massgeneration/' . $user->id;
 $hookmanager->initHooks(array('souhaitcard', 'globalcard')); // Note that conf->hooks_modules contains array
 
@@ -519,7 +524,12 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 	print '</table>';
 	print '<h3>Créneau actuel:</h3>';
 
-	$sqlCreneauActuel = "SELECT c.jour,c.heure_debut,c.heure_fin,c.fk_prof_1,c.nom_creneau,c.rowid FROM ".MAIN_DB_PREFIX."creneau as c WHERE c.rowid =".("(SELECT e.fk_creneau FROM ".MAIN_DB_PREFIX."affectation as e WHERE e.fk_souhait =".$object->id." AND e.status = 4)");
+	//$sqlCreneauActuel = "SELECT c.jour,c.heure_debut,c.heure_fin,c.fk_prof_1,c.nom_creneau,c.rowid FROM ".MAIN_DB_PREFIX."creneau as c WHERE c.rowid =".("(SELECT e.fk_creneau FROM ".MAIN_DB_PREFIX."affectation as e WHERE e.fk_souhait =".$object->id." AND e.status = 4)");
+	$sqlCreneauActuel = 'SELECT c.jour, c.heure_debut, c.heure_fin, c.fk_prof_1, c.nom_creneau, c.rowid
+						FROM ' .MAIN_DB_PREFIX. 'creneau as c
+						INNER JOIN ' .MAIN_DB_PREFIX."affectation as e ON c.rowid = e.fk_creneau
+						WHERE e.fk_souhait = $object->id AND e.status = 4";
+
 	$resqlCreneauActuel = $db->query($sqlCreneauActuel);
 	$objectCreneauActuel = $db->fetch_object($resqlCreneauActuel);
 
@@ -565,65 +575,63 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 	if ($object->status == $object::STATUS_VALIDATED) {
 		print dolGetButtonAction($langs->trans('Désaffecter'), '', 'default', $_SERVER["PHP_SELF"] . '?id=' . $object->id . '&action=setdraft&token=' . newToken(), '', $permissiontoadd);
 	}
-	print '<h3>Infos anciennes affectations pour ce souhait:</h3>';
+	print '<h3>Infos anciens créneaux pour ce souhait:</h3>';
 
-	$sqlCountAffectation = "SELECT fk_creneau FROM ".MAIN_DB_PREFIX."affectation WHERE fk_souhait =".$object->id." AND status = 8";
-	$resqlAffectation = $db->query($sqlCountAffectation);
+		$anneScolaire = "SELECT annee,annee_actuelle,rowid FROM ".MAIN_DB_PREFIX."c_annee_scolaire WHERE active = 1 ORDER BY annee_actuelle DESC, rowid ASC";
+		$resqlAnneeScolaire = $db->query($anneScolaire);
+		$objAnneScolaire = $db->fetch_object($resqlAnneeScolaire);
 
 
-	print '<p>- Nombre d\'anciennes affectations : '.$resqlAffectation->num_rows.'</p>';
-
-	if($resqlAffectation->num_rows > 0)
-	{
-		print '<table class="tagtable liste">';
-		print '<tbody>';
-
-		print '<tr class="liste_titre">
-		<th class="wrapcolumntitle liste_titre">Jour</th>
-		<th class="wrapcolumntitle liste_titre">Horaire</th>
-		<th class="wrapcolumntitle liste_titre">Professeur</th>
-		</tr>';
-		foreach($resqlAffectation as $value)
+		foreach($resqlAnneeScolaire as $val)
 		{
-			$sqlOldAffectation = "SELECT jour,heure_debut,heure_fin,fk_prof_1 FROM ".MAIN_DB_PREFIX."creneau WHERE rowid =".$value['fk_creneau'];
-			$resqlOldAffectation = $db->query($sqlOldAffectation);
-			$objectCreneau = $db->fetch_object($resqlOldAffectation);
+			$sqlCountAffectation = "SELECT a.fk_creneau,a.date_creation,a.fk_user_creat FROM ".MAIN_DB_PREFIX."affectation as a INNER JOIN ".MAIN_DB_PREFIX."souhait as s ON a.fk_souhait=s.rowid WHERE a.fk_souhait =".$object->id." AND a.status = 8 AND s.fk_annee_scolaire=".$val['rowid'];
+			$resqlAffectation = $db->query($sqlCountAffectation);
 
-
-			if($objectCreneau)
+			if($resqlAffectation->num_rows > 0)
 			{
-				$Jour = "SELECT jour, rowid FROM ".MAIN_DB_PREFIX."c_jour WHERE rowid =".$objectCreneau->jour;
-				$resqlJour = $db->query($Jour);
-				$objJour = $db->fetch_object($resqlJour);
+				print '<div class="annee-accordion'.($val['annee_actuelle'] == 1 ? '-opened' : '').'">';
+				print '<h3><span class="badge badge-status4 badge-status">'.$val['annee'].($val['annee_actuelle'] == 1 ? ' - (année actuelle)' : '(année précédente)').'</span></h3>';
 
-				$heure = "SELECT heure, rowid FROM ".MAIN_DB_PREFIX."c_heure WHERE rowid =".$objectCreneau->heure_debut;
-				$resqlheure = $db->query($heure);
-				$objheure = $db->fetch_object($resqlheure);
+				print '<table class="tagtable liste">';
+				print '<tbody>';
 
-				$heurefin = "SELECT heure, rowid FROM ".MAIN_DB_PREFIX."c_heure WHERE rowid =".$objectCreneau->heure_fin;
-				$resqlheureFin = $db->query($heurefin);
-				$objheureFin = $db->fetch_object($resqlheureFin);
-
-				if($objectCreneau->fk_prof_1 != NULL)
+				print '<tr class="liste_titre">
+					<th class="wrapcolumntitle liste_titre">Jour</th>
+					<th class="wrapcolumntitle liste_titre">Horaire</th>
+					<th class="wrapcolumntitle liste_titre">Professeur</th>
+					<th class="wrapcolumntitle liste_titre">Créé par, le</th>
+					</tr>';
+				foreach($resqlAffectation as $value)
 				{
-					$professeur = "SELECT prenom,nom FROM ".MAIN_DB_PREFIX."management_agent WHERE rowid = ".$objectCreneau->fk_prof_1;
-					$resqlUser = $db->query($professeur);
-					$objUser = $db->fetch_object($resqlUser);
+					$creneauClass = new Creneau($db);
+					$resultCreneau = $creneauClass->fetchBy(['jour','heure_debut','heure_fin','fk_prof_1','rowid'],$value['fk_creneau'],'rowid');
+
+					if($resultCreneau)
+					{
+						$resultJour = $dictionaryClass->fetchByDictionary('c_jour',['jour','rowid'],$resultCreneau->jour,'rowid');
+						$resultHeureDebut = $dictionaryClass->fetchByDictionary('c_heure',['heure','rowid'],$resultCreneau->heure_debut,'rowid');
+						$resultHeureFin = $dictionaryClass->fetchByDictionary('c_heure',['heure','rowid'],$resultCreneau->heure_fin,'rowid');
+
+						if($resultCreneau->fk_prof_1 != NULL)
+						{
+							$agentClass = new Agent($db);
+							$agent = $agentClass->fetchBy(['prenom','nom','rowid'],$resultCreneau->fk_prof_1,'rowid');
+						}
+
+						print '<tr class="oddeven">';
+						print "<td>$resultJour->jour</td>";
+						print '<td>'.$resultHeureDebut->heure.'h / '.$resultHeureFin->heure.'h</td>';
+						if($resultCreneau->fk_prof_1 != NULL) print '<td>'.$agent->prenom.' '.$agent->nom.'</td>';
+						print '<td>'.$value['fk_user_creat'].' le '.date('d/m/Y',strtotime($value['date_creation'])).'</td>';
+						print '</tr>';
+					}
 				}
-
-
-				print '<tr class="oddeven">';
-				print '<td>'.$objJour->jour.'</td>';
-				print '<td>'.$objheure->heure.'h / '.$objheureFin->heure.'h</td>';
-				if($objectCreneau->fk_prof_1 != NULL) print '<td>'.$objUser->prenom.' '.$objUser->nom.'</td>';
-				print '</tr>';
+				print '</tbody>';
+				print '</table>';
+				print '</div>';
 			}
+
 		}
-		print '</tbody>';
-		print '</table>';
-	}
-
-
 	print '</div>';
 	print '</div>';
 
@@ -632,57 +640,6 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 
 
 	print dol_get_fiche_end();
-
-
-	/*
-	 * Lines
-	 */
-
-	if (!empty($object->table_element_line)) {
-		// Show object lines
-		$result = $object->getLinesArray();
-
-		print '	<form name="addproduct" id="addproduct" action="' . $_SERVER["PHP_SELF"] . '?id=' . $object->id . (($action != 'editline') ? '' : '#line_' . GETPOST('lineid', 'int')) . '" method="POST">
-		<input type="hidden" name="token" value="' . newToken() . '">
-		<input type="hidden" name="action" value="' . (($action != 'editline') ? 'addline' : 'updateline') . '">
-		<input type="hidden" name="mode" value="">
-		<input type="hidden" name="page_y" value="">
-		<input type="hidden" name="id" value="' . $object->id . '">
-		';
-
-		if (!empty($conf->use_javascript_ajax) && $object->status == 0) {
-			include DOL_DOCUMENT_ROOT . '/core/tpl/ajaxrow.tpl.php';
-		}
-
-		print '<div class="div-table-responsive-no-min">';
-		if (!empty($object->lines) || ($object->status == $object::STATUS_DRAFT && $permissiontoadd && $action != 'selectlines' && $action != 'editline')) {
-			print '<table id="tablelines" class="noborder noshadow" width="100%">';
-		}
-
-		if (!empty($object->lines)) {
-			$object->printObjectLines($action, $mysoc, null, GETPOST('lineid', 'int'), 1);
-		}
-
-		// Form to add new line
-		if ($object->status == 0 && $permissiontoadd && $action != 'selectlines') {
-			if ($action != 'editline') {
-				// Add products/services form
-
-				$parameters = array();
-				$reshook = $hookmanager->executeHooks('formAddObjectLine', $parameters, $object, $action); // Note that $action and $object may have been modified by hook
-				if ($reshook < 0) setEventMessages($hookmanager->error, $hookmanager->errors, 'errors');
-				if (empty($reshook))
-					$object->formAddObjectLine(1, $mysoc, $soc);
-			}
-		}
-
-		if (!empty($object->lines) || ($object->status == $object::STATUS_DRAFT && $permissiontoadd && $action != 'selectlines' && $action != 'editline')) {
-			print '</table>';
-		}
-		print '</div>';
-
-		print "</form>\n";
-	}
 
 	// Buttons for actions
 
@@ -696,15 +653,10 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 
 		if (empty($reshook)) {
 
-			// Back to draft
 			print dolGetButtonAction($langs->trans('Faire appréciation de l\'élève'), '', 'default', $_SERVER["PHP_SELF"] . '?id=' . $object->id . '&action=edit&token=' . newToken(), '', $permissionappreciation);
 
+			print dolGetButtonAction($langs->trans('Modifier le souhait'), '', 'default', $_SERVER["PHP_SELF"] . '?id=' . $object->id . '&action=edit&token=' . newToken(), '', $permissiontoadd);
 
-			//if ($object->status == $object::STATUS_DRAFT) {
-				print dolGetButtonAction($langs->trans('Modifier le souhait'), '', 'default', $_SERVER["PHP_SELF"] . '?id=' . $object->id . '&action=edit&token=' . newToken(), '', $permissiontoadd);
-			//}
-
-			// Clone
 			if ($object->status == $object::STATUS_DRAFT) {
 				print dolGetButtonAction($langs->trans('Cloner le souhait'), '', 'default', $_SERVER['PHP_SELF'] . '?id=' . $object->id . (!empty($object->socid) ? '&socid=' . $object->socid : '') . '&action=clone&token=' . newToken(), '', $permissiontoadd);
 				print dolGetButtonAction($langs->trans('Desactiver le souhait'), '', 'danger', $_SERVER["PHP_SELF"] . '?id=' . $object->id . '&action=desactivation&token=' . newToken(), '', $permissiontoadd);
@@ -714,7 +666,6 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 				print dolGetButtonAction($langs->trans('Activer le souhait'), '', 'danger', $_SERVER["PHP_SELF"] . '?id=' . $object->id . '&action=activation&token=' . newToken(), '', $permissiontoadd);
 			}
 
-			// Delete (need delete permission, or if draft, just need create/modify permission)
 			print dolGetButtonAction($langs->trans('Delete'), '', 'delete', $_SERVER['PHP_SELF'] . '?id=' . $object->id . '&action=delete&token=' . newToken(), '', $permissiontodelete);
 		}
 		print '</div>' . "\n";
@@ -743,18 +694,7 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 			print $formfile->showdocuments('viescolaire:Souhait', $object->element . '/' . $objref, $filedir, $urlsource, $genallowed, $delallowed, $object->model_pdf, 1, 0, 0, 28, 0, '', '', '', $langs->defaultlang);
 		}
 
-		// Show links to link elements
-		// $linktoelem = $form->showLinkToObjectBlock($object, null, array('souhait'));
-		// $somethingshown = $form->showLinkedObjectBlock($object, $linktoelem);
-
-
-		// print '</div><div class="fichehalfright">';
 		$MAXEVENT = 10;
-
-		// List of actions on element
-		// include_once DOL_DOCUMENT_ROOT . '/core/class/html.formactions.class.php';
-		// $formactions = new FormActions($db);
-		// $somethingshown = $formactions->showactions($object, $object->element . '@' . $object->module, (is_object($object->thirdparty) ? $object->thirdparty->id : 0), 1, '', $MAXEVENT, '', $morehtmlcenter);
 
 		if ($object->status == 0) {
 			$instruEnseigne = $object->fk_instru_enseigne;
@@ -850,9 +790,7 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 							// On ajoute le notre, avec nos conditions
 							$object->fields['fk_creneau']['type'] = "integer:Creneau:custom/scolarite/class/creneau.class.php:1:(t.nombre_places>(SELECT COUNT(*) FROM llx_affectation as c WHERE c.fk_creneau=t.rowid AND c.status = 4 AND DATE(NOW()) >= DATE(c.date_debut) AND (DATE(NOW()) <= DATE(c.date_fin) OR ISNULL(c.date_fin))) AND t.status = 4 AND (t.nom_creneau LIKE '%".substr($resEtablissement->diminutif, 0,2)."%') ".($typeClasse == 2 ? "AND t.fk_type_classe=".$typeClasse : "AND t.fk_instrument_enseigne = ".$instruEnseigne).") ";
 						}
-						//var_dump($object->fields['fk_creneau']['type']);
 						print $object->showInputField($val, $key, $value, '', '', '', 0);
-						//var_dump($object->showInputField($val, $key, $value, '', '', '', 0));
 					}
 				}
 				print '</td>';
@@ -893,6 +831,20 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 	include DOL_DOCUMENT_ROOT . '/core/tpl/card_presend.tpl.php';
 	print '<script src="/custom/viescolaire/scripts/selectCreneaux.js" defer ></script>';
 }
+
+
+print '<script>
+    $( ".annee-accordion" ).accordion({
+        collapsible: true,
+        active: 2,
+    });
+    </script>';
+
+print '<script>
+    $( ".annee-accordion-opened" ).accordion({
+        collapsible: true,
+    });
+    </script>';
 
 // End of page
 llxFooter();

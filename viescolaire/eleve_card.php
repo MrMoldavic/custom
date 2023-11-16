@@ -83,6 +83,7 @@ require_once DOL_DOCUMENT_ROOT.'/core/class/html.formcompany.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formfile.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formprojet.class.php';
 dol_include_once('/viescolaire/class/eleve.class.php');
+dol_include_once('/viescolaire/class/parents.class.php');
 dol_include_once('/viescolaire/lib/viescolaire_eleve.lib.php');
 
 // Load translation files required by the page
@@ -475,45 +476,12 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 	print '</table>';
 
 
-	if($object->fk_famille)
-	{
-		$famille = "SELECT nom_parent_1,prenom_parent_1,tel_parent_1,mail_parent_1,nom_parent_2,prenom_parent_2,tel_parent_2,mail_parent_2 FROM ".MAIN_DB_PREFIX."famille WHERE rowid = ".$object->fk_famille;
-		$resqlFamille = $db->query($famille);
-		$objFamille = $db->fetch_object($resqlFamille);
 
-		print '<h3><u>Information famille:</u></h3>';
-		print '<table class="tagtable liste">';
-		print '<tbody>';
-		print '<tr>';
-		print '<td>Téléphone parent 1('.$objFamille->prenom_parent_1.' '.$objFamille->nom_parent_1.'):</td>';
-		print '<td>'.$objFamille->tel_parent_1.'</td>';
-		print '</tr>';
-		print '<tr>';
-		print '<td>Téléphone parent 2('.$objFamille->prenom_parent_2.' '.$objFamille->nom_parent_2.'):</td>';
-		print '<td>'.$objFamille->tel_parent_2.'</td>';
-		print '</tr>';
-		print '<tr>';
-		if(!empty($objFamille->mail_parent_1))
-		{
-			print '<td>Mail parent 1('.$objFamille->prenom_parent_1.' '.$objFamille->nom_parent_1.'):</td>';
-			print '<td>'.$objFamille->mail_parent_1.'</td>';
-		}
-		print '</tr>';
-		print '<tr>';
-		if(!empty($objFamille->mail_parent_2))
-		{
-			print '<td>Mail parent 2('.$objFamille->prenom_parent_2.' '.$objFamille->nom_parent_2.'):</td>';
-			print '<td>'.$objFamille->mail_parent_2.'</td>';
-		}
-		print '</tr>';
-		print '</tbody>';
-		print '</table>';
-	}
 
 	if($object->status != $object::STATUS_CANCELED)
 	{
 		// print '<p>Nombre de <span class="badge  badge-status1 badge-status" style="color:white;">retards</span> totaux: '.$numRetards.'</p>';
-		print '<h3><u>Etat de l\'inscription: </u></h3>';
+		print load_fiche_titre("Etats des inscriptions", '', 'fa-pen');
 		print '<form method="POST" action="/custom/viescolaire/eleve_card.php?id='.$object->id.'&action=stateModify" method="post">';
 		print '<input type="hidden" name="token" value="'.newToken().'">';
 		print '<input type="hidden" name="id_eleve" value='.$object->id.'>';
@@ -555,7 +523,38 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 
 	print '<div class="clearboth"></div>';
 
+	if($object->fk_famille)
+	{
+		$parentsClass = new Parents($db);
+		$result = $parentsClass->fetchBy(['lastname','firstname','phone','mail','address','town','zipcode','description','rowid'],$object->fk_famille,'fk_famille');
 
+		print load_fiche_titre("Liste des parents", '', 'object_'.$object->picto);
+		print '<table class="tagtable liste" >';
+		print '<tbody>';
+
+		print '<tr class="liste_titre">
+					<th class="wrapcolumntitle liste_titre">Prenom</th>
+					<th class="wrapcolumntitle liste_titre">Nom</th>
+					<th class="wrapcolumntitle liste_titre">Téléphone</th>
+					<th class="wrapcolumntitle liste_titre">Mail</th>
+					<th class="wrapcolumntitle liste_titre">Adresse</th>
+					<th class="wrapcolumntitle liste_titre">Infos</th>
+					</tr>';
+		foreach($result as $val)
+		{
+			print '<tr class="oddeven">';
+			print '<td>' .$val->firstname. '</td>';
+			print "<td>".$val->lastname."</td>";
+			print "<td>".$val->phone."</td>";
+			print "<td>".$val->mail."</td>";
+			print "<td>$val->address $val->zipcode $val->town</td>";
+			print "<td>$val->description</td>";
+			print '</tr>';
+
+		}
+		print '</tbody>';
+		print '</table>';
+	}
 	if ($action != 'presend' && $action != 'editline') {
 		print '<div class="tabsAction">'."\n";
 		$parameters = array();
@@ -587,7 +586,7 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 	if(($object->status != $object::STATUS_CANCELED) && ($object->status != $object::STATUS_ABANDON))
 	{
 		print '<hr>';
-		print '<h2><u>Liste des souhaits de l\'élève:</u></h2>';
+		print load_fiche_titre("Liste des souhait de l'élève", '', 'fa-school');
 
 		print '<p>'.dolGetButtonAction('Ajouter un souhait', '', 'default', '/custom/viescolaire/souhait_card.php'.'?action=create&fk_eleve='.$object->id, '', $permissiontoadd).'</p>';
 

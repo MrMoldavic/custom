@@ -1,6 +1,6 @@
 <?php
 /* Copyright (C) 2017  Laurent Destailleur <eldy@users.sourceforge.net>
- * Copyright (C) ---Put here your own copyright and developer email---
+ * Copyright (C) 2023 Baptiste Diodati <baptiste.diodati@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,35 +17,36 @@
  */
 
 /**
- * \file        class/etablissement.class.php
- * \ingroup     scolarite
- * \brief       This file is a CRUD class file for Etablissement (Create/Read/Update/Delete)
+ * \file        class/parents.class.php
+ * \ingroup     viescolaire
+ * \brief       This file is a CRUD class file for Parents (Create/Read/Update/Delete)
  */
 
 // Put here all includes required by your class file
 require_once DOL_DOCUMENT_ROOT.'/core/class/commonobject.class.php';
+dol_include_once('viescolaire/class/famille.class.php');
 //require_once DOL_DOCUMENT_ROOT . '/societe/class/societe.class.php';
 //require_once DOL_DOCUMENT_ROOT . '/product/class/product.class.php';
 
 /**
- * Class for Etablissement
+ * Class for Parents
  */
-class Etablissement extends CommonObject
+class Parents extends CommonObject
 {
 	/**
 	 * @var string ID of module.
 	 */
-	public $module = 'scolarite';
+	public $module = 'viescolaire';
 
 	/**
 	 * @var string ID to identify managed object.
 	 */
-	public $element = 'etablissement';
+	public $element = 'parents';
 
 	/**
 	 * @var string Name of table without prefix where object is stored. This is also the key used for extrafields management.
 	 */
-	public $table_element = 'etablissement';
+	public $table_element = 'parents';
 
 	/**
 	 * @var int  Does this object support multicompany module ?
@@ -59,26 +60,37 @@ class Etablissement extends CommonObject
 	public $isextrafieldmanaged = 1;
 
 	/**
-	 * @var string String with name of icon for etablissement. Must be the part after the 'object_' into object_etablissement.png
+	 * @var string String with name of icon for parents. Must be a 'fa-xxx' fontawesome code (or 'fa-xxx_fa_color_size') or 'parents@viescolaire' if picto is file 'img/object_parents.png'.
 	 */
-	public $picto = 'etablissement@scolarite';
+	public $picto = 'fa-file';
 
 
 	const STATUS_DRAFT = 0;
-	const STATUS_VALIDATED = 1;
+	const STATUS_VALIDATED = 4;
 	const STATUS_CANCELED = 9;
 
 
 	/**
-	 *  'type' field format ('integer', 'integer:ObjectClass:PathToClass[:AddCreateButtonOrNot[:Filter[:Sortfield]]]', 'sellist:TableName:LabelFieldName[:KeyFieldName[:KeyFieldParent[:Filter[:Sortfield]]]]', 'varchar(x)', 'double(24,8)', 'real', 'price', 'text', 'text:none', 'html', 'date', 'datetime', 'timestamp', 'duration', 'mail', 'phone', 'url', 'password')
-	 *         Note: Filter can be a string like "(t.ref:like:'SO-%') or (t.date_creation:<:'20160101') or (t.nature:is:NULL)"
+	 *  'type' field format:
+	 *  	'integer', 'integer:ObjectClass:PathToClass[:AddCreateButtonOrNot[:Filter[:Sortfield]]]',
+	 *  	'select' (list of values are in 'options'),
+	 *  	'sellist:TableName:LabelFieldName[:KeyFieldName[:KeyFieldParent[:Filter[:Sortfield]]]]',
+	 *  	'chkbxlst:...',
+	 *  	'varchar(x)',
+	 *  	'text', 'text:none', 'html',
+	 *   	'double(24,8)', 'real', 'price',
+	 *  	'date', 'datetime', 'timestamp', 'duration',
+	 *  	'boolean', 'checkbox', 'radio', 'array',
+	 *  	'mail', 'phone', 'url', 'password', 'ip'
+	 *		Note: Filter must be a Dolibarr filter syntax string. Example: "(t.ref:like:'SO-%') or (t.date_creation:<:'20160101') or (t.status:!=:0) or (t.nature:is:NULL)"
 	 *  'label' the translation key.
 	 *  'picto' is code of a picto to show before value in forms
-	 *  'enabled' is a condition when the field must be managed (Example: 1 or '$conf->global->MY_SETUP_PARAM)
+	 *  'enabled' is a condition when the field must be managed (Example: 1 or '$conf->global->MY_SETUP_PARAM' or 'isModEnabled("multicurrency")' ...)
 	 *  'position' is the sort order of field.
 	 *  'notnull' is set to 1 if not null in database. Set to -1 if we must set data to null if empty ('' or 0).
 	 *  'visible' says if field is visible in list (Examples: 0=Not visible, 1=Visible on list and create/update/view forms, 2=Visible on list only, 3=Visible on create/update/view form only (not list), 4=Visible on list and update/view form only (not create). 5=Visible on list and view only (not create/not update). Using a negative value means field is not shown by default on list but can be selected for viewing)
 	 *  'noteditable' says if field is not editable (1 or 0)
+	 *  'alwayseditable' says if field can be modified also when status is not draft ('1' or '0')
 	 *  'default' is a default value for creation (can still be overwrote by the Setup of Default Values if field is editable in creation form). Note: If default is set to '(PROV)' and field is 'ref', the default value will be set to '(PROVid)' where id is rowid when a new record is created.
 	 *  'index' if we want an index in database.
 	 *  'foreignkey'=>'tablename.field' if the field is a foreign key (it is recommanded to name the field fk_...).
@@ -102,47 +114,49 @@ class Etablissement extends CommonObject
 	 * @var array  Array with all fields and their property. Do not use it as a static var. It may be modified by constructor.
 	 */
 	public $fields=array(
-		'rowid' => array('type'=>'integer', 'label'=>'TechnicalID', 'enabled'=>'1', 'position'=>1, 'notnull'=>1, 'visible'=>0, 'noteditable'=>'1', 'index'=>1, 'css'=>'left', 'comment'=>"Id"),
+		'rowid' => array('type'=>'integer', 'label'=>'TechnicalID', 'enabled'=>'1', 'visible'=>0, 'position'=>10, 'notnull'=>1, ),
+		'firstname' => array('type'=>'varchar(255)', 'label'=>'Prénom', 'enabled'=>'1','visible'=>1, 'position'=>15, 'notnull'=>1, 'visible'=>-1,),
+		'lastname' => array('type'=>'varchar(255)', 'label'=>'Nom', 'enabled'=>'1', 'position'=>20, 'notnull'=>1, 'visible'=>-1,),
+		'address' => array('type'=>'varchar(255)', 'label'=>'Address', 'enabled'=>'1', 'position'=>25, 'notnull'=>0, 'visible'=>-1,),
+		'zipcode' => array('type'=>'varchar(255)', 'label'=>'Zipcode', 'enabled'=>'1', 'position'=>30, 'notnull'=>0, 'visible'=>-1,),
+		'town' => array('type'=>'varchar(255)', 'label'=>'Town', 'enabled'=>'1', 'position'=>35, 'notnull'=>0, 'visible'=>-1,),
+		'phone' => array('type'=>'varchar(255)', 'label'=>'Phone', 'enabled'=>'1', 'position'=>40, 'notnull'=>0, 'visible'=>-1,),
+		'mail' => array('type'=>'varchar(255)', 'label'=>'Mail', 'enabled'=>'1', 'position'=>45, 'notnull'=>0, 'visible'=>-1,),
+		'csp' => array('type'=>'sellist:c_csp:categorie', 'label'=>'Csp', 'enabled'=>'1', 'position'=>50, 'notnull'=>0, 'visible'=>-1,),
+		'quotient_familial' => array('type'=>'integer', 'label'=>'Quotient familial', 'enabled'=>'1', 'position'=>55, 'notnull'=>0, 'visible'=>-1,),
+		'description' => array('type'=>'text', 'label'=>'Description', 'enabled'=>'1', 'position'=>60, 'notnull'=>0, 'visible'=>-1,),
+		'fk_type_parent' => array('type'=>'sellist:c_type_parent:type', 'label'=>'Type de parent', 'enabled'=>'1', 'position'=>61, 'notnull'=>0, 'visible'=>-1,),
+		'contact_preferentiel' => array('type'=>'boolean', 'label'=>'Contact Préférentiel ?', 'enabled'=>'1', 'position'=>22, 'notnull'=>1, 'visible'=>1,),
+		'fk_famille' => array('type'=>'integer:Famille:custom/viescolaire/class/famille.class.php', 'label'=>'Famille liée', 'enabled'=>'1', 'position'=>2, 'notnull'=>0, 'visible'=>-1, 'css'=>'maxwidth200',),
+		'fk_tiers' => array('type'=>'integer:Societe:societe/class/societe.class.php', 'label'=>'Tiers lié', 'enabled'=>'1', 'position'=>63, 'notnull'=>0, 'visible'=>-1, 'css'=>'maxwidth200',),
+		'fk_adherent' => array('type'=>'integer:Adherent:adherents/class/adherent.class.php', 'label'=>'Adhérent lié', 'enabled'=>'1', 'position'=>64, 'notnull'=>0, 'visible'=>-1, 'css'=>'maxwidth200',),
 
-		'nom' => array('type'=>'varchar(255)', 'label'=>'Nom de l\'établissement', 'enabled'=>'1', 'position'=>2, 'notnull'=>1, 'visible'=>1, 'index'=>1, 'searchall'=>1, 'showoncombobox'=>'1', 'validate'=>'1', 'comment'=>"Reference of object"),
-		'diminutif' => array('type'=>'varchar(255)', 'label'=>'Diminutif', 'enabled'=>'1', 'position'=>2, 'notnull'=>1, 'visible'=>1, 'validate'=>'1',),
-		'adresse' => array('type'=>'varchar(255)', 'label'=>'Adresse', 'enabled'=>'1', 'position'=>2, 'notnull'=>1, 'visible'=>1, 'validate'=>'1',),
-		'code_postal' => array('type'=>'varchar(9)', 'label'=>'Code Postal', 'enabled'=>'1', 'position'=>3, 'notnull'=>1, 'visible'=>1, 'validate'=>'1',),
-		'ville' => array('type'=>'varchar(255)', 'label'=>'Ville', 'enabled'=>'1', 'position'=>4, 'notnull'=>1, 'visible'=>1, 'validate'=>'1',),
-		'principal' => array('type'=>'varchar(255)', 'label'=>'Principal', 'enabled'=>'1', 'position'=>5, 'notnull'=>0, 'visible'=>1, 'validate'=>'1',),
-		'principal_adjoint' => array('type'=>'varchar(255)', 'label'=>'Principal Adjoint', 'enabled'=>'1', 'position'=>6, 'notnull'=>0, 'visible'=>1, 'validate'=>'1',),
-		'gestionnaire' => array('type'=>'varchar(255)', 'label'=>'Gestionnaire', 'enabled'=>'1', 'position'=>7, 'notnull'=>0, 'visible'=>1, 'validate'=>'1',),
-		'url' => array('type'=>'varchar(255)', 'label'=>'Site Web', 'enabled'=>'1', 'position'=>8, 'notnull'=>0, 'visible'=>1, 'validate'=>'1'),
-		'description' => array('type'=>'text', 'label'=>'Description', 'enabled'=>'1', 'position'=>9, 'notnull'=>0, 'visible'=>3, 'validate'=>'1',),
-		'note_public' => array('type'=>'html', 'label'=>'NotePublic', 'enabled'=>'1', 'position'=>10, 'notnull'=>0, 'visible'=>1, 'cssview'=>'wordbreak', 'validate'=>'1',),
-		'note_private' => array('type'=>'html', 'label'=>'NotePrivate', 'enabled'=>'1', 'position'=>11, 'notnull'=>0, 'visible'=>1, 'cssview'=>'wordbreak', 'validate'=>'1',),
-		'date_creation' => array('type'=>'datetime', 'label'=>'DateCreation', 'enabled'=>'1', 'position'=>12, 'notnull'=>1, 'visible'=>-2,),
-		'tms' => array('type'=>'timestamp', 'label'=>'DateModification', 'enabled'=>'1', 'position'=>13, 'notnull'=>0, 'visible'=>-2,),
-		'fk_user_creat' => array('type'=>'integer:User:user/class/user.class.php', 'label'=>'UserAuthor', 'enabled'=>'1', 'position'=>14, 'notnull'=>1, 'visible'=>-2, 'foreignkey'=>'user.rowid',),
-		'fk_user_modif' => array('type'=>'integer:User:user/class/user.class.php', 'label'=>'UserModif', 'enabled'=>'1', 'position'=>15, 'notnull'=>-1, 'visible'=>-2,),
-		'last_main_doc' => array('type'=>'varchar(255)', 'label'=>'LastMainDoc', 'enabled'=>'1', 'position'=>16, 'notnull'=>0, 'visible'=>0,),
+		'date_creation' => array('type'=>'datetime', 'label'=>'Datecreation', 'enabled'=>'1', 'position'=>70, 'notnull'=>1, 'visible'=>0,),
+		'tms' => array('type'=>'timestamp', 'label'=>'DateModification', 'enabled'=>'1', 'position'=>75, 'notnull'=>1, 'visible'=>0,),
+		'fk_user_create' => array('type'=>'integer:User:user/class/user.class.php', 'label'=>'Fkusercreate', 'enabled'=>'1', 'position'=>80, 'notnull'=>0, 'visible'=>0, 'css'=>'maxwidth500 widthcentpercentminusxx', 'csslist'=>'tdoverflowmax150',),
+		'fk_user_modif' => array('type'=>'integer:User:user/class/user.class.php', 'label'=>'UserModif', 'enabled'=>'1', 'position'=>85, 'notnull'=>-1, 'visible'=>0, 'css'=>'maxwidth500 widthcentpercentminusxx', 'csslist'=>'tdoverflowmax150',),
+		'status' => array('type'=>'integer', 'label'=>'Status', 'enabled'=>'1', 'position'=>500, 'notnull'=>0, 'visible'=>0,),
 	);
-	public $rowid;
-	public $ref;
-	public $label;
 
-	public $nom;
-	public $adresse;
-	public $code_postal;
-	public $ville;
-	public $principal;
-	public $principal_adjoint;
-	public $gestionnaire;
-	public $url;
+	public $rowid;
+	public $lastname;
+	public $firstname;
+	public $address;
+	public $zipcode;
+	public $town;
+	public $phone;
+	public $mail;
+	public $csp;
+	public $quotient_familial;
 	public $description;
-	public $note_public;
-	public $note_private;
+	public $fk_famille;
 	public $date_creation;
 	public $tms;
-	public $fk_user_creat;
+	public $fk_user_create;
 	public $fk_user_modif;
-	public $last_main_doc;
+	public $status;
 	// END MODULEBUILDER PROPERTIES
+
 
 
 	// If this object has a subtable with lines
@@ -150,17 +164,17 @@ class Etablissement extends CommonObject
 	// /**
 	//  * @var string    Name of subtable line
 	//  */
-	// public $table_element_line = 'scolarite_etablissementline';
+	// public $table_element_line = 'viescolaire_parentsline';
 
 	// /**
 	//  * @var string    Field with ID of parent key if this object has a parent
 	//  */
-	// public $fk_element = 'fk_etablissement';
+	// public $fk_element = 'fk_parents';
 
 	// /**
 	//  * @var string    Name of subtable class that manage subtable lines
 	//  */
-	// public $class_element_line = 'Etablissementline';
+	// public $class_element_line = 'Parentsline';
 
 	// /**
 	//  * @var array	List of child tables. To test if we can delete object.
@@ -172,10 +186,10 @@ class Etablissement extends CommonObject
 	//  *               If name matches '@ClassNAme:FilePathClass;ParentFkFieldName' it will
 	//  *               call method deleteByParentField(parentId, ParentFkFieldName) to fetch and delete child object
 	//  */
-	// protected $childtablesoncascade = array('scolarite_etablissementdet');
+	// protected $childtablesoncascade = array('viescolaire_parentsdet');
 
 	// /**
-	//  * @var EtablissementLine[]     Array of subtable lines
+	//  * @var ParentsLine[]     Array of subtable lines
 	//  */
 	// public $lines = array();
 
@@ -192,15 +206,15 @@ class Etablissement extends CommonObject
 
 		$this->db = $db;
 
-		if (empty($conf->global->MAIN_SHOW_TECHNICAL_ID) && isset($this->fields['rowid'])) {
+		if (empty($conf->global->MAIN_SHOW_TECHNICAL_ID) && isset($this->fields['rowid']) && !empty($this->fields['ref'])) {
 			$this->fields['rowid']['visible'] = 0;
 		}
-		if (empty($conf->multicompany->enabled) && isset($this->fields['entity'])) {
+		if (!isModEnabled('multicompany') && isset($this->fields['entity'])) {
 			$this->fields['entity']['enabled'] = 0;
 		}
 
 		// Example to show how to set values of fields definition dynamically
-		/*if ($user->rights->scolarite->etablissement->read) {
+		/*if ($user->rights->viescolaire->parents->read) {
 			$this->fields['myfield']['visible'] = 1;
 			$this->fields['myfield']['noteditable'] = 0;
 		}*/
@@ -233,9 +247,47 @@ class Etablissement extends CommonObject
 	 */
 	public function create(User $user, $notrigger = false)
 	{
-		$resultcreate = $this->createCommon($user, $notrigger);
+		$familleClass = new Famille($this->db);
+		$this->phone = str_replace(" ", "", $this->phone);
 
-		//$resultvalidate = $this->validate($user, $notrigger);
+		if(!empty($this->phone) && strlen($this->phone) != 10)
+		{
+			setEventMessage('Le numéro de téléphone ne fait pas 10 chiffres.','errors');
+		}
+		else
+		{
+			$this->lastname = strtoupper($this->lastname);
+			$this->firstname = ucfirst(strtolower($this->firstname));
+			$this->phone = str_replace(" ", "", $this->phone);
+		}
+
+		if(!$this->fk_famille)
+		{
+			$this->status = self::STATUS_VALIDATED;
+
+
+			$familleClass->identifiant_famille = $this->lastname;
+			$rowidFamille = $familleClass->create($user);
+
+			$this->fk_famille = $rowidFamille;
+		}
+		else
+		{
+			$familleId = $familleClass->fetch($this->fk_famille);
+
+			if ($familleId > 0) {
+
+				if($familleClass->identifiant_famille == "Identifiant provisoire")
+				{
+					$familleClass->identifiant_famille = "$this->lastname $this->firstname";
+				}else{
+					$familleClass->identifiant_famille .= " / $this->lastname $this->firstname";
+				}
+
+				$familleClass->update($user);
+			}
+		}
+		$resultcreate = $this->createCommon($user, $notrigger);
 
 		return $resultcreate;
 	}
@@ -296,7 +348,8 @@ class Etablissement extends CommonObject
 			foreach ($object->array_options as $key => $option) {
 				$shortkey = preg_replace('/options_/', '', $key);
 				if (!empty($extrafields->attributes[$this->table_element]['unique'][$shortkey])) {
-					//var_dump($key); var_dump($clonedObj->array_options[$key]); exit;
+					//var_dump($key);
+					//var_dump($clonedObj->array_options[$key]); exit;
 					unset($object->array_options[$key]);
 				}
 			}
@@ -355,8 +408,6 @@ class Etablissement extends CommonObject
 		return $result;
 	}
 
-
-
 	/**
 	 * Delete object in database
 	 *
@@ -384,23 +435,18 @@ class Etablissement extends CommonObject
 		if ($resql) {
 			$num = $this->db->num_rows($resql);
 			$i = 0;
-			if($num == 1)
-			{
-				$records = $this->db->fetch_object($resql);
-			}
-			else
-			{
-				while ($i < ($limit ? min($limit, $num) : $num)) {
 
-					$obj = $this->db->fetch_object($resql);
-					$records[$obj->rowid] = $obj;
+			$records = array();
+			while ($i < ($limit ? min($limit, $num) : $num)) {
+				$obj = $this->db->fetch_object($resql);
+				$records[$obj->rowid] = $obj;
+				$i++;
 
-					$i++;
-				}
 			}
 
 			$this->db->free($resql);
 			return $records;
+
 		} else {
 			$this->errors[] = 'Error '.$this->db->lasterror();
 			dol_syslog(__METHOD__.' '.join(',', $this->errors), LOG_ERR);
@@ -408,22 +454,6 @@ class Etablissement extends CommonObject
 			return -1;
 		}
 	}
-
-	public function fetchOneField(int $id,string $field)
-	{
-		$sql = "SELECT ".$this->db->sanitize($this->db->escape($field)).',rowid';
-		$sql .= " FROM ".MAIN_DB_PREFIX.$this->table_element;
-		$sql .= " WHERE rowid=".$id;
-
-		$resql = $this->db->query($sql);
-		if($resql) $result = $this->db->fetch_object($resql);
-
-		return $result;
-
-	}
-
-
-
 
 	/**
 	 * Load object lines in memory from the database
@@ -460,9 +490,9 @@ class Etablissement extends CommonObject
 
 		$sql = "SELECT ";
 		$sql .= $this->getFieldList('t');
-		$sql .= " FROM ".MAIN_DB_PREFIX.$this->table_element." as t";
+		$sql .= " FROM ".$this->db->prefix().$this->table_element." as t";
 		if (isset($this->ismultientitymanaged) && $this->ismultientitymanaged == 1) {
-			$sql .= " WHERE t.entity IN (".getEntity($this->table_element).")";
+			$sql .= " WHERE t.entity IN (".getEntity($this->element).")";
 		} else {
 			$sql .= " WHERE 1 = 1";
 		}
@@ -535,7 +565,7 @@ class Etablissement extends CommonObject
 	 * Delete object in database
 	 *
 	 * @param User $user       User that deletes
-	 * @param bool $notrigger  false=launch triggers after, true=disable triggers
+	 * @param bool $notrigger  false=launch triggers, true=disable triggers
 	 * @return int             <0 if KO, >0 if OK
 	 */
 	public function delete(User $user, $notrigger = false)
@@ -584,8 +614,8 @@ class Etablissement extends CommonObject
 			return 0;
 		}
 
-		/*if (! ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->scolarite->etablissement->write))
-		 || (! empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->scolarite->etablissement->etablissement_advance->validate))))
+		/*if (! ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && !empty($user->rights->viescolaire->parents->write))
+		 || (!empty($conf->global->MAIN_USE_ADVANCED_PERMS) && !empty($user->rights->viescolaire->parents->parents_advance->validate))))
 		 {
 		 $this->error='NotEnoughPermissions';
 		 dol_syslog(get_class($this)."::valid ".$this->error, LOG_ERR);
@@ -627,7 +657,7 @@ class Etablissement extends CommonObject
 
 			if (!$error && !$notrigger) {
 				// Call trigger
-				$result = $this->call_trigger('ETABLISSEMENT_VALIDATE', $user);
+				$result = $this->call_trigger('PARENTS_VALIDATE', $user);
 				if ($result < 0) {
 					$error++;
 				}
@@ -641,8 +671,8 @@ class Etablissement extends CommonObject
 			// Rename directory if dir was a temporary ref
 			if (preg_match('/^[\(]?PROV/i', $this->ref)) {
 				// Now we rename also files into index
-				$sql = 'UPDATE '.MAIN_DB_PREFIX."ecm_files set filename = CONCAT('".$this->db->escape($this->newref)."', SUBSTR(filename, ".(strlen($this->ref) + 1).")), filepath = 'etablissement/".$this->db->escape($this->newref)."'";
-				$sql .= " WHERE filename LIKE '".$this->db->escape($this->ref)."%' AND filepath = 'etablissement/".$this->db->escape($this->ref)."' and entity = ".$conf->entity;
+				$sql = 'UPDATE '.MAIN_DB_PREFIX."ecm_files set filename = CONCAT('".$this->db->escape($this->newref)."', SUBSTR(filename, ".(strlen($this->ref) + 1).")), filepath = 'parents/".$this->db->escape($this->newref)."'";
+				$sql .= " WHERE filename LIKE '".$this->db->escape($this->ref)."%' AND filepath = 'parents/".$this->db->escape($this->ref)."' and entity = ".$conf->entity;
 				$resql = $this->db->query($sql);
 				if (!$resql) {
 					$error++; $this->error = $this->db->lasterror();
@@ -651,15 +681,15 @@ class Etablissement extends CommonObject
 				// We rename directory ($this->ref = old ref, $num = new ref) in order not to lose the attachments
 				$oldref = dol_sanitizeFileName($this->ref);
 				$newref = dol_sanitizeFileName($num);
-				$dirsource = $conf->scolarite->dir_output.'/etablissement/'.$oldref;
-				$dirdest = $conf->scolarite->dir_output.'/etablissement/'.$newref;
+				$dirsource = $conf->viescolaire->dir_output.'/parents/'.$oldref;
+				$dirdest = $conf->viescolaire->dir_output.'/parents/'.$newref;
 				if (!$error && file_exists($dirsource)) {
 					dol_syslog(get_class($this)."::validate() rename dir ".$dirsource." into ".$dirdest);
 
 					if (@rename($dirsource, $dirdest)) {
 						dol_syslog("Rename ok");
 						// Rename docs starting with $oldref with $newref
-						$listoffiles = dol_dir_list($conf->scolarite->dir_output.'/etablissement/'.$newref, 'files', 1, '^'.preg_quote($oldref, '/'));
+						$listoffiles = dol_dir_list($conf->viescolaire->dir_output.'/parents/'.$newref, 'files', 1, '^'.preg_quote($oldref, '/'));
 						foreach ($listoffiles as $fileentry) {
 							$dirsource = $fileentry['name'];
 							$dirdest = preg_replace('/^'.preg_quote($oldref, '/').'/', $newref, $dirsource);
@@ -702,14 +732,14 @@ class Etablissement extends CommonObject
 			return 0;
 		}
 
-		/*if (! ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->scolarite->write))
-		 || (! empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->scolarite->scolarite_advance->validate))))
+		/*if (! ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && !empty($user->rights->viescolaire->write))
+		 || (!empty($conf->global->MAIN_USE_ADVANCED_PERMS) && !empty($user->rights->viescolaire->viescolaire_advance->validate))))
 		 {
 		 $this->error='Permission denied';
 		 return -1;
 		 }*/
 
-		return $this->setStatusCommon($user, self::STATUS_DRAFT, $notrigger, 'ETABLISSEMENT_UNVALIDATE');
+		return $this->setStatusCommon($user, self::STATUS_DRAFT, $notrigger, 'PARENTS_UNVALIDATE');
 	}
 
 	/**
@@ -726,14 +756,14 @@ class Etablissement extends CommonObject
 			return 0;
 		}
 
-		/*if (! ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->scolarite->write))
-		 || (! empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->scolarite->scolarite_advance->validate))))
+		/*if (! ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && !empty($user->rights->viescolaire->write))
+		 || (!empty($conf->global->MAIN_USE_ADVANCED_PERMS) && !empty($user->rights->viescolaire->viescolaire_advance->validate))))
 		 {
 		 $this->error='Permission denied';
 		 return -1;
 		 }*/
 
-		return $this->setStatusCommon($user, self::STATUS_CANCELED, $notrigger, 'ETABLISSEMENT_CANCEL');
+		return $this->setStatusCommon($user, self::STATUS_CANCELED, $notrigger, 'PARENTS_CANCEL');
 	}
 
 	/**
@@ -746,18 +776,18 @@ class Etablissement extends CommonObject
 	public function reopen($user, $notrigger = 0)
 	{
 		// Protection
-		if ($this->status != self::STATUS_CANCELED) {
+		if ($this->status == self::STATUS_VALIDATED) {
 			return 0;
 		}
 
-		/*if (! ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->scolarite->write))
-		 || (! empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->scolarite->scolarite_advance->validate))))
+		/*if (! ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && !empty($user->rights->viescolaire->write))
+		 || (!empty($conf->global->MAIN_USE_ADVANCED_PERMS) && !empty($user->rights->viescolaire->viescolaire_advance->validate))))
 		 {
 		 $this->error='Permission denied';
 		 return -1;
 		 }*/
 
-		return $this->setStatusCommon($user, self::STATUS_VALIDATED, $notrigger, 'ETABLISSEMENT_REOPEN');
+		return $this->setStatusCommon($user, self::STATUS_VALIDATED, $notrigger, 'PARENTS_REOPEN');
 	}
 
 	/**
@@ -780,14 +810,14 @@ class Etablissement extends CommonObject
 
 		$result = '';
 
-		// $label = img_picto('', $this->picto).' <u>'.$langs->trans("Etablissement").'</u>';
+		$label = img_picto('', $this->picto).' <u>'.$langs->trans("Parents").'</u>';
 		if (isset($this->status)) {
 			$label .= ' '.$this->getLibStatut(5);
 		}
-		// $label .= '<br>';
-		// $label .= '<b>'.$langs->trans('Ref').':</b> '.$this->nom;
+		$label .= '<br>';
+		$label .= '<b>'.$langs->trans('Ref').':</b> '.$this->ref;
 
-		$url = dol_buildpath('/scolarite/etablissement_card.php', 1).'?id='.$this->id;
+		$url = dol_buildpath('/viescolaire/parents_card.php', 1).'?id='.$this->id;
 
 		if ($option != 'nolink') {
 			// Add param to save lastsearch_values or not
@@ -803,7 +833,7 @@ class Etablissement extends CommonObject
 		$linkclose = '';
 		if (empty($notooltip)) {
 			if (!empty($conf->global->MAIN_OPTIMIZEFORTEXTBROWSER)) {
-				$label = $langs->trans("ShowEtablissement");
+				$label = $langs->trans("ShowParents");
 				$linkclose .= ' alt="'.dol_escape_htmltag($label, 1).'"';
 			}
 			$linkclose .= ' title="'.dol_escape_htmltag($label, 1).'"';
@@ -856,15 +886,15 @@ class Etablissement extends CommonObject
 		}
 
 		if ($withpicto != 2) {
-			$result .= $this->nom;
+			$result .= "$this->firstname $this->lastname";
 		}
 
 		$result .= $linkend;
 		//if ($withpicto != 2) $result.=(($addlabel && $this->label) ? $sep . dol_trunc($this->label, ($addlabel > 1 ? $addlabel : 0)) : '');
 
 		global $action, $hookmanager;
-		$hookmanager->initHooks(array('etablissementdao'));
-		$parameters = array('id'=>$this->id, 'getnomurl'=>$result);
+		$hookmanager->initHooks(array($this->element.'dao'));
+		$parameters = array('id'=>$this->id, 'getnomurl' => &$result);
 		$reshook = $hookmanager->executeHooks('getNomUrl', $parameters, $this, $action); // Note that $action and $object may have been modified by some hooks
 		if ($reshook > 0) {
 			$result = $hookmanager->resPrint;
@@ -874,6 +904,36 @@ class Etablissement extends CommonObject
 
 		return $result;
 	}
+
+	/**
+	 *	Return a thumb for kanban views
+	 *
+	 *	@param      string	    $option                 Where point the link (0=> main card, 1,2 => shipment, 'nolink'=>No link)
+	 *  @return		string								HTML Code for Kanban thumb.
+	 */
+	/*
+	public function getKanbanView($option = '')
+	{
+		$return = '<div class="box-flex-item box-flex-grow-zero">';
+		$return .= '<div class="info-box info-box-sm">';
+		$return .= '<span class="info-box-icon bg-infobox-action">';
+		$return .= img_picto('', $this->picto);
+		$return .= '</span>';
+		$return .= '<div class="info-box-content">';
+		$return .= '<span class="info-box-ref">'.(method_exists($this, 'getNomUrl') ? $this->getNomUrl() : $this->ref).'</span>';
+		if (property_exists($this, 'label')) {
+			$return .= '<br><span class="info-box-label opacitymedium">'.$this->label.'</span>';
+		}
+		if (method_exists($this, 'getLibStatut')) {
+			$return .= '<br><div class="info-box-status margintoponly">'.$this->getLibStatut(5).'</div>';
+		}
+		$return .= '</div>';
+		$return .= '</div>';
+		$return .= '</div>';
+
+		return $return;
+	}
+	*/
 
 	/**
 	 *  Return the label of the status
@@ -910,7 +970,7 @@ class Etablissement extends CommonObject
 		// phpcs:enable
 		if (empty($this->labelStatus) || empty($this->labelStatusShort)) {
 			global $langs;
-			//$langs->load("scolarite@scolarite");
+			//$langs->load("viescolaire@viescolaire");
 			$this->labelStatus[self::STATUS_DRAFT] = $langs->transnoentitiesnoconv('Draft');
 			$this->labelStatus[self::STATUS_VALIDATED] = $langs->transnoentitiesnoconv('Enabled');
 			$this->labelStatus[self::STATUS_CANCELED] = $langs->transnoentitiesnoconv('Disabled');
@@ -936,7 +996,8 @@ class Etablissement extends CommonObject
 	 */
 	public function info($id)
 	{
-		$sql = "SELECT rowid, date_creation as datec, tms as datem,";
+		$sql = "SELECT rowid,";
+		$sql .= " date_creation as datec, tms as datem,";
 		$sql .= " fk_user_creat, fk_user_modif";
 		$sql .= " FROM ".MAIN_DB_PREFIX.$this->table_element." as t";
 		$sql .= " WHERE t.rowid = ".((int) $id);
@@ -945,28 +1006,19 @@ class Etablissement extends CommonObject
 		if ($result) {
 			if ($this->db->num_rows($result)) {
 				$obj = $this->db->fetch_object($result);
+
 				$this->id = $obj->rowid;
-				if (!empty($obj->fk_user_author)) {
-					$cuser = new User($this->db);
-					$cuser->fetch($obj->fk_user_author);
-					$this->user_creation = $cuser;
-				}
 
+				$this->user_creation_id = $obj->fk_user_creat;
+				$this->user_modification_id = $obj->fk_user_modif;
 				if (!empty($obj->fk_user_valid)) {
-					$vuser = new User($this->db);
-					$vuser->fetch($obj->fk_user_valid);
-					$this->user_validation = $vuser;
+					$this->user_validation_id = $obj->fk_user_valid;
 				}
-
-				if (!empty($obj->fk_user_cloture)) {
-					$cluser = new User($this->db);
-					$cluser->fetch($obj->fk_user_cloture);
-					$this->user_cloture = $cluser;
-				}
-
 				$this->date_creation     = $this->db->jdate($obj->datec);
-				$this->date_modification = $this->db->jdate($obj->datem);
-				$this->date_validation   = $this->db->jdate($obj->datev);
+				$this->date_modification = empty($obj->datem) ? '' : $this->db->jdate($obj->datem);
+				if (!empty($obj->datev)) {
+					$this->date_validation   = empty($obj->datev) ? '' : $this->db->jdate($obj->datev);
+				}
 			}
 
 			$this->db->free($result);
@@ -999,8 +1051,8 @@ class Etablissement extends CommonObject
 	{
 		$this->lines = array();
 
-		$objectline = new EtablissementLine($this->db);
-		$result = $objectline->fetchAll('ASC', 'position', 0, 0, array('customsql'=>'fk_etablissement = '.((int) $this->id)));
+		$objectline = new ParentsLine($this->db);
+		$result = $objectline->fetchAll('ASC', 'position', 0, 0, array('customsql'=>'fk_parents = '.((int) $this->id)));
 
 		if (is_numeric($result)) {
 			$this->error = $objectline->error;
@@ -1020,22 +1072,22 @@ class Etablissement extends CommonObject
 	public function getNextNumRef()
 	{
 		global $langs, $conf;
-		$langs->load("scolarite@scolarite");
+		$langs->load("viescolaire@viescolaire");
 
-		if (empty($conf->global->SCOLARITE_ETABLISSEMENT_ADDON)) {
-			$conf->global->SCOLARITE_ETABLISSEMENT_ADDON = 'mod_etablissement_standard';
+		if (empty($conf->global->VIESCOLAIRE_PARENTS_ADDON)) {
+			$conf->global->VIESCOLAIRE_PARENTS_ADDON = 'mod_parents_standard';
 		}
 
-		if (!empty($conf->global->SCOLARITE_ETABLISSEMENT_ADDON)) {
+		if (!empty($conf->global->VIESCOLAIRE_PARENTS_ADDON)) {
 			$mybool = false;
 
-			$file = $conf->global->SCOLARITE_ETABLISSEMENT_ADDON.".php";
-			$classname = $conf->global->SCOLARITE_ETABLISSEMENT_ADDON;
+			$file = $conf->global->VIESCOLAIRE_PARENTS_ADDON.".php";
+			$classname = $conf->global->VIESCOLAIRE_PARENTS_ADDON;
 
 			// Include file with class
 			$dirmodels = array_merge(array('/'), (array) $conf->modules_parts['models']);
 			foreach ($dirmodels as $reldir) {
-				$dir = dol_buildpath($reldir."core/modules/scolarite/");
+				$dir = dol_buildpath($reldir."core/modules/viescolaire/");
 
 				// Load file with numbering class (if found)
 				$mybool |= @include_once $dir.$file;
@@ -1083,21 +1135,21 @@ class Etablissement extends CommonObject
 		global $conf, $langs;
 
 		$result = 0;
-		$includedocgeneration = 0;
+		$includedocgeneration = 1;
 
-		$langs->load("scolarite@scolarite");
+		$langs->load("viescolaire@viescolaire");
 
 		if (!dol_strlen($modele)) {
-			$modele = 'standard_etablissement';
+			$modele = 'standard_parents';
 
 			if (!empty($this->model_pdf)) {
 				$modele = $this->model_pdf;
-			} elseif (!empty($conf->global->ETABLISSEMENT_ADDON_PDF)) {
-				$modele = $conf->global->ETABLISSEMENT_ADDON_PDF;
+			} elseif (!empty($conf->global->PARENTS_ADDON_PDF)) {
+				$modele = $conf->global->PARENTS_ADDON_PDF;
 			}
 		}
 
-		$modelpath = "core/modules/scolarite/doc/";
+		$modelpath = "core/modules/viescolaire/doc/";
 
 		if ($includedocgeneration && !empty($modele)) {
 			$result = $this->commonGenerateDocument($modelpath, $modele, $outputlangs, $hidedetails, $hidedesc, $hideref, $moreparams);
@@ -1141,12 +1193,12 @@ class Etablissement extends CommonObject
 require_once DOL_DOCUMENT_ROOT.'/core/class/commonobjectline.class.php';
 
 /**
- * Class EtablissementLine. You can also remove this and generate a CRUD class for lines objects.
+ * Class ParentsLine. You can also remove this and generate a CRUD class for lines objects.
  */
-class EtablissementLine extends CommonObjectLine
+class ParentsLine extends CommonObjectLine
 {
-	// To complete with content of an object EtablissementLine
-	// We should have a field rowid, fk_etablissement and position
+	// To complete with content of an object ParentsLine
+	// We should have a field rowid, fk_parents and position
 
 	/**
 	 * @var int  Does object support extrafields ? 0=No, 1=Yes

@@ -21,9 +21,9 @@
  */
 
 /**
- *      \file       admin/testrefpascalobispo_extrafields.php
+ *      \file       admin/contribution_extrafields.php
  *		\ingroup    viescolaire
- *		\brief      Page to setup extra fields of testrefpascalobispo
+ *		\brief      Page to setup extra fields of contribution
  */
 
 // Load Dolibarr environment
@@ -72,7 +72,7 @@ foreach ($tmptype2label as $key => $val) {
 
 $action = GETPOST('action', 'aZ09');
 $attrname = GETPOST('attrname', 'alpha');
-$elementtype = 'viescolaire_testrefpascalobispo'; //Must be the $table_element of the class that manage extrafield
+$elementtype = 'viescolaire_contribution'; //Must be the $table_element of the class that manage extrafield
 
 if (!$user->admin) {
 	accessforbidden();
@@ -91,6 +91,8 @@ require DOL_DOCUMENT_ROOT.'/core/actions_extrafields.inc.php';
  * View
  */
 
+$textobject = $langs->transnoentitiesnoconv("Contribution");
+
 $help_url = '';
 $page_name = "VieScolaireSetup";
 
@@ -103,7 +105,7 @@ print load_fiche_titre($langs->trans($page_name), $linkback, 'title_setup');
 
 $head = viescolaireAdminPrepareHead();
 
-print dol_get_fiche_head($head, 'testrefpascalobispo_extrafields', $langs->trans($page_name), -1, 'viescolaire@viescolaire');
+print dol_get_fiche_head($head, 'contribution_extrafields', $langs->trans($page_name), -1, 'viescolaire@viescolaire');
 
 require DOL_DOCUMENT_ROOT.'/core/tpl/admin_extrafields_view.tpl.php';
 
@@ -111,10 +113,12 @@ print dol_get_fiche_end();
 
 
 // Buttons
-if ($action != 'create' && $action != 'edit') {
-	print '<div class="tabsAction">';
-	print "<a class=\"butAction\" href=\"".$_SERVER["PHP_SELF"]."?action=create#newattrib\">".$langs->trans("NewAttribute")."</a>";
-	print "</div>";
+if ((float) DOL_VERSION < 17) {	// On v17+, the "New Attribute" button is included into tpl.
+	if ($action != 'create' && $action != 'edit') {
+		print '<div class="tabsAction">';
+		print '<a class="butAction reposition" href="'.$_SERVER["PHP_SELF"].'?action=create">'.$langs->trans("NewAttribute").'</a>';
+		print "</div>";
+	}
 }
 
 

@@ -206,30 +206,32 @@ class modVieScolaire extends DolibarrModules
 			'langs' => 'viescolaire@viescolaire',
 			// List of tables we want to see into dictonnary editor
 			'tabname' => array(MAIN_DB_PREFIX . "c_niveaux",
-			MAIN_DB_PREFIX . "c_genre", 
-			MAIN_DB_PREFIX . "c_geographie_prioritaire", 
+			MAIN_DB_PREFIX . "c_genre",
+			MAIN_DB_PREFIX . "c_geographie_prioritaire",
 			MAIN_DB_PREFIX . "c_csp",
-			MAIN_DB_PREFIX . "c_annee_scolaire"),
+			MAIN_DB_PREFIX . "c_annee_scolaire",
+			MAIN_DB_PREFIX . "c_type_parent"),
 			// Label of tables
-			'tablib' => array("Niveaux", "Genre", "Geographie prioritaire", "Catégorie socioprofessionnelle", "Année scolaire"),
+			'tablib' => array("Niveaux", "Genre", "Geographie prioritaire", "Catégorie socioprofessionnelle", "Année scolaire","Type parent"),
 			// Request to select fields
-			'tabsql' => array('SELECT f.rowid as rowid, f.niveau, f.active FROM ' . MAIN_DB_PREFIX . 'c_niveaux as f', 
-			'SELECT g.rowid as rowid, g.genre, g.active FROM ' . MAIN_DB_PREFIX . 'c_genre as g', 
+			'tabsql' => array('SELECT f.rowid as rowid, f.niveau, f.active FROM ' . MAIN_DB_PREFIX . 'c_niveaux as f',
+			'SELECT g.rowid as rowid, g.genre, g.active FROM ' . MAIN_DB_PREFIX . 'c_genre as g',
 			'SELECT e.rowid as rowid, e.emplacement, e.active FROM ' . MAIN_DB_PREFIX . 'c_geographie_prioritaire as e',
 			'SELECT c.rowid as rowid, c.categorie, c.active FROM ' . MAIN_DB_PREFIX . 'c_csp as c',
-			'SELECT c.rowid as rowid, c.annee, c.active FROM ' . MAIN_DB_PREFIX . 'c_annee_scolaire as c',),
+			'SELECT c.rowid as rowid, c.annee, c.active FROM ' . MAIN_DB_PREFIX . 'c_annee_scolaire as c',
+			'SELECT t.rowid as rowid, t.type, t.active FROM ' . MAIN_DB_PREFIX . 'c_type_parent as t',),
 			// Sort order
-			'tabsqlsort' => array("niveau ASC", "rowid ASC",  "emplacement ASC", "categorie ASC", "annee ASC"),
+			'tabsqlsort' => array("niveau ASC", "rowid ASC",  "emplacement ASC", "categorie ASC", "annee ASC","rowid ASC"),
 			// List of fields (result of select to show dictionary)
-			'tabfield' => array("niveau", "genre", "emplacement", "categorie", "annee"),
+			'tabfield' => array("niveau", "genre", "emplacement", "categorie", "annee","type"),
 			// List of fields (list of fields to edit a record)
-			'tabfieldvalue' => array("niveau", "genre", "emplacement", "categorie", "annee"),
+			'tabfieldvalue' => array("niveau", "genre", "emplacement", "categorie", "annee","type"),
 			// List of fields (list of fields for insert)
-			'tabfieldinsert' => array("niveau", "genre", "emplacement", "categorie", "annee"),
+			'tabfieldinsert' => array("niveau", "genre", "emplacement", "categorie", "annee","type"),
 			// Name of columns with primary key (try to always name it 'rowid')
-			'tabrowid' => array("rowid", "rowid", "rowid", "rowid", "rowid"),
+			'tabrowid' => array("rowid", "rowid", "rowid", "rowid", "rowid", "rowid"),
 			// Condition to show each dictionary
-			'tabcond' => array($conf->viescolaire->enabled, $conf->viescolaire->enabled,$conf->viescolaire->enabled, $conf->viescolaire->enabled, $conf->viescolaire->enabled)
+			'tabcond' => array($conf->viescolaire->enabled, $conf->viescolaire->enabled,$conf->viescolaire->enabled, $conf->viescolaire->enabled, $conf->viescolaire->enabled, $conf->viescolaire->enabled)
 		);
 
 		// Boxes/Widgets
@@ -240,7 +242,7 @@ class modVieScolaire extends DolibarrModules
 			     'note' => 'Widget provided by VieScolaire',
 			     'enabledbydefaulton' => 'Home',
 			 ),
-			 
+
 		);
 
 		// Cronjobs (List of cron jobs entries to add when module is enabled)
@@ -400,7 +402,7 @@ class modVieScolaire extends DolibarrModules
             'leftmenu'=>'creneaux',
             'url'=>'/scolarite/creneau_card.php?action=create',
             // Lang file to use (without .lang) by module. File must be in langs/code_CODE/ directory.
-			'langs' => 'viescolaire@viescolaire',	
+			'langs' => 'viescolaire@viescolaire',
             'position'=>1100+$r,
             // Define condition to show or hide menu entry. Use '$conf->scolarite->enabled' if entry must be visible if module is enabled. Use '$leftmenu==\'system\'' to show if leftmenu system is selected.
             'enabled' => '$conf->viescolaire->enabled',
@@ -420,7 +422,7 @@ class modVieScolaire extends DolibarrModules
             'leftmenu'=>'',
             'url'=>'/scolarite/creneau_list.php',
             // Lang file to use (without .lang) by module. File must be in langs/code_CODE/ directory.
-            'langs' => 'viescolaire@viescolaire',	
+            'langs' => 'viescolaire@viescolaire',
             'position'=>1100+$r,
             // Define condition to show or hide menu entry. Use '$conf->scolarite->enabled' if entry must be visible if module is enabled. Use '$leftmenu==\'system\'' to show if leftmenu system is selected.
             'enabled' => '$conf->viescolaire->enabled',
@@ -439,7 +441,7 @@ class modVieScolaire extends DolibarrModules
 
 
 
-		
+
 		$this->menu[$r++] = array(
 			'fk_menu' => 'fk_mainmenu=viescolaire',      // '' if this is a top menu. For left menu, use 'fk_mainmenu=xxx' or 'fk_mainmenu=xxx,fk_leftmenu=yyy' where xxx is mainmenucode and yyy is a leftmenucode
 			'type' => 'left',                          // This is a Left menu entry
@@ -623,7 +625,7 @@ class modVieScolaire extends DolibarrModules
 			'target' => '',
 			'user' => 2,				                // 0=Menu for internal users, 1=external users, 2=both
 		);
-		
+
 		$this->menu[$r++] = array(
 			'fk_menu' => 'fk_mainmenu=viescolaire,fk_leftmenu=famille2',	    // '' if this is a top menu. For left menu, use 'fk_mainmenu=xxx' or 'fk_mainmenu=xxx,fk_leftmenu=yyy' where xxx is mainmenucode and yyy is a leftmenucode
 			'type' => 'left',			                // This is a Left menu entry
@@ -639,13 +641,43 @@ class modVieScolaire extends DolibarrModules
 			'user' => 2,				                // 0=Menu for internal users, 1=external users, 2=both
 		);
 
+		/*$this->menu[$r++] = array(
+			'fk_menu' => 'fk_mainmenu=viescolaire,fk_leftmenu=famille',	    // '' if this is a top menu. For left menu, use 'fk_mainmenu=xxx' or 'fk_mainmenu=xxx,fk_leftmenu=yyy' where xxx is mainmenucode and yyy is a leftmenucode
+			'type' => 'left',			                // This is a Left menu entry
+			'titre' => 'Nouveau parent',
+			'mainmenu' => 'viescolaire',
+			'leftmenu' => 'parent',
+			'url' => '/viescolaire/parents_card.php?action=create',
+			'langs' => 'viescolaire@viescolaire',	        // Lang file to use (without .lang) by module. File must be in langs/code_CODE/ directory.
+			'position' => 1000 + $r,
+			'enabled' => '$conf->viescolaire->enabled',  // Define condition to show or hide menu entry. Use '$conf->viescolaire->enabled' if entry must be visible if module is enabled. Use '$leftmenu==\'system\'' to show if leftmenu system is selected.
+			'perms' => '$user->rights->viescolaire->eleve->write',			                // Use 'perms'=>'$user->rights->viescolaire->level1->level2' if you want your menu with a permission rules
+			'target' => '',
+			'user' => 2,				                // 0=Menu for internal users, 1=external users, 2=both
+		);
+
+		$this->menu[$r++] = array(
+			'fk_menu' => 'fk_mainmenu=viescolaire,fk_leftmenu=parent',	    // '' if this is a top menu. For left menu, use 'fk_mainmenu=xxx' or 'fk_mainmenu=xxx,fk_leftmenu=yyy' where xxx is mainmenucode and yyy is a leftmenucode
+			'type' => 'left',			                // This is a Left menu entry
+			'titre' => 'Liste des parents',
+			'mainmenu' => 'viescolaire',
+			'leftmenu' => '',
+			'url' => '/viescolaire/parents_list.php',
+			'langs' => 'viescolaire@viescolaire',	        // Lang file to use (without .lang) by module. File must be in langs/code_CODE/ directory.
+			'position' => 1000 + $r,
+			'enabled' => '$conf->viescolaire->enabled',  // Define condition to show or hide menu entry. Use '$conf->viescolaire->enabled' if entry must be visible if module is enabled. Use '$leftmenu==\'system\'' to show if leftmenu system is selected.
+			'perms' => '$user->rights->viescolaire->eleve->read',			                // Use 'perms'=>'$user->rights->viescolaire->level1->level2' if you want your menu with a permission rules
+			'target' => '',
+			'user' => 2,				                // 0=Menu for internal users, 1=external users, 2=both
+		);*/
+
 		$this->menu[$r++] = array(
 			'fk_menu' => 'fk_mainmenu=viescolaire,fk_leftmenu=famille',	    // '' if this is a top menu. For left menu, use 'fk_mainmenu=xxx' or 'fk_mainmenu=xxx,fk_leftmenu=yyy' where xxx is mainmenucode and yyy is a leftmenucode
 			'type' => 'left',			                // This is a Left menu entry
 			'titre' => 'Nouvelles contributions',
 			'mainmenu' => 'viescolaire',
 			'leftmenu' => 'contribution',
-			'url' => '',
+			'url' => '/viescolaire/contribution_card.php?action=create',
 			'langs' => 'viescolaire@viescolaire',	        // Lang file to use (without .lang) by module. File must be in langs/code_CODE/ directory.
 			'position' => 1000 + $r,
 			'enabled' => '$conf->viescolaire->enabled',  // Define condition to show or hide menu entry. Use '$conf->viescolaire->enabled' if entry must be visible if module is enabled. Use '$leftmenu==\'system\'' to show if leftmenu system is selected.
@@ -659,35 +691,7 @@ class modVieScolaire extends DolibarrModules
 			'titre' => 'Liste des contributions',
 			'mainmenu' => 'viescolaire',
 			'leftmenu' => '',
-			'url' => '',
-			'langs' => 'viescolaire@viescolaire',	        // Lang file to use (without .lang) by module. File must be in langs/code_CODE/ directory.
-			'position' => 1000 + $r,
-			'enabled' => '$conf->viescolaire->enabled',  // Define condition to show or hide menu entry. Use '$conf->viescolaire->enabled' if entry must be visible if module is enabled. Use '$leftmenu==\'system\'' to show if leftmenu system is selected.
-			'perms' => '$user->rights->viescolaire->eleve->read',			                // Use 'perms'=>'$user->rights->viescolaire->level1->level2' if you want your menu with a permission rules
-			'target' => '',
-			'user' => 2,				                // 0=Menu for internal users, 1=external users, 2=both
-		);
-		$this->menu[$r++] = array(
-			'fk_menu' => 'fk_mainmenu=viescolaire,fk_leftmenu=famille',	    // '' if this is a top menu. For left menu, use 'fk_mainmenu=xxx' or 'fk_mainmenu=xxx,fk_leftmenu=yyy' where xxx is mainmenucode and yyy is a leftmenucode
-			'type' => 'left',			                // This is a Left menu entry
-			'titre' => 'Nouveau paiement',
-			'mainmenu' => 'viescolaire',
-			'leftmenu' => 'paiement',
-			'url' => '',
-			'langs' => 'viescolaire@viescolaire',	        // Lang file to use (without .lang) by module. File must be in langs/code_CODE/ directory.
-			'position' => 1000 + $r,
-			'enabled' => '$conf->viescolaire->enabled',  // Define condition to show or hide menu entry. Use '$conf->viescolaire->enabled' if entry must be visible if module is enabled. Use '$leftmenu==\'system\'' to show if leftmenu system is selected.
-			'perms' => '$user->rights->viescolaire->eleve->write',			                // Use 'perms'=>'$user->rights->viescolaire->level1->level2' if you want your menu with a permission rules
-			'target' => '',
-			'user' => 2,				                // 0=Menu for internal users, 1=external users, 2=both
-		);
-		$this->menu[$r++] = array(
-			'fk_menu' => 'fk_mainmenu=viescolaire,fk_leftmenu=paiement',	    // '' if this is a top menu. For left menu, use 'fk_mainmenu=xxx' or 'fk_mainmenu=xxx,fk_leftmenu=yyy' where xxx is mainmenucode and yyy is a leftmenucode
-			'type' => 'left',			                // This is a Left menu entry
-			'titre' => 'Liste des paiements',
-			'mainmenu' => 'viescolaire',
-			'leftmenu' => '',
-			'url' => '',
+			'url' => '/viescolaire/contribution_list.php',
 			'langs' => 'viescolaire@viescolaire',	        // Lang file to use (without .lang) by module. File must be in langs/code_CODE/ directory.
 			'position' => 1000 + $r,
 			'enabled' => '$conf->viescolaire->enabled',  // Define condition to show or hide menu entry. Use '$conf->viescolaire->enabled' if entry must be visible if module is enabled. Use '$leftmenu==\'system\'' to show if leftmenu system is selected.

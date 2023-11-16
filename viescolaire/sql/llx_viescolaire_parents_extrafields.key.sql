@@ -1,4 +1,4 @@
--- Copyright (C) ---Put here your own copyright and developer email---
+-- Copyright (C) 2023 Baptiste Diodati <baptiste.diodati@gmail.com>
 --
 -- This program is free software; you can redistribute it and/or modify
 -- it under the terms of the GNU General Public License as published by
@@ -15,5 +15,5 @@
 
 
 -- BEGIN MODULEBUILDER INDEXES
-ALTER TABLE llx_viescolaire_testrefpascalobispo_extrafields ADD INDEX idx_testrefpascalobispo_fk_object(fk_object);
+ALTER TABLE llx_viescolaire_parents_extrafields ADD INDEX idx_parents_fk_object(fk_object);
 -- END MODULEBUILDER INDEXES

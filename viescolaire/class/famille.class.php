@@ -105,24 +105,10 @@ class Famille extends CommonObject
 	 * @var array  Array with all fields and their property. Do not use it as a static var. It may be modified by constructor.
 	 */
 	public $fields=array(
-		'rowid' => array('type'=>'integer', 'label'=>'TechnicalID', 'enabled'=>'1', 'position'=>1, 'notnull'=>1, 'visible'=>0, 'noteditable'=>'1', 'index'=>1, 'css'=>'left', 'comment'=>"Id"),
-		'identifiant_famille' => array('type'=>'varchar(255)', 'label'=>'Identifiant famille', 'enabled'=>'1', 'position'=>1, 'notnull'=>0, 'visible'=>2, 'index'=>1, 'searchall'=>1, 'validate'=>'1','css'=>'maxwidth300',),
-		'antenne' => array('type'=>'integer:Etablissement:custom/scolarite/class/etablissement.class.php:1', 'label'=>'Antenne', 'enabled'=>'1', 'position'=>1, 'notnull'=>1, 'visible'=>1, 'index'=>1, 'searchall'=>1, 'validate'=>'1','css'=>'maxwidth300',),
+		'rowid' => array('type'=>'integer', 'label'=>'TechnicalID', 'enabled'=>'1', 'position'=>1, 'notnull'=>1, 'visible'=>0, 'noteditable'=>'1', 'index'=>1),
+		'identifiant_famille' => array('type'=>'varchar(255)', 'label'=>'Identifiant famille', 'enabled'=>'1', 'position'=>1, 'notnull'=>0, 'visible'=>2,'showoncombobox'=>'2', 'index'=>1, 'searchall'=>1, 'validate'=>'1','css'=>'maxwidth300',),
+		'fk_antenne' => array('type'=>'integer:Etablissement:custom/scolarite/class/etablissement.class.php:1', 'label'=>'Antenne', 'enabled'=>'1', 'position'=>1, 'notnull'=>1, 'visible'=>1, 'index'=>1, 'searchall'=>1, 'validate'=>'1','css'=>'maxwidth300',),
 		'enfants' => array('type'=>'varchar(255)', 'label'=>'Enfants', 'enabled'=>'1', 'position'=>1, 'notnull'=>0, 'visible'=>2, 'index'=>1, 'searchall'=>1, 'validate'=>'1','css'=>'maxwidth300',),
-		'quotient_familial' => array('type' => 'integer', 'label' => 'Quotient familial', 'enabled' => '1', 'position' => 1, 'notnull' => 0, 'visible' => 1, 'validate' => '1','css' => 'maxwidth250',),
-		'nom_parent_1' => array('type'=>'varchar(255)', 'label'=>'Nom parent 1', 'enabled'=>'1', 'position'=>1, 'notnull'=>1, 'visible'=>1, 'index'=>1, 'searchall'=>1, 'showoncombobox'=>'1', 'validate'=>'1','css'=>'maxwidth300',),
-		'prenom_parent_1' => array('type'=>'varchar(255)', 'label'=>'Prenom parent 1', 'enabled'=>'1', 'position'=>2, 'notnull'=>1, 'visible'=>1, 'searchall'=>1, 'css'=>'maxwidth300', 'cssview'=>'wordbreak', 'showoncombobox'=>'2', 'validate'=>'1',),
-		'csp_parent_1' => array('type'=>'sellist:c_csp:categorie', 'label'=>'CSP parent 1', 'enabled'=>'1', 'position'=>2, 'notnull'=>0, 'visible'=>1, 'css'=>'maxwidth300', 'validate'=>'1',),
-
-		'tel_parent_1' => array('type'=>'varchar(255)', 'label'=>'Téléphone parent 1', 'enabled'=>'1', 'position'=>3, 'notnull'=>0, 'visible'=>1, 'validate'=>'1', 'css'=>'maxwidth300',),
-		'mail_parent_1' => array('type'=>'varchar(255)', 'label'=>'Mail parent 1', 'enabled'=>'1', 'position'=>4, 'notnull'=>0, 'visible'=>1, 'css'=>'maxwidth300', 'validate'=>'1',),
-		'adresse_parent_1' => array('type'=>'varchar(255)', 'label'=>'Adresse parent 1', 'enabled'=>'1', 'position'=>5, 'notnull'=>0, 'visible'=>1, 'css'=>'minwidth400', 'validate'=>'1',),
-		'nom_parent_2' => array('type'=>'varchar(255)', 'label'=>'Nom parent 2', 'enabled'=>'1', 'position'=>6, 'notnull'=>0, 'visible'=>1, 'index'=>1, 'searchall'=>1, 'showoncombobox'=>'1', 'validate'=>'1','css'=>'maxwidth300',),
-		'prenom_parent_2' => array('type'=>'varchar(255)', 'label'=>'Prenom parent 2', 'enabled'=>'1', 'position'=>7, 'notnull'=>0, 'visible'=>1, 'searchall'=>1, 'css'=>'maxwidth300', 'cssview'=>'wordbreak', 'showoncombobox'=>'2', 'validate'=>'1',),
-		'csp_parent_2' => array('type'=>'sellist:c_csp:categorie', 'label'=>'CSP parent 2', 'enabled'=>'1', 'position'=>8, 'notnull'=>0, 'visible'=>1, 'css'=>'maxwidth300', 'validate'=>'1',),
-		'tel_parent_2' => array('type'=>'varchar(255)', 'label'=>'Téléphone parent 2', 'enabled'=>'1', 'position'=>8, 'notnull'=>0, 'visible'=>1, 'validate'=>'1', 'css'=>'maxwidth300',),
-		'mail_parent_2' => array('type'=>'varchar(255)', 'label'=>'Mail parent 2', 'enabled'=>'1', 'position'=>9, 'notnull'=>0, 'visible'=>1, 'css'=>'maxwidth300', 'validate'=>'1',),
-		'adresse_parent_2' => array('type'=>'varchar(255)', 'label'=>'Adresse parent 2', 'enabled'=>'1', 'position'=>10, 'notnull'=>0, 'visible'=>1, 'css'=>'minwidth400', 'validate'=>'1',),
 		'description' => array('type'=>'text', 'label'=>'Description', 'enabled'=>'1', 'position'=>60, 'notnull'=>0, 'visible'=>3, 'validate'=>'1',),
 		'note_public' => array('type'=>'html', 'label'=>'NotePublic', 'enabled'=>'1', 'position'=>61, 'notnull'=>0, 'visible'=>0, 'cssview'=>'wordbreak', 'validate'=>'1',),
 		'note_private' => array('type'=>'html', 'label'=>'NotePrivate', 'enabled'=>'1', 'position'=>62, 'notnull'=>0, 'visible'=>0, 'cssview'=>'wordbreak', 'validate'=>'1',),
@@ -135,17 +121,10 @@ class Famille extends CommonObject
 		'status' => array('type' => 'integer', 'label' => 'Etat', 'enabled' => '1', 'position' => 1011, 'notnull' => 1, 'visible' => 2, 'default' => 0),
 	);
 	public $rowid;
-	public $nom_parent_1;
-	public $prenom_parent_1;
-	public $tel_parent_1;
-	public $mail_parent_1;
-	public $adresse_parent_1;
-	public $nom_parent_2;
-	public $prenom_parent_2;
-	public $tel_parent_2;
-	public $mail_parent_2;
-	public $adresse_parent_2;
-	public $commentaires;
+	public $identifiant_famille;
+	public $fk_antenne;
+	public $enfants;
+	public $description;
 	public $note_public;
 	public $note_private;
 	public $date_creation;
@@ -248,18 +227,18 @@ class Famille extends CommonObject
 	public function create(User $user, $notrigger = false)
 	{
 
-		$this->tel_parent_1 = str_replace(" ", "", $this->tel_parent_1);
+		//$this->tel_parent_1 = str_replace(" ", "", $this->tel_parent_1);
 
-		if($this->nom_parent_1 != $this->nom_parent_2 && !empty($this->nom_parent_2))
+		/*if($this->nom_parent_1 != $this->nom_parent_2 && !empty($this->nom_parent_2))
 		{
 			$this->identifiant_famille = strtoupper($this->nom_parent_1) .' / '.strtoupper($this->nom_parent_2);
 		}
 		elseif((!empty($this->nom_parent_2) && $this->nom_parent_1 == $this->nom_parent_2) || (empty($this->nom_parent_2)))
 		{
 			$this->identifiant_famille = strtoupper($this->nom_parent_1) . ' ' .ucfirst(strtolower($this->prenom_parent_1));
-		}
+		}*/
 
-		if(!empty($this->tel_parent_1) && strlen($this->tel_parent_1) != 10)
+	/*	if(!empty($this->tel_parent_1) && strlen($this->tel_parent_1) != 10)
 		{
 			setEventMessage('Le numéro de téléphone ne fait pas 10 chiffres.','errors');
 		}
@@ -274,9 +253,12 @@ class Famille extends CommonObject
 			$this->tel_parent_1 = str_replace(" ", "", $this->tel_parent_1);
 			$this->tel_parent_2 = str_replace(" ", "", $this->tel_parent_2);
 
-			$resultcreate = $this->createCommon($user, $notrigger);
-			return $resultcreate;
-		}
+
+		}*/
+		$this->identifiant_famille = "Identifiant provisoire";
+
+		$resultcreate = $this->createCommon($user, $notrigger);
+		return $resultcreate;
 
 	}
 
@@ -554,7 +536,7 @@ class Famille extends CommonObject
 	 */
 	public function update(User $user, $notrigger = false)
 	{
-		$this->tel_parent_1 = str_replace(" ", "", $this->tel_parent_1);
+		/*$this->tel_parent_1 = str_replace(" ", "", $this->tel_parent_1);
 
 		if($this->nom_parent_1 != $this->nom_parent_2 && !empty($this->nom_parent_2))
 		{
@@ -580,8 +562,10 @@ class Famille extends CommonObject
 			$this->tel_parent_1 = str_replace(" ", "", $this->tel_parent_1);
 			$this->tel_parent_2 = str_replace(" ", "", $this->tel_parent_2);
 
-			return $this->updateCommon($user, $notrigger);
-		}
+
+		}*/
+
+		return $this->updateCommon($user, $notrigger);
 	}
 
 	/**
@@ -909,7 +893,7 @@ class Famille extends CommonObject
 		}
 
 		if ($withpicto != 2) {
-			$result .= $this->nom_parent_1;
+			$result .= $this->identifiant_famille;
 		}
 
 		$result .= $linkend;
