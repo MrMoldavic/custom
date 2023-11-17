@@ -1,7 +1,7 @@
 <?php
-// ini_set('display_errors', '1');
-// ini_set('display_startup_errors', '1');
-// error_reporting(E_ALL);
+ini_set('display_errors', '1');
+ ini_set('display_startup_errors', '1');
+ error_reporting(E_ALL);
 /* Copyright (C) 2017 Laurent Destailleur  <eldy@users.sourceforge.net>
  * Copyright (C) ---Put here your own copyright and developer email---
  *
@@ -89,6 +89,7 @@ require_once DOL_DOCUMENT_ROOT . '/custom/materiel/core/lib/functions.lib.php';
 
 dol_include_once('/viescolaire/class/appel.class.php');
 dol_include_once('/scolarite/class/dispositif.class.php');
+dol_include_once('/scolarite/class/etablissement.class.php');
 
 dol_include_once('/viescolaire/lib/viescolaire_appel.lib.php');
 //dol_include_once('/viescolaire/scripts/loader.css');
@@ -162,72 +163,6 @@ if ($enablepermissioncheck) {
 }
 
 $upload_dir = $conf->viescolaire->multidir_output[isset($object->entity) ? $object->entity : 1] . '/appel';
-
-// Security check (enable the most restrictive one)
-//if ($user->socid > 0) accessforbidden();
-//if ($user->socid > 0) $socid = $user->socid;
-//$isdraft = (isset($object->status) && ($object->status == $object::STATUS_DRAFT) ? 1 : 0);
-//restrictedArea($user, $object->element, $object->id, $object->table_element, '', 'fk_soc', 'rowid', $isdraft);
-/*if (empty($conf->viescolaire->enabled)) accessforbidden();
-if (!$permissiontoread) accessforbidden();*/
-
-/**
-/*
- * Actions
- */
-
-/*$parameters = array();
-$reshook = $hookmanager->executeHooks('doActions', $parameters, $object, $action); // Note that $action and $object may have been modified by some hooks
-if ($reshook < 0) {
-     setEventMessages($hookmanager->error, $hookmanager->errors, 'errors');
-}
-
-if (empty($reshook)) {
-	/*$error = 0;*/
-
-     /*$backurlforlist = dol_buildpath('/viescolaire/appel_list.php', 1);
-
-     if (empty($backtopage) || ($cancel && empty($id))) {
-          if (empty($backtopage) || ($cancel && strpos($backtopage, '__ID__'))) {
-               if (empty($id) && (($action != 'add' && $action != 'create') || $cancel)) {
-                    $backtopage = $backurlforlist;
-               } else {
-                    $backtopage = dol_buildpath('/viescolaire/appel_card.php', 1) . '?id=' . ((!empty($id) && $id > 0) ? $id : '__ID__');
-               }
-          }
-     }*/
-
-     //$triggermodname = 'VIESCOLAIRE_APPEL_MODIFY'; // Name of trigger action code to execute when we modify record
-
-     // Actions cancel, add, update, update_extras, confirm_validate, confirm_delete, confirm_deleteline, confirm_clone, confirm_close, confirm_setdraft, confirm_reopen
-     /*include DOL_DOCUMENT_ROOT . '/core/actions_addupdatedelete.inc.php';
-
-     // Actions when linking object each other
-     include DOL_DOCUMENT_ROOT . '/core/actions_dellink.inc.php';
-
-     // Actions when printing a doc from card
-     include DOL_DOCUMENT_ROOT . '/core/actions_printing.inc.php';
-
-     // Action to move up and down lines of object
-     //include DOL_DOCUMENT_ROOT.'/core/actions_lineupdown.inc.php';
-
-     // Action to build doc
-     include DOL_DOCUMENT_ROOT . '/core/actions_builddoc.inc.php';*/
-
-   /*  if ($action == 'set_thirdparty' && $permissiontoadd) {
-          $object->setValueFrom('fk_soc', GETPOST('fk_soc', 'int'), '', '', 'date', '', $user, $triggermodname);
-     }
-     if ($action == 'classin' && $permissiontoadd) {
-          $object->setProject(GETPOST('projectid', 'int'));
-     }*/
-
-     // Actions to send emails
-   /*  $triggersendname = 'VIESCOLAIRE_APPEL_SENTBYMAIL';
-     $autocopy = 'MAIN_MAIL_AUTOCOPY_APPEL_TO';
-     $trackid = 'appel' . $object->id;
-     include DOL_DOCUMENT_ROOT . '/core/actions_sendmails.inc.php';*/
-//}
-
 
 /*
  * View
@@ -520,12 +455,12 @@ if ($action == 'create' && !GETPOST('etablissementid', 'int')) // SELECTION DU T
 {
      //WYSIWYG Editor
 
-     $sql = 'SELECT e.rowid,e.nom FROM ' . MAIN_DB_PREFIX . 'etablissement as e';
-     $resql = $db->query($sql);
+	 $etablissementClass = new Etablissement($db);
+	 $etablissementFetch = $etablissementClass->fetchBy(['nom','rowid'],0,'');
      $etablissements = [];
 
-     foreach ($resql as $val) {
-          $etablissements[$val['rowid']] = $val['nom'];
+     foreach ($etablissementFetch as $val) {
+          $etablissements[$val->rowid] = $val->nom;
      }
 
      print '<form action="' . $_SERVER['PHP_SELF'] . '" method="POST">';
@@ -545,7 +480,7 @@ if ($action == 'create' && !GETPOST('etablissementid', 'int')) // SELECTION DU T
      print '</td>';
      print '</tr>';
      print '</table>';
-     dol_fiche_end();
+	 dol_fiche_end();
      print '<div class="center">';
      print '<input type="submit" class="button" value="Suivant">';
      print '</div>';
@@ -588,11 +523,10 @@ if (($action == 'create' or $action == 'modifAppel' or $action == 'returnFromErr
      }
      else
      {
-          $JourSemaine = intval(strftime('%u'));
-		  $minuteActuelle = intval(strftime('%M'));
+          $JourSemaine = intval(date('N'));
+		  $minuteActuelle = intval(date('i'));
      }
 
-	 //if($action == 'modifAppel') $heureActuelle = GETPOST('heure', 'alpha');
 
      if(GETPOST('daymonth', 'alpha'))  $day = GETPOST('daymonth', 'alpha');
      else  $day = date('d');
@@ -612,7 +546,7 @@ if (($action == 'create' or $action == 'modifAppel' or $action == 'returnFromErr
         INNER JOIN ' . MAIN_DB_PREFIX . 'c_heure as h ON c.heure_debut = h.rowid
         WHERE d.fk_etablissement = ' . GETPOST('etablissementid', 'int') . '
             AND c.jour = ' . $JourSemaine . '
-            AND (h.heure ' . ($allCreaneaux == true ? '<=23' : '=' . $heureActuelle) .
+            AND (h.heure ' . ($allCreaneaux ? '<=23' : '=' . $heureActuelle) .
 		' ' . ($minuteActuelle > 49 ? ' OR h.heure=' . ($heureActuelle+1) : '') . ')
             AND c.status = ' . 4 . '
         ORDER BY h.rowid DESC, c.fk_instrument_enseigne ASC';
@@ -782,7 +716,6 @@ if (($action == 'create' or $action == 'modifAppel' or $action == 'returnFromErr
 			$sqlProfPresence .= ' ORDER BY rowid DESC';
 
 
-
 			$resqlProf = $db->query($sqlProfPresence);
 			if($resqlProf->num_rows > 0)
 			{
@@ -862,12 +795,8 @@ if (($action == 'create' or $action == 'modifAppel' or $action == 'returnFromErr
 
 			unset($eleveInfo);
 		}
-
 		print '</table>';
 		if (!$isComplete or ($action == 'modifAppel' && $creneauid == $val['rowid'])) {
-			/*print '<div class="center" style="display: flex; align-items: center; justify-content: center;"><div id="loader"></div></div>';
-			print '<div class="center"><input type="submit" id="appelButton" value="Valider l\'appel"class="button appelButton" style="background-color:cadetblue"></div>';*/
-
 			print '<div class="center" style="display: flex; align-items: center; justify-content: center; flex-direction: column">';
 			print '<div id="loader-'.$val['rowid'].'"></div>';
 			print '<input type="submit" id="'.$val['rowid'].'" value="Valider l\'appel" class="button appelButton" style="background-color:lightslategray">';
