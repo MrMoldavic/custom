@@ -658,7 +658,12 @@ if (($action == 'create' or $action == 'modifAppel' or $action == 'returnFromErr
 
 			$sqlAppelCreat = 'SELECT firstname,lastname,rowid FROM ' .MAIN_DB_PREFIX. 'user WHERE rowid= ' .$userCreatAppel->fk_user_creat;
 			$resqlAppelCreat = $db->query($sqlAppelCreat);
-			$appelObjectCreat = $db->fetch_object($resqlAppelCreat);
+			if($resqlAppelCreat->num_rows > 0)
+			{
+				$appelObjectCreat = $db->fetch_object($resqlAppelCreat);
+			}
+			else $errorFetchScola = "Une erreur est survenue";
+
 		}
 
 		if ($isComplete && ($action == 'modifAppel' && $creneauid == $val['rowid'])) {
@@ -666,12 +671,12 @@ if (($action == 'create' or $action == 'modifAppel' or $action == 'returnFromErr
 		} elseif (!$isComplete) {
 			print '<span class="badge  badge-status2 badge-status" style="color:white;">Appel non Fait</span> ';
 		} elseif ($isComplete && $injustifiee && !$treated) {
-			print '<span class="badge  badge-status4 badge-status" style="color:white;">Appel Fait par '.$appelObjectCreat->firstname.' '.$appelObjectCreat->lastname.'</span>&nbsp;&nbsp;&nbsp;<span class="badge  badge-status8 badge-status" style="color:white;">'.$countInj.' Absence Injustifiée(s)</span>&nbsp;&nbsp;&nbsp;</span><span class="badge  badge-status4 badge-status" style="color:white;">Traitées</span> ';
+			print '<span class="badge  badge-status4 badge-status" style="color:white;">Appel Fait par '.($errorFetchScola ? : $appelObjectCreat->firstname.' '.$appelObjectCreat->lastname).'</span>&nbsp;&nbsp;&nbsp;<span class="badge  badge-status8 badge-status" style="color:white;">'.$countInj.' Absence Injustifiée(s)</span>&nbsp;&nbsp;&nbsp;</span><span class="badge  badge-status4 badge-status" style="color:white;">Traitées</span> ';
 		} elseif ($isComplete && $injustifiee && $treated) {
-			print '<span class="badge  badge-status4 badge-status" style="color:white;">Appel Fait par '.$appelObjectCreat->firstname.' '.$appelObjectCreat->lastname.'</span>&nbsp;&nbsp;&nbsp;<span class="badge  badge-status8 badge-status" style="color:white;">'.$countInj.' Absence Injustifiée(s)</span>&nbsp;&nbsp;&nbsp;</span><span class="badge  badge-status1 badge-status" style="color:white;">Non traitée(s) </span> ';
+			print '<span class="badge  badge-status4 badge-status" style="color:white;">Appel Fait par '.($errorFetchScola ? : $appelObjectCreat->firstname.' '.$appelObjectCreat->lastname).'</span>&nbsp;&nbsp;&nbsp;<span class="badge  badge-status8 badge-status" style="color:white;">'.$countInj.' Absence Injustifiée(s)</span>&nbsp;&nbsp;&nbsp;</span><span class="badge  badge-status1 badge-status" style="color:white;">Non traitée(s) </span> ';
 		}
 		else {
-			print '<span class="badge  badge-status4 badge-status" style="color:white;">Appel Fait par '.$appelObjectCreat->firstname.' '.$appelObjectCreat->lastname.'</span> ';
+			print '<span class="badge  badge-status4 badge-status" style="color:white;">Appel Fait par '.($errorFetchScola ? : $appelObjectCreat->firstname.' '.$appelObjectCreat->lastname).'</span> ';
 		}
 		print $val['nom_creneau'];
 		print '';
