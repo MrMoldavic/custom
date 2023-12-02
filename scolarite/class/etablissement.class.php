@@ -103,7 +103,6 @@ class Etablissement extends CommonObject
 	 */
 	public $fields=array(
 		'rowid' => array('type'=>'integer', 'label'=>'TechnicalID', 'enabled'=>'1', 'position'=>1, 'notnull'=>1, 'visible'=>0, 'noteditable'=>'1', 'index'=>1, 'css'=>'left', 'comment'=>"Id"),
-
 		'nom' => array('type'=>'varchar(255)', 'label'=>'Nom de l\'établissement', 'enabled'=>'1', 'position'=>2, 'notnull'=>1, 'visible'=>1, 'index'=>1, 'searchall'=>1, 'showoncombobox'=>'1', 'validate'=>'1', 'comment'=>"Reference of object"),
 		'diminutif' => array('type'=>'varchar(255)', 'label'=>'Diminutif', 'enabled'=>'1', 'position'=>2, 'notnull'=>1, 'visible'=>1, 'validate'=>'1',),
 		'adresse' => array('type'=>'varchar(255)', 'label'=>'Adresse', 'enabled'=>'1', 'position'=>2, 'notnull'=>1, 'visible'=>1, 'validate'=>'1',),
@@ -113,6 +112,7 @@ class Etablissement extends CommonObject
 		'principal_adjoint' => array('type'=>'varchar(255)', 'label'=>'Principal Adjoint', 'enabled'=>'1', 'position'=>6, 'notnull'=>0, 'visible'=>1, 'validate'=>'1',),
 		'gestionnaire' => array('type'=>'varchar(255)', 'label'=>'Gestionnaire', 'enabled'=>'1', 'position'=>7, 'notnull'=>0, 'visible'=>1, 'validate'=>'1',),
 		'url' => array('type'=>'varchar(255)', 'label'=>'Site Web', 'enabled'=>'1', 'position'=>8, 'notnull'=>0, 'visible'=>1, 'validate'=>'1'),
+		'fk_type_adherent' => array('type'=>'sellist:adherent_type:libelle', 'label'=>"Type d'adhérent", 'enabled'=>'1', 'position'=>14, 'notnull'=>1, 'visible'=>1),
 		'description' => array('type'=>'text', 'label'=>'Description', 'enabled'=>'1', 'position'=>9, 'notnull'=>0, 'visible'=>3, 'validate'=>'1',),
 		'note_public' => array('type'=>'html', 'label'=>'NotePublic', 'enabled'=>'1', 'position'=>10, 'notnull'=>0, 'visible'=>1, 'cssview'=>'wordbreak', 'validate'=>'1',),
 		'note_private' => array('type'=>'html', 'label'=>'NotePrivate', 'enabled'=>'1', 'position'=>11, 'notnull'=>0, 'visible'=>1, 'cssview'=>'wordbreak', 'validate'=>'1',),
@@ -127,6 +127,7 @@ class Etablissement extends CommonObject
 	public $label;
 
 	public $nom;
+	public $fk_type_adherent;
 	public $adresse;
 	public $code_postal;
 	public $ville;
@@ -346,9 +347,9 @@ class Etablissement extends CommonObject
 	 * @param string $ref  Ref
 	 * @return int         <0 if KO, 0 if not found, >0 if OK
 	 */
-	public function fetch($id, $ref = null)
+	public function fetch($id, $ref = null, $moresql = null)
 	{
-		$result = $this->fetchCommon($id, $ref);
+		$result = $this->fetchCommon($id, $ref, $moresql);
 		if ($result > 0 && !empty($this->table_element_line)) {
 			$this->fetchLines();
 		}

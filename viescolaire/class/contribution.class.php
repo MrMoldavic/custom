@@ -22,15 +22,25 @@
  * \brief       This file is a CRUD class file for Contribution (Create/Read/Update/Delete)
  */
 
+ ini_set('display_errors', '1');
+ ini_set('display_startup_errors', '1');
+ error_reporting(E_ALL);
+
 // Put here all includes required by your class file
 require_once DOL_DOCUMENT_ROOT.'/core/class/commonobject.class.php';
+require_once DOL_DOCUMENT_ROOT.'/adherents/class/adherent.class.php';
+require_once DOL_DOCUMENT_ROOT.'/societe/class/societe.class.php';
+require_once DOL_DOCUMENT_ROOT.'/don/class/don.class.php';
 
 //require_once DOL_DOCUMENT_ROOT . '/societe/class/societe.class.php';
 //require_once DOL_DOCUMENT_ROOT . '/product/class/product.class.php';
 
 dol_include_once('/viescolaire/class/famille.class.php');
 dol_include_once('/viescolaire/class/parents.class.php');
-dol_include_once('adherents/class/adherent.class.php');
+dol_include_once('/viescolaire/class/contributioncontent.class.php');
+dol_include_once('/scolarite/class/etablissement.class.php');
+
+
 dol_include_once('/viescolaire/class/dictionary.class.php');
 /**
  * Class for Contribution
@@ -127,8 +137,8 @@ class Contribution extends CommonObject
 		'fk_annee_scolaire' => array('type'=>'sellist:c_annee_scolaire:annee', 'label'=>'Année scolaire', 'enabled'=>'1', 'position'=>40, 'notnull'=>1, 'visible'=>1, 'default'=>'null', 'isameasure'=>'1', 'validate'=>'1',),
 		'montant_total' => array('type'=>'price', 'label'=>'Montant total', 'enabled'=>'1', 'position'=>45, 'notnull'=>1, 'visible'=>1, 'default'=>'0', 'css'=>'maxwidth75imp', 'validate'=>'1',),
 		'description' => array('type'=>'text', 'label'=>'Description', 'enabled'=>'1', 'position'=>60, 'notnull'=>0, 'visible'=>3, 'validate'=>'1',),
-		'imposable' => array('type'=>'boolean', 'label'=>'Contribution imposable?', 'enabled'=>'1', 'position'=>61, 'notnull'=>1, 'visible'=>1, 'validate'=>'1',),
-
+		'imposable' => array('type'=>'boolean', 'label'=>'Contribution imposable?', 'enabled'=>'1', 'position'=>61, 'notnull'=>0, 'visible'=>1, 'validate'=>'1',),
+		'informations' => array('type'=>'text', 'label'=>'Informations', 'enabled'=>'1', 'position'=>35, 'notnull'=>0, 'visible'=>2, 'validate'=>'1',),
 		'note_public' => array('type'=>'html', 'label'=>'NotePublic', 'enabled'=>'1', 'position'=>62, 'notnull'=>0, 'visible'=>0, 'cssview'=>'wordbreak', 'validate'=>'1',),
 		'note_private' => array('type'=>'html', 'label'=>'NotePrivate', 'enabled'=>'1', 'position'=>63, 'notnull'=>0, 'visible'=>0, 'cssview'=>'wordbreak', 'validate'=>'1',),
 		'date_creation' => array('type'=>'datetime', 'label'=>'DateCreation', 'enabled'=>'1', 'position'=>500, 'notnull'=>1, 'visible'=>-2,),
@@ -248,43 +258,94 @@ class Contribution extends CommonObject
 	 */
 	public function create(User $user, $notrigger = false)
 	{
-		// A faire une fois tout le cycle créé
-		 //$existingContribution = $this->fetchBy(['rowid'],)
 		$familleClass = new Famille($this->db);
-		$parentsClass = new Parents($this->db);
+		/*$parentsClass = new Parents($this->db);*/
 
 		$dictionaryClass = new Dictionary($this->db);
 
+		$existingContribution = $this->fetchAll('ASC','rowid','','',['fk_famille'=>$this->fk_famille,'fk_annee_scolaire'=>$this->fk_annee_scolaire]);
 
-		if($this->montant_total == '0')
-		{
-			setEventMessages("Le montant total ne peut pas être nul", null, 'errors');
-		}
+		if($existingContribution) setEventMessages("Une contribution avec ces informations existe déjà", null, 'errors');
+		//elseif($this->montant_total == '0') setEventMessages("Le montant total ne peut pas être nul", null, 'errors');
 		else
 		{
-
 			$famille = $familleClass->fetchBy(['fk_antenne','identifiant_famille','rowid'], $this->fk_famille, 'rowid');
-
 			$anneeScolaire = $dictionaryClass->fetchByDictionary('c_annee_scolaire',['annee'], $this->fk_annee_scolaire, 'rowid');
 
-			$newIdentifiant = str_replace(['/','_'],['-',''], $famille->identifiant_famille);
+			$parentsClass = new Parents($this->db);
+			$parents = $parentsClass->fetchAll('ASC','rowid','','',['fk_famille'=>$this->fk_famille],'ASC');
+
+			$newIdentifiant = "";
+			foreach ($parents as $parent)
+			{
+				$newIdentifiant .= "$parent->lastname-";
+			}
+
+			$this->ref = "Contribution-$newIdentifiant$anneeScolaire->annee";
+
 			$this->fk_antenne = $famille->fk_antenne;
-			$this->ref = "Contribution-$newIdentifiant-$anneeScolaire->annee";
-			$this->status = self::STATUS_VALIDATED;
+/*			$this->status = self::STATUS_VALIDATED;*/
 			$resultcreate = $this->createCommon($user, $notrigger);
 
 
 			// Pour chaque parent, on lui crée un adhérent en base
-			/*$parents = $parentsClass->fetchBy(['firstname','lastname','rowid'], $this->fk_famille, 'rowid');
-
+			$parents = $parentsClass->fetchBy(['firstname','lastname','rowid'], $this->fk_famille, 'fk_famille');
 			foreach ($parents as $value)
 			{
-				$adherentClass = new Adherent($this->db)
-			}*/
+				$parent = new Parents($this->db);
+				$existingAdherent = $parent->fetchAdherentOrTiersByParent($value->firstname, $value->lastname,'adherent');
+
+				//$existingTiers = $parent->fetchAdherentOrTiersByParent($value->firstname, $value->lastname,'societe');
+
+				if($existingAdherent == 0)
+				{
+					$parent->fetch($value->rowid);
+
+					$familleClass= new Famille($this->db);
+					$familleClass->fetch($parent->fk_famille);
+
+
+					$etablissementClass = new Etablissement($this->db);
+					$etablissementClass->fetch($familleClass->fk_antenne);
+
+					$adherentClass = new Adherent($this->db);
+					$adherentClass->ref = $value->rowid.'-(Ref Provisoire)';
+					$adherentClass->typeid = ($etablissementClass->fk_type_adherent ? : null);
+
+
+					$adherentClass->firstname = $value->firstname;
+					$adherentClass->lastname = $value->lastname;
+					$adherentClass->morphy = "phy";
+					$adherentClass->statut = 1;
+					$result = $adherentClass->create($user);
+
+				}
+
+				/*if($existingTiers->num_rows == 0)
+				{
+					$societe = new Societe($this->db);
+					$societe->nom = "$parent->firstname $parent->lastname";
+					$societe->fk_pays = 1;
+					$resultTiers = $societe->create($user);
+				}*/
 
 
 
+				$parent->fetch($value->rowid);
+				$parent->fk_adherent = ($existingAdherent ? $existingAdherent->rowid : $result);
+				//$parent->fk_tiers = ($existingTiers ? $existingTiers->rowid : $resultTiers);
+				$parent->update($user);
 
+				$contributionContentClass = new ContributionContent($this->db);
+				$contributionContentClass->fk_contribution = $resultcreate;
+				$contributionContentClass->fk_type_contribution_content = "Adhésion";
+				$contributionContentClass->montant = 0;
+				$contributionContentClass->fk_type_adherent = 1;
+				$contributionContentClass->fk_subscription = null;
+				$contributionContentClass->fk_adherent = ($existingAdherent ? $existingAdherent->rowid : $result);
+				$contributionContentClass->create($user);
+
+			}
 			return $resultcreate;
 		}
 	}
@@ -396,9 +457,9 @@ class Contribution extends CommonObject
 	 * @param string $ref  Ref
 	 * @return int         <0 if KO, 0 if not found, >0 if OK
 	 */
-	public function fetch($id, $ref = null)
+	public function fetch($id, $ref = null, $moresql = '')
 	{
-		$result = $this->fetchCommon($id, $ref);
+		$result = $this->fetchCommon($id, $ref, $moresql);
 		if ($result > 0 && !empty($this->table_element_line)) {
 			$this->fetchLines();
 		}
@@ -564,18 +625,27 @@ class Contribution extends CommonObject
 		else
 		{
 			$familleClass = new Famille($this->db);
+			$parentsClass = new Parents($this->db);
+
 			$dictionaryClass = new Dictionary($this->db);
 			$famille = $familleClass->fetchBy(['fk_antenne','identifiant_famille'], $this->fk_famille, 'rowid');
 
 			$anneeScolaire = $dictionaryClass->fetchByDictionary('c_annee_scolaire',['annee'], $this->fk_annee_scolaire, 'rowid');
 
 
-			$newIdentifiant = str_replace(['/'],[''], $famille->identifiant_famille);
+			$parents = $parentsClass->fetchAll('ASC','rowid','','',['fk_famille'=>$this->fk_famille],'ASC');
 
-			var_dump($newIdentifiant);
+			$newIdentifiant = "";
+			foreach ($parents as $parent)
+			{
+				$newIdentifiant .= "$parent->lastname-";
+			}
+
+			/*$newIdentifiant = str_replace(['/'],[''], $famille->identifiant_famille);*/
+
 			$this->fk_antenne = $famille->fk_antenne;
-			$this->ref = "Contribution-$newIdentifiant-$anneeScolaire->annee";
-			$this->status = self::STATUS_VALIDATED;
+			$this->ref = "Contribution-$newIdentifiant$anneeScolaire->annee";
+			//$this->status = self::STATUS_VALIDATED;
 			return $this->updateCommon($user, $notrigger);
 
 		}
@@ -602,7 +672,8 @@ class Contribution extends CommonObject
 	 *  @param 	bool 	$notrigger  false=launch triggers after, true=disable triggers
 	 *  @return int         		>0 if OK, <0 if KO
 	 */
-	public function deleteLine(User $user, $idline, $notrigger = false)
+
+	public function deleteLine(User $user, $idline, $notrigger = true)
 	{
 		if ($this->status < 0) {
 			$this->error = 'ErrorDeleteLineNotAllowedByObjectStatus';
@@ -1070,8 +1141,8 @@ class Contribution extends CommonObject
 	{
 		$this->lines = array();
 
-		$objectline = new ContributionLine($this->db);
-		$result = $objectline->fetchAll('ASC', 'position', 0, 0, array('customsql'=>'fk_contribution = '.((int) $this->id)));
+		$objectline = new ContributionContent($this->db);
+		$result = $objectline->fetchAll('ASC', 'rowid', 0, 0, array('customsql'=>'fk_contribution = '.((int) $this->id)));
 
 		if (is_numeric($result)) {
 			$this->error = $objectline->error;
@@ -1084,94 +1155,67 @@ class Contribution extends CommonObject
 	}
 
 
-
-	public function formAddObjectLine()
+	/**
+	 *	Load the info information in the object
+	 *
+	 *	@param  int		$id       Id of object
+	 *	@return	void
+	 */
+	public function getDonForAdherentInContribution($contribution_content_id)
 	{
-		global $form;
-		//WYSIWYG Editor
-		require_once DOL_DOCUMENT_ROOT.'/core/class/doleditor.class.php';
+		$sql = "SELECT d.rowid,d.fk_statut";
+		$sql .= " FROM ".MAIN_DB_PREFIX."don_extrafields as de";
+		$sql .= " INNER JOIN ".MAIN_DB_PREFIX."don as d ON de.fk_object=d.rowid";
+		$sql .= " WHERE de.contribution_content = ".((int) $contribution_content_id);
 
-		print '<tr>';
+		$result = $this->db->query($sql);
 
-		// Description
-		print '<td>';
-		$doleditor = new DolEditor('description', GETPOST('description', 'none'), '', 160, 'dolibarr_details', '', false, true, $conf->global->FCKEDITOR_ENABLE_PRODUCTDESC, ROWS_4, '90%');
-		$doleditor->Create();
-		print '</td>';
+		if ($result) {
+			if ($this->db->num_rows($result)) {
+				$obj = $this->db->fetch_object($result);
 
-		// Type d'adhérent
-		print '<td>';
+				return $obj;
+			}
 
-		print '</td>';
-
-		// Quantity
-		print '<td class="center">';
-		print '<input type="number" step="1" name="qty" maxlength="255" value="'.GETPOST('qty', 'int').'">';
-		print '</td>';
-
-		// Quantity
-		print '<td class="center">';
-		print '<input type="number" step="1" name="qty" maxlength="255" value="'.GETPOST('qty', 'int').'">';
-		print '</td>';
-
-
-
-		// BLANK
-		print '<td>';
-		print '</td>';
-
-		// Submit button
-		print '<td>';
-		print '<input type="submit" class="button" value="Ajouter" name="addline" id="addline">';
-		print '</td>';
-
-		print '</tr>';
-	}
-
-	public function addLine($type_contribution, $montant, $adherent, $type_adherent)
-	{
-		// First check if the status is draft
-		if ($this->fk_statut != 0) return 0;
-
-		$sql = "INSERT INTO ".MAIN_DB_PREFIX."contribution_content (";
-		$sql .= "fk_contribution, ";
-		$sql .= "fk_type_contribution_content, ";
-		$sql .= "montant, ";
-		$sql .= "fk_adherent ,";
-		$sql .= "fk_type_adherent ,";
-		$sql .= ") VALUES (";
-		$sql .= $this->id . ", ";
-		$sql .= $type_contribution . ", ";
-		$sql .= $montant . ", ";
-		$sql .= $adherent . ", ";
-		$sql .= $type_adherent . ", ";
-		$sql .= ')';
-
-		$resql = $this->db->query($sql);
-		if (!$resql) {
-			$this->error = "Database Error";
-			return 0;
+			$this->db->free($result);
 		} else {
-			$this->db->commit();
-			return 1;
+			dol_print_error($this->db);
 		}
 	}
 
+	public function getTotalAmountOfContent()
+	{
+		$allLines = $this->getLinesArray();
 
+		$countTotal = 0;
+		foreach ($allLines as $oneLine)
+		{
+			$countTotal += $oneLine->montant;
+		}
+
+		return $countTotal;
+	}
+
+
+	/**
+	 * Print objects line related to this recufiscal
+	 * @param $action action code (can be editline for exemple)
+	 * @param $lineid id of the line selected (used to print an edit form for the corresponding line we want to edit)
+	 */
 	public function printObjectLines($action = '', $lineid ='')
 	{
 		global $conf, $form;
 		//WYSIWYG Editor
 		require_once DOL_DOCUMENT_ROOT.'/core/class/doleditor.class.php';
 
-		$this->fetch_lines();
+		$this->getLinesArray();
 		if (empty($this->lines)) return 1; // Stop the function here if there's no line
 		else
 		{
 			foreach ($this->lines as $line)
 			{
 				// If this line is edited, we will print input fields instead of text
-				$islineedited = (($action == 'editline' && $line->id == $lineid && $this->fk_statut == RecuFiscal::STATUS_DRAFT) ? 1 : 0);
+				$islineedited = (($action == 'editline' && $line->id == $lineid && $this->status == Self::STATUS_DRAFT) ? 1 : 0);
 
 				if ($islineedited) {
 					print '<input type="hidden" name="lineid" value="'. $line->id .'" />';
@@ -1179,51 +1223,109 @@ class Contribution extends CommonObject
 
 				print '<tr>';
 
-				// Description
+				$parentClass = new Parents($this->db);
+				$parentClass->fetch('',null,' AND fk_adherent='.$line->fk_adherent);
+
+				print '<td>';
+					print "<a href=/adherents/card.php?id=$line->fk_adherent target='_blank'>".$parentClass->firstname.' '.$parentClass->lastname.'</a>';
+				print '</td>';
+
+				print '<td>';
+				print ($line->fk_type_adherent = 1 ? "<a href=/custom/viescolaire/parents_card.php?id=$parentClass->id&action=edit target='_blank'>Parent (lien vers le parent)</a>" : 'Enfant');
+				print '</td>';
+
+				print '<td>';
+				switch ($line->fk_type_contribution_content)
+				{
+					case $line->fk_type_contribution_content = 0 :
+						print "<span class='badge  badge-status4 badge-status' style='color:white'>Adhésion</span>";
+						break;
+					case $line->fk_type_contribution_content = 1 :
+						print "<span class='badge  badge-status8 badge-status' style='color:white'>Facture</span>";
+						break;
+					case $line->fk_type_contribution_content = 2 :
+						print "<span class='badge  badge-status2 badge-status' style='color:white'>Don</span>";
+						break;
+				}
+
+				print '</td>';
+
+				// Montant
 				print '<td>';
 				if ($islineedited) {
-					$doleditor = new DolEditor('description', $line->description, '', 160, 'dolibarr_details', '', false, true, $conf->global->FCKEDITOR_ENABLE_PRODUCTDESC, ROWS_4, '90%');
-					$doleditor->Create();
+					print '<input type="number" step="0.01" name="montant" class="minwidth300 maxwidth400onsmartphone" maxlength="255" value="'.$line->montant.'">';
 				}
-				else print $line->description;
-				print '</td>';
-
-				// Valeur unitaire
-				print '<td>';
-				if ($islineedited) {
-					print '<input type="number" step="0.01" name="valeur" class="minwidth300 maxwidth400onsmartphone" maxlength="255" value="'.$line->valeur.'">';
-				}
-				else print price($line->valeur, 1, '', 0, -1, -1, $conf->currency);
-				print '</td>';
-
-				// Quantity
-				print '<td class="center">';
-				if ($islineedited) {
-					print '<input type="number" step="1" name="qty" class="minwidth300 maxwidth400onsmartphone" maxlength="255" value="'.$line->qty.'">';
-				}
-				else print $line->qty;
-				print '</td>';
-
-				// Valeur totale
-				print '<td>';
-				print price($line->valeur * $line->qty, 1, '', 0, -1, -1, $conf->currency);
+				else print price($line->montant, 1, '', 0, -1, -1, $conf->currency);
 				print '</td>';
 
 
-				if ($islineedited && $this->fk_statut == RecuFiscal::STATUS_DRAFT)
+				if ($islineedited && $this->status == Self::STATUS_DRAFT)
 				{
 					print '<td>';
 					print '<input type="submit" class="button" value="Modifier" name="save" id="addline">';
 					print '<input type="submit" class="button" value="Annuler" name="cancel" id="addline">';
 					print '</td>';
 				}
-				elseif ($this->fk_statut == RecuFiscal::STATUS_DRAFT)
+				elseif ($this->status == Self::STATUS_DRAFT)
 				{
+					$dateActuelle = new DateTime();
+					// Vérifiez si nous sommes avant le 1er septembre
+					if ($dateActuelle->format('n') < 9) {
+						// Si oui, ajustez l'année à l'année précédente
+						$dateAdhesion = new DateTime('01/09/' . ($dateActuelle->format('Y') - 1));
+					} else {
+						// Sinon, utilisez simplement l'année actuelle
+						$dateAdhesion = new DateTime('01/09/' . $dateActuelle->format('Y'));
+					}
+
 					// Modify / Remove button
 					print '<td align="center">';
-					print '<a class="reposition editfielda" href="'.$_SERVER["PHP_SELF"].'?action=editline&id='. $this->id .'&lineid='.$line->id.'">'.img_edit().'</a>';
-					print '&nbsp;';
-					print '<a href="'.$_SERVER["PHP_SELF"].'?action=ask_deleteline&id='. $this->id .'&lineid='.$line->id.'">'.img_delete().'</a>';
+					if($line->fk_type_contribution_content == "Adhésion") {
+						print '<a class="reposition editfielda" href="' . $_SERVER["PHP_SELF"] . '?action=addLine&id=' . $this->id . '&fk_adherent=' . $line->fk_adherent . '&fk_type_contribution_content=2">Ajouter un don</a>';
+						print '<br>';
+						print '<a class="reposition editfielda" href="' . $_SERVER["PHP_SELF"] . '?action=addLine&id=' . $this->id . '&fk_adherent=' . $line->fk_adherent . '&fk_type_contribution_content=1">Ajouter une facture</a>';
+						print '<br>';
+
+						$existingSubscription = new Dictionary($this->db);
+						$res = $existingSubscription->fetchByDictionary('subscription',['rowid'],0,''," WHERE fk_adherent=$line->fk_adherent AND fk_contribution_content=$line->id");
+
+						print '<a class="reposition editfielda '.($res ? 'badge badge-status4 badge-status' : '').'" href="'.($res ? '../../adherents/subscription/card.php?rowid='.$res->rowid : $_SERVER["PHP_SELF"].'?action=addSubscription&fk_adherent='.$line->fk_adherent.'&token='.newToken().'&montant='.$line->montant.'&id='.$this->id.'&lineid='.$line->id).'">'.($res ? 'Cotisation payée' : 'Cotiser').'</a>';
+						print '<br>';
+					}else {
+						$date = date('d-m-Y');
+						$refDon = "$parentClass->firstname-$parentClass->lastname / $date";
+
+						$existingDon = $this->getDonForAdherentInContribution($line->id);
+
+						$donClass = new Don($this->db);
+
+						if($existingDon->rowid)
+						{
+							print '<a class="reposition editfield badge badge-status'.$existingDon->fk_statut.' badge-status" href="../../don/card.php?action=view&id='.$existingDon->rowid.'">'.$donClass->LibStatut($existingDon->fk_statut).'</a>';
+							print '<br>';
+						}
+						/*elseif($line->fk_type_contribution_content == 1)
+						{
+							print '<a target="_blank" class="reposition editfielda button" href="../../don/card.php?action=create&lastname='.urlencode($parentClass->lastname).'&firstname='.urlencode($parentClass->firstname).'&zipcode='.urlencode($parentClass->zipcode).'&town='.urlencode($parentClass->town).'&amount='.urlencode($line->montant).'&options_contribution_content='.$line->id.'&address='.$parentClass->address.'&email='.$parentClass->mail.'&ref='.$refDon.'">Payer la facture</a>';
+							print '&nbsp;';
+						}*/
+						elseif($line->montant != 0)
+						{
+							print '<a class="reposition editfielda button" href="../../don/card.php?action=create&lastname='.urlencode($parentClass->lastname).'&firstname='.urlencode($parentClass->firstname).'&zipcode='.urlencode($parentClass->zipcode).'&town='.urlencode($parentClass->town).'&amount='.urlencode($line->montant).'&options_contribution_content='.$line->id.'&address='.$parentClass->address.'&email='.$parentClass->mail.'&ref='.$refDon.'&backtopagefromcontribution=1&id_contribution='.$this->id.'&remonth=09&reday=01&reyear='.$dateAdhesion->format('Y').'">Faire le reçu</a>';
+							print '&nbsp;';
+						}
+					}
+
+					print '</td>';
+					print '<td align="center">';
+					if(!$res || $line->fk_type_contribution_content != 0)
+					{
+						print '<a class="reposition editfielda" href="'.$_SERVER["PHP_SELF"].'?action=editline&id='. $this->id .'&lineid='.$line->id.'">'.img_edit().'</a>';
+						print '&nbsp;';
+						print '<a class="reposition editfielda" href="'.$_SERVER["PHP_SELF"].'?action=deleteline&id='. $this->id .'&lineid='.$line->id.'">'.img_delete().'</a>';
+						print '&nbsp;';
+					}
+
 					print '</td>';
 				}
 				else
@@ -1236,6 +1338,44 @@ class Contribution extends CommonObject
 			}
 		}
 	}
+
+
+	public function formAddObjectLine()
+	{
+		global $form, $inventoriable, $amortissable;
+		//WYSIWYG Editor
+		require_once DOL_DOCUMENT_ROOT.'/core/class/doleditor.class.php';
+		$array = array(1=>'Oui', 0=>'Non');
+		print '<tr>';
+		// Description
+		print '<td>';
+		$doleditor = new DolEditor('description', GETPOST('description', 'none'), '', 160, 'dolibarr_details', '', false, true, $conf->global->FCKEDITOR_ENABLE_PRODUCTDESC, ROWS_4, '90%');
+		$doleditor->Create();
+		print '</td>';
+		// Valeur
+		print '<td>';
+		print '<input type="number" min="0" step="0.01" name="valeur" class="minwidth300 maxwidth400onsmartphone" maxlength="255" value="'.GETPOST('valeur', 'float').'">';
+		print '</td>';
+		// Inventoriable
+		print '<td>';
+		print $form->selectarray('inventoriable', $array, $inventoriable);
+		print '</td>';
+		// Amortissable
+		print '<td>';
+		print $form->selectarray('amortissable', $array, $amortissable);
+		print '</td>';
+
+		// Amortissable
+		print '<td>';
+		print '<input type="submit" class="button" value="Ajouter" name="addline" id="addline">';
+		print '</td>';
+		print '<td>';
+		print '<input type="number" min="0" step="0.01" placeholder="Nombre à ajouter..." id="nombre" name="nombre" maxlength="255">';
+		print '</td>';
+		print '</tr>';
+	}
+
+
 
 	/**
 	 *  Returns the reference to the following non used object depending on the active numbering module.

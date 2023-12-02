@@ -25,6 +25,7 @@ CREATE TABLE llx_etablissement(
 	principal_adjoint varchar(255) DEFAULT NULL,
 	gestionnaire varchar(255) DEFAULT NULL,
 	url varchar(255) DEFAULT NULL,
+	fk_type_adherent integer NULL
 	description text, 
 	note_public text, 
 	note_private text, 

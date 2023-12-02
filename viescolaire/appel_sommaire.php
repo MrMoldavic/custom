@@ -94,6 +94,7 @@ require_once DOL_DOCUMENT_ROOT . '/core/class/html.formprojet.class.php';
 require_once DOL_DOCUMENT_ROOT . '/custom/materiel/core/lib/functions.lib.php';
 dol_include_once('/viescolaire/class/appel.class.php');
 dol_include_once('/scolarite/class/dispositif.class.php');
+dol_include_once('/scolarite/class/etablissement.class.php');
 
 dol_include_once('/viescolaire/lib/viescolaire_appel.lib.php');
 
@@ -236,41 +237,23 @@ if (empty($reshook)) {
 $form = new Form($db);
 $formfile = new FormFile($db);
 $formproject = new FormProjets($db);
+$etablissementClass = new Etablissement($db);
 
 $title = $langs->trans("Appel");
 $help_url = '';
 llxHeader('', $title, $help_url);
 
-// Example : Adding jquery code
-// print '<script type="text/javascript">
-// jQuery(document).ready(function() {
-// 	function init_myfunc()
-// 	{
-// 		jQuery("#myid").removeAttr(\'disabled\');
-// 		jQuery("#myid").attr(\'disabled\',\'disabled\');
-// 	}
-// 	init_myfunc();
-// 	jQuery("#mybutton").click(function() {
-// 		init_myfunc();
-// 	});
-// });
-// </script>';
-
-
 if ($action == 'create' && !GETPOST('etablissementid', 'int') && !GETPOST('appelday', 'alpha')) // SELECTION DU TYPE DE KIT
 {
+	$etablissementFetch = $etablissementClass->fetchBy(['nom','rowid'],0,'');
+	$etablissements = [];
 
-     $sql = "SELECT e.rowid,e.nom FROM " . MAIN_DB_PREFIX . "etablissement as e";
-     $resql = $db->query($sql);
-     $etablissements = [];
-
-     foreach ($resql as $val) {
-          $etablissements[$val['rowid']] = $val['nom'];
-     }
-
+	foreach ($etablissementFetch as $val) {
+		$etablissements[$val->rowid] = $val->nom;
+	}
 
      print '<form action="' . $_SERVER["PHP_SELF"] . '" method="POST">';
-
+	 print '<input type="hidden" name="token" value="'.newToken().'">';
      print '<input type="hidden" name="action" value="create">';
      $titre = "Nouvel Appel";
      print talm_load_fiche_titre($title, $linkback, $picto);

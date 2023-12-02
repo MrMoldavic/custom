@@ -24,6 +24,7 @@ CREATE TABLE llx_contribution(
     montant_total float NOT NULL,
 	description text,
     imposable tinyint(1) text,
+    informations text NULL,
     note_public text,
 	note_private text, 
 	date_creation datetime NOT NULL, 

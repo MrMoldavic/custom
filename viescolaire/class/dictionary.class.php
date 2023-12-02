@@ -49,7 +49,7 @@ class Dictionary extends CommonObject
 
 
 	/**
-	 * Delete object in database
+	 * Fetch object from the database
 	 *
 	 * @param string $table dictionary to fetch from
 	 * @param array $parameters array of column to fetch
@@ -57,7 +57,7 @@ class Dictionary extends CommonObject
 	 * @param string $column string column requested for direct fetch
 	 * @return int <0 if KO, >0 if OK
 	 */
-	public function fetchByDictionary(string $table, array $parameters, int $id = 0, string $column = '')
+	public function fetchByDictionary(string $table, array $parameters, int $id = 0, string $column = '', string $andWhere = "")
 	{
 		$sql = "SELECT ";
 		for($i=0;$i<count($parameters);$i++)
@@ -70,6 +70,10 @@ class Dictionary extends CommonObject
 		if($id)
 		{
 			$sql .= " WHERE ".$this->db->sanitize($this->db->escape($column))." = ".$this->db->sanitize($this->db->escape($id));
+		}
+		if($andWhere)
+		{
+			$sql .= $andWhere;
 		}
 
 		$resql = $this->db->query($sql);

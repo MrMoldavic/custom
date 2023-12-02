@@ -254,9 +254,6 @@ class Affectation extends CommonObject
 		$resqlSouhait = $this->db->query($souhait);
 
 
-			// $enabledSouhait = "SELECT * FROM ".MAIN_DB_PREFIX."souhait as c WHERE c.fk_eleve = ".$objectEleve->fk_eleve." AND c.fk_annee_scolaire=".$objAnneScolaire->rowid." AND c.status = ".$souhait::STATUS_VALIDATED;
-			// $resqlEnabledSouhait = $this->db->query($enabledSouhait);
-
 		foreach($resqlSouhait as $val)
 		{
 			$sql = "SELECT c.rowid,c.heure_debut,c.jour FROM ".MAIN_DB_PREFIX."creneau as c WHERE c.rowid =".("(SELECT e.fk_creneau FROM ".MAIN_DB_PREFIX."affectation as e WHERE e.fk_souhait =".$val['rowid']." AND e.status = 4)");
@@ -268,6 +265,7 @@ class Affectation extends CommonObject
 		if($error)
 		{
 			setEventMessage('L\'élève à déjà cours à cet horaire. Affectation impossible.','errors');
+			exit;
 		}
 		else
 		{
@@ -280,11 +278,8 @@ class Affectation extends CommonObject
 			$resultcreate = $this->createCommon($user, $notrigger);
 			setEventMessage('Affectation confirmée!');
 
-			return $resultcreate;
-
-
 		}
-
+		return $resultcreate;
 	}
 
 	/**

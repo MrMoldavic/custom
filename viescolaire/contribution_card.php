@@ -78,9 +78,13 @@ if (!$res) {
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formcompany.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formfile.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formprojet.class.php';
+require_once DOL_DOCUMENT_ROOT.'/don/class/don.class.php';
+require_once DOL_DOCUMENT_ROOT.'/adherents/class/subscription.class.php';
 dol_include_once('/viescolaire/class/dictionary.class.php');
 dol_include_once('/viescolaire/class/contribution.class.php');
 dol_include_once('/viescolaire/lib/viescolaire_contribution.lib.php');
+
+include_once (DOL_DOCUMENT_ROOT.'/adherents/class/subscription.class.php');
 
 // Load translation files required by the page
 $langs->loadLangs(array("viescolaire@viescolaire", "other"));
@@ -89,14 +93,16 @@ $langs->loadLangs(array("viescolaire@viescolaire", "other"));
 $id = GETPOST('id', 'int');
 $ref = GETPOST('ref', 'alpha');
 $lineid   = GETPOST('lineid', 'int');
+$montant   = GETPOST('montant', 'int');
 $fk_famille = GETPOST('fk_famille', 'int');
+$fk_adherent = GETPOST('fk_adherent', 'int');
 
 $action = GETPOST('action', 'aZ09');
 $confirm = GETPOST('confirm', 'alpha');
 $cancel = GETPOST('cancel', 'aZ09');
 $contextpage = GETPOST('contextpage', 'aZ') ? GETPOST('contextpage', 'aZ') : str_replace('_', '', basename(dirname(__FILE__)).basename(__FILE__, '.php')); // To manage different context of search
 $backtopage = GETPOST('backtopage', 'alpha');
-$backtopageforcancel = GETPOST('backtopageforcancel', 'alpha');
+
 $dol_openinpopup = GETPOST('dol_openinpopup', 'aZ09');
 
 // Initialize technical objects
@@ -215,7 +221,195 @@ if (empty($reshook)) {
 	include DOL_DOCUMENT_ROOT.'/core/actions_sendmails.inc.php';
 }
 
+if ($action == 'updateline')
+{
+	$error = 0;
+	if($montant > $object->montant_total)
+	{
+		setEventMessages('Le montant reseigné est supérieur au montant total' , null, 'errors');
+		$error++;
+	}
 
+	$contributionContentClass = new ContributionContent($db);
+
+	$allLines = $contributionContentClass->fetchAll('ASC','rowid','','',['customsql'=>"fk_contribution = $object->id AND rowid != $lineid AND montant != 0" ]);
+
+
+	$countTotal = 0;
+	$count =0;
+	foreach ($allLines as $oneLine)
+	{
+		$countTotal += $oneLine->montant;
+		$count++;
+	}
+
+
+	if(intval($countTotal) + intval($montant) > intval($object->montant_total))
+	{
+		setEventMessages('Le montant renseigné est supérieur au montant restant possible' , null, 'errors');
+		$error++;
+	}
+
+	if($error == 0)
+	{
+		$contributionContentClass = new ContributionContent($db);
+		$contributionContentClass->fetch($lineid);
+		$contributionContentClass->montant = $montant;
+		$result = $contributionContentClass->update($user);
+	}
+
+
+	if ($result && $error == 0) {
+		setEventMessages('Ligne de produit mise à jour' , null);
+	}
+}
+
+if ($action == 'addLine')
+{
+	$errors = new stdClass();
+	$errors->message = [];
+	$contributionContentClass = new ContributionContent($db);
+	$res = $contributionContentClass->fetchAll('ASC','rowid','','',['fk_contribution'=>$object->id,"fk_adherent"=>$fk_adherent,'fk_type_contribution_content'=>GETPOST('fk_type_contribution_content','int')]);
+
+	foreach($res as $val)
+	{
+		$errors->nb++;
+		$errors->message[] .= 'Un Don/facture existe déjà pour cet adhérent. Veuillez éditer celui existant';
+	};
+
+	if ($errors->nb == 0)
+	{
+		$contributionContentClass->fk_contribution = $object->id;
+		$contributionContentClass->fk_type_contribution_content = GETPOST('fk_type_contribution_content','int');
+		$contributionContentClass->montant = 0;
+		$contributionContentClass->fk_adherent = $fk_adherent;
+		$result = $contributionContentClass->create($user);
+
+		if($result > 0)
+		{
+			setEventMessages('Ligne ajoutée' , null);
+		}
+		else $errors->message[] .= 'Une erreur est survenue lors de l\'ajout en base.';
+	}
+	print setEventMessages($errors->message , null, 'errors');
+}
+
+if($action == "addSubscription")
+{
+	$dateActuelle = new DateTime();
+	// Vérifiez si nous sommes avant le 1er septembre
+	if ($dateActuelle->format('n') < 9) {
+		// Si oui, ajustez l'année à l'année précédente
+		$dateAdhesion = new DateTime('01/09/' . ($dateActuelle->format('Y') - 1));
+	} else {
+		// Sinon, utilisez simplement l'année actuelle
+		$dateAdhesion = new DateTime('01/09/' . $dateActuelle->format('Y'));
+	}
+
+	if($montant == 0)
+	{
+		$contributionContentClass = new ContributionContent($db);
+		//$contributionContentClass->fetch($lineid);
+
+		$existingSubscription = $contributionContentClass->fetchExistingSubscriptionForContributionContent($fk_adherent,$lineid,$montant);
+		if(!$existingSubscription)
+		{
+			$subscriptionClass = new Subscription($db);
+			$subscriptionClass->fk_adherent = $fk_adherent;
+			$subscriptionClass->subscription = $montant;
+			$subscriptionClass->fk_contribution_content = $lineid;
+			$subscriptionClass->fk_bank = null;
+			$subscriptionClass->dateh = $dateAdhesion->format('Y-d-m');
+
+			/*$dateInitiale = new DateTime('now');
+			$dateInitiale->add(new DateInterval('P1Y'));*/
+			$subscriptionClass->datef = $dateAdhesion->format(($dateActuelle->format('Y') + 1).'-08-31');
+
+			$subscriptionClass->datec = date('Y-m-d H:i:s');
+			$subscriptionClass->note = "";
+
+			$result = $subscriptionClass->create($user);
+
+			if($result > 0)
+			{
+				$adherentClass = new Adherent($db);
+				$adherentClass->fetch($fk_adherent);
+				$adherentClass->datefin = $subscriptionClass->datef;
+				$adherentClass->update($user);
+
+				setEventMessages('Cotisation payée avec succès!' , null);
+			} else setEventMessages('Une erreur est survenue', null, 'errors');
+		}
+
+	}
+	else{
+
+
+		$action = "newSubscription";
+		header('Location: ../../adherents/subscription.php?rowid='.$fk_adherent.'&action=addsubscription&subscription='.$montant.'&paymentsave=bankdirect&fk_contribution_content='.$lineid.'&contribution_id='.$id.'&fromContribution=1&reday=01&remonth=09&reyear='.$dateAdhesion->format('Y').'&endday=31&endmonth=08&endyear='.($dateAdhesion->format('Y')+1));
+		die;
+	}
+}
+
+if($action == 'addParents'){
+
+	// On va chercher tout les parents actuels dans la famille
+	$parentsClass = new Parents($db);
+	$allParents = $parentsClass->fetchAll('rowid','rowid',0,0,['fk_famille'=>$object->fk_famille],'AND');
+
+	$error = 0;
+	foreach ($allParents as $parentUnique)
+	{
+		if(!$parentUnique->fk_adherent)
+		{
+			// On lui crée un adhérent
+			$parentUnique->fetch($parentUnique->rowid);
+
+			$familleClass= new Famille($db);
+			$familleClass->fetch($parentUnique->fk_famille);
+
+			$etablissementClass = new Etablissement($db);
+			$etablissementClass->fetch($familleClass->fk_antenne);
+
+			$adherentClass = new Adherent($db);
+			$adherentClass->ref = $parentUnique->rowid.'-(Ref Provisoire)';
+			$adherentClass->typeid = ($etablissementClass->fk_type_adherent ? : null);
+			$adherentClass->firstname = $parentUnique->firstname;
+			$adherentClass->lastname = $parentUnique->lastname;
+			$adherentClass->morphy = "phy";
+			$adherentClass->statut = 1;
+			$result = $adherentClass->create($user);
+
+			if($result <= 0) $error++;
+			else{
+				$parentUnique->fk_adherent = $result;
+				$parentUnique->update($user);
+			}
+		}
+
+		$contributionContentClass = new ContributionContent($db);
+		// On va chercher toute ses contributions
+		$existingContributionContent = $contributionContentClass->fetchAll('rowid','rowid',0,0,['fk_adherent'=>$parentUnique->fk_adherent,'fk_contribution'=>$id,'fk_type_contribution_content'=>0]);
+
+		if(count($existingContributionContent) == 0)
+		{
+			$contributionContentClass = new ContributionContent($db);
+			$contributionContentClass->fk_contribution = $id;
+			$contributionContentClass->fk_type_contribution_content = "Adhésion";
+			$contributionContentClass->montant = 0;
+			$contributionContentClass->fk_type_adherent = 1;
+			$contributionContentClass->fk_subscription = null;
+			$contributionContentClass->fk_adherent = $parentUnique->fk_adherent;
+			$resContribution = $contributionContentClass->create($user);
+
+			if($resContribution <= 0) $error++;
+
+		}
+	}
+
+	if($error == 0) setEventMessage('Ajout du parent et de sa contribution avec succès!');
+	else setEventMessage("$error erreur(s) sont survenue(s)",'errors');
+}
 
 
 /*
@@ -233,27 +427,13 @@ $title = $langs->trans("Contribution");
 $help_url = '';
 llxHeader('', $title, $help_url);
 
-// Example : Adding jquery code
-// print '<script type="text/javascript">
-// jQuery(document).ready(function() {
-// 	function init_myfunc()
-// 	{
-// 		jQuery("#myid").removeAttr(\'disabled\');
-// 		jQuery("#myid").attr(\'disabled\',\'disabled\');
-// 	}
-// 	init_myfunc();
-// 	jQuery("#mybutton").click(function() {
-// 		init_myfunc();
-// 	});
-// });
-// </script>';
-
 
 // Part to create
 if ($action == 'create') {
 	if (empty($permissiontoadd)) {
 		accessforbidden('NotEnoughPermissions', 0, 1);
 	}
+	$backtopageforcancel = $_SERVER['HTTP_HOST']."/custom/viescolaire/famille_card.php?id=".GETPOST('fk_famille','int');
 
 	print load_fiche_titre('Nouvelle contribution', '', 'fa-euro');
 
@@ -292,6 +472,7 @@ if ($action == 'create') {
 
 	//dol_set_focus('input[name="fk_annee_scolaire"]');
 }
+
 
 // Part to edit record
 if (($id || $ref) && $action == 'edit') {
@@ -446,6 +627,21 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 	// Other attributes. Fields from hook formObjectOptions and Extrafields.
 	include DOL_DOCUMENT_ROOT.'/core/tpl/extrafields_view.tpl.php';
 
+	print '<tr><td class="titlefield">';
+	print "Montant total";
+	print '</td><td colspan="3" class="amountpaymentcomplete">';
+
+
+	/*$allLines = $object->getLinesArray();
+
+	$countTotal = 0;
+	foreach ($allLines as $oneLine)
+	{
+		$countTotal += $oneLine->montant;
+	}*/
+	print '<span style="color : '.($object->getTotalAmountOfContent() == $object->montant_total ? "green" : "darkgrey").'">'.price($object->getTotalAmountOfContent(), 1, '', 0, -1, -1, $conf->currency).' / '.price($object->montant_total, 1, '', 0, -1, -1, $conf->currency).'</span>';
+	print '</td></tr>';
+
 	print '</table>';
 	print '</div>';
 	print '</div>';
@@ -460,9 +656,7 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 	 */
 	if (!empty($object->table_element_line)) {
 		// Show object lines
-		$result = $object->getLinesArray();
-
-		print '<form name="addproduct" id="addproduct" action="'.$_SERVER["PHP_SELF"].'?id='.$recufiscal->id.(($action != 'editline') ? '#addline' : '#line_'.GETPOST('lineid')).'" method="POST">';
+		print '<form name="addproduct" id="addproduct" action="'.$_SERVER["PHP_SELF"].'?id='.$object->id.(($action != 'editline') ? '#addline' : '#line_'.GETPOST('lineid')).'" method="POST">';
 		print '<input type="hidden" name="token" value="'.newToken().'">';
 		print '<input type="hidden" name="action" value="'.(($action != 'editline') ? 'addline' : 'updateline').'">';
 		print '<input type="hidden" name="mode" value="">';
@@ -474,31 +668,18 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 		print '<td>Adhérent</td>';
 		print '<td>Type d\'adhérent</td>';
 		print '<td>Type de contribution</td>';
-		print '<td>Montant</td>';
 		print '<td>Valeur totale</td>';
-		print '<td style="width: 80px"></td>'; // Empty column for edit and remove button
+		print '<td></td>'; // Empty column for edit and remove button
+		print '<td></td>'; // Empty column for edit and remove button
 		print '</tr>';
 
-		// Show object lines
-		if (!empty($object->lines)){
-			$ret = $object->printObjectLines($action, $lineid);
-		}
-		$num = count($source->lines);
+		$ret = $object->printObjectLines($action, $lineid);
 
-		// Form to add new line
-		// If the state is draft, show the form to add a new line
-		if ($object->status == Contribution::STATUS_DRAFT)
-		{
-			if ($action != 'editline')
-			{
-				// Add product
-				$object->formAddObjectLine();
-			}
-		}
 		print '</table>';
 		print '</form>';
-	}
 
+		dol_fiche_end();
+	}
 
 	// Buttons for actions
 
@@ -512,30 +693,24 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 
 		if (empty($reshook)) {
 			// Send
-			if (empty($user->socid)) {
-				print dolGetButtonAction('', $langs->trans('SendMail'), 'default', $_SERVER["PHP_SELF"].'?id='.$object->id.'&action=presend&token='.newToken().'&mode=init#formmailbeforetitle');
-			}
 
-			// Back to draft
+			// Back to draftss
 			if ($object->status == $object::STATUS_VALIDATED) {
 				print dolGetButtonAction('', $langs->trans('SetToDraft'), 'default', $_SERVER["PHP_SELF"].'?id='.$object->id.'&action=confirm_setdraft&confirm=yes&token='.newToken(), '', $permissiontoadd);
 			}
 
+			print dolGetButtonAction('', "Ajouter les parents manquants", 'default', $_SERVER["PHP_SELF"].'?id='.$object->id.'&action=addParents&token='.newToken(), '', $permissiontoadd);
+
 			print dolGetButtonAction('', $langs->trans('Modify'), 'default', $_SERVER["PHP_SELF"].'?id='.$object->id.'&action=edit&token='.newToken(), '', $permissiontoadd);
 
 			// Validate
-			if ($object->status == $object::STATUS_DRAFT) {
+			if ($object->status == $object::STATUS_DRAFT && $object->getTotalAmountOfContent() == $object->montant_total) {
 				if (empty($object->table_element_line) || (is_array($object->lines) && count($object->lines) > 0)) {
 					print dolGetButtonAction('', $langs->trans('Validate'), 'default', $_SERVER['PHP_SELF'].'?id='.$object->id.'&action=confirm_validate&confirm=yes&token='.newToken(), '', $permissiontoadd);
 				} else {
 					$langs->load("errors");
 					print dolGetButtonAction($langs->trans("ErrorAddAtLeastOneLineFirst"), $langs->trans("Validate"), 'default', '#', '', 0);
 				}
-			}
-
-			// Clone
-			if ($permissiontoadd) {
-				print dolGetButtonAction('', $langs->trans('ToClone'), 'default', $_SERVER['PHP_SELF'].'?id='.$object->id.(!empty($object->socid)?'&socid='.$object->socid:'').'&action=clone&token='.newToken(), '', $permissiontoadd);
 			}
 
 			// Delete

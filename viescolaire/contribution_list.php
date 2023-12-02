@@ -77,6 +77,7 @@ if (!$res) {
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formcompany.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/date.lib.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/company.lib.php';
+require_once DOL_DOCUMENT_ROOT.'/don/class/don.class.php';
 
 // load viescolaire libraries
 require_once __DIR__.'/class/contribution.class.php';
@@ -747,7 +748,53 @@ while ($i < $imaxinloop) {
 					print $object->getLibStatut(5);
 				} elseif ($key == 'rowid') {
 					print $object->showOutputField($val, $key, $object->id, '');
-				} else {
+				} elseif ($key == 'informations') {
+
+					$contributionContentClass = new ContributionContent($db);
+					// On va chercher toute ses contributions
+					$existingContents = $contributionContentClass->fetchAll('rowid','rowid',0,0,['fk_contribution'=>$object->id]);
+
+					$count = 0;
+					$countTotal = 0;
+					$existingDon = 0;
+					$donsTermines = 0;
+					foreach ($existingContents as $value)
+					{
+						$existingSubscription = new Dictionary($db);
+						if($value->fk_type_contribution_content == 0)
+						{
+							$res = $existingSubscription->fetchByDictionary('subscription',['rowid'],0,''," WHERE fk_adherent=$value->fk_adherent AND fk_contribution_content=$value->id");
+							if(!$res) $count++;
+						}
+
+						$countTotal += $value->montant;
+
+						if($value->fk_type_contribution_content == 2 && !$object->getDonForAdherentInContribution($value->id)) $existingDon++;
+
+
+						$donClass = new Don($db);
+						if($object->getDonForAdherentInContribution($value->id))
+						{
+							if($object->getDonForAdherentInContribution($value->id)->fk_statut != ($donClass::STATUS_PAID)) $donsTermines++;
+						}
+
+					}
+
+					if($count > 0)
+					{
+						print "<span class='badge badge-status8 badge-status'>$count adhésion(s) non payée(s)</span><br><br>";
+					}
+					elseif($count == 0 && $existingContents) print "<span class='badge badge-status4 badge-status'>Toutes les adhésions sont payées</span><br><br>";
+					if($countTotal != $object->montant_total && $count)
+					{
+						print "<span class='badge badge-status5 badge-status'>Montant total non atteint ($countTotal € / $object->montant_total €)</span><br><br>";
+					} elseif($countTotal == $object->montant_total && $count) print "<span class='badge badge-status4 badge-status'>Montant total atteint</span><br><br>";
+
+					if($existingDon > 0) print "<span class='badge badge-status1 badge-status'>$existingDon don(s) non reçu(s)</span><br><br>";
+					if($donsTermines > 0)print "<span class='badge badge-status2 badge-status'>$donsTermines don(s) à traiter</span><br><br>";
+
+				}
+				else {
 					print $object->showOutputField($val, $key, $object->$key, '');
 				}
 				print '</td>';

@@ -21,9 +21,12 @@
  *		\ingroup    viescolaire
  *		\brief      Page to create/edit/view famille
  */
-/*ini_set('display_errors', '1');
+
+use Couchbase\User;
+
+ini_set('display_errors', '1');
 ini_set('display_startup_errors', '1');
-error_reporting(E_ALL);*/
+error_reporting(E_ALL);
 //if (! defined('NOREQUIREDB'))              define('NOREQUIREDB', '1');				// Do not create database handler $db
 //if (! defined('NOREQUIREUSER'))            define('NOREQUIREUSER', '1');				// Do not load object $user
 //if (! defined('NOREQUIRESOC'))             define('NOREQUIRESOC', '1');				// Do not load object $mysoc
@@ -80,6 +83,7 @@ if (!$res) {
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formcompany.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formfile.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formprojet.class.php';
+require_once DOL_DOCUMENT_ROOT.'/user/class/user.class.php';
 
 dol_include_once('/viescolaire/class/famille.class.php');
 dol_include_once('/viescolaire/class/dictionary.class.php');
@@ -101,6 +105,7 @@ $backtopage = GETPOST('backtopage', 'alpha');
 $backtopageforcancel = GETPOST('backtopageforcancel', 'alpha');
 $lineid   = GETPOST('lineid', 'int');
 $parentId = GETPOST('id_parent','int');
+$contributionId = GETPOST('contributionId','int');
 
 if( $action == 'stateModify')
 {
@@ -114,15 +119,55 @@ if( $action == 'stateModify')
 
 if ($action == 'deleteParent') {
 
-	$sql = "DELETE FROM " . MAIN_DB_PREFIX . "parents WHERE rowid=".$parentId;
-	$resql = $db->query($sql);
+	$parentsClass = new Parents($db);
+	$parentsClass->fetch($parentId);
+	$res = $parentsClass->delete($user);
 
-	if($resql)
+	if($res)
 	{
+		$familleClass = new Famille($db);
+		$familleClass->fetch($id);
+
+		$parents = $parentsClass->fetchAll('ASC','rowid','','',['fk_famille'=>$id],'ASC');
+
+		$newIdentifiant = "";
+		foreach ($parents as $parent)
+		{
+			$newIdentifiant .= "$parent->firstname-$parent->lastname / ";
+		}
+
+		$familleClass->identifiant_famille = $newIdentifiant;
+		$familleClass->update($user);
 		setEventMessage('Parent supprimé avec succès');
 	}else setEventMessage('Une erreur est survenue.', 'errors');
 
 
+}
+
+
+if($action == 'deleteContribution')
+{
+	$contributionClass = new Contribution($db);
+	$contributionClass->fetch($contributionId);
+
+	$contributionContentClass = new ContributionContent($db);
+	$contents = $contributionContentClass->fetchAll('ASC','rowid','','',['fk_contribution'=>$contributionId],'ASC');
+	if($contents)
+	{
+		foreach ($contents as $content)
+		{
+			$contributionContentClass = new ContributionContent($db);
+			$contributionContentClass->fetch($content->id);
+			$contributionContentClass->delete($user);
+
+			unset($contributionContentClass);
+		}
+	}
+
+	$result = $contributionClass->delete($user);
+
+	if($result) setEventMessage('Contribution et son contenu supprimé avec succès');
+	else setEventMessage('Une erreur est survenue.', 'errors');
 }
 
 
@@ -473,7 +518,7 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 		print '<tr class="liste_titre">
 					<th class="wrapcolumntitle liste_titre">Prenom</th>
 					<th class="wrapcolumntitle liste_titre">Nom</th>
-					<!--<th class="wrapcolumntitle liste_titre">Type de parent</th>-->
+					<th class="wrapcolumntitle liste_titre">Type de parent</th>
 					<th class="wrapcolumntitle liste_titre">Contact préférentiel</th>
 					<th class="wrapcolumntitle liste_titre">Téléphone</th>
 					<th class="wrapcolumntitle liste_titre">Mail</th>
@@ -484,15 +529,15 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 		foreach($result as $val)
 		{
 			$dictionaryClass = new Dictionary($db);
-			/*if($val->fk_type_parent != null)
+			if($val->fk_type_parent != 0)
 			{
 				$typeParent = $dictionaryClass->fetchByDictionary('c_type_parent',['type','rowid'],$val->fk_type_parent,'rowid');
-			}*/
+			}
 
 			print '<tr class="oddeven">';
 			print '<td><a href=' . DOL_URL_ROOT . '/custom/viescolaire/parents_card.php?id=' . $val->rowid . '&action=edit'. '>' .$val->firstname. '</td>';
 			print "<td>".$val->lastname."</td>";
-			//print "<td>".($typeParent != null ? $typeParent->type : 'Type Inconnu')."</td>";
+			print "<td>".($typeParent != null ? $typeParent->type : 'Type Inconnu')."</td>";
 			print "<td><span class='badge  badge-status".($val->contact_preferentiel == 1 ? '4': '8')." badge-status'>".($val->contact_preferentiel == 1 ? 'Oui': 'Non').'</td>';
 			print "<td>".$val->phone."</td>";
 			print "<td>".$val->mail."</td>";
@@ -574,7 +619,7 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 	$result = $contributionClass->fetchBy(['ref','fk_antenne','fk_annee_scolaire','montant_total','rowid'],$object->id,'fk_famille');
 
 
-	print load_fiche_titre("Liste des cotisations", '', 'fa-euro');
+	print load_fiche_titre("Liste des contributions", '', 'fa-euro');
 
 	if($result != NULL)
 	{
@@ -586,31 +631,33 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 					<th class="wrapcolumntitle liste_titre">Antenne concernée</th>
 					<th class="wrapcolumntitle liste_titre">Année scolaire concernée</th>
 					<th class="wrapcolumntitle liste_titre">Montant</th>
+					<th class="wrapcolumntitle liste_titre"></th>
 					</tr>';
 		foreach($result as $val)
 		{
 			print '<tr class="oddeven">';
-			print '<td><a href=' . DOL_URL_ROOT . '/custom/viescolaire/contribution_card.php?id=' . $val->rowid . '&action=edit'. '>' .$val->ref. '</td>';
-			print "<td>".$val->fk_antenne."</td>";
-			print "<td>".$val->fk_annee_scolaire."</td>";
-			print "<td>".$val->montant_total."</td>";
+			print '<td><a href=' . DOL_URL_ROOT . '/custom/viescolaire/contribution_card.php?id=' . $val->rowid . '&action=view'. '>' .$val->ref. '</td>';
 
+			$antenne = new Etablissement($db);
+			$antenne->fetch($val->fk_antenne);
+			print "<td>".$antenne->nom."</td>";
+
+			$dictionaryClass = new Dictionary($db);
+			$resultAnnee = $dictionaryClass->fetchByDictionary('c_annee_scolaire',['annee'],$val->fk_annee_scolaire,'rowid');
+
+			print "<td><span class='badge badge-status4 badge-status'>".$resultAnnee->annee."</span></td>";
+			print "<td><span class='badge badge-status4 badge-status'>".$val->montant_total."€</span></td>";
+			print '<td align="center">';
+			print '<a class="reposition editfielda" href="'.$_SERVER["PHP_SELF"].'?action=deleteContribution&contributionId='. $val->rowid .'&id='.$object->id.'">'.img_delete().'</a>';
+			print '&nbsp;';
+			print '</td>';
 			print '</tr>';
-
-
 		}
 		print '</tbody>';
 		print '</table>';
 	}else print "Aucune contribution connue.";
+
 	print dolGetButtonAction($langs->trans('Créer une contribution'), '', 'default', '/custom/viescolaire/contribution_card.php?action=create&fk_famille='.$object->id.'&token='.newToken(), '', $permissiontoadd);
-
-
-
-
-
-
-
-
 
 	print '<div class="clearboth"></div>';
 

@@ -25,6 +25,7 @@
 // Put here all includes required by your class file
 require_once DOL_DOCUMENT_ROOT.'/core/class/commonobject.class.php';
 dol_include_once('viescolaire/class/famille.class.php');
+dol_include_once('viescolaire/class/parents.class.php');
 //require_once DOL_DOCUMENT_ROOT . '/societe/class/societe.class.php';
 //require_once DOL_DOCUMENT_ROOT . '/product/class/product.class.php';
 
@@ -57,7 +58,7 @@ class Parents extends CommonObject
 	/**
 	 * @var int  Does object support extrafields ? 0=No, 1=Yes
 	 */
-	public $isextrafieldmanaged = 1;
+	public $isextrafieldmanaged = 0;
 
 	/**
 	 * @var string String with name of icon for parents. Must be a 'fa-xxx' fontawesome code (or 'fa-xxx_fa_color_size') or 'parents@viescolaire' if picto is file 'img/object_parents.png'.
@@ -130,7 +131,6 @@ class Parents extends CommonObject
 		'fk_famille' => array('type'=>'integer:Famille:custom/viescolaire/class/famille.class.php', 'label'=>'Famille liée', 'enabled'=>'1', 'position'=>2, 'notnull'=>0, 'visible'=>-1, 'css'=>'maxwidth200',),
 		'fk_tiers' => array('type'=>'integer:Societe:societe/class/societe.class.php', 'label'=>'Tiers lié', 'enabled'=>'1', 'position'=>63, 'notnull'=>0, 'visible'=>-1, 'css'=>'maxwidth200',),
 		'fk_adherent' => array('type'=>'integer:Adherent:adherents/class/adherent.class.php', 'label'=>'Adhérent lié', 'enabled'=>'1', 'position'=>64, 'notnull'=>0, 'visible'=>-1, 'css'=>'maxwidth200',),
-
 		'date_creation' => array('type'=>'datetime', 'label'=>'Datecreation', 'enabled'=>'1', 'position'=>70, 'notnull'=>1, 'visible'=>0,),
 		'tms' => array('type'=>'timestamp', 'label'=>'DateModification', 'enabled'=>'1', 'position'=>75, 'notnull'=>1, 'visible'=>0,),
 		'fk_user_creat' => array('type'=>'integer:User:user/class/user.class.php', 'label'=>'Fkusercreate', 'enabled'=>'1', 'position'=>80, 'notnull'=>0, 'visible'=>0, 'css'=>'maxwidth500 widthcentpercentminusxx', 'csslist'=>'tdoverflowmax150',),
@@ -147,9 +147,12 @@ class Parents extends CommonObject
 	public $phone;
 	public $mail;
 	public $csp;
+	public $contact_preferentiel;
 	public $quotient_familial;
 	public $description;
 	public $fk_famille;
+	public $fk_adherent;
+	public $fk_tiers;
 	public $date_creation;
 	public $tms;
 	public $fk_user_creat;
@@ -248,6 +251,7 @@ class Parents extends CommonObject
 	public function create(User $user, $notrigger = false)
 	{
 		$familleClass = new Famille($this->db);
+
 		$this->phone = str_replace(" ", "", $this->phone);
 
 		if(!empty($this->phone) && strlen($this->phone) != 10)
@@ -271,23 +275,32 @@ class Parents extends CommonObject
 
 			$this->fk_famille = $rowidFamille;
 		}
-		else
-		{
-			$familleId = $familleClass->fetch($this->fk_famille);
 
-			if ($familleId > 0) {
+		$resultcreate = $this->createCommon($user, $notrigger);
 
-				if($familleClass->identifiant_famille == "Identifiant provisoire")
+		$familleId = $familleClass->fetch($this->fk_famille);
+
+		if ($familleId > 0) {
+
+			if($familleClass->identifiant_famille == "Identifiant provisoire")
+			{
+				$familleClass->identifiant_famille = "$this->firstname $this->lastname";
+			}else{
+
+				$parentsClass = new Parents($this->db);
+				$parents = $parentsClass->fetchAll('ASC','rowid','','',['fk_famille'=>$familleId],'ASC');
+
+				$newIdentifiant = "";
+				foreach ($parents as $parent)
 				{
-					$familleClass->identifiant_famille = "$this->lastname $this->firstname";
-				}else{
-					$familleClass->identifiant_famille .= " / $this->lastname $this->firstname";
+					$newIdentifiant .= "$parent->firstname-$parent->lastname / ";
 				}
 
-				$familleClass->update($user);
+				$familleClass->identifiant_famille = $newIdentifiant;
 			}
+
+			$familleClass->update($user);
 		}
-		$resultcreate = $this->createCommon($user, $notrigger);
 
 		return $resultcreate;
 	}
@@ -392,6 +405,40 @@ class Parents extends CommonObject
 		}
 	}
 
+
+	/**
+	 *	Load the info information in the object
+	 *
+	 *	@param  int		$id       Id of object
+	 *	@return	void
+	 */
+	public function fetchAdherentOrTiersByParent($firstname,$lastname,$table)
+	{
+		$sql = "SELECT a.rowid";
+		$sql .= " FROM ".MAIN_DB_PREFIX.((string) $table)." as a";
+		if($table == "adherent")
+		{
+			$sql .= " WHERE a.firstname = '".((string) $firstname)."'";
+			$sql .= " AND a.lastname = '".((string) $lastname)."'";
+		}
+		else
+		{
+			$sql .= " WHERE a.nom = '".((string) $firstname).' '.((string) $lastname)."'";
+		}
+
+
+		$result = $this->db->query($sql);
+		if ($result->num_rows > 0) {
+			$obj = $this->db->fetch_object($result);
+			return $obj;
+
+			$this->db->free($result);
+		} else {
+			return 0;
+		}
+	}
+
+
 	/**
 	 * Load object in memory from the database
 	 *
@@ -399,9 +446,9 @@ class Parents extends CommonObject
 	 * @param string $ref  Ref
 	 * @return int         <0 if KO, 0 if not found, >0 if OK
 	 */
-	public function fetch($id, $ref = null)
+	public function fetch($id, $ref = null, $moresql = '')
 	{
-		$result = $this->fetchCommon($id, $ref);
+		$result = $this->fetchCommon($id, $ref, $moresql);
 		if ($result > 0 && !empty($this->table_element_line)) {
 			$this->fetchLines();
 		}
@@ -558,6 +605,22 @@ class Parents extends CommonObject
 	 */
 	public function update(User $user, $notrigger = false)
 	{
+
+		if($this->contact_preferentiel)
+		{
+			$parents = $this->fetchBy(['rowid'],$this->fk_famille,'fk_famille');
+
+			foreach ($parents as $value)
+			{
+				if($value->rowid == $this->rowid) continue;
+
+				$parent = new Self($this->db);
+				$parent->fetch($value->rowid);
+				$parent->contact_preferentiel = 0;
+				$parent->update($user);
+			}
+		}
+
 		return $this->updateCommon($user, $notrigger);
 	}
 

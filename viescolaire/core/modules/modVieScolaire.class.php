@@ -640,53 +640,8 @@ class modVieScolaire extends DolibarrModules
 			'target' => '',
 			'user' => 2,				                // 0=Menu for internal users, 1=external users, 2=both
 		);
-
-		/*$this->menu[$r++] = array(
-			'fk_menu' => 'fk_mainmenu=viescolaire,fk_leftmenu=famille',	    // '' if this is a top menu. For left menu, use 'fk_mainmenu=xxx' or 'fk_mainmenu=xxx,fk_leftmenu=yyy' where xxx is mainmenucode and yyy is a leftmenucode
-			'type' => 'left',			                // This is a Left menu entry
-			'titre' => 'Nouveau parent',
-			'mainmenu' => 'viescolaire',
-			'leftmenu' => 'parent',
-			'url' => '/viescolaire/parents_card.php?action=create',
-			'langs' => 'viescolaire@viescolaire',	        // Lang file to use (without .lang) by module. File must be in langs/code_CODE/ directory.
-			'position' => 1000 + $r,
-			'enabled' => '$conf->viescolaire->enabled',  // Define condition to show or hide menu entry. Use '$conf->viescolaire->enabled' if entry must be visible if module is enabled. Use '$leftmenu==\'system\'' to show if leftmenu system is selected.
-			'perms' => '$user->rights->viescolaire->eleve->write',			                // Use 'perms'=>'$user->rights->viescolaire->level1->level2' if you want your menu with a permission rules
-			'target' => '',
-			'user' => 2,				                // 0=Menu for internal users, 1=external users, 2=both
-		);
-
-		$this->menu[$r++] = array(
-			'fk_menu' => 'fk_mainmenu=viescolaire,fk_leftmenu=parent',	    // '' if this is a top menu. For left menu, use 'fk_mainmenu=xxx' or 'fk_mainmenu=xxx,fk_leftmenu=yyy' where xxx is mainmenucode and yyy is a leftmenucode
-			'type' => 'left',			                // This is a Left menu entry
-			'titre' => 'Liste des parents',
-			'mainmenu' => 'viescolaire',
-			'leftmenu' => '',
-			'url' => '/viescolaire/parents_list.php',
-			'langs' => 'viescolaire@viescolaire',	        // Lang file to use (without .lang) by module. File must be in langs/code_CODE/ directory.
-			'position' => 1000 + $r,
-			'enabled' => '$conf->viescolaire->enabled',  // Define condition to show or hide menu entry. Use '$conf->viescolaire->enabled' if entry must be visible if module is enabled. Use '$leftmenu==\'system\'' to show if leftmenu system is selected.
-			'perms' => '$user->rights->viescolaire->eleve->read',			                // Use 'perms'=>'$user->rights->viescolaire->level1->level2' if you want your menu with a permission rules
-			'target' => '',
-			'user' => 2,				                // 0=Menu for internal users, 1=external users, 2=both
-		);*/
-
 		$this->menu[$r++] = array(
 			'fk_menu' => 'fk_mainmenu=viescolaire,fk_leftmenu=famille',	    // '' if this is a top menu. For left menu, use 'fk_mainmenu=xxx' or 'fk_mainmenu=xxx,fk_leftmenu=yyy' where xxx is mainmenucode and yyy is a leftmenucode
-			'type' => 'left',			                // This is a Left menu entry
-			'titre' => 'Nouvelles contributions',
-			'mainmenu' => 'viescolaire',
-			'leftmenu' => 'contribution',
-			'url' => '/viescolaire/contribution_card.php?action=create',
-			'langs' => 'viescolaire@viescolaire',	        // Lang file to use (without .lang) by module. File must be in langs/code_CODE/ directory.
-			'position' => 1000 + $r,
-			'enabled' => '$conf->viescolaire->enabled',  // Define condition to show or hide menu entry. Use '$conf->viescolaire->enabled' if entry must be visible if module is enabled. Use '$leftmenu==\'system\'' to show if leftmenu system is selected.
-			'perms' => '$user->rights->viescolaire->eleve->write',			                // Use 'perms'=>'$user->rights->viescolaire->level1->level2' if you want your menu with a permission rules
-			'target' => '',
-			'user' => 2,				                // 0=Menu for internal users, 1=external users, 2=both
-		);
-		$this->menu[$r++] = array(
-			'fk_menu' => 'fk_mainmenu=viescolaire,fk_leftmenu=contribution',	    // '' if this is a top menu. For left menu, use 'fk_mainmenu=xxx' or 'fk_mainmenu=xxx,fk_leftmenu=yyy' where xxx is mainmenucode and yyy is a leftmenucode
 			'type' => 'left',			                // This is a Left menu entry
 			'titre' => 'Liste des contributions',
 			'mainmenu' => 'viescolaire',
