@@ -23,7 +23,7 @@ CREATE TABLE llx_contribution(
     fk_annee_scolaire integer NOT NULL,
     montant_total float NOT NULL,
 	description text,
-    imposable tinyint(1) text,
+    imposable tinyint(1),
     informations text NULL,
     note_public text,
 	note_private text, 
