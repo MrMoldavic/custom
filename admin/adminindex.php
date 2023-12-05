@@ -480,7 +480,6 @@ if ($action == 'export') {
 }
 else
 {
-	print '<h1>TEST </h1>';
 	print load_fiche_titre($langs->trans('Souhaits'), '', 'object_'.$object->picto);
 	print '<div style="display;flex">';
 	print '<a href="'.$_SERVER['PHP_SELF'].'?action=cardDesactivate&s&desactivate&token='.newToken().'" class="button">Désactiver tout les souhaits d\'une année</a><br>';
