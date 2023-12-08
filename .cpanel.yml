@@ -21,7 +21,6 @@ deployment:
     - /bin/cp -R * scolarite $DEPLOYPATH
     - /bin/cp -R * source $DEPLOYPATH
     - /bin/cp -R * test $DEPLOYPATH
-    - /bin/cp -R * testdoccc $DEPLOYPATH
     - /bin/cp -R * viescolaire $DEPLOYPATH
     - /bin/cp index.html $DEPLOYPATH
     - /bin/cp main.inc.php $DEPLOYPATH
