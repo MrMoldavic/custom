@@ -2,27 +2,27 @@
 deployment:
   tasks:
     - export DEPLOYPATH=/home/rovi9061/intranet.tousalamusique.com/custom
-    - /bin/cp -r adherents $DEPLOYPATH
-    - /bin/cp -r admin $DEPLOYPATH
-    - /bin/cp -r core $DEPLOYPATH
-    - /bin/cp -r default $DEPLOYPATH
-    - /bin/cp -r don $DEPLOYPATH
-    - /bin/cp -r donateur $DEPLOYPATH
-    - /bin/cp -r entretien $DEPLOYPATH
-    - /bin/cp -r exploitation $DEPLOYPATH
-    - /bin/cp -r kit $DEPLOYPATH
-    - /bin/cp -r management $DEPLOYPATH
-    - /bin/cp -r materiel $DEPLOYPATH
-    - /bin/cp -r md $DEPLOYPATH
-    - /bin/cp -r organisation $DEPLOYPATH
-    - /bin/cp -r phpdoc $DEPLOYPATH
-    - /bin/cp -r recherche $DEPLOYPATH
-    - /bin/cp -r recufiscal $DEPLOYPATH
-    - /bin/cp -r scolarite $DEPLOYPATH
-    - /bin/cp -r source $DEPLOYPATH
-    - /bin/cp -r test $DEPLOYPATH
-    - /bin/cp -r testdoccc $DEPLOYPATH
-    - /bin/cp -r viescolaire $DEPLOYPATH
+    - /bin/cp -R * adherents $DEPLOYPATH
+    - /bin/cp -R * admin $DEPLOYPATH
+    - /bin/cp -R * core $DEPLOYPATH
+    - /bin/cp -R * default $DEPLOYPATH
+    - /bin/cp -R * don $DEPLOYPATH
+    - /bin/cp -R * donateur $DEPLOYPATH
+    - /bin/cp -R * entretien $DEPLOYPATH
+    - /bin/cp -R * exploitation $DEPLOYPATH
+    - /bin/cp -R * kit $DEPLOYPATH
+    - /bin/cp -R * management $DEPLOYPATH
+    - /bin/cp -R * materiel $DEPLOYPATH
+    - /bin/cp -R * md $DEPLOYPATH
+    - /bin/cp -R * organisation $DEPLOYPATH
+    - /bin/cp -R * phpdoc $DEPLOYPATH
+    - /bin/cp -R * recherche $DEPLOYPATH
+    - /bin/cp -R * recufiscal $DEPLOYPATH
+    - /bin/cp -R * scolarite $DEPLOYPATH
+    - /bin/cp -R * source $DEPLOYPATH
+    - /bin/cp -R * test $DEPLOYPATH
+    - /bin/cp -R * testdoccc $DEPLOYPATH
+    - /bin/cp -R * viescolaire $DEPLOYPATH
     - /bin/cp index.html $DEPLOYPATH
     - /bin/cp main.inc.php $DEPLOYPATH
     - /bin/cp proxy.md $DEPLOYPATH
