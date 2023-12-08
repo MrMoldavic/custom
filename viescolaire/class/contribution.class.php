@@ -31,6 +31,7 @@ require_once DOL_DOCUMENT_ROOT.'/core/class/commonobject.class.php';
 require_once DOL_DOCUMENT_ROOT.'/adherents/class/adherent.class.php';
 require_once DOL_DOCUMENT_ROOT.'/societe/class/societe.class.php';
 require_once DOL_DOCUMENT_ROOT.'/don/class/don.class.php';
+require_once DOL_DOCUMENT_ROOT.'/compta/facture/class/facture.class.php';
 
 //require_once DOL_DOCUMENT_ROOT . '/societe/class/societe.class.php';
 //require_once DOL_DOCUMENT_ROOT . '/product/class/product.class.php';
@@ -248,6 +249,51 @@ class Contribution extends CommonObject
 			}
 		}
 	}
+
+	public function load_board($user)
+	{
+		// phpcs:enable
+		global $conf, $langs;
+
+		$now = dol_now();
+
+		$sql = "SELECT DISTINCT(c.rowid), c.montant_total";
+		$sql .= " FROM ".MAIN_DB_PREFIX."contribution as c";
+
+		$resql = $this->db->query($sql);
+		if ($resql) {
+			$langs->load("members");
+
+			$response = new WorkboardResponse();
+			$response->label = "Promises";
+			$response->url = DOL_URL_ROOT.'/custom/viescolaire/holiday/list.php?search_status=2&amp;mainmenu=hrm&amp;leftmenu=holiday';
+			$response->total = 0;
+
+			$sqlContribution = "SELECT SUM(c.montant) as total_content";
+			$sqlContribution .= " FROM ".MAIN_DB_PREFIX."contribution_content as c";
+			$resqlContribution = $this->db->query($sqlContribution);
+
+			$objContent = $this->db->fetch_object($resqlContribution);
+
+			$response->total_content = $objContent->total_content;
+
+
+			while ($obj = $this->db->fetch_object($resql)) {
+				$response->total += intval($obj->montant_total);
+
+
+
+				$response->actual_contribution += intval($obj->montant);
+			}
+
+			return $response;
+		} else {
+			dol_print_error($this->db);
+			$this->error = $this->db->error();
+			return -1;
+		}
+	}
+
 
 	/**
 	 * Create object into database
@@ -1183,6 +1229,38 @@ class Contribution extends CommonObject
 		}
 	}
 
+
+	/**
+	 *	Load the info information in the object
+	 *
+	 *	@param  int		$id       Id of object
+	 *	@return	void
+	 */
+	public function getFactureForParentInContribution($contribution_content_id,$tiers)
+	{
+		$sql = "SELECT f.rowid,f.fk_statut";
+		$sql .= " FROM ".MAIN_DB_PREFIX."facture_extrafields as fe";
+		$sql .= " INNER JOIN ".MAIN_DB_PREFIX."facture as f ON fe.fk_object=f.rowid";
+		$sql .= " WHERE fe.contribution_content = ".((int) $contribution_content_id);
+		$sql .= " AND f.fk_soc = ".((int) $tiers);
+
+		$result = $this->db->query($sql);
+
+		if ($result) {
+			if ($this->db->num_rows($result)) {
+
+				$obj = $this->db->fetch_object($result);
+
+				return $obj;
+			}
+
+			$this->db->free($result);
+		} else {
+			dol_print_error($this->db);
+		}
+	}
+
+
 	public function getTotalAmountOfContent()
 	{
 		$allLines = $this->getLinesArray();
@@ -1293,32 +1371,60 @@ class Contribution extends CommonObject
 						print '<br>';
 					}else {
 						$date = date('d-m-Y');
-						$refDon = "$parentClass->firstname-$parentClass->lastname / $date";
 
 						$existingDon = $this->getDonForAdherentInContribution($line->id);
 
-						$donClass = new Don($this->db);
-
-						if($existingDon->rowid)
+						if($existingDon)
 						{
-							print '<a class="reposition editfield badge badge-status'.$existingDon->fk_statut.' badge-status" href="../../don/card.php?action=view&id='.$existingDon->rowid.'">'.$donClass->LibStatut($existingDon->fk_statut).'</a>';
+							$donClass = new Don($this->db);
+							print '<a class="reposition editfield badge badge-status'.($existingDon->fk_statut == 2 ? '4' : $existingDon->fk_statut).' badge-status" href="../../don/card.php?action=view&id='.$existingDon->rowid.'">'.$donClass->LibStatut($existingDon->fk_statut).'</a>';
 							print '<br>';
 						}
-						/*elseif($line->fk_type_contribution_content == 1)
+						elseif($line->fk_type_contribution_content == 1 && $line->montant != 0)
 						{
-							print '<a target="_blank" class="reposition editfielda button" href="../../don/card.php?action=create&lastname='.urlencode($parentClass->lastname).'&firstname='.urlencode($parentClass->firstname).'&zipcode='.urlencode($parentClass->zipcode).'&town='.urlencode($parentClass->town).'&amount='.urlencode($line->montant).'&options_contribution_content='.$line->id.'&address='.$parentClass->address.'&email='.$parentClass->mail.'&ref='.$refDon.'">Payer la facture</a>';
+							$dictionaryClass = new Dictionary($this->db);
+							$res = $dictionaryClass->fetchByDictionary('facture',['rowid','fk_statut','fk_soc'],0,''," WHERE fk_soc=$parentClass->fk_tiers");
+
+							$stateToPrint = "";
+							$spanColor = 0;
+							if($res > 0)
+							{
+								switch ($res->fk_statut) {
+									case 0:
+										$stateToPrint = 'Brouillon (à valider)';
+										$spanColor = '5';
+										break;
+									case 1:
+										$stateToPrint = 'Validée (à payer)';
+										$spanColor = '2';
+										break;
+									case 2:
+										$stateToPrint = 'Payée';
+										$spanColor = '4';
+										break;
+									case 3:
+										$stateToPrint = 'Abandonnée';
+										$spanColor = '7';
+										break;
+								}
+							}
+
+							print '<a class="reposition editfielda " href="'.($res > 0 ? '../../compta/facture/card.php?facid='.$res->rowid.'&contributionId='.$this->id : $_SERVER["PHP_SELF"].'?id='.$this->id.'&lineid='.$line->id.'&parentId='.$parentClass->id.'&action=createFacture').'">'.($res > 0 ? '<span class="badge badge-status'.$spanColor.' badge-status">'.$stateToPrint.'</span>' : 'Payer la facture').'</a>';
 							print '&nbsp;';
-						}*/
+						}
 						elseif($line->montant != 0)
 						{
-							print '<a class="reposition editfielda button" href="../../don/card.php?action=create&lastname='.urlencode($parentClass->lastname).'&firstname='.urlencode($parentClass->firstname).'&zipcode='.urlencode($parentClass->zipcode).'&town='.urlencode($parentClass->town).'&amount='.urlencode($line->montant).'&options_contribution_content='.$line->id.'&address='.$parentClass->address.'&email='.$parentClass->mail.'&ref='.$refDon.'&backtopagefromcontribution=1&id_contribution='.$this->id.'&remonth=09&reday=01&reyear='.$dateAdhesion->format('Y').'">Faire le reçu</a>';
+							$refDon = "$parentClass->firstname-$parentClass->lastname / $date";
+							print '<a class="reposition editfielda" href="../../don/card.php?action=create&lastname='.urlencode($parentClass->lastname).'&firstname='.urlencode($parentClass->firstname).'&zipcode='.urlencode($parentClass->zipcode).'&town='.urlencode($parentClass->town).'&amount='.urlencode($line->montant).'&options_contribution_content='.$line->id.'&address='.$parentClass->address.'&email='.$parentClass->mail.'&ref='.$refDon.'&backtopagefromcontribution=1&id_contribution='.$this->id.'&remonth=09&reday=01&reyear='.$dateAdhesion->format('Y').'">Faire le reçu</a>';
 							print '&nbsp;';
 						}
 					}
 
 					print '</td>';
 					print '<td align="center">';
-					if(!$res || $line->fk_type_contribution_content != 0)
+
+
+					if($res->rowid == null)
 					{
 						print '<a class="reposition editfielda" href="'.$_SERVER["PHP_SELF"].'?action=editline&id='. $this->id .'&lineid='.$line->id.'">'.img_edit().'</a>';
 						print '&nbsp;';
@@ -1335,6 +1441,7 @@ class Contribution extends CommonObject
 				}
 
 				print '</tr>';
+				unset($res);
 			}
 		}
 	}

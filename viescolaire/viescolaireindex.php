@@ -61,10 +61,12 @@ if (!$res) {
 
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formfile.class.php';
 require_once DOL_DOCUMENT_ROOT.'/custom/viescolaire/class/eleve.class.php';
+require_once DOL_DOCUMENT_ROOT.'/core/class/html.formother.class.php';
 
 
 // Load translation files required by the page
 $langs->loadLangs(array("viescolaire@viescolaire"));
+$hookmanager->initHooks(array('index'));
 
 $action = GETPOST('action', 'aZ09');
 
@@ -100,8 +102,11 @@ $eleve = new Eleve($db);
 
 llxHeader("", "Module Vie scolaire");
 
-print load_fiche_titre("Module Vie scolaire", '', 'viescolaire.png@viescolaire');
+print load_fiche_titre("Accueil Vie Scolaire", '', 'fa-school');
+print '<hr>';
 
+include DOL_DOCUMENT_ROOT.'/custom/viescolaire/homeStats.php';
+print '<hr>';
 print '<div class="fichecenter"><div style="width:40%" class="fichethirdleft">';
 // Compte des élèves de chaques antennes
 
@@ -192,16 +197,10 @@ else
 	print "Aucune absence connue pour aujourd'hui!";
 }
 
-
-
-
-
-
-
 print '</div></div>';
 
 
-print load_fiche_titre("Cours de l'agent", '', 'fa-user');
+/*print load_fiche_titre("Cours de l'agent", '', 'fa-user');
 
 print "<pre>( Vous avez ici accès aux mêmes informations que la scolarité, pour ce qui est des absences. <br> Si vous constatez un cours vide, rapprochez-vous de la scolarité pour plus d'informations. )</pre>";
 $Jour = "SELECT jour, rowid FROM ".MAIN_DB_PREFIX."c_jour WHERE active=1";
@@ -287,30 +286,10 @@ foreach($resqlJour as $value)
 
 	print '</tbody>';
 	print '</table>';
-}
+}*/
 
 
 
-
-
-
-
-
-
-
-/*print '</div><div class="fichetwothirdright"><div class="ficheaddleft">';
-
-print '<p>Nombre d\'élèves Inscrits au Collège Clemenceau : '.$objCZ->total.'</p>';
-print '<hr>';
-print '<p>Nombre d\'élèves Inscrits au Collège Jean de Verazzane : '.$nombreEleveVm.'</p>';
-print '<hr>';
-print '<p>Nombre d\'élèves Inscrits à l\'école des Dahlias : '.$nombreEleveDahlias.'</p>';
-print '<hr>';
-print '<div class="fichecenter"><div class="fichethirdleft">';
-print '</div></div></div>';
-
-
-print '<div class="fichecenter"><div class="ficheaddleft">';*/
 
 
 

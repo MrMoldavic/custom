@@ -76,6 +76,7 @@ class Dictionary extends CommonObject
 			$sql .= $andWhere;
 		}
 
+
 		$resql = $this->db->query($sql);
 
 

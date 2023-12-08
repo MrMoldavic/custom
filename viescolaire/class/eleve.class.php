@@ -24,7 +24,7 @@
 
 // Put here all includes required by your class file
 include_once DOL_DOCUMENT_ROOT . '/core/class/commonobject.class.php';
-
+include_once DOL_DOCUMENT_ROOT . '/core/class/workboardresponse.class.php';
 /**
  * Class for Eleve
  */
@@ -809,6 +809,42 @@ class Eleve extends CommonObject
 		}
 
 		return $result;
+	}
+
+	public function load_board($user)
+	{
+		// phpcs:enable
+		global $conf, $langs;
+
+		$now = dol_now();
+
+		$sql = "SELECT e.prenom, e.nom";
+		$sql .= " FROM ".MAIN_DB_PREFIX."eleve as e";
+		$sql .= " WHERE e.status = 0";
+
+		$resql = $this->db->query($sql);
+		if ($resql) {
+			$langs->load("members");
+
+			$response = new WorkboardResponse();
+			$response->label = "Nombre d'élèves";
+			$response->url = DOL_URL_ROOT.'/custom/viescolaire/holiday/list.php?search_status=2&amp;mainmenu=hrm&amp;leftmenu=holiday';
+
+
+			while ($obj = $this->db->fetch_object($resql)) {
+				$response->nbtodo++;
+
+				/*if ($this->db->jdate($obj->date_debut) < ($now - $conf->holiday->approve->warning_delay)) {
+					$response->nbtodolate++;
+				}*/
+			}
+
+			return $response;
+		} else {
+			dol_print_error($this->db);
+			$this->error = $this->db->error();
+			return -1;
+		}
 	}
 
 	/**

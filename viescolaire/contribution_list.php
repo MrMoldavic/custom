@@ -78,9 +78,12 @@ require_once DOL_DOCUMENT_ROOT.'/core/class/html.formcompany.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/date.lib.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/company.lib.php';
 require_once DOL_DOCUMENT_ROOT.'/don/class/don.class.php';
+require_once DOL_DOCUMENT_ROOT.'/compta/facture/class/facture.class.php';
 
 // load viescolaire libraries
 require_once __DIR__.'/class/contribution.class.php';
+
+dol_include_once('/viescolaire/class/dictionary.class.php');
 
 // for other modules
 //dol_include_once('/othermodule/class/otherobject.class.php');
@@ -101,6 +104,10 @@ $mode       = GETPOST('mode', 'aZ'); // The output mode ('list', 'kanban', 'hier
 
 $id = GETPOST('id', 'int');
 $ref = GETPOST('ref', 'alpha');
+
+/*ini_set('display_errors', '1');
+ini_set('display_startup_errors', '1');
+error_reporting(E_ALL);*/
 
 // Load variable for pagination
 $limit = GETPOST('limit', 'int') ? GETPOST('limit', 'int') : $conf->liste_limit;
@@ -754,44 +761,83 @@ while ($i < $imaxinloop) {
 					// On va chercher toute ses contributions
 					$existingContents = $contributionContentClass->fetchAll('rowid','rowid',0,0,['fk_contribution'=>$object->id]);
 
+
 					$count = 0;
 					$countTotal = 0;
 					$existingDon = 0;
+					$donsNonTermines = 0;
 					$donsTermines = 0;
-					foreach ($existingContents as $value)
+
+					$existingFacture = 0;
+					$factureNonTermines = 0;
+					$factureTermines = 0;
+
+					if(count($existingContents) > 0)
 					{
-						$existingSubscription = new Dictionary($db);
-						if($value->fk_type_contribution_content == 0)
+						foreach ($existingContents as $value)
 						{
-							$res = $existingSubscription->fetchByDictionary('subscription',['rowid'],0,''," WHERE fk_adherent=$value->fk_adherent AND fk_contribution_content=$value->id");
-							if(!$res) $count++;
+							$countTotal += $value->montant;
+
+							$dictionaryClass = new Dictionary($db);
+							if($value->fk_type_contribution_content === 0)
+							{
+								$res = $dictionaryClass->fetchByDictionary('subscription',['rowid'],0,''," WHERE fk_adherent=$value->fk_adherent AND fk_contribution_content=$value->id");;
+								if(!$res->rowid) $count++;
+							}
+							elseif($value->fk_type_contribution_content === 1)
+							{
+								$existingFacture++;
+
+								$parentClass = new Parents($db);
+								$allParents = $parentClass->fetchAll('rowid','rowid',0,0,['fk_famille'=>$object->fk_famille]);
+
+								foreach ($allParents as $parent)
+								{
+									$factureClass = new Facture($db);
+									if($parent->fk_tiers)
+									{
+										if($object->getFactureForParentInContribution($value->id, $parent->fk_tiers) && ($object->getFactureForParentInContribution($value->id, $parent->fk_tiers)->fk_statut == $factureClass::STATUS_CLOSED))
+										{
+											$factureTermines++;
+											$existingFacture--;
+										}
+										elseif(!$object->getFactureForParentInContribution($value->id, $parent->fk_tiers)) $existingFacture-1;
+									}
+
+								}
+
+							}
+							elseif($value->fk_type_contribution_content === 2)
+							{
+								$donClass = new Don($db);
+								if($object->getDonForAdherentInContribution($value->id) && ($object->getDonForAdherentInContribution($value->id)->fk_statut != $donClass::STATUS_PAID)) $donsNonTermines++;
+								elseif($object->getDonForAdherentInContribution($value->id) && ($object->getDonForAdherentInContribution($value->id)->fk_statut == $donClass::STATUS_PAID)) $donsTermines++;
+								elseif(!$object->getDonForAdherentInContribution($value->id)) $existingDon++;
+							}
 						}
-
-						$countTotal += $value->montant;
-
-						if($value->fk_type_contribution_content == 2 && !$object->getDonForAdherentInContribution($value->id)) $existingDon++;
-
-
-						$donClass = new Don($db);
-						if($object->getDonForAdherentInContribution($value->id))
-						{
-							if($object->getDonForAdherentInContribution($value->id)->fk_statut != ($donClass::STATUS_PAID)) $donsTermines++;
-						}
-
 					}
 
+					print '<br>';
 					if($count > 0)
 					{
-						print "<span class='badge badge-status8 badge-status'>$count adhésion(s) non payée(s)</span><br><br>";
+						print "<span class='badge badge-status8 badge-status'>$count adhésion(s) non payée(s)</span><br>";
 					}
-					elseif($count == 0 && $existingContents) print "<span class='badge badge-status4 badge-status'>Toutes les adhésions sont payées</span><br><br>";
-					if($countTotal != $object->montant_total && $count)
-					{
-						print "<span class='badge badge-status5 badge-status'>Montant total non atteint ($countTotal € / $object->montant_total €)</span><br><br>";
-					} elseif($countTotal == $object->montant_total && $count) print "<span class='badge badge-status4 badge-status'>Montant total atteint</span><br><br>";
+					elseif($count == 0 && $existingContents) print "<span class='badge badge-status4 badge-status'>Toutes les adhésions sont payées</span><br>";
 
-					if($existingDon > 0) print "<span class='badge badge-status1 badge-status'>$existingDon don(s) non reçu(s)</span><br><br>";
-					if($donsTermines > 0)print "<span class='badge badge-status2 badge-status'>$donsTermines don(s) à traiter</span><br><br>";
+
+					if(($countTotal != $object->montant_total))
+					{
+						print "<span class='badge badge-status5 badge-status'>Montant total non atteint ($countTotal € / $object->montant_total €)</span><br>";
+					} elseif(($countTotal == $object->montant_total)) print "<span class='badge badge-status4 badge-status'>Montant total promesses atteint</span><br>";
+
+					if($existingDon > 0) print "<span class='badge badge-status1 badge-status'>$existingDon don(s) non reçu(s)</span><br>";
+					if($donsNonTermines > 0) print "<span class='badge badge-status2 badge-status'>$donsNonTermines don(s) à traiter</span><br>";
+					if($donsTermines > 0) print "<span class='badge badge-status4 badge-status'>$donsTermines don(s) traité(s)</span><br>";
+
+					print '<hr>';
+					if($existingFacture > 0) print "<span class='badge badge-status1 badge-status'>$existingFacture facture(s) à payer</span><br>";
+					if($factureTermines > 0) print "<span class='badge badge-status4 badge-status'>$factureTermines facture(s) payée(s)</span><br>";
+					print '<br>';
 
 				}
 				else {
@@ -842,12 +888,11 @@ while ($i < $imaxinloop) {
 
 		print '</tr>'."\n";
 	}
-
 	$i++;
+
 }
 
-// Show total line
-include DOL_DOCUMENT_ROOT.'/core/tpl/list_print_total.tpl.php';
+
 
 // If no record found
 if ($num == 0) {

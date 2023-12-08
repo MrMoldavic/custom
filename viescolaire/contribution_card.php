@@ -21,9 +21,9 @@
  *		\ingroup    viescolaire
  *		\brief      Page to create/edit/view contribution
  */
-ini_set('display_errors', '1');
+/*ini_set('display_errors', '1');
 ini_set('display_startup_errors', '1');
-error_reporting(E_ALL);
+error_reporting(E_ALL);*/
 //if (! defined('NOREQUIREDB'))              define('NOREQUIREDB', '1');				// Do not create database handler $db
 //if (! defined('NOREQUIREUSER'))            define('NOREQUIREUSER', '1');				// Do not load object $user
 //if (! defined('NOREQUIRESOC'))             define('NOREQUIRESOC', '1');				// Do not load object $mysoc
@@ -80,6 +80,9 @@ require_once DOL_DOCUMENT_ROOT.'/core/class/html.formfile.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formprojet.class.php';
 require_once DOL_DOCUMENT_ROOT.'/don/class/don.class.php';
 require_once DOL_DOCUMENT_ROOT.'/adherents/class/subscription.class.php';
+require_once DOL_DOCUMENT_ROOT.'/compta/facture/class/facture.class.php';
+require_once DOL_DOCUMENT_ROOT.'/product/class/product.class.php';
+
 dol_include_once('/viescolaire/class/dictionary.class.php');
 dol_include_once('/viescolaire/class/contribution.class.php');
 dol_include_once('/viescolaire/lib/viescolaire_contribution.lib.php');
@@ -96,6 +99,7 @@ $lineid   = GETPOST('lineid', 'int');
 $montant   = GETPOST('montant', 'int');
 $fk_famille = GETPOST('fk_famille', 'int');
 $fk_adherent = GETPOST('fk_adherent', 'int');
+$parentId = GETPOST('parentId', 'int');
 
 $action = GETPOST('action', 'aZ09');
 $confirm = GETPOST('confirm', 'alpha');
@@ -271,11 +275,11 @@ if ($action == 'addLine')
 	$contributionContentClass = new ContributionContent($db);
 	$res = $contributionContentClass->fetchAll('ASC','rowid','','',['fk_contribution'=>$object->id,"fk_adherent"=>$fk_adherent,'fk_type_contribution_content'=>GETPOST('fk_type_contribution_content','int')]);
 
-	foreach($res as $val)
+	/*foreach($res as $val)
 	{
 		$errors->nb++;
 		$errors->message[] .= 'Un Don/facture existe déjà pour cet adhérent. Veuillez éditer celui existant';
-	};
+	};*/
 
 	if ($errors->nb == 0)
 	{
@@ -320,9 +324,6 @@ if($action == "addSubscription")
 			$subscriptionClass->fk_contribution_content = $lineid;
 			$subscriptionClass->fk_bank = null;
 			$subscriptionClass->dateh = $dateAdhesion->format('Y-d-m');
-
-			/*$dateInitiale = new DateTime('now');
-			$dateInitiale->add(new DateInterval('P1Y'));*/
 			$subscriptionClass->datef = $dateAdhesion->format(($dateActuelle->format('Y') + 1).'-08-31');
 
 			$subscriptionClass->datec = date('Y-m-d H:i:s');
@@ -409,6 +410,84 @@ if($action == 'addParents'){
 
 	if($error == 0) setEventMessage('Ajout du parent et de sa contribution avec succès!');
 	else setEventMessage("$error erreur(s) sont survenue(s)",'errors');
+}
+
+
+if($action == 'confirmCreateFacture'){
+
+	// On va chercher tout les parents actuels dans la famille
+
+	$parentsClass = new Parents($db);
+	$etablissementClass = new Etablissement($db);
+	$familleClass = new Famille($db);
+
+	$parentsClass->fetch($parentId);
+	$familleClass->fetch($parentsClass->fk_famille);
+	$etablissementClass->fetch($familleClass->fk_antenne);
+
+	// Si le parent n'a ps de tiers lié
+	if(!$parentsClass->fk_tiers)
+	{
+		$societe = new Societe($db);
+		$societe->nom = "$parentsClass->firstname $parentsClass->lastname";
+		$societe->fk_pays = 1;
+		$societe->client = 1;
+		$societe->code_client = -1;
+		$resultTiers = $societe->create($user);
+
+		if($resultTiers > 0)
+		{
+			$societe = new Societe($db);
+			$societe->fetch($resultTiers);
+			$societe->client = 1;
+			$res = $societe->update(0, $user);
+
+			if($res > 0)
+			{
+				$parentsClass->fk_tiers = $resultTiers;
+				$parentsClass->update($user);
+			}
+		}
+	}
+	$contributionContentClass = new ContributionContent($db);
+	$contributionContentClass->fetch($lineid);
+
+	// On crée la facture
+	$factureClass = new Facture($db);
+	$factureClass->socid = $parentsClass->fk_tiers;
+
+	$factureClass->date = date('Y-m-d');
+	$res = $factureClass->create($user);
+
+	// On importe la description du produit
+	$productClass = new Product($db);
+	$productClass->fetch($etablissementClass->fk_service);
+
+	// On crée la ligne de la facture avec ses infos
+	$factureDetClass = new FactureLigne($db);
+	$factureDetClass->fk_facture = $res;
+	$factureDetClass->fk_product = $productClass->rowid;
+	$factureDetClass->remise_percent = 0;
+	$factureDetClass->total_tva = 0;
+	$factureDetClass->total_ht = $contributionContentClass->montant;
+	$factureDetClass->total_ttc = $contributionContentClass->montant;
+	$factureDetClass->desc = "Contribution - $productClass->label";
+	$factureDetClass->qty = 1;
+	$resFacture = $factureDetClass->insert();
+
+	// Si aucune erreur, on update avec le montant HT et TTC (pas ajoutable avec create)
+	if($res > 0 && $resFacture > 0)
+	{
+		$factureClass->fetch($res);
+		$factureClass->total_ht = $contributionContentClass->montant;
+		$factureClass->total_ttc = $contributionContentClass->montant;
+		$factureClass->array_options= array('options_contribution_content'=>$contributionContentClass->id,'options_fk_object'=>$resFacture);
+		$factureClass->update($user);
+		$factureClass->insertExtraFields();
+
+		header('Location: ../../compta/facture/card.php?facid='.$res.'&contributionId='.$id);
+	}else setEventMessage("Une erreur est survenue",'errors');
+
 }
 
 
@@ -523,6 +602,11 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 	// Confirmation to delete line
 	if ($action == 'deleteline') {
 		$formconfirm = $form->formconfirm($_SERVER["PHP_SELF"].'?id='.$object->id.'&lineid='.$lineid, $langs->trans('DeleteLine'), $langs->trans('ConfirmDeleteLine'), 'confirm_deleteline', '', 0, 1);
+	}
+
+	if($action == 'createFacture')
+	{
+		$formconfirm = $form->formconfirm($_SERVER["PHP_SELF"].'?id='.$object->id.'&lineid='.$lineid.'&parentId='.$parentId, 'Créer une facture', 'Voulez-vous créer une facture pour cette ligne?', 'confirmCreateFacture', '', 0, 1);
 	}
 
 	// Clone confirmation
