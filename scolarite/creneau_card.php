@@ -79,6 +79,7 @@ require_once DOL_DOCUMENT_ROOT.'/core/class/html.formcompany.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formfile.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formprojet.class.php';
 dol_include_once('/scolarite/class/creneau.class.php');
+dol_include_once('/viescolaire/class/affectation.class.php');
 dol_include_once('/scolarite/lib/scolarite_creneau.lib.php');
 
 // Load translation files required by the page
@@ -96,7 +97,6 @@ $backtopageforcancel = GETPOST('backtopageforcancel', 'alpha');
 $lineid   = GETPOST('lineid', 'int');
 
 if ($action == 'desactivation') {
-
 
 	$affectation = 'SELECT s.fk_souhait FROM ' .MAIN_DB_PREFIX. 'affectation as s WHERE s.fk_creneau=' .$id. ' AND date_fin IS NULL';
 	$resqlAffectation = $db->query($affectation);
@@ -365,7 +365,12 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 	// Confirmation to delete
 	if ($action == 'delete') {
 
-		$formconfirm = $form->formconfirm($_SERVER['PHP_SELF'].'?id='.$object->id, $langs->trans('DeleteCreneau'), $langs->trans('ConfirmDeleteObject'), 'confirm_delete', '', 0, 1);
+		$affectationClass = new Affectation($db);
+		$result = $affectationClass->fetchAll('','',0,0,['fk_creneau'=>$object->id,'status'=>4],'AND');
+
+		if(count($result) == 0){
+			$formconfirm = $form->formconfirm($_SERVER['PHP_SELF'].'?id='.$object->id, $langs->trans('DeleteCreneau'), $langs->trans('ConfirmDeleteObject'), 'confirm_delete', '', 0, 1);
+		} else setEventMessage('Vous ne pouvez pas supprimer un créneau qui contient des élèves','errors');
 	}
 
 	/*if ($action == 'Update') {
@@ -431,40 +436,6 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 	$linkback = '<a href="'.dol_buildpath('/scolarite/creneau_list.php', 1).'?restore_lastsearch_values=1'.(!empty($socid) ? '&socid='.$socid : '').'">'.$langs->trans('BackToList').'</a>';
 
 	$morehtmlref = '<div class="refidno">';
-	/*
-	 // Ref customer
-	 $morehtmlref.=$form->editfieldkey("RefCustomer", 'ref_client', $object->ref_client, $object, 0, 'string', '', 0, 1);
-	 $morehtmlref.=$form->editfieldval("RefCustomer", 'ref_client', $object->ref_client, $object, 0, 'string', '', null, null, '', 1);
-	 // Thirdparty
-	 $morehtmlref.='<br>'.$langs->trans('ThirdParty') . ' : ' . (is_object($object->thirdparty) ? $object->thirdparty->getNomUrl(1) : '');
-	 // Project
-	 if (! empty($conf->projet->enabled)) {
-	 $langs->load("projects");
-	 $morehtmlref .= '<br>'.$langs->trans('Project') . ' ';
-	 if ($permissiontoadd) {
-	 //if ($action != 'classify') $morehtmlref.='<a class="editfielda" href="' . $_SERVER['PHP_SELF'] . '?action=classify&token='.newToken().'&id=' . $object->id . '">' . img_edit($langs->transnoentitiesnoconv('SetProject')) . '</a> ';
-	 $morehtmlref .= ' : ';
-	 if ($action == 'classify') {
-	 //$morehtmlref .= $form->form_project($_SERVER['PHP_SELF'] . '?id=' . $object->id, $object->socid, $object->fk_project, 'projectid', 0, 0, 1, 1);
-	 $morehtmlref .= '<form method="post" action="'.$_SERVER['PHP_SELF'].'?id='.$object->id.'">';
-	 $morehtmlref .= '<input type="hidden" name="action" value="classin">';
-	 $morehtmlref .= '<input type="hidden" name="token" value="'.newToken().'">';
-	 $morehtmlref .= $formproject->select_projects($object->socid, $object->fk_project, 'projectid', $maxlength, 0, 1, 0, 1, 0, 0, '', 1);
-	 $morehtmlref .= '<input type="submit" class="button valignmiddle" value="'.$langs->trans("Modify").'">';
-	 $morehtmlref .= '</form>';
-	 } else {
-	 $morehtmlref.=$form->form_project($_SERVER['PHP_SELF'] . '?id=' . $object->id, $object->socid, $object->fk_project, 'none', 0, 0, 0, 1);
-	 }
-	 } else {
-	 if (! empty($object->fk_project)) {
-	 $proj = new Project($db);
-	 $proj->fetch($object->fk_project);
-	 $morehtmlref .= ': '.$proj->getNomUrl();
-	 } else {
-	 $morehtmlref .= '';
-	 }
-	 }
-	 }*/
 	$morehtmlref .= '</div>';
 
 
@@ -486,7 +457,6 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 
 	// Other attributes. Fields from hook formObjectOptions and Extrafields.
 	include DOL_DOCUMENT_ROOT.'/core/tpl/extrafields_view.tpl.php';
-
 	print '</table>';
 	print '<h3>Liste des élèves dans ce créneau:</h3>';
 
