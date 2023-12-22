@@ -26,7 +26,8 @@
 
 namespace test\functional;
 
-use PHPUnit_Extensions_Selenium2TestCase_WebDriverException;
+/*use PHPUnit_Extensions_Selenium2TestCase_WebDriverException;*/
+use PHPUnit\Framework\TestCase;
 
 /**
  * Class TestFunctionalTest
@@ -41,7 +42,7 @@ use PHPUnit_Extensions_Selenium2TestCase_WebDriverException;
  *
  * @package Testtest
  */
-class TestFunctionalTest extends \PHPUnit_Extensions_Selenium2TestCase
+class TestFunctionalTest extends TestCase
 {
 	// TODO: move to a global configuration file?
 	/** @var string Base URL of the webserver under test */
