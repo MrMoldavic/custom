@@ -26,7 +26,8 @@
 
 namespace test\functional;
 
-use PHPUnit_Extensions_Selenium2TestCase_WebDriverException;
+//use PHPUnit_Extensions_Selenium2TestCase_WebDriverException;
+use PHPUnit\Framework\TestCase;
 
 /**
  * Class VieScolaireFunctionalTest
@@ -41,11 +42,11 @@ use PHPUnit_Extensions_Selenium2TestCase_WebDriverException;
  *
  * @package Testviescolaire
  */
-class VieScolaireFunctionalTest extends \PHPUnit_Extensions_Selenium2TestCase
+class VieScolaireFunctionalTest extends TestCase
 {
 	// TODO: move to a global configuration file?
 	/** @var string Base URL of the webserver under test */
-	protected static $base_url = 'http://dev.zenfusion.fr';
+	protected static $base_url = 'http://dev.intranet.tousalamusique.com';
 	/**
 	 * @var string Dolibarr admin username
 	 * @see authenticate
