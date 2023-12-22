@@ -23,9 +23,9 @@
  *	\ingroup    admin
  *	\brief      Home page of admin top menu
  */
-ini_set('display_errors', '1');
+/*ini_set('display_errors', '1');
  ini_set('display_startup_errors', '1');
- error_reporting(E_ALL);
+ error_reporting(E_ALL);*/
 
 // Load Dolibarr environment
 $res = 0;
@@ -65,6 +65,7 @@ dol_include_once('scolarite/class/dispositif.class.php');
 dol_include_once('scolarite/class/etablissement.class.php');
 dol_include_once('scolarite/class/classe.class.php');
 dol_include_once('viescolaire/class/famille.class.php');
+dol_include_once('viescolaire/class/parents.class.php');
 // Load translation files required by the page
 $langs->loadLangs(array('admin@admin'));
 
@@ -103,20 +104,26 @@ if (isset($user->socid) && $user->socid > 0) {
 if($action == 'confirmExport')
 {
 	$souhait = new Souhait($db);
-	//$sql = 'SELECT e.nom, e.prenom,e.fk_famille,e.rowid,e.fk_etablissement,e.fk_classe_etablissement,e.genre,e.geographie_prioritaire FROM ' . MAIN_DB_PREFIX . 'eleve as e INNER JOIN ' . MAIN_DB_PREFIX . 'souhait as s ON e.rowid=s.fk_eleve INNER JOIN ' . MAIN_DB_PREFIX . 'affectation as a ON s.rowid=a.fk_souhait INNER JOIN ' . MAIN_DB_PREFIX . "creneau as c ON c.rowid=a.fk_creneau WHERE s.fk_annee_scolaire={$anneeFromForm} AND ".($etabFromForm != 0 ? "e.fk_etablissement=$etabFromForm AND ": ''). ' s.status!=' .$souhait::STATUS_CANCELED. ' GROUP BY e.rowid ORDER BY e.fk_etablissement, e.prenom ASC LIMIT 1';
-	$sql = 'SELECT e.nom, e.prenom, e.fk_famille, e.rowid, e.fk_etablissement, e.fk_classe_etablissement, e.genre, e.geographie_prioritaire
-            FROM ' .MAIN_DB_PREFIX. 'eleve e
-            INNER JOIN ' .MAIN_DB_PREFIX. 'souhait s ON e.rowid = s.fk_eleve
-            INNER JOIN ' .MAIN_DB_PREFIX. 'etablissement t ON e.fk_etablissement = t.rowid
-            INNER JOIN ' .MAIN_DB_PREFIX. 'dispositif d ON d.fk_etablissement = t.rowid
+	/*$sql = 'SELECT e.nom, e.prenom, e.fk_famille, e.rowid, e.fk_etablissement, e.fk_classe_etablissement, e.genre, e.geographie_prioritaire
+            FROM '.MAIN_DB_PREFIX.'eleve as e
+            INNER JOIN ' .MAIN_DB_PREFIX. 'souhait as s ON e.rowid = s.fk_eleve
+            INNER JOIN ' .MAIN_DB_PREFIX. 'etablissement as t ON e.fk_etablissement = t.rowid
+            INNER JOIN ' .MAIN_DB_PREFIX. 'dispositif as d ON t.rowid = d.fk_etablissement
             WHERE s.fk_annee_scolaire = '.$anneeFromForm.' AND s.status != '.Souhait::STATUS_CANCELED.'
-            AND '.($etabFromForm != 0 ? "e.fk_etablissement=$etabFromForm AND ": ''). '
+            '.($etabFromForm != 0 ? " AND e.fk_etablissement=$etabFromForm ": ''). '
+            GROUP BY e.rowid
+            ORDER BY e.fk_etablissement, e.prenom ASC';
+	$resqlEleve = $db->query($sql);*/
+
+
+	$sql = 'SELECT e.nom, e.prenom, e.fk_famille, e.rowid, e.fk_etablissement, e.fk_classe_etablissement, e.genre, e.geographie_prioritaire
+            FROM '.MAIN_DB_PREFIX.'eleve as e
+            INNER JOIN ' .MAIN_DB_PREFIX. 'souhait as s ON e.rowid = s.fk_eleve
+            WHERE s.fk_annee_scolaire = '.$anneeFromForm.' AND s.status != '.Souhait::STATUS_CANCELED.'
+            '.($etabFromForm != 0 ? " AND e.fk_etablissement=$etabFromForm ": ''). '
             GROUP BY e.rowid
             ORDER BY e.fk_etablissement, e.prenom ASC';
 	$resqlEleve = $db->query($sql);
-
-	var_dump($sql);
-
 
 	$dispositif = new Dispositif($db);
 	$resqlDispositif = $dispositif->fetchBy(['rowid','nom','fk_etablissement'], 0, '');
@@ -124,24 +131,23 @@ if($action == 'confirmExport')
 	$customers_data = array();
 
 	$count = 0;
-	foreach($resqlEleve as $value)
-	{
+	foreach($resqlEleve as $value) {
 		$array['Prenom élève'] = $value['prenom'];
 		$array['Nom élève'] = $value['nom'];
 
 		$geo = 'SELECT emplacement FROM ' . MAIN_DB_PREFIX . 'c_geographie_prioritaire WHERE rowid=' . $value['geographie_prioritaire'];
 		$resqlGeo = $db->query($geo);
-		if($resqlGeo) $objGeo = $db->fetch_object($resqlGeo);
+		if ($resqlGeo) $objGeo = $db->fetch_object($resqlGeo);
 
 		$array['Géographie prioritaire'] = ($objGeo->emplacement ? : 'Inconnue');
 
 		$etablissementClass = new Etablissement($db);
-		$antenne = $etablissementClass->fetchBy(['nom'], $value['fk_etablissement'], 'rowid');
-		$array['Antenne'] = $antenne->nom;
+		$etablissementClass->fetch($value['fk_etablissement']);
+		$array['Antenne'] = $etablissementClass->nom;
 
 		$classeClass = new Classe($db);
-		$classe = $classeClass->fetchBy(['classe'], $value['fk_classe_etablissement'], 'rowid');
-		$array['Classe'] = $classe->classe;
+		$classeClass->fetch($value['fk_classe_etablissement']);
+		$array['Classe'] = $classeClass->classe;
 
 		switch ($value['genre']) {
 			case 1:
@@ -153,42 +159,39 @@ if($action == 'confirmExport')
 			case 3:
 				$array['Genre'] = 'Autre';
 				break;
+			default :
+				$array['Genre'] = 'Inconnu';
+				break;
 		}
 
-		$existingSouhait =0;
+		$existingSouhait = 0;
 		$count = 0;
-		foreach ($resqlDispositif as $val)
-		{
-			/*$souhaitClass = new Souhait($db);*/
-			//$sql = 'SELECT COUNT(DISTINCT s.rowid) as total FROM ' .MAIN_DB_PREFIX. 'souhait as s INNER JOIN ' . MAIN_DB_PREFIX . 'affectation as a ON s.rowid=a.fk_souhait INNER JOIN ' . MAIN_DB_PREFIX . "creneau as c ON c.rowid=a.fk_creneau WHERE c.fk_dispositif=$val->rowid AND s.fk_annee_scolaire=$anneeFromForm AND s.fk_eleve={$value['rowid']} AND s.status!=".$souhait::STATUS_CANCELED;
+		foreach ($resqlDispositif as $val) {
 			$sql = 'SELECT DISTINCT s.rowid
-					FROM ' .MAIN_DB_PREFIX. 'souhait s
-					INNER JOIN ' .MAIN_DB_PREFIX. 'affectation a ON s.rowid = a.fk_souhait
-					INNER JOIN ' .MAIN_DB_PREFIX. 'creneau c ON c.rowid = a.fk_creneau
-					INNER JOIN ' .MAIN_DB_PREFIX. 'eleve e ON s.fk_eleve = e.rowid
-					INNER JOIN ' .MAIN_DB_PREFIX. 'etablissement t ON e.fk_etablissement = t.rowid
-					INNER JOIN ' .MAIN_DB_PREFIX. 'dispositif d ON d.fk_etablissement = t.rowid
-					WHERE  d.rowid = '.$val->rowid.'
-					AND s.fk_annee_scolaire = '.$anneeFromForm;
-					if($count != 0)
-					{
-						$sql .= ' AND s.rowid NOT IN ( '.$existingSouhait.' )';
-					}
-				$sql .= ' AND s.fk_eleve = '.$value['rowid'].'
-					AND s.status != '. Souhait::STATUS_CANCELED;
+					FROM ' . MAIN_DB_PREFIX . 'souhait s
+					INNER JOIN ' . MAIN_DB_PREFIX . 'affectation a ON s.rowid = a.fk_souhait
+					INNER JOIN ' . MAIN_DB_PREFIX . 'creneau c ON c.rowid = a.fk_creneau
+					INNER JOIN ' . MAIN_DB_PREFIX . 'eleve e ON s.fk_eleve = e.rowid
+					INNER JOIN ' . MAIN_DB_PREFIX . 'etablissement t ON e.fk_etablissement = t.rowid
+					INNER JOIN ' . MAIN_DB_PREFIX . 'dispositif d ON d.fk_etablissement = t.rowid
+					WHERE  d.rowid = ' . $val->rowid . '
+					AND s.fk_annee_scolaire = ' . $anneeFromForm;
+			if ($count != 0) {
+				$sql .= ' AND s.rowid NOT IN ( ' . $existingSouhait . ' )';
+			}
+			$sql .= ' AND s.fk_eleve = ' . $value['rowid'] . '
+					AND s.status != ' . Souhait::STATUS_CANCELED;
 
 			$resql = $db->query($sql);
 
 
-			foreach ($resql as $res)
-			{
-				$existingSouhait .= ', '.$res['rowid'];
+			foreach ($resql as $res) {
+				$existingSouhait .= ', ' . $res['rowid'];
 			}
 
 			$array["Dispositif {$val->nom}"] = $resql->num_rows;
 
-			if($count == $resql->num_rows)
-			{
+			if ($count == $resql->num_rows) {
 				$count = 0;
 			}
 
@@ -196,49 +199,59 @@ if($action == 'confirmExport')
 		}
 		$existingSouhait = '';
 
-		$familleClass = new Famille($db);
-		if($value['fk_famille'] != '')
-		{
-			$famille = $familleClass->fetchBy(['nom_parent_1','prenom_parent_1','tel_parent_1','mail_parent_1','adresse_parent_1','csp_parent_1','nom_parent_2','prenom_parent_2','tel_parent_2','mail_parent_2'], $value['fk_famille'], 'rowid');
-		}
+		$parentClass = new Parents($db);
 
-		$array['Nom parent 1'] = ($famille->nom_parent_1 ? : ($value['fk_famille'] == NULL ? 'Aucune famille connue' : 'Inconnu'));
-		$array['Prénom parent 1'] = ($famille->prenom_parent_1 ? : ($value['fk_famille'] == NULL ? 'Aucune famille connue' : 'Inconnu'));
-		$array['Adresse parent 1'] = ($famille->adresse_parent_1 ? : ($value['fk_famille'] == NULL ? 'Aucune famille connue' : 'Inconnue'));
-		$array['Téléphone parent 1'] = ($famille->tel_parent_1 ? 0+$famille->tel_parent_1 : ($value['fk_famille'] == NULL ? 'Aucune famille connue' : 'Inconnu'));
-		$array['Mail parent 1'] = ($famille->mail_parent_1 ? : ($value['fk_famille'] == NULL ? 'Aucune famille connue' : 'Inconnu'));
-		$cspParent1 = ($value['fk_famille'] == NULL ? 'Aucune famille connue' : 'Inconnu');
-		if($famille->csp_parent_1)
-		{
-			$csp = 'SELECT categorie FROM ' . MAIN_DB_PREFIX . 'c_csp WHERE rowid=' . $famille->csp_parent_1;
-			$resqlGeo = $db->query($csp);
-			$objGeo = $db->fetch_object($resqlGeo);
+		if (!empty($value['fk_famille'])) {
+			$parents = $parentClass->fetchAll('', '', 0, 0, ['fk_famille' => $value['fk_famille']], 'AND');
+			$loop = 0;
+			foreach ($parents as $parent) {
 
-			$cspParent1 = $objGeo->categorie;
-		}
-		$array['CSP parent 1'] = $cspParent1;
-		$array['Nom parent 2'] = ($famille->nom_parent_2 ? : ($value['fk_famille'] == NULL ? 'Aucune famille connue' : 'Inconnu'));
-		$array['Prénom parent 2'] = ($famille->prenom_parent_2 ? : ($value['fk_famille'] == NULL ? 'Aucune famille connue' : 'Inconnu'));
-		$array['Adresse parent 2'] = ($famille->adresse_parent_2 ? : ($value['fk_famille'] == NULL ? 'Aucune famille connue' : 'Inconnue'));
-		$array['Téléphone parent 2'] = ($famille->tel_parent_2 ? 0+$famille->tel_parent_2 : ($value['fk_famille'] == NULL ? 'Aucune famille connue' : 'Inconnu'));
-		$array['Mail parent 2'] = ($famille->mail_parent_2 ? : ($value['fk_famille'] == NULL ? 'Aucune famille connue' : 'Inconnu'));
-		$cspParent2 = ($value['fk_famille'] == NULL ? 'Aucune famille connue' : 'Inconnu');
-		if($famille->csp_parent_2)
-		{
-			$csp = 'SELECT categorie FROM ' . MAIN_DB_PREFIX . 'c_csp WHERE rowid=' . $famille->csp_parent_2;
-			$resqlGeo = $db->query($csp);
-			$objGeo = $db->fetch_object($resqlGeo);
+				if ($loop == 0) {
+					$array['Nom parent 1'] = $parent->lastname ? : 'Inconnu';
+					$array['Prénom parent 1'] = ($parent->firstname ? : ($value['fk_famille'] == NULL ? 'Aucune famille connue' : 'Inconnu'));
+					$array['Adresse parent 1'] = ($parent->address ? : ($value['fk_famille'] == NULL ? 'Aucune famille connue' : 'Inconnue'));
+					$array['Téléphone parent 1'] = ($parent->phone ? 0+$parent->phone : ($value['fk_famille'] == NULL ? 'Aucune famille connue' : 'Inconnu'));
+					$array['Mail parent 1'] = ($parent->mail ?: ($value['fk_famille'] == NULL ? 'Aucune famille connue' : 'Inconnu'));
+					$cspParent1 = ($value['fk_famille'] == NULL ? 'Aucune famille connue' : 'Inconnu');
+					if ($parent->csp) {
+						$csp = 'SELECT categorie FROM ' . MAIN_DB_PREFIX . 'c_csp WHERE rowid=' . $parent->csp;
+						$resqlGeo = $db->query($csp);
+						$objGeo = $db->fetch_object($resqlGeo);
 
-			$cspParent2 = $objGeo->categorie;
+						$cspParent1 = $objGeo->categorie;
+					}
+					$array['CSP parent 1'] = $cspParent1;
+				}
+
+
+				if ($loop == 1) {
+					$array['Nom parent 2'] = ($parent->lastname ?: ($value['fk_famille'] == NULL ? 'Aucune famille connue' : 'Inconnu'));
+					$array['Prénom parent 2'] = ($parent->firstname ?: ($value['fk_famille'] == NULL ? 'Aucune famille connue' : 'Inconnu'));
+					$array['Adresse parent 2'] = ($parent->address ?: ($value['fk_famille'] == NULL ? 'Aucune famille connue' : 'Inconnue'));
+					$array['Téléphone parent 2'] = ($parent->phone ? 0 + $parent->phone : ($value['fk_famille'] == NULL ? 'Aucune famille connue' : 'Inconnu'));
+					$array['Mail parent 2'] = ($parent->mail ?: ($value['fk_famille'] == NULL ? 'Aucune famille connue' : 'Inconnu'));
+					$cspParent2 = ($value['fk_famille'] == NULL ? 'Aucune famille connue' : 'Inconnu');
+					if ($parent->csp) {
+						$csp = 'SELECT categorie FROM ' . MAIN_DB_PREFIX . 'c_csp WHERE rowid=' . $parent->csp;
+						$resqlGeo = $db->query($csp);
+						$objGeo = $db->fetch_object($resqlGeo);
+
+						$cspParent2 = $objGeo->categorie;
+					}
+					$array['CSP parent 2'] = $cspParent2;
+				}
+				$loop++;
+			}
 		}
-		$array['CSP parent 2'] = $cspParent2;
 
 		array_push($customers_data, $array);
-		unset($famille);
+		unset($parents);
+		unset($loop);
+		unset($array);
 	}
 
 	// Filter Customer Data
-	/*function filterCustomerData(&$str) {
+	function filterCustomerData(&$str) {
 	$str = preg_replace("/\t/", "\\t", $str);
 		$str = preg_replace("/\r?\n/", "\\n", $str);
 		if (strstr($str, '"'))
@@ -248,7 +261,6 @@ if($action == 'confirmExport')
 	// File Name & Content Header For Download
 	header("Content-Disposition: attachment; filename=\"$docName\".xls");
 	header('Content-Type: application/vnd.ms-excel');
-
 
 	//To define column name in first row.
 	$column_names = false;
@@ -265,7 +277,7 @@ if($action == 'confirmExport')
 		$count++;
 
 	}
-	exit;*/
+	exit;
 }
 
 print '<style>
