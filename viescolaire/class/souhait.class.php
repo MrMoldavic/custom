@@ -246,10 +246,6 @@ class Souhait extends CommonObject
 			$resql = $this->db->query($type_cours);
 			$obj = $this->db->fetch_object($resql);
 
-			// $niveau = "SELECT n.niveau FROM ".MAIN_DB_PREFIX."eleve as e INNER JOIN ".MAIN_DB_PREFIX."c_niveaux as n ON n.rowid = e.fk_niveau WHERE e.rowid =".$this->fk_eleve;
-			// $resql = $this->db->query($niveau);
-			// $object2 = $this->db->fetch_object($resql);
-
 			$instrument_enseigne = "SELECT i.instrument FROM ".MAIN_DB_PREFIX."c_instrument_enseigne as i WHERE i.rowid =".$this->fk_instru_enseigne;
 			$resql = $this->db->query($instrument_enseigne);
 			$object = $this->db->fetch_object($resql);

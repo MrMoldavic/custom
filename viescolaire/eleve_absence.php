@@ -21,9 +21,9 @@
  *  \ingroup    viescolaire
  */
 
-// ini_set('display_errors', '1');
-// ini_set('display_startup_errors', '1');
-// error_reporting(E_ALL);
+ ini_set('display_errors', '1');
+ ini_set('display_startup_errors', '1');
+ error_reporting(E_ALL);
 
 //if (! defined('NOREQUIREDB'))              define('NOREQUIREDB', '1');				// Do not create database handler $db
 //if (! defined('NOREQUIREUSER'))            define('NOREQUIREUSER', '1');				// Do not load object $user
@@ -78,6 +78,9 @@ if (!$res) {
 }
 
 dol_include_once('/viescolaire/class/eleve.class.php');
+dol_include_once('/scolarite/class/creneau.class.php');
+dol_include_once('/scolarite/class/etablissement.class.php');
+dol_include_once('/viescolaire/class/appel.class.php');
 dol_include_once('/viescolaire/lib/viescolaire_eleve.lib.php');
 
 // Load translation files required by the page
@@ -141,10 +144,13 @@ if (empty($reshook)) {
 }
 
 if ($action == 'deleteAbsence') {
-	$sql = "DELETE FROM " . MAIN_DB_PREFIX . "appel WHERE rowid=".GETPOST('idAppel', 'int');
-	$resql = $db->query($sql);
 
-	setEventMessage('Absence supprimée avec succès');
+	$appelClass = new Appel($db);
+	$appelClass->fetch(GETPOST('idAppel', 'int'));
+	$result = $appelClass->delete($user);
+
+	if($result > 0) setEventMessage('Absence supprimée avec succès !');
+	else setEventMessage("Une erreur est survenue : $appelClass->error",'errors');
 }
 
 
@@ -172,44 +178,7 @@ if ($id > 0 || !empty($ref)) {
 
 	$morehtmlref = '<div class="refidno">';
 	$morehtmlref .= $object->prenom;
-	/*
-	 // Ref customer
-	 $morehtmlref.=$form->editfieldkey("RefCustomer", 'ref_client', $object->ref_client, $object, 0, 'string', '', 0, 1);
-	 $morehtmlref.=$form->editfieldval("RefCustomer", 'ref_client', $object->ref_client, $object, 0, 'string', '', null, null, '', 1);
-	 // Thirdparty
-	 $morehtmlref.='<br>'.$langs->trans('ThirdParty') . ' : ' . (is_object($object->thirdparty) ? $object->thirdparty->getNomUrl(1) : '');
-	 // Project
-	 if (! empty($conf->projet->enabled))
-	 {
-	 $langs->load("projects");
-	 $morehtmlref.='<br>'.$langs->trans('Project') . ' ';
-	 if ($permissiontoadd)
-	 {
-	 if ($action != 'classify')
-	 //$morehtmlref.='<a class="editfielda" href="' . $_SERVER['PHP_SELF'] . '?action=classify&token='.newToken().'&id=' . $object->id . '">' . img_edit($langs->transnoentitiesnoconv('SetProject')) . '</a> : ';
-	 $morehtmlref.=' : ';
-	 if ($action == 'classify') {
-	 //$morehtmlref.=$form->form_project($_SERVER['PHP_SELF'] . '?id=' . $object->id, $object->socid, $object->fk_project, 'projectid', 0, 0, 1, 1);
-	 $morehtmlref.='<form method="post" action="'.$_SERVER['PHP_SELF'].'?id='.$object->id.'">';
-	 $morehtmlref.='<input type="hidden" name="action" value="classin">';
-	 $morehtmlref.='<input type="hidden" name="token" value="'.newToken().'">';
-	 $morehtmlref.=$formproject->select_projects($object->socid, $object->fk_project, 'projectid', $maxlength, 0, 1, 0, 1, 0, 0, '', 1);
-	 $morehtmlref.='<input type="submit" class="button valignmiddle" value="'.$langs->trans("Modify").'">';
-	 $morehtmlref.='</form>';
-	 } else {
-	 $morehtmlref.=$form->form_project($_SERVER['PHP_SELF'] . '?id=' . $object->id, $object->socid, $object->fk_project, 'none', 0, 0, 0, 1);
-	 }
-	 } else {
-	 if (! empty($object->fk_project)) {
-	 $proj = new Project($db);
-	 $proj->fetch($object->fk_project);
-	 $morehtmlref .= ': '.$proj->getNomUrl();
-	 } else {
-	 $morehtmlref .= '';
-	 }
-	 }
-	 }*/
-	 $morehtmlref .= '</div>';
+	$morehtmlref .= '</div>';
 
 
 	dol_banner_tab($object, 'ref', $linkback, 1, 'ref', 'nom', $morehtmlref);
@@ -227,13 +196,25 @@ if ($id > 0 || !empty($ref)) {
 	$sql .= " FROM ".MAIN_DB_PREFIX."appel as a";
 	$sql .= " WHERE a.treated = 1";
 	$sql .= ' AND a.fk_eleve = '.$object->id;
-	$sql .= " AND a.status != 'present'";
 	$sql .= " GROUP BY a.status";
 	$result = $db->query($sql);
 
 	while ($objp = $db->fetch_object($result))
 	{
-		$status = $objp->status == 'retard' ? 'Retard' : ($objp->status == 'absenceJ' ? 'Absence Justifiée' : 'Absence Injustifiée');
+		switch ($objp->status) {
+			case 'retard':
+				$status = 'Retard';
+				break;
+			case 'absenceJ':
+				$status = 'Absence Justifiée';
+				break;
+			case 'absenceI':
+				$status = 'Absence Injustifiée';
+				break;
+			case 'present':
+				$status = 'Présent';
+				break;
+		}
 		$materiels[$status] = $objp->total;
 	}
 
@@ -270,11 +251,13 @@ if ($id > 0 || !empty($ref)) {
 		print '</div>';
 	}
 
+	
+
 	$anneScolaire = "SELECT annee,annee_actuelle,rowid FROM ".MAIN_DB_PREFIX."c_annee_scolaire WHERE active = 1 AND annee_actuelle = 1 ORDER BY rowid DESC";
 	$resqlAnneeScolaire = $db->query($anneScolaire);
 	$objAnneScolaire = $db->fetch_object($resqlAnneeScolaire);
 
-	$abscence = "SELECT fk_etablissement,fk_creneau,date_creation,justification,status,rowid FROM ".MAIN_DB_PREFIX."appel as a WHERE a.fk_eleve = ".$object->id." AND a.treated= 1 AND a.status !='present' ORDER BY a.date_creation DESC";
+	$abscence = "SELECT fk_etablissement,fk_creneau,date_creation,justification,status,rowid FROM ".MAIN_DB_PREFIX."appel as a WHERE a.fk_eleve = ".$object->id." AND a.treated= 1 ORDER BY a.date_creation DESC";
 	$resql = $db->query($abscence);
 	$num = $db->num_rows($resql);
 
@@ -291,29 +274,28 @@ if ($id > 0 || !empty($ref)) {
 	print '</tr>';
 	foreach($resql as $value)
 	{
-		$etablissement = "SELECT nom,diminutif FROM ".MAIN_DB_PREFIX."etablissement WHERE rowid= ".$value['fk_etablissement'];
-		$resqlEtablissment = $db->query($etablissement);
-		$etablissementObj = $db->fetch_object($resqlEtablissment);
+		$etablissementClass = new Etablissement($db);
+		$etablissementClass->fetch($value['fk_etablissement']);
 
-		$creneau = "SELECT nom_creneau,fk_prof_1,fk_prof_2,fk_prof_3,fk_annee_scolaire,rowid FROM ".MAIN_DB_PREFIX."creneau WHERE rowid= ".$value['fk_creneau'];
-		$resqlCreneau = $db->query($creneau);
-		$creneauObj = $db->fetch_object($resqlCreneau);
+		$creneauClass = new Creneau($db);
+		$creneauClass->fetch($value['fk_creneau']);
+
 
 		$time = strtotime($value['date_creation']);
 
-		$sqlProf1 = "SELECT prenom,nom,rowid FROM ".MAIN_DB_PREFIX."management_agent WHERE rowid= ".$creneauObj->fk_prof_1;
-		if($creneauObj->fk_prof_1 != null) $resqlProf1 = $db->query($sqlProf1);
 
+		$sqlProf1 = "SELECT prenom,nom,rowid FROM ".MAIN_DB_PREFIX."management_agent WHERE rowid= ".$creneauClass->fk_prof_1;
+		if($creneauClass->fk_prof_1 != null) $resqlProf1 = $db->query($sqlProf1);
 
-		$sqlProf2 = "SELECT prenom,nom,rowid FROM ".MAIN_DB_PREFIX."management_agent WHERE rowid= ".$creneauObj->fk_prof_2;
-		if($creneauObj->fk_prof_2 != null) $resqlProf2 = $db->query($sqlProf2);
+		$sqlProf2 = "SELECT prenom,nom,rowid FROM ".MAIN_DB_PREFIX."management_agent WHERE rowid= ".$creneauClass->fk_prof_2;
+		if($creneauClass->fk_prof_2 != null) $resqlProf2 = $db->query($sqlProf2);
 
-		$sqlProf3 = "SELECT prenom,nom,rowid FROM ".MAIN_DB_PREFIX."management_agent WHERE rowid= ".$creneauObj->fk_prof_3;
-		if($creneauObj->fk_prof_3 != null) $resqlProf3 = $db->query($sqlProf3);
+		$sqlProf3 = "SELECT prenom,nom,rowid FROM ".MAIN_DB_PREFIX."management_agent WHERE rowid= ".$creneauClass->fk_prof_3;
+		if($creneauClass->fk_prof_3 != null) $resqlProf3 = $db->query($sqlProf3);
 
-		print '<tr '.($objAnneScolaire->rowid != $creneauObj->fk_annee_scolaire ? 'style="background-color: #BBBBBB"' : '').'">';
-		print '<td>'.$etablissementObj->diminutif.'</td>';
-		print '<td>'.($creneauObj->nom_creneau != "" ? '<a href="'.DOL_URL_ROOT.'/custom/scolarite/creneau_card.php?id='.$creneauObj->rowid.' " target="_blank">'.$creneauObj->nom_creneau.'</a>' : '<span class="badge  badge-status8 badge-status" style="color:white;">Erreur créneau</span>').'</td>';
+		print '<tr '.($objAnneScolaire->rowid != $creneauClass->fk_annee_scolaire ? 'style="background-color: #BBBBBB"' : '').'">';
+		print '<td>'.$etablissementClass->diminutif.'</td>';
+		print '<td>'.($creneauClass->nom_creneau != "" ? '<a href="'.DOL_URL_ROOT.'/custom/scolarite/creneau_card.php?id='.$creneauClass->rowid.' " target="_blank">'.$creneauClass->nom_creneau.'</a>' : '<span class="badge  badge-status8 badge-status" style="color:white;">Erreur créneau</span>').'</td>';
 		print '<td>';
 
 		if($resqlProf1)
@@ -337,8 +319,8 @@ if ($id > 0 || !empty($ref)) {
 		if($value['justification'] == null) print '<td>Aucune</td>';
 		else print "<td style='overflow-wrap: normal; max-width: 30em'>{$value['justification']}</td>";
 
-		print '<td><span class="badge  badge-status'.($objAnneScolaire->rowid != $creneauObj->fk_annee_scolaire ? '9' : '4').' badge-status" style="color:white;">'.date('d/m/Y', $time).($objAnneScolaire->rowid != $creneauObj->fk_annee_scolaire ? ' / Année précédente' : ' / Année actuelle').'</span></td>';
-		print '<td>'.'<span class="badge  badge-status'.($value['status'] == 'retard' ? '1' : ($value['status'] == 'absenceJ' ? '4' : '8')).' badge-status" style="color:white;">'.($value['status'] == 'retard' ? 'Retard' : ($value['status'] == 'absenceJ' ? 'Absence Justifiée' : 'Absence Injustifiée')).'</span>'.'</td>';
+		print '<td><span class="badge  badge-status'.($objAnneScolaire->rowid != $creneauClass->fk_annee_scolaire ? '9' : '4').' badge-status" style="color:white;">'.date('d/m/Y', $time).($objAnneScolaire->rowid != $creneauClass->fk_annee_scolaire ? ' / Année précédente' : ' / Année actuelle').'</span></td>';
+		print '<td>'.'<span class="badge  badge-status'.($value['status'] == 'retard' ? '1' : ($value['status'] == 'absenceJ' ? '7' : ($value['status'] == 'present' ? '4' : '8'))).' badge-status" style="color:white;">'.$value['status'].'</span>'.'</td>';
 		print '<td style="padding:1em; "><a href="'.$_SERVER['PHP_SELF'].'?id='.$object->id.'&idAppel='.$value['rowid'].'&action=deleteAbsence">'.'❌'.'</a></td>';
 
 		print '</tr>';

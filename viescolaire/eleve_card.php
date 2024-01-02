@@ -83,8 +83,11 @@ require_once DOL_DOCUMENT_ROOT.'/core/class/html.formcompany.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formfile.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formprojet.class.php';
 dol_include_once('/viescolaire/class/eleve.class.php');
+dol_include_once('/viescolaire/class/souhait.class.php');
 dol_include_once('/viescolaire/class/parents.class.php');
+dol_include_once('/viescolaire/class/inscription.class.php');
 dol_include_once('/viescolaire/lib/viescolaire_eleve.lib.php');
+
 
 // Load translation files required by the page
 $langs->loadLangs(array("viescolaire@viescolaire", "other"));
@@ -99,29 +102,10 @@ $contextpage = GETPOST('contextpage', 'aZ') ? GETPOST('contextpage', 'aZ') : 'el
 $backtopage = GETPOST('backtopage', 'alpha');
 $backtopageforcancel = GETPOST('backtopageforcancel', 'alpha');
 $lineid   = GETPOST('lineid', 'int');
+$inscriptionid = GETPOST('inscriptionid','int');
 
-
-/*if () {
-
-	$eleve = new Eleve($db);
-	$sql = "UPDATE " . MAIN_DB_PREFIX . "eleve SET status = " . $eleve::STATUS_CANCELED . " WHERE rowid=" . $id;
-	$resql = $db->query($sql);
-
-
-}*/
-
-if ($action == 'confirm_activation') {
-
-	$eleve = new Eleve($db);
-	$sql = "UPDATE " . MAIN_DB_PREFIX . "eleve SET status = " . $eleve::STATUS_DRAFT . " WHERE rowid=" . $id;
-	$resql = $db->query($sql);
-
-	setEventMessage('Élève activé avec succès!');
-}
-
-
-
-if( $action == 'stateModify' || $action == 'confirm_desactivation')
+// TODO mettre ce code dans eleve.class.php
+if($action == 'confirm_desactivation')
 {
 	//$object = new Eleve($db);
 	$souhait = "SELECT status,rowid FROM ".MAIN_DB_PREFIX."souhait WHERE fk_eleve = ".$id;
@@ -157,6 +141,16 @@ if( $action == 'stateModify' || $action == 'confirm_desactivation')
 		else setEventMessage('Status modifié avec succès!');
 	}
 
+}
+
+if ($action == 'confirm_activation') {
+
+	$eleve = new Eleve($db);
+	$eleve->fetch($id);
+	$eleve->status = $eleve::STATUS_DRAFT;
+	$eleve->update($user);
+
+	setEventMessage('Élève activé avec succès!');
 }
 
 // Initialize technical objects
@@ -276,6 +270,19 @@ if (empty($reshook)) {
 
 
 
+if ($action == 'confirm_delete_inscription') {
+	$inscriptionClass = new Inscription($db);
+	$inscriptionClass->fetch($inscriptionid);
+	if($inscriptionClass->id)
+	{
+		$resDelete = $inscriptionClass->delete($user);
+		if($resDelete > 0) setEventMessage('Inscription supprimée avec succès!');
+		else setEventMessage('Une erreur est survenue lors de la suppression','warnings');
+	}
+	else setEventMessage('Une erreur est survenue','errors');
+
+	unset($inscriptionClass);
+}
 
 /*
  * View
@@ -291,20 +298,6 @@ $title = $langs->trans("Eleve");
 $help_url = '';
 llxHeader('', $title, $help_url);
 
-// Example : Adding jquery code
-// print '<script type="text/javascript">
-// jQuery(document).ready(function() {
-// 	function init_myfunc()
-// 	{
-// 		jQuery("#myid").removeAttr(\'disabled\');
-// 		jQuery("#myid").attr(\'disabled\',\'disabled\');
-// 	}
-// 	init_myfunc();
-// 	jQuery("#mybutton").click(function() {
-// 		init_myfunc();
-// 	});
-// });
-// </script>';
 
 
 // Part to create
@@ -409,27 +402,14 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 	if ($action == 'deleteline') {
 		$formconfirm = $form->formconfirm($_SERVER["PHP_SELF"].'?id='.$object->id.'&lineid='.$lineid, $langs->trans('DeleteLine'), $langs->trans('ConfirmDeleteLine'), 'confirm_deleteline', '', 0, 1);
 	}
+	if ($action == 'deleteInscription') {
+		$formconfirm = $form->formconfirm($_SERVER["PHP_SELF"].'?id='.$object->id.'&inscriptionid='.GETPOST('inscriptionid','int'), 'Suppression d\'une inscription', 'Voulez-vous activer supprimer cette inscription? Ceci est irréversible.', 'confirm_delete_inscription', '', 0, 1);
+	}
 	// Clone confirmation
 	if ($action == 'clone') {
 		// Create an array for form
 		$formquestion = array();
 		$formconfirm = $form->formconfirm($_SERVER["PHP_SELF"].'?id='.$object->id, $langs->trans('ToClone'), $langs->trans('ConfirmCloneAsk', $object->ref), 'confirm_clone', $formquestion, 'yes', 1);
-	}
-
-	// Confirmation of action xxxx
-	if ($action == 'xxx') {
-		$formquestion = array();
-		/*
-		$forcecombo=0;
-		if ($conf->browser->name == 'ie') $forcecombo = 1;	// There is a bug in IE10 that make combo inside popup crazy
-		$formquestion = array(
-			// 'text' => $langs->trans("ConfirmClone"),
-			// array('type' => 'checkbox', 'name' => 'clone_content', 'label' => $langs->trans("CloneMainAttributes"), 'value' => 1),
-			// array('type' => 'checkbox', 'name' => 'update_prices', 'label' => $langs->trans("PuttingPricesUpToDate"), 'value' => 1),
-			// array('type' => 'other',    'name' => 'idwarehouse',   'label' => $langs->trans("SelectWarehouseForStockDecrease"), 'value' => $formproduct->selectWarehouses(GETPOST('idwarehouse')?GETPOST('idwarehouse'):'ifone', 'idwarehouse', '', 1, 0, 0, '', 0, $forcecombo))
-		);
-		*/
-		$formconfirm = $form->formconfirm($_SERVER["PHP_SELF"].'?id='.$object->id, $langs->trans('XXX'), $text, 'confirm_xxx', $formquestion, 0, 1, 220);
 	}
 
 	// Call Hook formConfirm
@@ -465,9 +445,6 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 	print '<table class="border centpercent tableforfield">'."\n";
 
 	// Common attributes
-	//$keyforbreak='fieldkeytoswitchonsecondcolumn';	// We change column just before this field
-	//unset($object->fields['fk_project']);				// Hide field already shown in banner
-	//unset($object->fields['fk_soc']);					// Hide field already shown in banner
 	include DOL_DOCUMENT_ROOT.'/core/tpl/commonfields_view.tpl.php';
 
 	// Other attributes. Fields from hook formObjectOptions and Extrafields.
@@ -475,59 +452,27 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 
 	print '</table>';
 
-
-
-
-	if($object->status != $object::STATUS_CANCELED)
-	{
-		// print '<p>Nombre de <span class="badge  badge-status1 badge-status" style="color:white;">retards</span> totaux: '.$numRetards.'</p>';
-		print load_fiche_titre("Etats des inscriptions", '', 'fa-pen');
-		print '<form method="POST" action="/custom/viescolaire/eleve_card.php?id='.$object->id.'&action=stateModify" method="post">';
-		print '<input type="hidden" name="token" value="'.newToken().'">';
-		print '<input type="hidden" name="id_eleve" value='.$object->id.'>';
-		print dol_get_fiche_head(array(), '');
-		print '<table class="border centpercent ">'."\n";
-
-		print '<div class="center">';
-		print '<label>Selectionnez l\'état de l\'inscription : </label>';
-
-		$array = [9=>'Abandon',0=>'Inscription en attente',1=>'Ancien à remotiver',3=>'Venu pour informations',7=>'Placé (paiement incomplet)',4=>'Inscription terminée (payée)',2=>'Budgétisé',8=>'Problème'];
-
-
-		print $form->selectarray('stateInscription',$array,$object->status);
-		print '</div>';
-		print '</table>'."\n";
-
-		print dol_get_fiche_end();
-
-		print $form->buttonsSaveCancel("Valider");
-
-		print '</form>';
-	}
-
-
-
-	print '</div>';
-
-	print '</div>';
-
-
-
 	$anneScolaire = "SELECT annee,annee_actuelle,rowid FROM ".MAIN_DB_PREFIX."c_annee_scolaire WHERE active = 1 ORDER BY annee_actuelle DESC, rowid ASC";
 	$resqlAnneeScolaire = $db->query($anneScolaire);
 	$objAnneScolaire = $db->fetch_object($resqlAnneeScolaire);
 
-	$souhait = "SELECT rowid FROM ".MAIN_DB_PREFIX."souhait as c WHERE c.fk_eleve = ".$object->id;
-	$resqlSouhait = $db->query($souhait);
 
+	if($object->status != $object::STATUS_CANCELED)
+	{
+		print load_fiche_titre("Etats des inscriptions", '', 'fa-pen');
+
+		$inscriptionClass = new Inscription($db);
+		$inscriptionClass->inscriptionsPerYear($object->id);
+	}
+
+	print '</div>';
+
+	print '</div>';
 
 	print '<div class="clearboth"></div>';
 
 	if($object->fk_famille)
 	{
-		$parentsClass = new Parents($db);
-		$result = $parentsClass->fetchBy(['lastname','firstname','phone','mail','address','town','zipcode','description','rowid'],$object->fk_famille,'fk_famille');
-
 		print load_fiche_titre("Liste des parents", '', 'object_'.$object->picto);
 		print '<table class="tagtable liste" >';
 		print '<tbody>';
@@ -540,21 +485,23 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 					<th class="wrapcolumntitle liste_titre">Adresse</th>
 					<th class="wrapcolumntitle liste_titre">Infos</th>
 					</tr>';
-		foreach($result as $val)
+
+		$parentsClass = new Parents($db);
+		foreach($parentsClass->fetchAll('','','','',['fk_famille'=>$object->fk_famille]) as $val)
 		{
 			print '<tr class="oddeven">';
-			print '<td>' .$val->firstname. '</td>';
-			print "<td>".$val->lastname."</td>";
-			print "<td>".$val->phone."</td>";
-			print "<td>".$val->mail."</td>";
-			print "<td>$val->address $val->zipcode $val->town</td>";
+			print "<td>$val->firstname</td>";
+			print "<td>$val->lastname</td>";
+			print '<td>'.($val->phone ? : 'Inconnu').'</td>';
+			print '<td>'.($val->mail ? : 'Inconnu').'</td>';
+			print '<td>'.($val->address ? : 'Adresse inconnue').' '.($val->zipcode ? : 'Code postal Inconnu').' '.($val->town ? : 'Ville inconnue').'</td>';
 			print "<td>$val->description</td>";
 			print '</tr>';
-
 		}
 		print '</tbody>';
 		print '</table>';
 	}
+
 	if ($action != 'presend' && $action != 'editline') {
 		print '<div class="tabsAction">'."\n";
 		$parameters = array();
@@ -565,12 +512,16 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 
 		if (empty($reshook)) {
 
+
 			if($object->status != $object::STATUS_CANCELED)
 			{
 				print dolGetButtonAction($langs->trans('Engager dans un groupe'), '', '', DOL_URL_ROOT.'/custom/organisation/engagement_card.php?fk_eleve='.$object->id.'&action=create' , '', $permissiontoadd);
 				print dolGetButtonAction($langs->trans('Modifier l\'élève'), '', '', '?id='.$object->id.'&action=edit&token='.newToken(), '', $permissiontoadd);
 			}
 			print "<br>";
+
+			print dolGetButtonAction($langs->trans('Ajouter une inscription'), '', 'delete', DOL_URL_ROOT.'/custom/viescolaire/inscription_card.php?fk_eleve='.$object->id.'&action=create&token=' . newToken(), '', $permissiontoadd);
+
 			if($object->status == $object::STATUS_CANCELED)
 			{
 				print dolGetButtonAction($langs->trans('Activer l\'élève'), '', 'delete', $_SERVER["PHP_SELF"] . '?id=' . $object->id . '&action=activation&token=' . newToken(), '', $permissiontoadd);
@@ -591,14 +542,16 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 		print '<p>'.dolGetButtonAction('Ajouter un souhait', '', 'default', '/custom/viescolaire/souhait_card.php'.'?action=create&fk_eleve='.$object->id, '', $permissiontoadd).'</p>';
 
 
-		if($resqlSouhait->num_rows == 0)
+		$souhaitClass = new Souhait($db);
+		$souhaitsEleve = $souhaitClass->fetchAll('','','','',array('fk_eleve'=>$object->id));
+
+
+		if(count($souhaitsEleve) == 0)
 		{
 			print '<p>Aucun souhaits connus pour cette année scolaire.</p>';
 		}
 		else
 		{
-
-			/// EN COURS -> FAIRE EN SORTE DE NE LISTER QUE LES SOUHAITS DE L'ANNEE CONCERNÉE
 			foreach($resqlAnneeScolaire as $value)
 			{
 				$souhait = "SELECT rowid,nom_souhait,status,details FROM ".MAIN_DB_PREFIX."souhait as c WHERE c.fk_eleve = ".$object->id." AND c.fk_annee_scolaire=".$value['rowid']." ORDER BY c.status ASC";

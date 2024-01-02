@@ -21,30 +21,6 @@ class Dictionary extends CommonObject
 		if (empty($conf->multicompany->enabled) && isset($this->fields['entity'])) {
 			$this->fields['entity']['enabled'] = 0;
 		}
-
-		// Example to show how to set values of fields definition dynamically
-		/*if ($user->rights->scolarite->classe->read) {
-			$this->fields['myfield']['visible'] = 1;
-			$this->fields['myfield']['noteditable'] = 0;
-		}*/
-
-		// Unset fields that are disabled
-		/*foreach ($this->fields as $key => $val) {
-			if (isset($val['enabled']) && empty($val['enabled'])) {
-				unset($this->fields[$key]);
-			}
-		}*/
-
-		// Translate some data of arrayofkeyval
-		/*if (is_object($langs)) {
-			foreach ($this->fields as $key => $val) {
-				if (!empty($val['arrayofkeyval']) && is_array($val['arrayofkeyval'])) {
-					foreach ($val['arrayofkeyval'] as $key2 => $val2) {
-						$this->fields[$key]['arrayofkeyval'][$key2] = $langs->trans($val2);
-					}
-				}
-			}
-		}*/
 	}
 
 
@@ -76,7 +52,6 @@ class Dictionary extends CommonObject
 			$sql .= $andWhere;
 		}
 
-
 		$resql = $this->db->query($sql);
 
 
@@ -92,15 +67,14 @@ class Dictionary extends CommonObject
 				while ($i < ($limit ? min($limit, $num) : $num)) {
 
 					$obj = $this->db->fetch_object($resql);
-					$record = new self($this->db);
-					$record->setVarsFromFetchObj($obj);
+					//$record = new self($this->db);
+					//$record->setVarsFromFetchObj($obj);
 
-					$records[$record->id] = $record;
+					$records[$obj->id ? : $obj->rowid] = $obj;
 
 					$i++;
 				}
 			}
-
 			$this->db->free($resql);
 			return $records;
 		} else {

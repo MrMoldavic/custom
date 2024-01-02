@@ -70,6 +70,7 @@ class Eleve extends CommonObject
 	const STATUS_ANCIEN = 1;
 	const STATUS_VENU= 3;
 	const STATUS_PLACE= 7;
+	const STATUS_NON_REINSCRIT= 6;
 	const STATUS_BUDGETISE= 2;
 	const STATUS_PROBLEME = 8;
 
@@ -144,6 +145,7 @@ class Eleve extends CommonObject
 	public $fk_user_modif;
 	public $last_main_doc;
 	public $model_pdf;
+	public $status;
 	// If this object has a subtable with lines
 
 	// /**
@@ -168,7 +170,7 @@ class Eleve extends CommonObject
 
 	// /**
 	//  * @var array    List of child tables. To know object to delete on cascade.
-	//  *               If name matches '@ClassNAme:FilePathClass;ParentFkFieldName' it will
+	//  *               If name matches '@ClassNAme:FlePathClass;ParentFkFieldName' it will
 	//  *               call method deleteByParentField(parentId, ParentFkFieldName) to fetch and delete child object
 	//  */
 	// protected $childtablesoncascade = array('viescolaire_elevedet');
@@ -883,23 +885,25 @@ class Eleve extends CommonObject
 		if (empty($this->labelStatus) || empty($this->labelStatusShort)) {
 			global $langs;
 			//$langs->load("viescolaire@viescolaire");
-			$this->labelStatus[self::STATUS_DRAFT] = "Inscription en attente";
-			$this->labelStatus[self::STATUS_VALIDATED] = "Inscription terminée (payée)";
+			$this->labelStatus[self::STATUS_DRAFT] = "En cours d'inscription";
+			$this->labelStatus[self::STATUS_VALIDATED] = "Inscrit";
 			$this->labelStatus[self::STATUS_CANCELED] = "Élève désactivé";
 			$this->labelStatus[self::STATUS_ABANDON] = "Abandon";
 			$this->labelStatus[self::STATUS_ANCIEN] = "Ancien à remotiver";
 			$this->labelStatus[self::STATUS_VENU] = "Venu pour informations";
 			$this->labelStatus[self::STATUS_PLACE] = "Placé (paiement incomplet)";
+			$this->labelStatus[self::STATUS_NON_REINSCRIT] = "Non réinscrit";
 			$this->labelStatus[self::STATUS_BUDGETISE] = "Budgetisé";
 			$this->labelStatus[self::STATUS_PROBLEME] = "Problème";
 
-			$this->labelStatusShort[self::STATUS_DRAFT] = "Inscription en attente";
-			$this->labelStatusShort[self::STATUS_VALIDATED] = "Inscription terminée (payée)";
+			$this->labelStatusShort[self::STATUS_DRAFT] = "En cours d'inscription";
+			$this->labelStatusShort[self::STATUS_VALIDATED] = "Inscrit";
 			$this->labelStatusShort[self::STATUS_CANCELED] = "Élève désactivé";
 			$this->labelStatusShort[self::STATUS_ABANDON] = "Abandon";
 			$this->labelStatusShort[self::STATUS_ANCIEN] = "Ancien à remotiver";
 			$this->labelStatusShort[self::STATUS_VENU] = "Venu pour informations";
 			$this->labelStatusShort[self::STATUS_PLACE] = "Placé (paiement incomplet)";
+			$this->labelStatusShort[self::STATUS_NON_REINSCRIT] = "Non réinscrit";
 			$this->labelStatusShort[self::STATUS_BUDGETISE] = "Budgetisé";
 			$this->labelStatusShort[self::STATUS_PROBLEME] = "Problème";
 		}
