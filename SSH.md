@@ -34,4 +34,8 @@ Processus pour mettre en place le SSH CPANEL (si plus rien ne marche):
     (Le 3eme se rempli automatiquement, pas besoin de le changer)
 13) Cliquez sur Créer. 
 
+Il se peut qu'un message d'erreur s'affiche que vous cliquez sur créer. Rentrez donc ces commandes dans le terminal:
+    "eval `ssh-agent -s`"
+    `ssh-add ~/.ssh/my_key`
+
 Si jamais un problème apparait, vérifiez en priorité le nom "User" dans le fichier config, le nom de la clé créé, puis que les clés correspondent.
