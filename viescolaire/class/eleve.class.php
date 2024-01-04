@@ -1124,6 +1124,218 @@ class Eleve extends CommonObject
 
 		return $error;
 	}
+
+	public function printAbsenceGraph()
+	{
+
+		global $conf;
+
+		if ($conf->use_javascript_ajax)
+		{
+			$materiels = array();
+
+			$sql = "SELECT COUNT(DISTINCT a.rowid) as total, a.status";
+			$sql .= " FROM ".MAIN_DB_PREFIX."appel as a";
+			$sql .= " WHERE a.treated = 1";
+			$sql .= ' AND a.fk_eleve = '.$this->id;
+			$sql .= " GROUP BY a.status";
+			$result = $this->db->query($sql);
+
+			while ($objp = $this->db->fetch_object($result))
+			{
+				switch ($objp->status) {
+					case 'retard':
+						$status = 'Retard';
+						break;
+					case 'absenceJ':
+						$status = 'Absence Justifiée';
+						break;
+					case 'absenceI':
+						$status = 'Absence Injustifiée';
+						break;
+					case 'present':
+						$status = 'Présent';
+						break;
+				}
+				$materiels[$status] = $objp->total;
+			}
+
+			print '<div class="div-table-responsive-no-min">';
+			print '<table class="noborder centpercent">';
+			print '<tr class="liste_titre"><td>Bilan Annuel des absences de '.$this->prenom.'</td><td>Bilan Global des absences de '.$this->prenom.'</td></tr>';
+
+			$absences = array();
+
+			$dictionaryClass = new Dictionary($this->db);
+			$anneeScolaire = $dictionaryClass->fetchByDictionary('c_annee_scolaire',['rowid','annee','annee_actuelle'],0,'',' WHERE active = 1 AND annee_actuelle = 1');
+
+			$sql = "SELECT COUNT(DISTINCT a.rowid) as total, a.status";
+			$sql .= " FROM ".MAIN_DB_PREFIX."appel as a";
+			if($anneeScolaire)
+			{
+				$sql .= ' INNER JOIN '.MAIN_DB_PREFIX.'creneau as c ON c.rowid=a.fk_creneau';
+			}
+			$sql .= " WHERE a.treated = 1";
+			$sql .= ' AND a.fk_eleve = '.$this->id;
+			if($anneeScolaire)
+			{
+				$sql .= ' AND c.fk_annee_scolaire = '.$anneeScolaire->rowid;
+			}
+			$sql .= " GROUP BY a.status";
+			$result = $this->db->query($sql);
+
+			while ($objp = $this->db->fetch_object($result))
+			{
+				switch ($objp->status) {
+					case 'retard':
+						$status = 'Retard';
+						break;
+					case 'absenceJ':
+						$status = 'Absence Justifiée';
+						break;
+					case 'absenceI':
+						$status = 'Absence Injustifiée';
+						break;
+					case 'present':
+						$status = 'Présent';
+						break;
+				}
+				$absences[$status] = $objp->total;
+			}
+
+			print '<td class="center nopaddingleftimp nopaddingrightimp">';
+
+			$total = 0;
+			$dataval = array();
+			$datalabels = array();
+			$dataseries = array();
+			$i = 0;
+
+			foreach ($absences as $type=>$appel_count)
+			{
+				$total+=$appel_count;
+				$dataseries[] = array($type, $appel_count);
+			}
+
+			include_once DOL_DOCUMENT_ROOT.'/core/class/dolgraph.class.php';
+			$dolgraph = new DolGraph();
+
+			$dolgraph->SetData($dataseries);
+			$dolgraph->setShowLegend(2);
+			$dolgraph->setShowPercent(1);
+			$dolgraph->SetType(array('pie'));
+			$dolgraph->setHeight('200');
+			$dolgraph->draw('idgraphstatus'.$anneeScolaire->rowid);
+			print $dolgraph->show($total ? 0 : 1);
+
+			print '</td>';
+
+
+			print '<td class="center nopaddingleftimp nopaddingrightimp">';
+
+			$total = 0;
+			$dataval = array();
+			$datalabels = array();
+			$dataseries = array();
+			$i = 0;
+
+			foreach ($materiels as $type=>$appel_count)
+			{
+				$total+=$appel_count;
+				$dataseries[] = array($type, $appel_count);
+			}
+
+			include_once DOL_DOCUMENT_ROOT.'/core/class/dolgraph.class.php';
+			$dolgraph = new DolGraph();
+
+			$dolgraph->SetData($dataseries);
+			$dolgraph->setShowLegend(2);
+			$dolgraph->setShowPercent(1);
+			$dolgraph->SetType(array('pie'));
+			$dolgraph->setHeight('200');
+			$dolgraph->draw('idgraphstatuss'.$anneeScolaire->rowid);
+			print $dolgraph->show($total ? 0 : 1);
+
+			print '</td>';
+
+			print '</tr>';
+			print '</table>';
+			print '</div>';
+
+		}
+
+	}
+
+	public function printAbsencesTables()
+	{
+		$dictionaryClass = new Dictionary($this->db);
+		$resqlAnneeScolaire = $dictionaryClass->fetchByDictionary('c_annee_scolaire',['rowid','annee','annee_actuelle'],0,'',' WHERE active = 1 ORDER BY rowid DESC');
+
+		foreach($resqlAnneeScolaire as $value)
+		{
+			print '<div class="annee-accordion'.($value->annee_actuelle == 1 ? '-opened' : '').'">';
+			print '<h3><span class="badge badge-status4 badge-status">Année '.$value->annee.($value->annee_actuelle != 1 ? ' (année précédente)' : '').'</span></h3>';
+
+			$appelClass = new Appel($this->db);
+			$absences = $appelClass->fetchAll('desc','date_creation',0,0,['t.fk_eleve'=>$this->id,'t.treated'=>1,'c.fk_annee_scolaire'=>$value->rowid],'AND',' INNER JOIN '.MAIN_DB_PREFIX.'creneau as c ON c.rowid = t.fk_creneau');
+
+			if(count($absences) > 0){
+				print '<table class="border centpercent tableforfield">';
+				print '<tbody>';
+				print '<tr>';
+				print '<td>Etablissement</td>';
+				print '<td>Creneau</td>';
+				print '<td>Professeur</td>';
+				print '<td>Justification</td>';
+				print '<td>Date de l\'absence</td>';
+				print '<td>Statut</td>';
+				print '<td></td>';
+				print '</tr>';
+
+				foreach($absences as $absence)
+				{
+					$etablissementClass = new Etablissement($this->db);
+					$etablissementClass->fetch($absence->fk_etablissement);
+
+					$creneauClass = new Creneau($this->db);
+					$creneauClass->fetch($absence->fk_creneau);
+
+					print '<tr>';
+					print '<td>'.$etablissementClass->diminutif.'</td>';
+					print '<td>'.($creneauClass->nom_creneau != '' ? '<a href="'.DOL_URL_ROOT.'/custom/scolarite/creneau_card.php?id='.$creneauClass->id.' " target="_blank">'.$creneauClass->nom_creneau.'</a>' : '<span class="badge  badge-status8 badge-status" style="color:white;">Erreur créneau</span>').'</td>';
+					print '<td>';
+
+					$agentClass = new Agent($this->db);
+					$agentClass->fetch($creneauClass->fk_prof_1);
+
+					if($agentClass->id)	print '<a href="' . DOL_URL_ROOT . '/custom/management/agent_card.php?id=' .  $agentClass->id . '" target="_blank">' .$agentClass->prenom.' '.$agentClass->nom. '</a><br>';
+
+					$agentClass = new Agent($this->db);
+					$agentClass->fetch($creneauClass->fk_prof_2);
+
+					if($agentClass->id)	print '<a href="' . DOL_URL_ROOT . '/custom/management/agent_card.php?id=' .  $agentClass->id . '" target="_blank">' .$agentClass->prenom.' '.$agentClass->nom. '</a><br>';
+
+					$agentClass = new Agent($this->db);
+					$agentClass->fetch($creneauClass->fk_prof_3);
+
+					if($agentClass->id) print '<a href="' . DOL_URL_ROOT . '/custom/management/agent_card.php?id=' .  $agentClass->id . '" target="_blank">' .$agentClass->prenom.' '.$agentClass->nom. '</a><br>';
+
+					print '</td>';
+					print "<td style='overflow-wrap: normal; max-width: 30em'>".($absence->justification != null ? : 'Aucune')."</td>";
+
+					print '<td>'.date('d/m/Y', $absence->date_creation).'</td>';
+					print '<td>'.'<span class="badge  badge-status'.($absence->status == 'retard' ? '1' : ($absence->status == 'absenceJ' ? '7' : ($absence->status == 'present' ? '4' : '8'))).' badge-status" style="color:white;">'.$absence->status.'</span>'.'</td>';
+					print '<td style="padding:1em; "><a href="'.$_SERVER['PHP_SELF'].'?id='.$this->id.'&idAppel='.$value->rowid.'&action=deleteAbsence">'.'❌'.'</a></td>';
+
+					print '</tr>';
+				}
+				print '</tbody>';
+				print '</table>';
+			}else print '<p>Aucune appel connu pour cette année scolaire</p>';
+
+			print '</div>';
+		}
+	}
 }
 
 

@@ -21,9 +21,9 @@
  *  \ingroup    viescolaire
  */
 
- ini_set('display_errors', '1');
- ini_set('display_startup_errors', '1');
- error_reporting(E_ALL);
+/*ini_set('display_errors', '1');
+ini_set('display_startup_errors', '1');
+error_reporting(E_ALL);*/
 
 //if (! defined('NOREQUIREDB'))              define('NOREQUIREDB', '1');				// Do not create database handler $db
 //if (! defined('NOREQUIREUSER'))            define('NOREQUIREUSER', '1');				// Do not load object $user
@@ -81,6 +81,8 @@ dol_include_once('/viescolaire/class/eleve.class.php');
 dol_include_once('/scolarite/class/creneau.class.php');
 dol_include_once('/scolarite/class/etablissement.class.php');
 dol_include_once('/viescolaire/class/appel.class.php');
+dol_include_once('/management/class/agent.class.php');
+dol_include_once('/viescolaire/class/dictionary.class.php');
 dol_include_once('/viescolaire/lib/viescolaire_eleve.lib.php');
 
 // Load translation files required by the page
@@ -107,9 +109,6 @@ if ($id > 0 || !empty($ref)) {
 	$upload_dir = $conf->viescolaire->multidir_output[!empty($object->entity) ? $object->entity : $conf->entity]."/".$object->id;
 }
 
-
-// There is several ways to check permission.
-// Set $enablepermissioncheck to 1 to enable a minimum low level of checks
 $enablepermissioncheck = 1;
 if ($enablepermissioncheck) {
 	$permissiontoread = $user->rights->viescolaire->eleve->read;
@@ -121,11 +120,6 @@ if ($enablepermissioncheck) {
 	$permissionnote = 1;
 }
 
-// Security check (enable the most restrictive one)
-//if ($user->socid > 0) accessforbidden();
-//if ($user->socid > 0) $socid = $user->socid;
-//$isdraft = (($object->status == $object::STATUS_DRAFT) ? 1 : 0);
-//restrictedArea($user, $object->element, $object->id, $object->table_element, '', 'fk_soc', 'rowid', $isdraft);
 if (empty($conf->viescolaire->enabled)) accessforbidden();
 if (!$permissiontoread) accessforbidden();
 
@@ -153,14 +147,12 @@ if ($action == 'deleteAbsence') {
 	else setEventMessage("Une erreur est survenue : $appelClass->error",'errors');
 }
 
-
 /*
  * View
  */
 
 $form = new Form($db);
 
-//$help_url='EN:Customers_Orders|FR:Commandes_Clients|ES:Pedidos de clientes';
 $help_url = '';
 llxHeader('', $langs->trans('Eleve'), $help_url);
 
@@ -180,159 +172,36 @@ if ($id > 0 || !empty($ref)) {
 	$morehtmlref .= $object->prenom;
 	$morehtmlref .= '</div>';
 
-
 	dol_banner_tab($object, 'ref', $linkback, 1, 'ref', 'nom', $morehtmlref);
-
 
 	print '<div class="fichecenter">';
 	print '<div class="underbanner clearboth"></div>';
 
 	print '<h3>Absences de l\'élève:</h3>';
 
+	// Affichage du diagramme circulaire pour les absences
+	print $object->printAbsenceGraph();
 
-	$materiels = array();
-
-	$sql = "SELECT COUNT(DISTINCT a.rowid) as total, status";
-	$sql .= " FROM ".MAIN_DB_PREFIX."appel as a";
-	$sql .= " WHERE a.treated = 1";
-	$sql .= ' AND a.fk_eleve = '.$object->id;
-	$sql .= " GROUP BY a.status";
-	$result = $db->query($sql);
-
-	while ($objp = $db->fetch_object($result))
-	{
-		switch ($objp->status) {
-			case 'retard':
-				$status = 'Retard';
-				break;
-			case 'absenceJ':
-				$status = 'Absence Justifiée';
-				break;
-			case 'absenceI':
-				$status = 'Absence Injustifiée';
-				break;
-			case 'present':
-				$status = 'Présent';
-				break;
-		}
-		$materiels[$status] = $objp->total;
-	}
-
-	if ($conf->use_javascript_ajax)
-	{
-		print '<div class="div-table-responsive-no-min">';
-		print '<table class="noborder centpercent">';
-		print '<tr class="liste_titre"><th>Bilan global des absences de '.$object->prenom.'</th></tr>';
-		print '<tr><td class="center nopaddingleftimp nopaddingrightimp">';
-
-		$total = 0;
-		$dataval = array();
-		$datalabels = array();
-		$dataseries = array();
-		$i = 0;
-
-		foreach ($materiels as $type=>$appel_count)
-		{
-			$total+=$appel_count;
-			$dataseries[] = array($type, $appel_count);
-		}
-		include_once DOL_DOCUMENT_ROOT.'/core/class/dolgraph.class.php';
-		$dolgraph = new DolGraph();
-		$dolgraph->SetData($dataseries);
-		$dolgraph->setShowLegend(2);
-		$dolgraph->setShowPercent(1);
-		$dolgraph->SetType(array('pie'));
-		$dolgraph->setHeight('200');
-		$dolgraph->draw('idgraphstatus');
-		print $dolgraph->show($total ? 0 : 1);
-
-		print '</td></tr>';
-		print '</table>';
-		print '</div>';
-	}
-
-	
-
-	$anneScolaire = "SELECT annee,annee_actuelle,rowid FROM ".MAIN_DB_PREFIX."c_annee_scolaire WHERE active = 1 AND annee_actuelle = 1 ORDER BY rowid DESC";
-	$resqlAnneeScolaire = $db->query($anneScolaire);
-	$objAnneScolaire = $db->fetch_object($resqlAnneeScolaire);
-
-	$abscence = "SELECT fk_etablissement,fk_creneau,date_creation,justification,status,rowid FROM ".MAIN_DB_PREFIX."appel as a WHERE a.fk_eleve = ".$object->id." AND a.treated= 1 ORDER BY a.date_creation DESC";
-	$resql = $db->query($abscence);
-	$num = $db->num_rows($resql);
-
-	print '<table class="border centpercent tableforfield">';
-	print '<tbody>';
-	print '<tr>';
-	print '<td>Etablissement</td>';
-	print '<td>Creneau</td>';
-	print '<td>Professeur</td>';
-	print '<td>Justification</td>';
-	print '<td>Date de l\'absence</td>';
-	print '<td>Statut</td>';
-	print '<td>Action</td>';
-	print '</tr>';
-	foreach($resql as $value)
-	{
-		$etablissementClass = new Etablissement($db);
-		$etablissementClass->fetch($value['fk_etablissement']);
-
-		$creneauClass = new Creneau($db);
-		$creneauClass->fetch($value['fk_creneau']);
-
-
-		$time = strtotime($value['date_creation']);
-
-
-		$sqlProf1 = "SELECT prenom,nom,rowid FROM ".MAIN_DB_PREFIX."management_agent WHERE rowid= ".$creneauClass->fk_prof_1;
-		if($creneauClass->fk_prof_1 != null) $resqlProf1 = $db->query($sqlProf1);
-
-		$sqlProf2 = "SELECT prenom,nom,rowid FROM ".MAIN_DB_PREFIX."management_agent WHERE rowid= ".$creneauClass->fk_prof_2;
-		if($creneauClass->fk_prof_2 != null) $resqlProf2 = $db->query($sqlProf2);
-
-		$sqlProf3 = "SELECT prenom,nom,rowid FROM ".MAIN_DB_PREFIX."management_agent WHERE rowid= ".$creneauClass->fk_prof_3;
-		if($creneauClass->fk_prof_3 != null) $resqlProf3 = $db->query($sqlProf3);
-
-		print '<tr '.($objAnneScolaire->rowid != $creneauClass->fk_annee_scolaire ? 'style="background-color: #BBBBBB"' : '').'">';
-		print '<td>'.$etablissementClass->diminutif.'</td>';
-		print '<td>'.($creneauClass->nom_creneau != "" ? '<a href="'.DOL_URL_ROOT.'/custom/scolarite/creneau_card.php?id='.$creneauClass->rowid.' " target="_blank">'.$creneauClass->nom_creneau.'</a>' : '<span class="badge  badge-status8 badge-status" style="color:white;">Erreur créneau</span>').'</td>';
-		print '<td>';
-
-		if($resqlProf1)
-		{
-			$profObject1 = $db->fetch_object($resqlProf1);
-			print '<a href="' . DOL_URL_ROOT . '/custom/management/agent_card.php?id=' .  $profObject1->rowid . '" target="_blank">' .$profObject1->prenom.' '.$profObject1->nom. '</a><br>';
-		}
-		if($resqlProf2)
-		{
-			$profObject2 = $db->fetch_object($resqlProf2);
-			print '<a href="' . DOL_URL_ROOT . '/custom/management/agent_card.php?id=' .  $profObject2->rowid . '" target="_blank">' .$profObject2->prenom.' '.$profObject2->nom. '</a><br>';
-
-		}
-		if($resqlProf3)
-		{
-			$profObject3 = $db->fetch_object($resqlProf3);
-			print '<a href="' . DOL_URL_ROOT . '/custom/management/agent_card.php?id=' .  $profObject3->rowid . '" target="_blank">' .$profObject3->prenom.' '.$profObject3->nom. '</a><br>';
-		}
-
-		print '</td>';
-		if($value['justification'] == null) print '<td>Aucune</td>';
-		else print "<td style='overflow-wrap: normal; max-width: 30em'>{$value['justification']}</td>";
-
-		print '<td><span class="badge  badge-status'.($objAnneScolaire->rowid != $creneauClass->fk_annee_scolaire ? '9' : '4').' badge-status" style="color:white;">'.date('d/m/Y', $time).($objAnneScolaire->rowid != $creneauClass->fk_annee_scolaire ? ' / Année précédente' : ' / Année actuelle').'</span></td>';
-		print '<td>'.'<span class="badge  badge-status'.($value['status'] == 'retard' ? '1' : ($value['status'] == 'absenceJ' ? '7' : ($value['status'] == 'present' ? '4' : '8'))).' badge-status" style="color:white;">'.$value['status'].'</span>'.'</td>';
-		print '<td style="padding:1em; "><a href="'.$_SERVER['PHP_SELF'].'?id='.$object->id.'&idAppel='.$value['rowid'].'&action=deleteAbsence">'.'❌'.'</a></td>';
-
-		print '</tr>';
-	}
-	print '</tbody>';
-	print '</table>';
-
-
-	$cssclass = "titlefield";
+	// Affichage des menus déroulants pour les absences par années
+	print $object->printAbsencesTables();
 
 	print '</div>';
 	print dol_get_fiche_end();
+
+	// Scripts JQuery pour l'activation des menus déroulants
+	print '<script>
+    $( ".annee-accordion" ).accordion({
+        collapsible: true,
+        active: 2,
+    });
+    </script>';
+
+	print '<script>
+    $( ".annee-accordion-opened" ).accordion({
+        collapsible: true,
+    });
+    </script>';
+
 }
 
 // End of page
