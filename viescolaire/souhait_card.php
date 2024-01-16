@@ -154,19 +154,23 @@ if ($action == 'newaffectation') {
 if ($action == 'desactivation') {
 
 	$souhait = new Souhait($db);
-	$sql = "UPDATE " . MAIN_DB_PREFIX . "souhait SET status = " . $souhait::STATUS_CANCELED . " WHERE rowid=" . $id;
-	$resql = $db->query($sql);
+	$souhait->fetch($id);
+	$souhait->status = $souhait::STATUS_CANCELED;
+	$res = $souhait->update($user);
 
-	setEventMessage('Souhait desactivé avec succès');
+	if($res > 0) setEventMessage('Souhait desactivé avec succès!');
+	else setEventMessage('Une erreur est survenue', 'errors');
 }
 
 if ($action == 'activation') {
 
 	$souhait = new Souhait($db);
-	$sql = "UPDATE " . MAIN_DB_PREFIX . "souhait SET status = " . $souhait::STATUS_DRAFT . " WHERE rowid=" . $id;
-	$resql = $db->query($sql);
+	$souhait->fetch($id);
+	$souhait->status = $souhait::STATUS_DRAFT;
+	$res = $souhait->update($user);
 
-	setEventMessage('Souhait activé avec succès.');
+	if($res > 0) setEventMessage('Souhait activé avec succès!');
+	else setEventMessage('Une erreur est survenue', 'errors');
 
 }
 
@@ -426,23 +430,6 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 		$formconfirm = $form->formconfirm($_SERVER["PHP_SELF"] . '?id=' . $object->id, $langs->trans('ToClone'), 'Si vous repassez le souhait en brouillon, cela va le désaffecter de son créneau actuel. Continuer?', 'confirm_setdraft', $formquestion, 'yes', 1);
 	}
 
-
-	// Confirmation of action xxxx
-	if ($action == 'xxx') {
-		$formquestion = array();
-		/*
-		$forcecombo=0;
-		if ($conf->browser->name == 'ie') $forcecombo = 1;	// There is a bug in IE10 that make combo inside popup crazy
-		$formquestion = array(
-			// 'text' => $langs->trans("ConfirmClone"),
-			// array('type' => 'checkbox', 'name' => 'clone_content', 'label' => $langs->trans("CloneMainAttributes"), 'value' => 1),
-			// array('type' => 'checkbox', 'name' => 'update_prices', 'label' => $langs->trans("PuttingPricesUpToDate"), 'value' => 1),
-			// array('type' => 'other',    'name' => 'idwarehouse',   'label' => $langs->trans("SelectWarehouseForStockDecrease"), 'value' => $formproduct->selectWarehouses(GETPOST('idwarehouse')?GETPOST('idwarehouse'):'ifone', 'idwarehouse', '', 1, 0, 0, '', 0, $forcecombo))
-		);
-		*/
-		$formconfirm = $form->formconfirm($_SERVER["PHP_SELF"] . '?id=' . $object->id, $langs->trans('XXX'), $text, 'confirm_xxx', $formquestion, 0, 1, 220);
-	}
-
 	// Call Hook formConfirm
 	$parameters = array('formConfirm' => $formconfirm, 'lineid' => $lineid);
 	$reshook = $hookmanager->executeHooks('formConfirm', $parameters, $object, $action); // Note that $action and $object may have been modified by hook
@@ -465,41 +452,6 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 	$resqlEtablissement = $db->query($sqlEtablissement);
 	$resEtablissement = $db->fetch_object($resqlEtablissement);
 	$morehtmlref.= $resEtablissement->nom;
-
-	/*
-	 // Ref customer"
-	 $morehtmlref.=$form->editfieldkey("RefCustomer", 'ref_client', $object->ref_client, $object, 0, 'string', '', 0, 1);
-	 $morehtmlref.=$form->editfieldval("RefCustomer", 'ref_client', $object->ref_client, $object, 0, 'string', '', null, null, '', 1);
-	 // Thirdparty
-	 $morehtmlref.='<br>'.$langs->trans('ThirdParty') . ' : ' . (is_object($object->thirdparty) ? $object->thirdparty->getNomUrl(1) : '');
-	 // Project
-	 if (! empty($conf->projet->enabled)) {
-	 $langs->load("projects");
-	 $morehtmlref .= '<br>'.$langs->trans('Project') . ' ';
-	 if ($permissiontoadd) {
-	 //if ($action != 'classify') $morehtmlref.='<a class="editfielda" href="' . $_SERVER['PHP_SELF'] . '?action=classify&token='.newToken().'&id=' . $object->id . '">' . img_edit($langs->transnoentitiesnoconv('SetProject')) . '</a> ';
-	 $morehtmlref .= ' : ';
-	 if ($action == 'classify') {
-	 //$morehtmlref .= $form->form_project($_SERVER['PHP_SELF'] . '?id=' . $object->id, $object->socid, $object->fk_project, 'projectid', 0, 0, 1, 1);
-	 $morehtmlref .= '<form method="post" action="'.$_SERVER['PHP_SELF'].'?id='.$object->id.'">';
-	 $morehtmlref .= '<input type="hidden" name="action" value="classin">';
-	 $morehtmlref .= '<input type="hidden" name="token" value="'.newToken().'">';
-	 $morehtmlref .= $formproject->select_projects($object->socid, $object->fk_project, 'projectid', $maxlength, 0, 1, 0, 1, 0, 0, '', 1);
-	 $morehtmlref .= '<input type="submit" class="button valignmiddle" value="'.$langs->trans("Modify").'">';
-	 $morehtmlref .= '</form>';
-	 } else {
-	 $morehtmlref.=$form->form_project($_SERVER['PHP_SELF'] . '?id=' . $object->id, $object->socid, $object->fk_project, 'none', 0, 0, 0, 1);
-	 }
-	 } else {
-	 if (! empty($object->fk_project)) {
-	 $proj = new Project($db);
-	 $proj->fetch($object->fk_project);
-	 $morehtmlref .= ': '.$proj->getNomUrl();
-	 } else {
-	 $morehtmlref .= '';
-	 }
-	 }
-	 }*/
 	$morehtmlref .= '</div>';
 
 	dol_banner_tab($object, 'ref', $linkback, 1, 'ref', 'nom_souhait', $morehtmlref);
@@ -622,7 +574,11 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 						print "<td>$resultJour->jour</td>";
 						print '<td>'.$resultHeureDebut->heure.'h / '.$resultHeureFin->heure.'h</td>';
 						if($resultCreneau->fk_prof_1 != NULL) print '<td>'.$agent->prenom.' '.$agent->nom.'</td>';
-						print '<td>'.$value['fk_user_creat'].' le '.date('d/m/Y',strtotime($value['date_creation'])).'</td>';
+
+						$userClass = new User($db);
+						$userClass->fetch($value['fk_user_creat']);
+
+						print '<td>'.$userClass->firstname.' '.$userClass->lastname.' le '.date('d/m/Y',strtotime($value['date_creation'])).'</td>';
 						print '</tr>';
 					}
 				}

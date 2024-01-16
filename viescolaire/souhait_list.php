@@ -303,7 +303,7 @@ if (isset($extrafields->attributes[$object->table_element]['label']) && is_array
 $parameters = array();
 $reshook = $hookmanager->executeHooks('printFieldListFrom', $parameters, $object); // Note that $action and $object may have been modified by hook
 $sql .= $hookmanager->resPrint;
-if($etablissementid != 0) 
+if($etablissementid != 0)
 {
 	$sql .= " INNER JOIN llx_eleve as e ON t.fk_eleve=e.rowid";
 	$sql .= " INNER JOIN llx_etablissement as a ON e.fk_etablissement=".$etablissementid;
@@ -334,14 +334,14 @@ foreach ($search as $key => $val) {
 		}
 		if ($search[$key] != '') {
 			$sql .= natural_search('t.'.$key, $search[$key], (($key == 'status') ? 2 : $mode_search));
-			
+
 		}
 	} else {
 		if (preg_match('/(_dtstart|_dtend)$/', $key) && $search[$key] != '') {
 			$columnName = preg_replace('/(_dtstart|_dtend)$/', '', $key);
 			if (preg_match('/^(date|timestamp|datetime)/', $object->fields[$columnName]['type'])) {
 				if (preg_match('/_dtstart$/', $key)) {
-					$sql .= " AND t." . $columnName . " >= '" . $db->idate($search[$key]) . "'";	
+					$sql .= " AND t." . $columnName . " >= '" . $db->idate($search[$key]) . "'";
 				}
 				if (preg_match('/_dtend$/', $key)) {
 					$sql .= " AND t." . $columnName . " <= '" . $db->idate($search[$key]) . "'";
@@ -404,7 +404,7 @@ if($num == 0)
 {
 	print setEventMessage('Aucun souhait pour cet antenne, veuillez modifier votre choix.','errors');
 	$etablissementid = 0;
-	
+
 }
 
 // Direct jump if only one record found
@@ -624,7 +624,7 @@ foreach ($object->fields as $key => $val) {
 		$cssforfield .= ($cssforfield ? ' ' : '') . 'right';
 	}
 	if (!empty($arrayfields['t.' . $key]['checked'])) {
-		
+
 		print getTitleFieldOfList($arrayfields['t.' . $key]['label'], 0, $_SERVER['PHP_SELF'], 't.' . $key, '', $param.'&etablissementid='.$etablissementid, ($cssforfield ? 'class="' . $cssforfield . '"' : ''), $sortfield, $sortorder, ($cssforfield ? $cssforfield . ' ' : '')) . "\n";
 	}
 }
