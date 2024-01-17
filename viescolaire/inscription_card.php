@@ -22,6 +22,10 @@
  *		\brief      Page to create/edit/view inscription
  */
 
+ini_set('display_errors', '1');
+ini_set('display_startup_errors', '1');
+error_reporting(E_ALL);
+
 //if (! defined('NOREQUIREDB'))              define('NOREQUIREDB', '1');				// Do not create database handler $db
 //if (! defined('NOREQUIREUSER'))            define('NOREQUIREUSER', '1');				// Do not load object $user
 //if (! defined('NOREQUIRESOC'))             define('NOREQUIRESOC', '1');				// Do not load object $mysoc
@@ -77,6 +81,7 @@ require_once DOL_DOCUMENT_ROOT.'/core/class/html.formcompany.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formfile.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formprojet.class.php';
 dol_include_once('/viescolaire/class/inscription.class.php');
+dol_include_once('/viescolaire/class/dictionary.class.php');
 dol_include_once('/viescolaire/lib/viescolaire_inscription.lib.php');
 
 // Load translation files required by the page
@@ -248,8 +253,11 @@ if ($action == 'create') {
 	print dol_get_fiche_head(array(), '');
 
 	// Set some default values
-	//if (! GETPOSTISSET('fieldname')) $_POST['fieldname'] = 'myvalue';
 
+	$dictionaryClass = new Dictionary($db);
+	$objectAnnescolaire = $dictionaryClass->fetchByDictionary('c_annee_scolaire',['rowid'],0,'rowid',' WHERE annee_actuelle=1');
+
+	if (!GETPOSTISSET('fk_annee_scolaire')) $_POST['fk_annee_scolaire'] = $objectAnnescolaire->rowid;
 	print '<table class="border centpercent tableforfieldcreate">'."\n";
 
 	// Common attributes
