@@ -70,6 +70,8 @@ class Famille extends CommonObject
 	const STATUS_ENCOURS = 7;
 	const STATUS_PROBLEME = 8;
 	const STATUS_CANCELED = 9;
+	const STATUS_FAMILLE_INCOMPLETE = 8;
+	const STATUS_INFO_INCOMPLETE = 8;
 
 
 	/**
@@ -226,40 +228,11 @@ class Famille extends CommonObject
 	 */
 	public function create(User $user, $notrigger = false)
 	{
-
-		//$this->tel_parent_1 = str_replace(" ", "", $this->tel_parent_1);
-
-		/*if($this->nom_parent_1 != $this->nom_parent_2 && !empty($this->nom_parent_2))
-		{
-			$this->identifiant_famille = strtoupper($this->nom_parent_1) .' / '.strtoupper($this->nom_parent_2);
-		}
-		elseif((!empty($this->nom_parent_2) && $this->nom_parent_1 == $this->nom_parent_2) || (empty($this->nom_parent_2)))
-		{
-			$this->identifiant_famille = strtoupper($this->nom_parent_1) . ' ' .ucfirst(strtolower($this->prenom_parent_1));
-		}*/
-
-	/*	if(!empty($this->tel_parent_1) && strlen($this->tel_parent_1) != 10)
-		{
-			setEventMessage('Le numéro de téléphone ne fait pas 10 chiffres.','errors');
-		}
-		else
-		{
-			$this->nom_parent_1 = strtoupper($this->nom_parent_1);
-			$this->nom_parent_2 = strtoupper($this->nom_parent_2);
-
-			$this->prenom_parent_1 = ucfirst(strtolower($this->prenom_parent_1));
-			$this->prenom_parent_2 = ucfirst(strtolower($this->prenom_parent_2));
-
-			$this->tel_parent_1 = str_replace(" ", "", $this->tel_parent_1);
-			$this->tel_parent_2 = str_replace(" ", "", $this->tel_parent_2);
-
-
-		}*/
 		$this->identifiant_famille = "Identifiant provisoire";
+		$this->status = self::STATUS_FAMILLE_INCOMPLETE;
 
 		$resultcreate = $this->createCommon($user, $notrigger);
 		return $resultcreate;
-
 	}
 
 	/**
@@ -285,10 +258,6 @@ class Famille extends CommonObject
 		if ($result > 0 && !empty($object->table_element_line)) {
 			$object->fetchLines();
 		}
-
-		// get lines so they will be clone
-		//foreach($this->lines as $line)
-		//	$line->fetch_optionals();
 
 		// Reset some properties
 		unset($object->id);
@@ -536,35 +505,6 @@ class Famille extends CommonObject
 	 */
 	public function update(User $user, $notrigger = false)
 	{
-		/*$this->tel_parent_1 = str_replace(" ", "", $this->tel_parent_1);
-
-		if($this->nom_parent_1 != $this->nom_parent_2 && !empty($this->nom_parent_2))
-		{
-			$this->identifiant_famille = strtoupper($this->nom_parent_1) .' / '.strtoupper($this->nom_parent_2);
-		}
-		elseif((!empty($this->nom_parent_2) && $this->nom_parent_1 == $this->nom_parent_2) || (empty($this->nom_parent_2)))
-		{
-			$this->identifiant_famille = strtoupper($this->nom_parent_1) . ' ' .ucfirst(strtolower($this->prenom_parent_1));
-		}
-
-		if(strlen($this->tel_parent_1) != 10)
-		{
-			setEventMessage('Le numéro de téléphone ne fait pas 10 chiffres.','errors');
-		}
-		else
-		{
-			$this->nom_parent_1 = strtoupper($this->nom_parent_1);
-			$this->nom_parent_2 = strtoupper($this->nom_parent_2);
-
-			$this->prenom_parent_1 = ucfirst(strtolower($this->prenom_parent_1));
-			$this->prenom_parent_2 = ucfirst(strtolower($this->prenom_parent_2));
-
-			$this->tel_parent_1 = str_replace(" ", "", $this->tel_parent_1);
-			$this->tel_parent_2 = str_replace(" ", "", $this->tel_parent_2);
-
-
-		}*/
-
 		return $this->updateCommon($user, $notrigger);
 	}
 
@@ -578,7 +518,6 @@ class Famille extends CommonObject
 	public function delete(User $user, $notrigger = false)
 	{
 		return $this->deleteCommon($user, $notrigger);
-		//return $this->deleteCommon($user, $notrigger, 1);
 	}
 
 	/**
@@ -620,14 +559,6 @@ class Famille extends CommonObject
 			dol_syslog(get_class($this)."::validate action abandonned: already validated", LOG_WARNING);
 			return 0;
 		}
-
-		/*if (! ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->viescolaire->famille->write))
-		 || (! empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->viescolaire->famille->famille_advance->validate))))
-		 {
-		 $this->error='NotEnoughPermissions';
-		 dol_syslog(get_class($this)."::valid ".$this->error, LOG_ERR);
-		 return -1;
-		 }*/
 
 		$now = dol_now();
 
@@ -954,6 +885,8 @@ class Famille extends CommonObject
 			$this->labelStatus[self::STATUS_VALIDATED] = $langs->transnoentitiesnoconv('Payé');
 			$this->labelStatus[self::STATUS_PROBLEME] = $langs->transnoentitiesnoconv('Problème');
 			$this->labelStatus[self::STATUS_CANCELED] = $langs->transnoentitiesnoconv('Disabled');
+			$this->labelStatus[self::STATUS_FAMILLE_INCOMPLETE] = $langs->transnoentitiesnoconv('Famille incomplète');
+			$this->labelStatus[self::STATUS_INFO_INCOMPLETE] = $langs->transnoentitiesnoconv('Informations incomplète');
 
 			$this->labelStatusShort[self::STATUS_DRAFT] = $langs->transnoentitiesnoconv('Non budgétisé');
 			$this->labelStatusShort[self::STATUS_BUDGETISE] = $langs->transnoentitiesnoconv('Budgétisé');
@@ -961,6 +894,8 @@ class Famille extends CommonObject
 			$this->labelStatusShort[self::STATUS_VALIDATED] = $langs->transnoentitiesnoconv('Payé');
 			$this->labelStatusShort[self::STATUS_PROBLEME] = $langs->transnoentitiesnoconv('Problème');
 			$this->labelStatusShort[self::STATUS_CANCELED] = $langs->transnoentitiesnoconv('Disabled');
+			$this->labelStatusShort[self::STATUS_FAMILLE_INCOMPLETE] = $langs->transnoentitiesnoconv('Famille incomplète');
+			$this->labelStatusShort[self::STATUS_INFO_INCOMPLETE] = $langs->transnoentitiesnoconv('Informations incomplète');
 		}
 
 		$statusType = 'status'.$status;

@@ -79,6 +79,9 @@ require_once DOL_DOCUMENT_ROOT.'/core/class/html.formcompany.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/date.lib.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/company.lib.php';
 
+dol_include_once('/viescolaire/class/parents.class.php');
+
+
 // load viescolaire libraries
 require_once __DIR__.'/class/famille.class.php';
 
@@ -291,7 +294,8 @@ $reshook = $hookmanager->executeHooks('printFieldListFrom', $parameters, $object
 $sql .= $hookmanager->resPrint;
 if ($object->ismultientitymanaged == 1) {
 	$sql .= " WHERE t.entity IN (".getEntity($object->element).")";
-} else {
+}
+else {
 	$sql .= " WHERE 1 = 1";
 }
 foreach ($search as $key => $val) {
@@ -383,8 +387,8 @@ if (empty($conf->global->MAIN_DISABLE_FULL_SCANLIST)) {
 	$db->free($resql);
 }
 
-// Complete request and execute it with limit
-$sql .= $db->order($sortfield, $sortorder);
+// Ligne qui nous permet de directement mettre en première position les familles avec comme identifiant "identifiant provisoire"
+$sql .= " ORDER BY CASE WHEN identifiant_famille = 'identifiant provisoire' THEN 1 ELSE 2 END $sortorder";
 if ($limit) {
 	$sql .= $db->plimit($limit + 1, $offset);
 }
@@ -695,10 +699,10 @@ if (isset($extrafields->attributes[$object->table_element]['computed']) && is_ar
 // 				foreach($resqlEnfants as $value)
 // 				{
 // 					$enfants .= $value['nom'].' '.$value['prenom'].'<br>';
-					
+
 // 				}
 // 				print $enfants;
-			
+
 // 			} else {
 // 				print $object->showOutputField($val, $key, $object->$key, '');
 // 			}
@@ -820,7 +824,21 @@ while ($i < $imaxinloop) {
 				} elseif ($key == 'nom_parent_1') {
 					print $object->getNomUrl(1);
 				} elseif ($key == 'identifiant_famille') {
-					print '<a href="' . DOL_URL_ROOT . '/custom/viescolaire/famille_card.php?id=' . $object->id . '">' . $object->identifiant_famille . '</a>';
+
+					$parentClass = new Parents($db);
+					$parentsFromFamily = $parentClass->fetchAll('','','','',['fk_famille'=>$object->id]);
+
+					$error = 0;
+					foreach ($parentsFromFamily as $value)
+					{
+						if(!$value->mail) $error++;
+						if(!$value->phone) $error++;
+					}
+
+					print '<a href="' . DOL_URL_ROOT . '/custom/viescolaire/famille_card.php?id=' . $object->id . '">' . $object->identifiant_famille . '<br>';
+						if(count($parentsFromFamily) == 0) print ' <span class="badge badge-danger">Responsables manquants &#9888</span><br>';
+						elseif($error > 0) print ' <span class="badge badge-danger">Mail ou Téléphone manquant &#9888</span>';
+					print '</a>';
 				} elseif ($key == 'antenne') {
 					$antenne = "SELECT * FROM ".MAIN_DB_PREFIX."etablissement WHERE rowid = ".$object->antenne;
 					$resqlAntenne = $db->query($antenne);
@@ -833,10 +851,10 @@ while ($i < $imaxinloop) {
 					foreach($resqlEnfants as $value)
 					{
 						$enfants .= $value['nom'].' '.$value['prenom'].'<br>';
-						
+
 					}
 					print $enfants;
-				
+
 				} else {
 					print $object->showOutputField($val, $key, $object->$key, '');
 				}

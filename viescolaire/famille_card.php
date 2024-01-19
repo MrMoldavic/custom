@@ -22,11 +22,9 @@
  *		\brief      Page to create/edit/view famille
  */
 
-use Couchbase\User;
-
-ini_set('display_errors', '1');
+/*ini_set('display_errors', '1');
 ini_set('display_startup_errors', '1');
-error_reporting(E_ALL);
+error_reporting(E_ALL);*/
 //if (! defined('NOREQUIREDB'))              define('NOREQUIREDB', '1');				// Do not create database handler $db
 //if (! defined('NOREQUIREUSER'))            define('NOREQUIREUSER', '1');				// Do not load object $user
 //if (! defined('NOREQUIRESOC'))             define('NOREQUIRESOC', '1');				// Do not load object $mysoc
@@ -300,22 +298,6 @@ $title = $langs->trans("Famille");
 $help_url = '';
 llxHeader('', $title, $help_url);
 
-// Example : Adding jquery code
-// print '<script type="text/javascript">
-// jQuery(document).ready(function() {
-// 	function init_myfunc()
-// 	{
-// 		jQuery("#myid").removeAttr(\'disabled\');
-// 		jQuery("#myid").attr(\'disabled\',\'disabled\');
-// 	}
-// 	init_myfunc();
-// 	jQuery("#mybutton").click(function() {
-// 		init_myfunc();
-// 	});
-// });
-// </script>';
-
-
 // Part to create
 if ($action == 'create') {
 	if (empty($permissiontoadd)) {
@@ -328,17 +310,7 @@ if ($action == 'create') {
 	print '<form method="POST" action="'.$_SERVER["PHP_SELF"].'">';
 	print '<input type="hidden" name="token" value="'.newToken().'">';
 	print '<input type="hidden" name="action" value="add">';
-	/*if ($backtopage) {
-		print '<input type="hidden" name="backtopage" value="'.$backtopage.'">';
-	}
-	if ($backtopageforcancel) {
-		print '<input type="hidden" name="backtopageforcancel" value="'.$backtopageforcancel.'">';
-	}*/
-
 	print dol_get_fiche_head(array(), '');
-
-	// Set some default values
-	//if (! GETPOSTISSET('fieldname')) $_POST['fieldname'] = 'myvalue';
 
 	print '<table class="border centpercent tableforfieldcreate">'."\n";
 
@@ -355,8 +327,6 @@ if ($action == 'create') {
 	print $form->buttonsSaveCancel("Create");
 
 	print '</form>';
-
-	//dol_set_focus('input[name="ref"]');
 }
 
 // Part to edit record
@@ -415,22 +385,6 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 		// Create an array for form
 		$formquestion = array();
 		$formconfirm = $form->formconfirm($_SERVER["PHP_SELF"].'?id='.$object->id, $langs->trans('ToClone'), $langs->trans('ConfirmCloneAsk', $object->ref), 'confirm_clone', $formquestion, 'yes', 1);
-	}
-
-	// Confirmation of action xxxx
-	if ($action == 'xxx') {
-		$formquestion = array();
-		/*
-		$forcecombo=0;
-		if ($conf->browser->name == 'ie') $forcecombo = 1;	// There is a bug in IE10 that make combo inside popup crazy
-		$formquestion = array(
-			// 'text' => $langs->trans("ConfirmClone"),
-			// array('type' => 'checkbox', 'name' => 'clone_content', 'label' => $langs->trans("CloneMainAttributes"), 'value' => 1),
-			// array('type' => 'checkbox', 'name' => 'update_prices', 'label' => $langs->trans("PuttingPricesUpToDate"), 'value' => 1),
-			// array('type' => 'other',    'name' => 'idwarehouse',   'label' => $langs->trans("SelectWarehouseForStockDecrease"), 'value' => $formproduct->selectWarehouses(GETPOST('idwarehouse')?GETPOST('idwarehouse'):'ifone', 'idwarehouse', '', 1, 0, 0, '', 0, $forcecombo))
-		);
-		*/
-		$formconfirm = $form->formconfirm($_SERVER["PHP_SELF"].'?id='.$object->id, $langs->trans('XXX'), $text, 'confirm_xxx', $formquestion, 0, 1, 220);
 	}
 
 	// Call Hook formConfirm
@@ -516,13 +470,13 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 		print '<tbody>';
 
 		print '<tr class="liste_titre">
-					<th class="wrapcolumntitle liste_titre">Prenom</th>
+					<th class="wrapcolumntitle liste_titre">Prénom</th>
 					<th class="wrapcolumntitle liste_titre">Nom</th>
 					<th class="wrapcolumntitle liste_titre">Type de parent</th>
-					<th class="wrapcolumntitle liste_titre">Contact préférentiel</th>
+					<th class="wrapcolumntitle liste_titre">Contact préférentiel ?</th>
 					<th class="wrapcolumntitle liste_titre">Téléphone</th>
 					<th class="wrapcolumntitle liste_titre">Mail</th>
-					<th class="wrapcolumntitle liste_titre">Address</th>
+					<th class="wrapcolumntitle liste_titre">Adresse</th>
 					<th class="wrapcolumntitle liste_titre">Précisions</th>
 					<th class="wrapcolumntitle liste_titre">Supprimer</th>
 					</tr>';

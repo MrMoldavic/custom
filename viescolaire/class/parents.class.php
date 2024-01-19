@@ -254,9 +254,16 @@ class Parents extends CommonObject
 
 		$this->phone = str_replace(" ", "", $this->phone);
 
-		if(!empty($this->phone) && strlen($this->phone) != 10)
+		if($this->mail && !preg_match("#^[a-z0-9._-]+@[a-z0-9._-]{2,}\.[a-z]{2,4}$#", $this->mail))
+		{
+			setEventMessage("Le mail renseigné n'est pas valable",'errors');
+			return -1;
+		}
+
+		if($this->phone && !preg_match('#^0[1-68]([-. ]?[0-9]{2}){4}$#', $this->phone))
 		{
 			setEventMessage('Le numéro de téléphone ne fait pas 10 chiffres.','errors');
+			return -1;
 		}
 		else
 		{
@@ -268,8 +275,6 @@ class Parents extends CommonObject
 		if(!$this->fk_famille)
 		{
 			$this->status = self::STATUS_VALIDATED;
-
-
 			$familleClass->identifiant_famille = $this->lastname;
 			$rowidFamille = $familleClass->create($user);
 
@@ -291,10 +296,15 @@ class Parents extends CommonObject
 				$parents = $parentsClass->fetchAll('ASC','rowid','','',['fk_famille'=>$familleId],'ASC');
 
 				$newIdentifiant = "";
+				$error = 0;
 				foreach ($parents as $parent)
 				{
 					$newIdentifiant .= "$parent->firstname-$parent->lastname / ";
+					if(!$parent->mail) $error++;
+					if(!$parent->phone) $error++;
 				}
+
+				if($error > 0) $familleClass->status = $familleClass::STATUS_INFO_INCOMPLETE;
 
 				$familleClass->identifiant_famille = $newIdentifiant;
 			}
@@ -606,22 +616,69 @@ class Parents extends CommonObject
 	public function update(User $user, $notrigger = false)
 	{
 
+		if($this->phone && !preg_match('#^0[1-68]([-. ]?[0-9]{2}){4}$#', $this->phone))
+		{
+			setEventMessage('Le numéro de téléphone ne fait pas 10 caractères','errors');
+			return -1;
+		}
+		if($this->mail && !preg_match("#^[a-z0-9._-]+@[a-z0-9._-]{2,}\.[a-z]{2,4}$#", $this->mail))
+		{
+			setEventMessage("Le mail renseigné n'est pas valable",'errors');
+			return -1;
+		}
+		// On appelle l'ensemble des parents dans une variable
+		$parents = $this->fetchAll('','',0,'',['fk_famille'=>$this->fk_famille]);
+
+		// Si contact préférentiel est coché, on va décocher le parents qui le sont actuellement
 		if($this->contact_preferentiel)
 		{
-			$parents = $this->fetchBy(['rowid'],$this->fk_famille,'fk_famille');
+			// On va chercher le parent préféré (fetch et non fetchAll car 1 seul possible)
+			$parentClass = new Self($this->db);
+			$parentClass->fetch('',''," AND fk_famille=$this->fk_famille AND contact_preferentiel=1 AND rowid != $this->id");
 
-			foreach ($parents as $value)
+			// Si il en existe un, on lui enlève le status de contact préférentiel
+			if($parentClass->id)
 			{
-				if($value->rowid == $this->rowid) continue;
-
-				$parent = new Self($this->db);
-				$parent->fetch($value->rowid);
-				$parent->contact_preferentiel = 0;
-				$parent->update($user);
+				$parentClass->contact_preferentiel = 0;
+				$parentClass->update($user);
 			}
 		}
 
-		return $this->updateCommon($user, $notrigger);
+		// On update le parent normalement
+		$resUpdate = $this->updateCommon($user, $notrigger);
+
+		// On appelle une fonction qui modifie le status de la famille si il manque des infos à un des parents (tel, mail)
+		$resUpdateFamille = $this->updateFamilyIfmissingInfo($user);
+
+		return $resUpdate+$resUpdateFamille;
+	}
+
+	/**
+	 * Checks if any parent missing phone or mail informations
+	 *
+	 * @return int             -1 if KO, 1 if OK
+	 */
+	public function updateFamilyIfmissingInfo(User $user)
+	{
+		$parents = $this->fetchAll('','',0,'',['fk_famille'=>$this->fk_famille]);
+
+		$error = 0;
+		foreach ($parents as $parent)
+		{
+			if(!$parent->mail) $error++;
+			if(!$parent->phone) $error++;
+		}
+
+		$familleClass = new Famille($this->db);
+		$familleClass->fetch($this->fk_famille);
+
+		if($error > 0) $familleClass->status = Famille::STATUS_INFO_INCOMPLETE;
+		else $familleClass->status = Famille::STATUS_DRAFT;
+
+		$res = $familleClass->update($user);
+
+		if($res > 0) return 1;
+		else return -1;
 	}
 
 	/**
