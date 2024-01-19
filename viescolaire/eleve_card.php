@@ -86,6 +86,7 @@ dol_include_once('/viescolaire/class/eleve.class.php');
 dol_include_once('/viescolaire/class/souhait.class.php');
 dol_include_once('/viescolaire/class/parents.class.php');
 dol_include_once('/scolarite/class/creneau.class.php');
+dol_include_once('/viescolaire/class/dictionary.class.php');
 dol_include_once('/viescolaire/class/inscription.class.php');
 dol_include_once('/viescolaire/lib/viescolaire_eleve.lib.php');
 
@@ -105,54 +106,9 @@ $backtopageforcancel = GETPOST('backtopageforcancel', 'alpha');
 $lineid   = GETPOST('lineid', 'int');
 $inscriptionid = GETPOST('inscriptionid','int');
 
-// TODO mettre ce code dans eleve.class.php
-if($action == 'confirm_desactivation')
-{
-	//$object = new Eleve($db);
-	$souhait = "SELECT status,rowid FROM ".MAIN_DB_PREFIX."souhait WHERE fk_eleve = ".$id;
-	$resqlSouhait = $db->query($souhait);
 
-	$count = 0;
-	foreach($resqlSouhait as $val)
-	{
-		if($val['status'] == 4)
-		{
-			$sql = "SELECT c.nom_creneau,c.rowid FROM ".MAIN_DB_PREFIX."creneau as c WHERE c.rowid =".("(SELECT e.fk_creneau FROM ".MAIN_DB_PREFIX."affectation as e WHERE e.fk_souhait =".$val['rowid']." AND e.status = 4)");
-			$resql = $db->query($sql);
-			$objectCreneau = $db->fetch_object($resql);
-			$count++;
-		}
-		elseif($val['status'] == 0)
-		{
-			$count++;
-		}
-	}
-
-	if($count != 0 && (GETPOST('stateInscription', 'int') == 9 || $action == 'confirm_desactivation'))
-	{
-		setEventMessage('Des souhaits non désactivés existent encore, action impossible.','errors');
-	}
-	else
-	{
-		$eleve = new Eleve($db);
-		$sql = "UPDATE " . MAIN_DB_PREFIX . "eleve SET status = " . ($action == 'confirm_desactivation' ? $eleve::STATUS_CANCELED : GETPOST('stateInscription', 'int')) . " WHERE rowid=" . $id;
-		$resql = $db->query($sql);
-
-		if($action == 'confirm_desactivation') setEventMessage('Élève désactivé avec succès!');
-		else setEventMessage('Status modifié avec succès!');
-	}
-
-}
-
-if ($action == 'confirm_activation') {
-
-	$eleve = new Eleve($db);
-	$eleve->fetch($id);
-	$eleve->status = $eleve::STATUS_DRAFT;
-	$eleve->update($user);
-
-	setEventMessage('Élève activé avec succès!');
-}
+// include des actions, pour ne pas flooder le fichier (include et pas include_once)
+include DOL_DOCUMENT_ROOT.'/custom/viescolaire/core/actions/actions_eleve_viescolaire.inc.php';
 
 // Initialize technical objects
 $object = new Eleve($db);
@@ -201,14 +157,7 @@ if ($enablepermissioncheck) {
 $upload_dir = $conf->viescolaire->multidir_output[isset($object->entity) ? $object->entity : 1].'/eleve';
 
 // Security check (enable the most restrictive one)
-//if ($user->socid > 0) accessforbidden();
-//if ($user->socid > 0) $socid = $user->socid;
-//$isdraft = (isset($object->status) && ($object->status == $object::STATUS_DRAFT) ? 1 : 0);
-//restrictedArea($user, $object->element, $object->id, $object->table_element, '', 'fk_soc', 'rowid', $isdraft);
 if (empty($conf->viescolaire->enabled)) accessforbidden();
-
-// if (!$permissiontoread) accessforbidden();
-
 
 /*
  * Actions
@@ -264,26 +213,10 @@ if (empty($reshook)) {
 	$autocopy = 'MAIN_MAIL_AUTOCOPY_ELEVE_TO';
 	$trackid = 'eleve'.$object->id;
 	include DOL_DOCUMENT_ROOT.'/core/actions_sendmails.inc.php';
-
-
-
 }
 
-
-
-if ($action == 'confirm_delete_inscription') {
-	$inscriptionClass = new Inscription($db);
-	$inscriptionClass->fetch($inscriptionid);
-	if($inscriptionClass->id)
-	{
-		$resDelete = $inscriptionClass->delete($user);
-		if($resDelete > 0) setEventMessage('Inscription supprimée avec succès!');
-		else setEventMessage('Une erreur est survenue lors de la suppression','warnings');
-	}
-	else setEventMessage('Une erreur est survenue','errors');
-
-	unset($inscriptionClass);
-}
+// Action pour confirmer la suppression d'une inscription
+include DOL_DOCUMENT_ROOT.'/custom/viescolaire/core/actions/actions_eleveInscription_viescolaire.inc.php';
 
 /*
  * View
@@ -453,11 +386,6 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 
 	print '</table>';
 
-	$anneScolaire = "SELECT annee,annee_actuelle,rowid FROM ".MAIN_DB_PREFIX."c_annee_scolaire WHERE active = 1 ORDER BY annee_actuelle DESC, rowid ASC";
-	$resqlAnneeScolaire = $db->query($anneScolaire);
-	$objAnneScolaire = $db->fetch_object($resqlAnneeScolaire);
-
-
 	if($object->status != $object::STATUS_CANCELED)
 	{
 		print load_fiche_titre("Etats des inscriptions", '', 'fa-pen');
@@ -513,7 +441,6 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 
 		if (empty($reshook)) {
 
-
 			if($object->status != $object::STATUS_CANCELED)
 			{
 				print dolGetButtonAction($langs->trans('Engager dans un groupe'), '', '', DOL_URL_ROOT.'/custom/organisation/engagement_card.php?fk_eleve='.$object->id.'&action=create' , '', $permissiontoadd);
@@ -535,17 +462,15 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 		print '</div>'."\n";
 	}
 
-	if(($object->status != $object::STATUS_CANCELED) && ($object->status != $object::STATUS_ABANDON))
+	if($object->status != $object::STATUS_CANCELED && $object->status != $object::STATUS_ABANDON)
 	{
 		print '<hr>';
 		print load_fiche_titre("Liste des souhait de l'élève", '', 'fa-school');
 
 		print '<p>'.dolGetButtonAction('Ajouter un souhait', '', 'default', '/custom/viescolaire/souhait_card.php'.'?action=create&fk_eleve='.$object->id, '', $permissiontoadd).'</p>';
 
-
 		$souhaitClass = new Souhait($db);
 		$souhaitsEleve = $souhaitClass->fetchAll('','','','',array('fk_eleve'=>$object->id));
-
 
 		if(count($souhaitsEleve) == 0)
 		{
@@ -553,15 +478,18 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 		}
 		else
 		{
-			foreach($resqlAnneeScolaire as $value)
+			$dictionaryClass = new Dictionary($db);
+			$annesScolaires = $dictionaryClass->fetchByDictionary('c_annee_scolaire',['rowid','annee','annee_actuelle'],0,'',' WHERE active = 1 ORDER BY annee_actuelle DESC, rowid ASC');
+
+			foreach($annesScolaires as $value)
 			{
-				$souhait = "SELECT rowid,nom_souhait,status,details FROM ".MAIN_DB_PREFIX."souhait as c WHERE c.fk_eleve = ".$object->id." AND c.fk_annee_scolaire=".$value['rowid']." ORDER BY c.status ASC";
-				$resqlSouhait = $db->query($souhait);
+				$souhaitClass = new Souhait($db);
+				$souhaits = $souhaitClass->fetchAll('ASC','status',0,0,['fk_eleve'=>$object->id,'fk_annee_scolaire'=>$value->rowid],'AND');
 
-				print '<div class="annee-accordion'.($value['annee_actuelle'] == 1 ? '-opened' : '').'">';
-				print '<h3><span class="badge badge-status4 badge-status">'.$value['annee'].($value['annee_actuelle'] != 1 ? ' (année précédente)' : '').'</span></h3>';
+				print '<div class="annee-accordion'.($value->annee_actuelle == 1 ? '-opened' : '').'">';
+				print '<h3><span class="badge badge-status4 badge-status">'.$value->annee.($value->annee_actuelle != 1 ? ' (année précédente)' : '').'</span></h3>';
 
-				if($resqlSouhait->num_rows > 0)
+				if(count($souhaits) > 0)
 				{
 					print '<table class="tagtable liste">';
 					print '<tbody>';
@@ -573,15 +501,14 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 					<th class="wrapcolumntitle liste_titre">Affecté par, le</th>
 					</tr>';
 
-					foreach($resqlSouhait as $val)
+					foreach($souhaits as $val)
 					{
 						print '<tr class="oddeven">';
-						print '<td><a href="' . DOL_URL_ROOT . '/custom/viescolaire/souhait_card.php?id=' . $val['rowid']. '">' .'- ' . $val['nom_souhait'].'</a>'.($value['annee_actuelle'] != 1 ? ' <span class="badge  badge-status'.($val['details'] != ""  ? "4" : "8").' badge-status" style="color:white;">'.($val['details'] != "" && getDolGlobalString('TIME_FOR_APPRECIATION', '') ? "Appréciation Faite" : "Appréciation manquante") : '').'</span></td>';
-						if($val['status'] == 4)
+						print '<td><a href="' . DOL_URL_ROOT . '/custom/viescolaire/souhait_card.php?id=' . $val->id. '">' .'- ' . $val->nom_souhait.'</a>'.($value->annee_actuelle != 1 ? ' <span class="badge  badge-status'.($val->details != ""  ? "4" : "8").' badge-status" style="color:white;">'.($val->details != "" && getDolGlobalString('TIME_FOR_APPRECIATION', '') ? "Appréciation Faite" : "Appréciation manquante") : '').'</span></td>';
+						if($val->status == 4)
 						{
-							$sqlSouhait = "SELECT c.nom_creneau,c.rowid,a.fk_user_creat,a.date_creation FROM ".MAIN_DB_PREFIX."creneau as c INNER JOIN ".MAIN_DB_PREFIX."affectation as a ON c.rowid=a.fk_creneau INNER JOIN ".MAIN_DB_PREFIX."souhait as s ON s.rowid=a.fk_souhait WHERE s.rowid =".$val['rowid']." AND a.status=".$val['status'];
-							$resqlSouhait = $db->query($sqlSouhait);
-							$objectCreneau = $db->fetch_object($resqlSouhait);
+							$creneauClass = new Creneau($db);
+							$objectCreneau = $creneauClass->getCreneauxFromSouhaits($val->id,$val->status);
 
 							print '<td><span class="badge  badge-status4 badge-status" style="color:white;">Affecté</span></td>';
 							print '<td><a href="'.DOL_URL_ROOT.'/custom/scolarite/creneau_card.php?id='.$objectCreneau->rowid.'">'.$objectCreneau->nom_creneau.'</a></td>';
@@ -594,7 +521,7 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 
 							print "<td>$userClass->firstname $userClass->lastname, ".$dateFormat.'</td>';
 						}
-						elseif($val['status'] == 9)
+						elseif($val->status == 9)
 						{
 							print '<td><span class="badge  badge-status8 badge-status" style="color:white;">Souhait désactivé</span></td>';
 							print '<td>Aucun créneau</td>';
@@ -607,7 +534,6 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 							print '<td>Aucune info</td>';
 						}
 						print '</tr>';
-
 					}
 					print '</tbody>';
 					print '</table>';

@@ -23,6 +23,28 @@ class Dictionary extends CommonObject
 		}
 	}
 
+	public function returnActualyear()
+	{
+		$sql = "SELECT ";
+		$sql .= "rowid, annee, annee_actuelle ";
+		$sql .= "FROM ".MAIN_DB_PREFIX."c_annee_scolaire ";
+		$sql .= "WHERE annee_actuelle = 1";
+
+		$resql = $this->db->query($sql);
+		if($resql)
+		{
+			$record = $this->db->fetch_object($resql);
+			$this->db->free($resql);
+
+			return $record;
+		} else {
+			$this->errors[] = 'Error ' . $this->db->lasterror();
+			dol_syslog(__METHOD__ . ' ' . join(',', $this->errors), LOG_ERR);
+
+			return -1;
+		}
+	}
+
 
 	/**
 	 * Fetch object from the database

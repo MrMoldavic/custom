@@ -1547,6 +1547,49 @@ class Creneau extends CommonObject
 
 		return $error;
 	}
+
+	public function getCreneauxFromSouhaits(Int $id, Int $status)
+	{
+		$sql = 'SELECT ';
+		$sql .= 'c.nom_creneau,c.rowid,a.fk_user_creat,a.date_creation ';
+		$sql .= 'FROM '.MAIN_DB_PREFIX.$this->table_element.' AS c ';
+		$sql .= 'INNER JOIN '.MAIN_DB_PREFIX.'affectation AS a ON c.rowid=a.fk_creneau ';
+		$sql .= 'INNER JOIN '.MAIN_DB_PREFIX.'souhait AS s ON s.rowid=a.fk_souhait ';
+		$sql .= 'WHERE s.rowid='.$this->db->sanitize($id);
+		$sql .= ' AND a.status='.$this->db->sanitize($status);
+
+		$resql = $this->db->query($sql);
+
+		if ($resql) {
+			$num = $this->db->num_rows($resql);
+			$i = 0;
+			if($num == 1)
+			{
+				$records = $this->db->fetch_object($resql);
+			}
+			else
+			{
+				while ($i < ($limit ? min($limit, $num) : $num)) {
+
+					$obj = $this->db->fetch_object($resql);
+					$record = new self($this->db);
+					$record->setVarsFromFetchObj($obj);
+
+					$records[$record->id] = $record;
+
+					$i++;
+				}
+			}
+
+			$this->db->free($resql);
+			return $records;
+		} else {
+			$this->errors[] = 'Error '.$this->db->lasterror();
+			dol_syslog(__METHOD__.' '.join(',', $this->errors), LOG_ERR);
+
+			return -1;
+		}
+	}
 }
 
 
