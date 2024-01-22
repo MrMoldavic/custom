@@ -821,7 +821,7 @@ while ($i < $imaxinloop) {
 				if ($key == 'status') {
 					print $object->getLibStatut(5);
 				} elseif ($key == 'fk_instrument_enseigne') {
-					print dolGetButtonAction($object->showOutputField($val, $key, $object->$key, '') != "" ? $object->showOutputField($val, $key, $object->$key, '') : "Groupe",'', 'danger','/custom/scolarite/creneau_card.php?id=' . $object->id, '', $permissiontoread);
+					print dolGetButtonAction($object->showOutputField($val, $key, $object->$key, '') != "" ? $object->showOutputField($val, $key, $object->$key, '') : ($object->nom_groupe ? : 'Groupe sans nom'),'', 'danger','/custom/scolarite/creneau_card.php?id=' . $object->id, '', $permissiontoread);
 				} elseif ($key == 'nom_creneau'){
 					print $object->getNomUrl(1);
 
