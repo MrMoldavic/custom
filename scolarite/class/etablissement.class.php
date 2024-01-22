@@ -1137,6 +1137,17 @@ class Etablissement extends CommonObject
 
 		return $error;
 	}
+
+	// Permet de changer l'établissement par défaut dans les listes
+	public function checkSetCookieEtablissement($etab)
+	{
+		if($_SESSION['etablissementid'] != intval($etab))
+		{
+			$_SESSION['etablissementid'] = intval($etab);
+			setEventMessage('Etablissement enregistré avec succès!');
+		}
+	}
+
 }
 
 
