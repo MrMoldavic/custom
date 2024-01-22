@@ -22,9 +22,9 @@
  *		\brief      List page for creneau
  */
 
-/* ini_set('display_errors', '1');
+ ini_set('display_errors', '1');
 ini_set('display_startup_errors', '1');
-error_reporting(E_ALL);*/
+error_reporting(E_ALL);
 
 
 //if (! defined('NOREQUIREDB'))              define('NOREQUIREDB', '1');				// Do not create database handler $db
@@ -83,6 +83,7 @@ if (!$res) {
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formcompany.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/date.lib.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/company.lib.php';
+dol_include_once('/scolarite/class/etablissement.class.php');
 
 // load scolarite libraries
 require_once __DIR__.'/class/creneau.class.php';
@@ -106,6 +107,12 @@ $allYear = GETPOST('allYear','aZ09') ? GETPOST('allYear','aZ09') : 'false';
 $data = GETPOST('data','alpha');
 $creneauErrors = GETPOST('creneauErrors','aZ09') ? GETPOST('creneauErrors','aZ09') : 'false';
 
+// Changement de la valeur de session que quand on valide le formulaire
+if($action == "changeEtablissement")
+{
+	$etablissementClass = new Etablissement($db);
+	$etablissementClass->checkSetCookieEtablissement(GETPOST('etablissementid','int'));
+}
 
 $id = GETPOST('id', 'int');
 // Load variable for pagination
@@ -134,18 +141,6 @@ $extrafields->fetch_name_optionals_label($object->table_element);
 //$extrafields->fetch_name_optionals_label($object->table_element_line);
 
 $search_array_options = $extrafields->getOptionalsFromPost($object->table_element, '', 'search_');
-
-//Default sort order (if not yet defined by previous GETPOST)
-// if (!$sortfield) {
-// 	// reset($object->fields);					// Reset is required to avoid key() to return null.
-// 	// $sortfield = "t.".key($object->fields); // Set here default search field. By default 1st field in definition.
-// 	$sortfield = "t.fk_annee_scolaire";
-// 	${sortfield2} = "t.professeurs";
-// }
-// if (!$sortorder) {
-// 	$sortorder = "DESC";
-// 	$sortorder2 = "DESC";
-// }
 
 // Initialize array of search criterias
 $search_all = GETPOST('search_all', 'alphanohtml');
@@ -274,10 +269,9 @@ $title = $langs->trans('Liste des créneaux');
 $morejs = array();
 $morecss = array();
 
-
 // Build and execute select
 // --------------------------------------------------------------------
-$sql = 'SELECT ';
+$sql = 'SELECT DISTINCT ';
 $sql .= $object->getFieldList('t');
 // Add fields from extrafields
 if (!empty($extrafields->attributes[$object->table_element]['label'])) {
@@ -298,6 +292,11 @@ if (isset($extrafields->attributes[$object->table_element]['label']) && is_array
 $parameters = array();
 $reshook = $hookmanager->executeHooks('printFieldListFrom', $parameters, $object); // Note that $action and $object may have been modified by hook
 $sql .= $hookmanager->resPrint;
+
+if ($_SESSION['etablissementid'] != 0) {
+	$sql .= ' INNER JOIN '.MAIN_DB_PREFIX.'dispositif as d ON d.rowid=t.fk_dispositif';
+	$sql .= ' INNER JOIN '.MAIN_DB_PREFIX.'etablissement as a ON d.fk_etablissement=' . $_SESSION['etablissementid'];
+}
 if ($object->ismultientitymanaged == 1) {
 	$sql .= " WHERE t.entity IN (".getEntity($object->element).")";
 }
@@ -351,7 +350,6 @@ if ($search_all) {
 	$sql .= natural_search(array_keys($fieldstosearchall), $search_all);
 }
 
-
 //$sql.= dolSqlDateFilter("t.field", $search_xxxday, $search_xxxmonth, $search_xxxyear);
 // Add where from extra fields
 include DOL_DOCUMENT_ROOT.'/core/tpl/extrafields_list_search_sql.tpl.php';
@@ -360,38 +358,9 @@ $parameters = array();
 $reshook = $hookmanager->executeHooks('printFieldListWhere', $parameters, $object); // Note that $action and $object may have been modified by hook
 $sql .= $hookmanager->resPrint;
 
-/*
-// Add fields from extrafields
-if (!empty($extrafields->attributes[$object->table_element]['label'])) {
-	foreach ($extrafields->attributes[$object->table_element]['label'] as $key => $val) {
-		$sql .= ($extrafields->attributes[$object->table_element]['type'][$key] != 'separate' ? "ef.".$key.', ' : '');
-	}
-}
-// Add where from hooks
-$parameters = array();
-$reshook = $hookmanager->executeHooks('printFieldListGroupBy', $parameters, $object);    // Note that $action and $object may have been modified by hook
-$sql .= $hookmanager->resPrint;
-$sql = preg_replace('/,\s*$/', '', $sql);
-*/
-
-// Add HAVING from hooks
-/*
-$parameters = array();
-$reshook = $hookmanager->executeHooks('printFieldListHaving', $parameters, $object); // Note that $action and $object may have been modified by hook
-$sql .= empty($hookmanager->resPrint) ? "" : " HAVING 1=1 ".$hookmanager->resPrint;
-*/
 // Count total nb of records
 $nbtotalofrecords = '';
 if (empty($conf->global->MAIN_DISABLE_FULL_SCANLIST)) {
-	/* This old and fast method to get and count full list returns all record so use a high amount of memory.
-	$resql = $db->query($sql);
-	$nbtotalofrecords = $db->num_rows($resql);
-	*/
-	/* The slow method does not consume memory on mysql (not tested on pgsql) */
-	/*$resql = $db->query($sql, 0, 'auto', 1);
-	while ($db->fetch_object($resql)) {
-		$nbtotalofrecords++;
-	}*/
 	/* The fast and low memory method to get and count full list converts the sql into a sql count */
 	$sqlforcount = preg_replace('/^SELECT[a-z0-9\._\s\(\),]+FROM/i', 'SELECT DISTINCT COUNT(DISTINCT t.rowid) as nbtotalofrecords FROM', $sql);
 	$resql = $db->query($sqlforcount);
@@ -406,8 +375,6 @@ if (empty($conf->global->MAIN_DISABLE_FULL_SCANLIST)) {
 
 // Complete request and execute it with limit
 if (!$sortfield) {
-	// reset($object->fields);					// Reset is required to avoid key() to return null.
-	// $sortfield = "t.".key($object->fields); // Set here default search field. By default 1st field in definition.
 	$sortfield = "t.fk_annee_scolaire,";
 	$sortfield .= "t.jour";
 }
@@ -587,6 +554,40 @@ if($massaction == 'telephone' || $massaction == 'mail' || $massaction == "eleves
 		}
 	}
 }
+
+
+
+// Ajout du formulaire qui permet de changer son établissement de prédilection
+$etablissementClass = new Etablissement($db);
+$etablissementsList = $etablissementClass->fetchAll('','',0,0,[],'AND');
+$etablissements = [0=>'Tous'];
+
+foreach ($etablissementsList as $val) {
+	$etablissements[$val->id] = $val->nom;
+}
+print '<form action="' . $_SERVER["PHP_SELF"] . '" method="POST">';
+print '<input type="hidden" tyname="sortfield" value="' . $sortfield . '">';
+print '<input type="hidden" name="sortorder" value="' . $sortorder . '">';
+print '<input type="hidden" name="action" value="changeEtablissement">';
+print '<input type="hidden" name="token" value="'.newToken().'">';
+dol_fiche_head('');
+print '<table class="border centpercent">';
+print '<tr>';
+print '</td></tr>';
+// Type de Kit
+print '<tr><td class="fieldrequired titlefieldcreate">Selectionnez votre établissement: </td><td>';
+print $form->selectarray('etablissementid', $etablissements,$_SESSION['etablissementid']);
+print ' <a href="' . DOL_URL_ROOT . '/custom/scolarite/etablissement_card.php?action=create">';
+print '<span class="fa fa-plus-circle valignmiddle paddingleft" title="Ajouter un etablissement"></span>';
+print '</a>';
+print '</td>';
+print '</tr>';
+print "</table>";
+dol_fiche_end();
+print '<div class="center">';
+print '<input type="submit" class="button" value="Valider">';
+print '</div>';
+print '</form>';
 
 print '<form method="POST" id="searchFormList" action="'.$_SERVER["PHP_SELF"].'">'."\n";
 if ($optioncss != '') {
