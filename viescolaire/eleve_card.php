@@ -22,9 +22,9 @@
  *		\brief      Page to create/edit/view eleve
  */
 
-ini_set('display_errors', '1');
+/*ini_set('display_errors', '1');
 ini_set('display_startup_errors', '1');
-error_reporting(E_ALL);
+error_reporting(E_ALL);*/
 
 //if (! defined('NOREQUIREDB'))              define('NOREQUIREDB', '1');				// Do not create database handler $db
 //if (! defined('NOREQUIREUSER'))            define('NOREQUIREUSER', '1');				// Do not load object $user
@@ -399,11 +399,10 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 	print '</div>';
 
 	print '<div class="clearboth"></div>';
-
+	print load_fiche_titre('Liste des parents', '', 'object_' . $object->picto);
 	if($object->fk_famille)
 	{
-		print load_fiche_titre("Liste des parents", '', 'object_'.$object->picto);
-		print '<table class="tagtable liste" >';
+		/*print '<table class="tagtable liste" >';
 		print '<tbody>';
 
 		print '<tr class="liste_titre">
@@ -428,8 +427,51 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 			print '</tr>';
 		}
 		print '</tbody>';
+		print '</table>';*/
+
+		$parentsClass = new Parents($db);
+		$resultParents = $parentsClass->fetchAll('','',0,0,['fk_famille'=>$object->fk_famille],'AND');
+
+
+		print '<table class="noborder allwidth">';
+		print '<tbody>';
+
+		print '<tr class="liste_titre">
+					<th class="wrapcolumntitle liste_titre">Prénom</th>
+					<th class="wrapcolumntitle liste_titre">Nom</th>
+					<th class="wrapcolumntitle liste_titre">Type de parent</th>
+					<th class="wrapcolumntitle liste_titre">Contact préférentiel ?</th>
+					<th class="wrapcolumntitle liste_titre">Téléphone</th>
+					<th class="wrapcolumntitle liste_titre">Mail</th>
+					<th class="wrapcolumntitle liste_titre">Adresse</th>
+					<th class="wrapcolumntitle liste_titre">Précisions</th>
+					</tr>';
+		foreach ($resultParents as $val) {
+			$dictionaryClass = new Dictionary($db);
+			if ($val->fk_type_parent != 0) {
+				$typeParent = $dictionaryClass->fetchByDictionary('c_type_parent', ['type', 'rowid'], $val->fk_type_parent, 'rowid');
+			}
+
+			print '<tr class="oddeven">';
+			print '<td><a href=' . DOL_URL_ROOT . '/custom/viescolaire/parents_card.php?id=' . $val->rowid . '&action=edit' . '>' . $val->firstname . '</td>';
+			print '<td>' . $val->lastname . '</td>';
+			print '<td>' . ($typeParent != null ? $typeParent->type : 'Type Inconnu') . '</td>';
+			print "<td><span class='badge  badge-status" . ($val->contact_preferentiel == 1 ? '4' : '8') . " badge-status'>" . ($val->contact_preferentiel == 1 ? 'Oui' : 'Non') . '</td>';
+			print '<td>' . $val->phone . '</td>';
+			print '<td>' . $val->mail . '</td>';
+			print "<td>$val->address $val->zipcode $val->town</td>";
+			print "<td>$val->description</td>";
+			print '</tr>';
+		}
+		print '</tbody>';
 		print '</table>';
-	}
+
+
+
+
+
+
+	}else print '<h3><span class="badge badge-danger">Sans Famille liée &#9888</span></h3>';
 
 	if ($action != 'presend' && $action != 'editline') {
 		print '<div class="tabsAction">'."\n";

@@ -82,7 +82,10 @@ if (!$res) {
 require_once DOL_DOCUMENT_ROOT . '/core/class/html.formcompany.class.php';
 require_once DOL_DOCUMENT_ROOT . '/core/lib/date.lib.php';
 require_once DOL_DOCUMENT_ROOT . '/core/lib/company.lib.php';
+require_once DOL_DOCUMENT_ROOT.'/custom/scolarite/class/etablissement.class.php';
 //require_once DOL_DOCUMENT_ROOT . '/custom/viescolaire/class/eleve.class.php';
+
+
 
 // load viescolaire libraries
 require_once __DIR__ . '/class/souhait.class.php';
@@ -103,7 +106,13 @@ $contextpage = GETPOST('contextpage', 'aZ') ? GETPOST('contextpage', 'aZ') : 'so
 $backtopage = GETPOST('backtopage', 'alpha'); // Go back to a dedicated page
 $optioncss = GETPOST('optioncss', 'aZ'); // Option for the css output (always '' ex
 $allYear = GETPOST('allYear','aZ09') ? GETPOST('allYear','aZ09') : 'false';
-$etablissementid = GETPOST('etablissementid','aZ09');
+
+
+// Changement de la valeur de session que quand on valide le formulaire
+if ($action == 'changeEtablissement') {
+	$etablissementClass = new Etablissement($db);
+	$etablissementClass->checkSetCookieEtablissement(GETPOST('etablissementid', 'int'));
+}
 
 
 $id = GETPOST('id', 'int');
@@ -303,10 +312,10 @@ if (isset($extrafields->attributes[$object->table_element]['label']) && is_array
 $parameters = array();
 $reshook = $hookmanager->executeHooks('printFieldListFrom', $parameters, $object); // Note that $action and $object may have been modified by hook
 $sql .= $hookmanager->resPrint;
-if($etablissementid != 0)
+if($_SESSION['etablissementid'] != 0)
 {
 	$sql .= " INNER JOIN llx_eleve as e ON t.fk_eleve=e.rowid";
-	$sql .= " INNER JOIN llx_etablissement as a ON e.fk_etablissement=".$etablissementid;
+	$sql .= " INNER JOIN llx_etablissement as a ON e.fk_etablissement=".$_SESSION['etablissementid'];
 }
 if ($object->ismultientitymanaged == 1) {
 	$sql .= " WHERE t.entity IN (" . getEntity($object->element) . ")";
@@ -403,7 +412,7 @@ $num = $db->num_rows($resql);
 if($num == 0)
 {
 	print setEventMessage('Aucun souhait pour cet antenne, veuillez modifier votre choix.','errors');
-	$etablissementid = 0;
+	$_SESSION['etablissementid'] = 0;
 
 }
 
@@ -464,37 +473,41 @@ if (GETPOST('nomassaction', 'int') || in_array($massaction, array('presend', 'pr
 }
 $massactionbutton = $form->selectMassAction('', $arrayofmassactions);
 
-$sqlEtablissement = "SELECT e.rowid,e.nom FROM " . MAIN_DB_PREFIX . "etablissement as e";
-$resqlEtablissement = $db->query($sqlEtablissement);
-$etablissements = [0=>'Tous'];
+// Ajout du formulaire qui permet de changer son établissement de prédilection
+$etablissementClass = new Etablissement($db);
+$etablissementsList = $etablissementClass->fetchAll('', '', 0, 0, [], 'AND');
+$etablissements = [0 => 'Tous'];
 
-foreach ($resqlEtablissement as $val) {
-	 $etablissements[$val['rowid']] = $val['nom'];
+foreach ($etablissementsList as $val) {
+	$etablissements[$val->id] = $val->nom;
 }
-print '<form action="' . $_SERVER["PHP_SELF"] . '" method="POST">';
+print '<form action="' . $_SERVER['PHP_SELF'] . '" method="POST">';
 print '<input type="hidden" tyname="sortfield" value="' . $sortfield . '">';
 print '<input type="hidden" name="sortorder" value="' . $sortorder . '">';
-print '<input type="hidden" name="action" value="create">';
+print '<input type="hidden" name="action" value="changeEtablissement">';
+print '<input type="hidden" name="token" value="' . newToken() . '">';
 dol_fiche_head('');
 print '<table class="border centpercent">';
 print '<tr>';
 print '</td></tr>';
 // Type de Kit
 print '<tr><td class="fieldrequired titlefieldcreate">Selectionnez votre établissement: </td><td>';
-print $form->selectarray('etablissementid', $etablissements,$etablissementid);
+print $form->selectarray('etablissementid', $etablissements, $_SESSION['etablissementid']);
 print ' <a href="' . DOL_URL_ROOT . '/custom/scolarite/etablissement_card.php?action=create">';
 print '<span class="fa fa-plus-circle valignmiddle paddingleft" title="Ajouter un etablissement"></span>';
 print '</a>';
 print '</td>';
+print '<td></td>';
 print '</tr>';
-print "</table>";
+print '<td></td>';
+print '<td>';
+print '<input type="submit" class="button" value="Valider">';
+print '</td>';
+print '</table>';
 dol_fiche_end();
-print '<div class="center">';
-print '<input type="submit" class="button" value="Suivant">';
-print '</div>';
 print '</form>';
 
-print '<a href="'.$_SERVER['PHP_SELF'].'?allYear='.($allYear == 'false' ? 'true' : 'false').'&etablissementid='.$etablissementid.'">'.($allYear == 'false' ? 'Afficher les souhaits de toutes les années' : 'Afficher seulement les souhaits de l\'année actuelle').'</a>';
+print '<a href="'.$_SERVER['PHP_SELF'].'?allYear='.($allYear == 'false' ? 'true' : 'false').'&etablissementid='.$_SESSION['etablissementid'].'">'.($allYear == 'false' ? 'Afficher les souhaits de toutes les années' : 'Afficher seulement les souhaits de l\'année actuelle').'</a>';
 
 
 print '<form method="POST" id="searchFormList" action="' . $_SERVER["PHP_SELF"] . '">' . "\n";
@@ -508,12 +521,12 @@ print '<input type="hidden" name="sortfield" value="' . $sortfield . '">';
 print '<input type="hidden" name="sortorder" value="' . $sortorder . '">';
 print '<input type="hidden" name="page" value="' . $page . '">';
 print '<input type="hidden" name="contextpage" value="' . $contextpage . '">';
-print '<input type="hidden" name="etablissementid" value="' . $etablissementid . '">';
+print '<input type="hidden" name="etablissementid" value="' . $_SESSION['etablissementid'] . '">';
 
 
 $newcardbutton = dolGetButtonTitle($langs->trans('New'), '', 'fa fa-plus-circle', dol_buildpath('/viescolaire/souhait_card.php', 1) . '?action=create&backtopage=' . urlencode($_SERVER['PHP_SELF']), '', $permissiontoadd);
 
-print_barre_liste($title, $page, $_SERVER["PHP_SELF"], $param.'&etablissementid='.$etablissementid, $sortfield, $sortorder, $massactionbutton, $num, $nbtotalofrecords, 'object_' . $object->picto, 0, $newcardbutton, '', $limit, 0, 0, 1);
+print_barre_liste($title, $page, $_SERVER["PHP_SELF"], $param.'&etablissementid='.$_SESSION['etablissementid'], $sortfield, $sortorder, $massactionbutton, $num, $nbtotalofrecords, 'object_' . $object->picto, 0, $newcardbutton, '', $limit, 0, 0, 1);
 
 // Add code for pre mass action (confirmation or email presend form)
 $topicmail = "SendSouhaitRef";
@@ -625,7 +638,7 @@ foreach ($object->fields as $key => $val) {
 	}
 	if (!empty($arrayfields['t.' . $key]['checked'])) {
 
-		print getTitleFieldOfList($arrayfields['t.' . $key]['label'], 0, $_SERVER['PHP_SELF'], 't.' . $key, '', $param.'&etablissementid='.$etablissementid, ($cssforfield ? 'class="' . $cssforfield . '"' : ''), $sortfield, $sortorder, ($cssforfield ? $cssforfield . ' ' : '')) . "\n";
+		print getTitleFieldOfList($arrayfields['t.' . $key]['label'], 0, $_SERVER['PHP_SELF'], 't.' . $key, '', $param.'&etablissementid='.$_SESSION['etablissementid'], ($cssforfield ? 'class="' . $cssforfield . '"' : ''), $sortfield, $sortorder, ($cssforfield ? $cssforfield . ' ' : '')) . "\n";
 	}
 }
 // Extra fields
@@ -695,7 +708,8 @@ while ($i < ($limit ? min($num, $limit) : $num)) {
 			} elseif ($key == 'rowid') {
 				print $object->showOutputField($val, $key, $object->id, '');
 			} elseif ($key == 'fk_eleve') {
-				print '<a href="' . DOL_URL_ROOT . '/custom/viescolaire/souhait_card.php?id=' . $obj->rowid . '">' . $eleve->nom . ' ' . $eleve->prenom . '</a>';
+				print dolGetButtonAction($eleve->prenom ? "$eleve->prenom $eleve->nom" : 'Erreur élève' , '', 'danger', '/custom/viescolaire/souhait_card.php?id=' . $object->id, '', $permissiontoread);
+				//print '<a href="' . DOL_URL_ROOT . '/custom/viescolaire/souhait_card.php?id=' . $obj->rowid . '">'.($eleve->nom ? "$eleve->prenom $eleve->nom" : 'Erreur élève').'</a>';
 			} elseif ($key == 'nom_souhait') {
 				print $object->getNomUrl(1);
 			} elseif ($key == 'fk_annee_scolaire') {

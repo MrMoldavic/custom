@@ -78,6 +78,7 @@ if (!$res) {
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formcompany.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/date.lib.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/company.lib.php';
+require_once DOL_DOCUMENT_ROOT.'/custom/scolarite/class/etablissement.class.php';
 
 dol_include_once('/viescolaire/class/parents.class.php');
 
@@ -102,6 +103,12 @@ $backtopage = GETPOST('backtopage', 'alpha'); // Go back to a dedicated page
 $optioncss = GETPOST('optioncss', 'aZ'); // Option for the css output (always '' except when 'print')
 
 $id = GETPOST('id', 'int');
+
+// Changement de la valeur de session que quand on valide le formulaire
+if ($action == 'changeEtablissement') {
+	$etablissementClass = new Etablissement($db);
+	$etablissementClass->checkSetCookieEtablissement(GETPOST('etablissementid', 'int'));
+}
 
 // Load variable for pagination
 $limit = GETPOST('limit', 'int') ? GETPOST('limit', 'int') : $conf->liste_limit;
@@ -271,7 +278,7 @@ $morecss = array();
 
 // Build and execute select
 // --------------------------------------------------------------------
-$sql = 'SELECT ';
+$sql = 'SELECT DISTINCT ';
 $sql .= $object->getFieldList('t');
 // Add fields from extrafields
 if (!empty($extrafields->attributes[$object->table_element]['label'])) {
@@ -292,6 +299,9 @@ if (isset($extrafields->attributes[$object->table_element]['label']) && is_array
 $parameters = array();
 $reshook = $hookmanager->executeHooks('printFieldListFrom', $parameters, $object); // Note that $action and $object may have been modified by hook
 $sql .= $hookmanager->resPrint;
+if ($_SESSION['etablissementid'] != 0) {
+	$sql .= ' INNER JOIN '.MAIN_DB_PREFIX.'etablissement as a ON t.fk_antenne=' . $_SESSION['etablissementid'];
+}
 if ($object->ismultientitymanaged == 1) {
 	$sql .= " WHERE t.entity IN (".getEntity($object->element).")";
 }
@@ -475,6 +485,40 @@ if (GETPOST('nomassaction', 'int') || in_array($massaction, array('presend', 'pr
 	$arrayofmassactions = array();
 }
 $massactionbutton = $form->selectMassAction('', $arrayofmassactions);
+
+
+// Ajout du formulaire qui permet de changer son établissement de prédilection
+$etablissementClass = new Etablissement($db);
+$etablissementsList = $etablissementClass->fetchAll('', '', 0, 0, [], 'AND');
+$etablissements = [0 => 'Tous'];
+
+foreach ($etablissementsList as $val) {
+	$etablissements[$val->id] = $val->nom;
+}
+print '<form action="' . $_SERVER['PHP_SELF'] . '" method="POST">';
+print '<input type="hidden" tyname="sortfield" value="' . $sortfield . '">';
+print '<input type="hidden" name="sortorder" value="' . $sortorder . '">';
+print '<input type="hidden" name="action" value="changeEtablissement">';
+print '<input type="hidden" name="token" value="' . newToken() . '">';
+dol_fiche_head('');
+print '<table class="border centpercent">';
+print '<tr>';
+print '</td></tr>';
+// Type de Kit
+print '<tr><td class="fieldrequired titlefieldcreate">Selectionnez votre établissement: </td><td>';
+print $form->selectarray('etablissementid', $etablissements, $_SESSION['etablissementid']);
+print ' <a href="' . DOL_URL_ROOT . '/custom/scolarite/etablissement_card.php?action=create">';
+print '<span class="fa fa-plus-circle valignmiddle paddingleft" title="Ajouter un etablissement"></span>';
+print '</a>';
+print '</td>';
+print '</tr>';
+print '<td></td>';
+print '<td>';
+print '<input type="submit" class="button" value="Valider">';
+print '</td>';
+print '</table>';
+dol_fiche_end();
+print '</form>';
 
 print '<form method="POST" id="searchFormList" action="'.$_SERVER["PHP_SELF"].'">'."\n";
 if ($optioncss != '') {

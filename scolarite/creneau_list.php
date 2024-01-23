@@ -477,9 +477,7 @@ $concernes = [''=>'', 'professeurs'=>'Professeurs','eleves'=>'Élèves'];
 $date = date('Y-m-d H:i:s');
 
 
-print '<a href="'.$_SERVER['PHP_SELF'].'?creneauErrors='.($creneauErrors == 'false' ? 'true' : 'false').'">'.($creneauErrors == 'true' ? 'Affichage normal' : 'Afficher les créneaux avec des erreurs').'</a><br>';
 
-print '<a href="'.$_SERVER['PHP_SELF'].'?allYear='.($allYear == 'false' ? 'true' : 'false').'">'.($allYear == 'false' ? 'Afficher les créneaux de toutes les années' : 'Afficher seulement les créneaux de l\'année actuelle').'</a><br>';
 
 
 
@@ -555,39 +553,42 @@ if($massaction == 'telephone' || $massaction == 'mail' || $massaction == "eleves
 	}
 }
 
-
-
 // Ajout du formulaire qui permet de changer son établissement de prédilection
 $etablissementClass = new Etablissement($db);
-$etablissementsList = $etablissementClass->fetchAll('','',0,0,[],'AND');
-$etablissements = [0=>'Tous'];
+$etablissementsList = $etablissementClass->fetchAll('', '', 0, 0, [], 'AND');
+$etablissements = [0 => 'Tous'];
 
 foreach ($etablissementsList as $val) {
 	$etablissements[$val->id] = $val->nom;
 }
-print '<form action="' . $_SERVER["PHP_SELF"] . '" method="POST">';
+print '<form action="' . $_SERVER['PHP_SELF'] . '" method="POST">';
 print '<input type="hidden" tyname="sortfield" value="' . $sortfield . '">';
 print '<input type="hidden" name="sortorder" value="' . $sortorder . '">';
 print '<input type="hidden" name="action" value="changeEtablissement">';
-print '<input type="hidden" name="token" value="'.newToken().'">';
+print '<input type="hidden" name="token" value="' . newToken() . '">';
 dol_fiche_head('');
 print '<table class="border centpercent">';
 print '<tr>';
 print '</td></tr>';
 // Type de Kit
 print '<tr><td class="fieldrequired titlefieldcreate">Selectionnez votre établissement: </td><td>';
-print $form->selectarray('etablissementid', $etablissements,$_SESSION['etablissementid']);
+print $form->selectarray('etablissementid', $etablissements, $_SESSION['etablissementid']);
 print ' <a href="' . DOL_URL_ROOT . '/custom/scolarite/etablissement_card.php?action=create">';
 print '<span class="fa fa-plus-circle valignmiddle paddingleft" title="Ajouter un etablissement"></span>';
 print '</a>';
 print '</td>';
 print '</tr>';
-print "</table>";
-dol_fiche_end();
-print '<div class="center">';
+print '<td></td>';
+print '<td>';
 print '<input type="submit" class="button" value="Valider">';
-print '</div>';
+print '</td>';
+print '</table>';
+dol_fiche_end();
 print '</form>';
+
+print '<a href="'.$_SERVER['PHP_SELF'].'?creneauErrors='.($creneauErrors == 'false' ? 'true' : 'false').'">'.($creneauErrors == 'true' ? 'Affichage normal' : 'Afficher les créneaux avec des erreurs').'</a><br>';
+
+print '<a href="'.$_SERVER['PHP_SELF'].'?allYear='.($allYear == 'false' ? 'true' : 'false').'">'.($allYear == 'false' ? 'Afficher les créneaux de toutes les années' : 'Afficher seulement les créneaux de l\'année actuelle').'</a><br>';
 
 print '<form method="POST" id="searchFormList" action="'.$_SERVER["PHP_SELF"].'">'."\n";
 if ($optioncss != '') {
@@ -825,7 +826,6 @@ while ($i < $imaxinloop) {
 					print dolGetButtonAction($object->showOutputField($val, $key, $object->$key, '') != "" ? $object->showOutputField($val, $key, $object->$key, '') : ($object->nom_groupe ? : 'Groupe sans nom'),'', 'danger','/custom/scolarite/creneau_card.php?id=' . $object->id, '', $permissiontoread);
 				} elseif ($key == 'nom_creneau'){
 					print $object->getNomUrl(1);
-
 				} elseif ($key == 'nombre_places'){
 
 					$count = 0;
@@ -918,7 +918,6 @@ while ($i < $imaxinloop) {
 
 					$infos_creneau .= $objJour->jour.' | '.$objheure->heure.'h'.$object->minutes_debut.'-'.$objheureFin->heure.'h'.$object->minutes_fin.' | ';
 					$infos_creneau .= $object->fk_salle ? $objSalle->salle : "<span class='badge badge-danger'>Salle inconnue</span>";
-					//var_dump($object->fk_salle);
 					print $infos_creneau;
 
 				} elseif ($key == 'eleves'){

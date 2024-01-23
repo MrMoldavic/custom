@@ -1277,10 +1277,50 @@ class Eleve extends CommonObject
 			print '<h3><span class="badge badge-status4 badge-status">Année '.$value->annee.($value->annee_actuelle != 1 ? ' (année précédente)' : '').'</span></h3>';
 
 			$appelClass = new Appel($this->db);
-			$absences = $appelClass->fetchAll('desc','date_creation',0,0,['t.fk_eleve'=>$this->id,'t.treated'=>1,'c.fk_annee_scolaire'=>$value->rowid],'AND',' INNER JOIN '.MAIN_DB_PREFIX.'creneau as c ON c.rowid = t.fk_creneau');
+			$arr = ['t.fk_eleve'=>$this->id,'t.treated'=>1,'c.fk_annee_scolaire'=>$value->rowid];
+			if(GETPOST('action','alpha') == 'changeStatusAbsence' && GETPOST('absenceName', 'aZ09') != 'tous')
+			{
+				$arr['t.status'] = "%".GETPOST('absenceName','aZ09')."%";
+			}
+			$absences = $appelClass->fetchAll('desc','date_creation',0,0,$arr,'AND',' INNER JOIN '.MAIN_DB_PREFIX.'creneau as c ON c.rowid = t.fk_creneau');
+
+
+
+				require_once DOL_DOCUMENT_ROOT.'/custom/scolarite/class/etablissement.class.php';
+
+				$form = new Form($this->db);
+				// Ajout du formulaire qui permet de changer son établissement de prédilection
+
+				$statusAbsencesList = ['tous'=>'Tous','present'=>'Présent(e)','absenceJ'=>'Absence Justifiée','retard'=>'Retard','absenceI'=>'Absent(e)'];
+
+				print '<div>';
+				print '<form action="' . $_SERVER['PHP_SELF'] . '" method="POST">';
+				print '<input type="hidden" name="action" value="changeStatusAbsence">';
+				print '<input type="hidden" name="id" value="'.$this->id.'">';
+				print '<input type="hidden" name="token" value="' . newToken() . '">';
+				dol_fiche_head('');
+				print '<table class="border centpercent center">';
+				print '<tr>';
+				print '</td></tr>';
+				print '<tr><td class="fieldrequired titlefieldcreate">Selectionnez les absences souhaitées: </td><td>';
+				print $form->selectarray('absenceName', $statusAbsencesList,GETPOST('absenceName','aZ09'));
+				print ' <a href="' . DOL_URL_ROOT . '/custom/scolarite/etablissement_card.php?action=create">';
+				print '<span class="fa fa-plus-circle valignmiddle paddingleft" title="Ajouter un etablissement"></span>';
+				print '</a>';
+				print '</td>';
+				print '</tr>';
+				print '<td></td>';
+				print '<td>';
+				print '<input type="submit" class="button" value="Valider">';
+				print '</td>';
+				print '</table>';
+				dol_fiche_end();
+				print '</form>';
 
 			if(count($absences) > 0){
 				print '<table class="border centpercent tableforfield">';
+
+
 				print '<tbody>';
 				print '<tr>';
 				print '<td>Etablissement</td>';
@@ -1331,6 +1371,8 @@ class Eleve extends CommonObject
 				}
 				print '</tbody>';
 				print '</table>';
+
+				print '</div>';
 			}else print '<p>Aucune appel connu pour cette année scolaire</p>';
 
 			print '</div>';
