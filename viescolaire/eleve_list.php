@@ -313,6 +313,11 @@ foreach ($search as $key => $val) {
 		}
 		if ($search[$key] != '') {
 			$sql .= natural_search($key, $search[$key], (($key == 'status') ? 2 : $mode_search));
+
+			if($key == 'prenom')
+			{
+				$sql .= " OR ".natural_search('nom', $search[$key], (($key == 'status') ? 2 : $mode_search), 1);
+			}
 		}
 	} else {
 		if (preg_match('/(_dtstart|_dtend)$/', $key) && $search[$key] != '') {
