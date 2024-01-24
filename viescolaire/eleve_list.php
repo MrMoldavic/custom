@@ -318,7 +318,6 @@ foreach ($search as $key => $val) {
 			{
 				$sql .= " OR ".natural_search('t.nom', $search[$key], (($key == 'status') ? 2 : $mode_search), 1);
 			}
-			var_dump($sql);
 		}
 	} else {
 		if (preg_match('/(_dtstart|_dtend)$/', $key) && $search[$key] != '') {
