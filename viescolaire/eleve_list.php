@@ -22,9 +22,9 @@
  *		\brief      List page for eleve
  */
 
-/* ini_set('display_errors', '1');
+ ini_set('display_errors', '1');
  ini_set('display_startup_errors', '1');
- error_reporting(E_ALL);*/
+ error_reporting(E_ALL);
 
 //if (! defined('NOREQUIREDB'))              define('NOREQUIREDB', '1');				// Do not create database handler $db
 //if (! defined('NOREQUIREUSER'))            define('NOREQUIREUSER', '1');				// Do not load object $user
@@ -312,12 +312,13 @@ foreach ($search as $key => $val) {
 			$mode_search = 2;
 		}
 		if ($search[$key] != '') {
-			$sql .= natural_search($key, $search[$key], (($key == 'status') ? 2 : $mode_search));
+			$sql .= natural_search('t.'.$key, $search[$key], (($key == 'status') ? 2 : $mode_search));
 
 			if($key == 'prenom')
 			{
-				$sql .= " OR ".natural_search('nom', $search[$key], (($key == 'status') ? 2 : $mode_search), 1);
+				$sql .= " OR ".natural_search('t.nom', $search[$key], (($key == 'status') ? 2 : $mode_search), 1);
 			}
+			var_dump($sql);
 		}
 	} else {
 		if (preg_match('/(_dtstart|_dtend)$/', $key) && $search[$key] != '') {
