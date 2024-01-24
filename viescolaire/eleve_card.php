@@ -402,33 +402,6 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 	print load_fiche_titre('Liste des parents', '', 'object_' . $object->picto);
 	if($object->fk_famille)
 	{
-		/*print '<table class="tagtable liste" >';
-		print '<tbody>';
-
-		print '<tr class="liste_titre">
-					<th class="wrapcolumntitle liste_titre">Prenom</th>
-					<th class="wrapcolumntitle liste_titre">Nom</th>
-					<th class="wrapcolumntitle liste_titre">Téléphone</th>
-					<th class="wrapcolumntitle liste_titre">Mail</th>
-					<th class="wrapcolumntitle liste_titre">Adresse</th>
-					<th class="wrapcolumntitle liste_titre">Infos</th>
-					</tr>';
-
-		$parentsClass = new Parents($db);
-		foreach($parentsClass->fetchAll('','','','',['fk_famille'=>$object->fk_famille]) as $val)
-		{
-			print '<tr class="oddeven">';
-			print "<td>$val->firstname</td>";
-			print "<td>$val->lastname</td>";
-			print '<td>'.($val->phone ? : 'Inconnu').'</td>';
-			print '<td>'.($val->mail ? : 'Inconnu').'</td>';
-			print '<td>'.($val->address ? : 'Adresse inconnue').' '.($val->zipcode ? : 'Code postal Inconnu').' '.($val->town ? : 'Ville inconnue').'</td>';
-			print "<td>$val->description</td>";
-			print '</tr>';
-		}
-		print '</tbody>';
-		print '</table>';*/
-
 		$parentsClass = new Parents($db);
 		$resultParents = $parentsClass->fetchAll('','',0,0,['fk_famille'=>$object->fk_famille],'AND');
 
@@ -465,12 +438,6 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 		}
 		print '</tbody>';
 		print '</table>';
-
-
-
-
-
-
 	}else print '<h3><span class="badge badge-danger">Sans Famille liée &#9888</span></h3>';
 
 	if ($action != 'presend' && $action != 'editline') {

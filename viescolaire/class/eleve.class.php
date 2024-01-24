@@ -134,9 +134,7 @@ class Eleve extends CommonObject
 	public $nom;
 	public $prenom;
 	public $fk_etablissement;
-	public $fk_classe_college;
 	public $fk_famille;
-	public $commentaires;
 	public $note_public;
 	public $note_private;
 	public $date_creation;
@@ -1266,6 +1264,7 @@ class Eleve extends CommonObject
 
 	}
 
+	// Fonction pour afficher les différentes absences d'élèves par années scolaires
 	public function printAbsencesTables()
 	{
 		$dictionaryClass = new Dictionary($this->db);
@@ -1284,13 +1283,9 @@ class Eleve extends CommonObject
 			}
 			$absences = $appelClass->fetchAll('desc','date_creation',0,0,$arr,'AND',' INNER JOIN '.MAIN_DB_PREFIX.'creneau as c ON c.rowid = t.fk_creneau');
 
-
-
 				require_once DOL_DOCUMENT_ROOT.'/custom/scolarite/class/etablissement.class.php';
 
 				$form = new Form($this->db);
-				// Ajout du formulaire qui permet de changer son établissement de prédilection
-
 				$statusAbsencesList = ['tous'=>'Tous','present'=>'Présent(e)','absenceJ'=>'Absence Justifiée','retard'=>'Retard','absenceI'=>'Absent(e)'];
 
 				print '<div>';
@@ -1319,8 +1314,6 @@ class Eleve extends CommonObject
 
 			if(count($absences) > 0){
 				print '<table class="border centpercent tableforfield">';
-
-
 				print '<tbody>';
 				print '<tr>';
 				print '<td>Etablissement</td>';

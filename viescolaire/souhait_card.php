@@ -114,73 +114,10 @@ $contextpage = GETPOST('contextpage', 'aZ') ? GETPOST('contextpage', 'aZ') : 'so
 $backtopage = GETPOST('backtopage', 'alpha');
 $backtopageforcancel = GETPOST('backtopageforcancel', 'alpha');
 $lineid   = GETPOST('lineid', 'int');
+$affectationid = GETPOST('affectationid','int');
 
-if ($action == 'confirm_clone') {
-	setEventMessage('Vous êtes bien sur le nouveau souhait.');
-}
-if ($action == 'newaffectation') {
-
-	if(GETPOST('fk_creneau', 'int') == '-1')
-	{
-		setEventMessage('Veuillez selectionner un creneau valide','errors');
-	}
-	elseif(dol_mktime(12, 0, 0, GETPOST('date_debutmonth', 'int'), GETPOST('date_debutday', 'int'), GETPOST('date_debutyear', 'int')) == "")
-	{
-		setEventMessage('Veuillez selectionner un date de début valide','errors');
-	}
-	else
-	{
-		$sql = "SELECT status FROM " . MAIN_DB_PREFIX . "souhait WHERE rowid=" . $id;
-		$resql = $db->query($sql);
-
-		$statutSouhait = $db->fetch_object($resql);
-
-		if ($statutSouhait->status == 0) {
-			$affectation = new Affectation($db);
-			$affectation->fk_souhait = GETPOST('fk_souhait', 'int');
-			$affectation->fk_creneau = GETPOST('fk_creneau', 'int');
-			$affectation->fk_souhait = GETPOST('fk_souhait', 'int');
-			$affectation->date_debut = dol_mktime(12, 0, 0, GETPOST('date_debutmonth', 'int'), GETPOST('date_debutday', 'int'), GETPOST('date_debutyear', 'int'));
-			$affectation->date_fin = dol_mktime(12, 0, 0, GETPOST('date_finmonth', 'int'), GETPOST('date_finday', 'int'), GETPOST('date_finyear', 'int'));
-			$affectation->description = GETPOST('description', 'text');
-
-			if ($affectation->create($user) < 0) {
-				setEventMessage('Une erreur est survenue', 'error');
-			}
-		}
-	}
-}
-
-if ($action == 'desactivation') {
-
-	$souhait = new Souhait($db);
-	$souhait->fetch($id);
-	$souhait->status = $souhait::STATUS_CANCELED;
-	$res = $souhait->update($user);
-
-	if($res > 0) setEventMessage('Souhait desactivé avec succès!');
-	else setEventMessage('Une erreur est survenue', 'errors');
-}
-
-if ($action == 'activation') {
-
-	$souhait = new Souhait($db);
-	$souhait->fetch($id);
-	$souhait->status = $souhait::STATUS_DRAFT;
-	$res = $souhait->update($user);
-
-	if($res > 0) setEventMessage('Souhait activé avec succès!');
-	else setEventMessage('Une erreur est survenue', 'errors');
-
-}
-
-if ($action == 'confirm_setdraft') {
-	$affectation = new Affectation($db);
-
-	$sql = "UPDATE " . MAIN_DB_PREFIX . "affectation SET status = " . $affectation::STATUS_CANCELED . ", date_fin = CURDATE() WHERE fk_souhait=" . $id;
-	$resql = $db->query($sql);
-}
-
+// include des actions, pour ne pas flooder le fichier (include et pas include_once)
+include DOL_DOCUMENT_ROOT.'/custom/viescolaire/core/actions/actions_souhait_viescolaire.inc.php';
 
 // Initialize technical objects
 $object = new Souhait($db);
@@ -430,6 +367,10 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 		$formconfirm = $form->formconfirm($_SERVER["PHP_SELF"] . '?id=' . $object->id, $langs->trans('ToClone'), 'Si vous repassez le souhait en brouillon, cela va le désaffecter de son créneau actuel. Continuer?', 'confirm_setdraft', $formquestion, 'yes', 1);
 	}
 
+	if ($action == 'deleteAffectation') {
+		$formconfirm = $form->formconfirm($_SERVER['PHP_SELF'] . '?id=' . $object->id . '&affectationid=' . GETPOST('affectationid', 'int'), 'Suppression d\'une affectation', 'Voulez-vous supprimer cette affectation? Ceci est irréversible.', 'confirm_delete_affectation', '', 0, 1);
+	}
+
 	// Call Hook formConfirm
 	$parameters = array('formConfirm' => $formconfirm, 'lineid' => $lineid);
 	$reshook = $hookmanager->executeHooks('formConfirm', $parameters, $object, $action); // Note that $action and $object may have been modified by hook
@@ -476,7 +417,6 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 	print '</table>';
 	print '<h3>Créneau actuel:</h3>';
 
-	//$sqlCreneauActuel = "SELECT c.jour,c.heure_debut,c.heure_fin,c.fk_prof_1,c.nom_creneau,c.rowid FROM ".MAIN_DB_PREFIX."creneau as c WHERE c.rowid =".("(SELECT e.fk_creneau FROM ".MAIN_DB_PREFIX."affectation as e WHERE e.fk_souhait =".$object->id." AND e.status = 4)");
 	$sqlCreneauActuel = 'SELECT c.jour, c.heure_debut, c.heure_fin, c.fk_prof_1, c.nom_creneau, c.rowid
 						FROM ' .MAIN_DB_PREFIX. 'creneau as c
 						INNER JOIN ' .MAIN_DB_PREFIX."affectation as e ON c.rowid = e.fk_creneau
@@ -536,7 +476,7 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 
 		foreach($resqlAnneeScolaire as $val)
 		{
-			$sqlCountAffectation = "SELECT a.fk_creneau,a.date_creation,a.fk_user_creat FROM ".MAIN_DB_PREFIX."affectation as a INNER JOIN ".MAIN_DB_PREFIX."souhait as s ON a.fk_souhait=s.rowid WHERE a.fk_souhait =".$object->id." AND a.status = 8 AND s.fk_annee_scolaire=".$val['rowid'];
+			$sqlCountAffectation = "SELECT a.fk_creneau,a.date_creation,a.fk_user_creat,a.rowid FROM ".MAIN_DB_PREFIX."affectation as a INNER JOIN ".MAIN_DB_PREFIX."souhait as s ON a.fk_souhait=s.rowid WHERE a.fk_souhait =".$object->id." AND a.status = 8 AND s.fk_annee_scolaire=".$val['rowid'];
 			$resqlAffectation = $db->query($sqlCountAffectation);
 
 			if($resqlAffectation->num_rows > 0)
@@ -552,6 +492,7 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 					<th class="wrapcolumntitle liste_titre">Horaire</th>
 					<th class="wrapcolumntitle liste_titre">Professeur</th>
 					<th class="wrapcolumntitle liste_titre">Créé par, le</th>
+					<th></th>
 					</tr>';
 				foreach($resqlAffectation as $value)
 				{
@@ -579,6 +520,7 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 						$userClass->fetch($value['fk_user_creat']);
 
 						print '<td>'.$userClass->firstname.' '.$userClass->lastname.' le '.date('d/m/Y',strtotime($value['date_creation'])).'</td>';
+						print '<td><a href="' . $_SERVER['PHP_SELF'] . '?id=' . $object->id . '&affectationid=' . $value['rowid'] . '&action=deleteAffectation">❌️</a></td>';
 						print '</tr>';
 					}
 				}

@@ -149,7 +149,6 @@ class Creneau extends CommonObject
 	public $fk_prof_3;
 	public $professeurs;
 	public $eleves;
-	public $infos_creneau;
 	public $nombre_places;
 	public $heure_debut;
 	public $minutes_debut;
@@ -157,7 +156,6 @@ class Creneau extends CommonObject
 	public $minutes_fin;
 	public $jour;
 	public $fk_salle;
-	public $commentaires;
 	public $nom_groupe;
 	public $nom_creneau;
 	public $note_public;
