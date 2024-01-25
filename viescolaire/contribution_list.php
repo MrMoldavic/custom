@@ -105,6 +105,12 @@ $mode       = GETPOST('mode', 'aZ'); // The output mode ('list', 'kanban', 'hier
 $id = GETPOST('id', 'int');
 $ref = GETPOST('ref', 'alpha');
 
+// Changement de la valeur de session que quand on valide le formulaire
+if ($action == 'changeEtablissement') {
+	$etablissementClass = new Etablissement($db);
+	$etablissementClass->checkSetCookieEtablissement(GETPOST('etablissementid', 'int'));
+}
+
 /*ini_set('display_errors', '1');
 ini_set('display_startup_errors', '1');
 error_reporting(E_ALL);*/
@@ -279,7 +285,7 @@ $morecss = array();
 
 // Build and execute select
 // --------------------------------------------------------------------
-$sql = 'SELECT ';
+$sql = 'SELECT DISTINCT ';
 $sql .= $object->getFieldList('t');
 // Add fields from extrafields
 if (!empty($extrafields->attributes[$object->table_element]['label'])) {
@@ -305,6 +311,9 @@ if (isset($extrafields->attributes[$object->table_element]['label']) && is_array
 $parameters = array();
 $reshook = $hookmanager->executeHooks('printFieldListFrom', $parameters, $object); // Note that $action and $object may have been modified by hook
 $sql .= $hookmanager->resPrint;
+if ($_SESSION['etablissementid'] != 0) {
+	$sql .= ' INNER JOIN '.MAIN_DB_PREFIX.'etablissement as a ON t.fk_antenne=' . $_SESSION['etablissementid'];
+}
 if ($object->ismultientitymanaged == 1) {
 	$sql .= " WHERE t.entity IN (".getEntity($object->element).")";
 } else {
@@ -349,31 +358,6 @@ include DOL_DOCUMENT_ROOT.'/core/tpl/extrafields_list_search_sql.tpl.php';
 $parameters = array();
 $reshook = $hookmanager->executeHooks('printFieldListWhere', $parameters, $object, $action); // Note that $action and $object may have been modified by hook
 $sql .= $hookmanager->resPrint;
-
-/* If a group by is required
-$sql .= " GROUP BY ";
-foreach($object->fields as $key => $val) {
-	$sql .= "t.".$db->escape($key).", ";
-}
-// Add fields from extrafields
-if (!empty($extrafields->attributes[$object->table_element]['label'])) {
-	foreach ($extrafields->attributes[$object->table_element]['label'] as $key => $val) {
-		$sql .= ($extrafields->attributes[$object->table_element]['type'][$key] != 'separate' ? "ef.".$key.', ' : '');
-	}
-}
-// Add where from hooks
-$parameters = array();
-$reshook = $hookmanager->executeHooks('printFieldListGroupBy', $parameters, $object, $action);    // Note that $action and $object may have been modified by hook
-$sql .= $hookmanager->resPrint;
-$sql = preg_replace('/,\s*$/', '', $sql);
-*/
-
-// Add HAVING from hooks
-/*
-$parameters = array();
-$reshook = $hookmanager->executeHooks('printFieldListHaving', $parameters, $object, $action); // Note that $action and $object may have been modified by hook
-$sql .= empty($hookmanager->resPrint) ? "" : " HAVING 1=1 ".$hookmanager->resPrint;
-*/
 
 // Count total nb of records
 $nbtotalofrecords = '';
@@ -491,6 +475,39 @@ if (GETPOST('nomassaction', 'int') || in_array($massaction, array('presend', 'pr
 	$arrayofmassactions = array();
 }
 $massactionbutton = $form->selectMassAction('', $arrayofmassactions);
+
+// Ajout du formulaire qui permet de changer son établissement de prédilection
+$etablissementClass = new Etablissement($db);
+$etablissementsList = $etablissementClass->fetchAll('', '', 0, 0, [], 'AND');
+$etablissements = [0 => 'Tous'];
+
+foreach ($etablissementsList as $val) {
+	$etablissements[$val->id] = $val->nom;
+}
+print '<form action="' . $_SERVER['PHP_SELF'] . '" method="POST">';
+print '<input type="hidden" tyname="sortfield" value="' . $sortfield . '">';
+print '<input type="hidden" name="sortorder" value="' . $sortorder . '">';
+print '<input type="hidden" name="action" value="changeEtablissement">';
+print '<input type="hidden" name="token" value="' . newToken() . '">';
+dol_fiche_head('');
+print '<table class="border centpercent">';
+print '<tr>';
+print '</td></tr>';
+// Type de Kit
+print '<tr><td class="fieldrequired titlefieldcreate">Selectionnez votre établissement: </td><td>';
+print $form->selectarray('etablissementid', $etablissements, $_SESSION['etablissementid']);
+print ' <a href="' . DOL_URL_ROOT . '/custom/scolarite/etablissement_card.php?action=create">';
+print '<span class="fa fa-plus-circle valignmiddle paddingleft" title="Ajouter un etablissement"></span>';
+print '</a>';
+print '</td>';
+print '</tr>';
+print '<td></td>';
+print '<td>';
+print '<input type="submit" class="button" value="Valider">';
+print '</td>';
+print '</table>';
+dol_fiche_end();
+print '</form>';
 
 print '<form method="POST" id="searchFormList" action="'.$_SERVER["PHP_SELF"].'">'."\n";
 if ($optioncss != '') {
@@ -761,7 +778,6 @@ while ($i < $imaxinloop) {
 					// On va chercher toute ses contributions
 					$existingContents = $contributionContentClass->fetchAll('rowid','rowid',0,0,['fk_contribution'=>$object->id]);
 
-
 					$count = 0;
 					$countTotal = 0;
 					$existingDon = 0;
@@ -796,16 +812,14 @@ while ($i < $imaxinloop) {
 									$factureClass = new Facture($db);
 									if($parent->fk_tiers)
 									{
-										if($object->getFactureForParentInContribution($value->id, $parent->fk_tiers) && ($object->getFactureForParentInContribution($value->id, $parent->fk_tiers)->fk_statut == $factureClass::STATUS_CLOSED))
+										if($object->getFactureForParentInContribution((int) $value->id,(int) $parent->fk_tiers) && ($object->getFactureForParentInContribution((int) $value->id, (int) $parent->fk_tiers)->fk_statut == $factureClass::STATUS_CLOSED))
 										{
 											$factureTermines++;
 											$existingFacture--;
 										}
-										elseif(!$object->getFactureForParentInContribution($value->id, $parent->fk_tiers)) $existingFacture-1;
+										elseif(!$object->getFactureForParentInContribution((int) $value->id,(int) $parent->fk_tiers)) $existingFacture-1;
 									}
-
 								}
-
 							}
 							elseif($value->fk_type_contribution_content === 2)
 							{
@@ -828,7 +842,7 @@ while ($i < $imaxinloop) {
 					if(($countTotal != $object->montant_total))
 					{
 						print "<span class='badge badge-status5 badge-status'>Montant total non atteint ($countTotal € / $object->montant_total €)</span><br>";
-					} elseif(($countTotal == $object->montant_total)) print "<span class='badge badge-status4 badge-status'>Montant total promesses atteint</span><br>";
+					} else print "<span class='badge badge-status4 badge-status'>Montant total promesses atteint</span><br>";
 
 					if($existingDon > 0) print "<span class='badge badge-status1 badge-status'>$existingDon don(s) non reçu(s)</span><br>";
 					if($donsNonTermines > 0) print "<span class='badge badge-status2 badge-status'>$donsNonTermines don(s) à traiter</span><br>";
