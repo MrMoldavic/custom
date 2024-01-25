@@ -245,11 +245,13 @@ llxHeader('', $title, $help_url);
 
 if ($action == 'create' && !GETPOST('etablissementid', 'int') && !GETPOST('appelday', 'alpha')) // SELECTION DU TYPE DE KIT
 {
-	$etablissementFetch = $etablissementClass->fetchBy(['nom','rowid'],0,'');
-	$etablissements = [];
+	$etablissementClass = new Etablissement($db);
+	$etablissements = $etablissementClass->fetchAll('','',0,0,array(),'AND');
 
-	foreach ($etablissementFetch as $val) {
-		$etablissements[$val->rowid] = $val->nom;
+	$etab = [];
+
+	foreach ($etablissements as $val) {
+		$etab[$val->id] = $val->nom;
 	}
 
      print '<form action="' . $_SERVER["PHP_SELF"] . '" method="POST">';
@@ -262,7 +264,7 @@ if ($action == 'create' && !GETPOST('etablissementid', 'int') && !GETPOST('appel
      print '<tr>';
      print '</th></tr>';
      print '<tr><th class="fieldrequired titlefieldcreate">Selectionnez votre établissement : </th><th>';
-     print $form->selectarray('etablissementid', $etablissements);
+     print $form->selectarray('etablissementid', $etab);
      print ' <a href="' . DOL_URL_ROOT . '/custom/scolarite/etablissement_card.php?action=create">';
      print '<span class="fa fa-plus-circle valignmiddle paddingleft" title="Ajouter un type de kit"></span>';
      print '</a>';

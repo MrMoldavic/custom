@@ -22,6 +22,10 @@
  * \brief       This file is a CRUD class file for Appel (Create/Read/Update/Delete)
  */
 
+/*ini_set('display_errors', '1');
+ini_set('display_startup_errors', '1');
+error_reporting(E_ALL);*/
+
 // Put here all includes required by your class file
 require_once DOL_DOCUMENT_ROOT.'/core/class/commonobject.class.php';
 //require_once DOL_DOCUMENT_ROOT . '/societe/class/societe.class.php';
@@ -1060,6 +1064,113 @@ class Appel extends CommonObject
 		$this->db->commit();
 
 		return $error;
+	}
+
+	public function printStatsIndex()
+	{
+		global $conf;
+
+		if ($conf->use_javascript_ajax) {
+			$totalEleves = 0;
+			$dataseries = array();
+
+			$etablissementClass = new Etablissement($this->db);
+			$etablissements = $etablissementClass->fetchAll('','',0,0,array(),0);
+
+			$eleveClass = new Eleve($this->db);
+
+			foreach ($etablissements as $value) {
+				$eleves = $eleveClass->fetchAll('','',0,0,array('customsql'=>" fk_etablissement=$value->id AND status !=".Eleve::STATUS_CANCELED),'AND');
+
+				$totalEleves .= count($eleves);
+				array_push($dataseries, [$value->nom, count($eleves)]);
+			}
+
+			print '<div class="div-table-responsive-no-min">';
+			print '<table class="noborder centpercent">';
+			print '<tr class="liste_titre"><th>Statistiques nombre d\'élèves</th></tr>';
+			print '<tr><td class="center nopaddingleftimp nopaddingrightimp">';
+
+
+			$dataval = array();
+			$datalabels = array();
+			$i = 0;
+
+			include_once DOL_DOCUMENT_ROOT . '/core/class/dolgraph.class.php';
+			$dolgraph = new DolGraph();
+			$dolgraph->SetData($dataseries);
+			$dolgraph->setShowLegend(2);
+			$dolgraph->setShowPercent(1);
+			$dolgraph->SetType(array('pie'));
+			$dolgraph->setHeight('200');
+			$dolgraph->draw('idgraphstatus');
+			print $dolgraph->show($totalEleves ? 0 : 1);
+
+			print '</td></tr>';
+			print '</table>';
+			print '</div>';
+		}
+	}
+
+	public function printAbsencesIndex()
+	{
+
+		require_once DOL_DOCUMENT_ROOT.'/custom/viescolaire/class/eleve.class.php';
+		require_once DOL_DOCUMENT_ROOT.'/custom/scolarite/class/creneau.class.php';
+
+		$date = date('Y-m-d');
+		$tomorrow = date('Y-m-d', strtotime($date . ' + 1 day'));
+
+		// requête pour aller chercher les absences selon l'établissement
+		$absence = 'SELECT DISTINCT a.rowid, a.justification,a.fk_eleve,a.fk_creneau,a.status ';
+		$absence .= 'FROM ' . MAIN_DB_PREFIX . 'appel as a';
+		// Si selection d'un établissement spécifique, on lie la table établissement dans notre requête
+		if ($_SESSION['etablissementid'] != 0) {
+			$absence .= ' INNER JOIN ' . MAIN_DB_PREFIX . 'etablissement as e ON a.fk_etablissement=' . $_SESSION['etablissementid'];
+		}
+		$absence .= " WHERE a.date_creation >= '" . $date . "' ";
+		$absence .= "AND a.date_creation < '" . $tomorrow . "' ";
+		$absence .= 'AND a.treated=1 ';
+		$absence .= "AND a.fk_eleve != '' ";
+		$absence .= "AND a.status !='present' ";
+		$absence .= 'ORDER BY a.date_creation ASC';
+
+		$resqlAbsenceDuJour = $this->db->query($absence);
+
+		// Si il y a un nombre d'absence positif
+		if ($resqlAbsenceDuJour->num_rows > 0) {
+			print load_fiche_titre("Absences connues aujourd'hui <span class='badge badge-status4 badge-status'>{$resqlAbsenceDuJour->num_rows}</span>", '', 'fa-warning');
+			print '<table class="tagtable liste">';
+			print '<tbody>';
+			print '<tr class="liste_titre">
+			<th class="wrapcolumntitle liste_titre">Élève</th>
+			<th class="wrapcolumntitle liste_titre">Justification</th>
+			<th class="wrapcolumntitle liste_titre">Créneau</th>
+			<th class="wrapcolumntitle liste_titre">Status</th>
+			</tr>';
+			foreach ($resqlAbsenceDuJour as $value) {
+				// Fetch de l'élève
+				$eleveClass = new Eleve($this->db);
+				$eleveClass->fetch($value['fk_eleve']);
+				// Fetch du créneau
+				$creneauClass = new Creneau($this->db);
+				$creneauClass->fetch($value['fk_creneau']);
+
+				print "<tr class='oddeven'>";
+				print "<td style='width:20%'>$eleveClass->prenom $eleveClass->nom</td>";
+				print "<td style='width:20%'>{$value['justification']}</td>";
+				print "<td style='width:45%'><a href=" . DOL_URL_ROOT . "/custom/scolarite/creneau_card.php?id=$creneauClass->rowid>" . $creneauClass->nom_creneau . '</a></td>';
+				print '<td>' . '<span class="badge  badge-status' . ($value['status'] == 'retard' ? '1' : ($value['status'] == 'absenceJ' ? '7' : ($value['status'] == 'present' ? '4' : '8'))) . ' badge-status" style="color:white;">' . $value['status'] . '</span>' . '</td>';
+
+				print '</tr>';
+			}
+			print '</tbody>';
+			print '</table>';
+			// Sinon affichage d'un message par défaut
+		} else {
+			print load_fiche_titre("Absences connues aujourd'hui <span class='badge badge-status4 badge-status'>0</span>", '', 'fa-warning');
+			print "Aucune absence connue pour aujourd'hui!";
+		}
 	}
 }
 
