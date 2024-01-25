@@ -1125,6 +1125,7 @@ class Appel extends CommonObject
 		$absence = 'SELECT DISTINCT a.rowid, a.justification,a.fk_eleve,a.fk_creneau,a.status ';
 		$absence .= 'FROM ' . MAIN_DB_PREFIX . 'appel as a';
 		// Si selection d'un établissement spécifique, on lie la table établissement dans notre requête
+		$absence .= ' INNER JOIN '.MAIN_DB_PREFIX.'creneau as c ON c.rowid=a.fk_creneau';
 		if ($_SESSION['etablissementid'] != 0) {
 			$absence .= ' INNER JOIN ' . MAIN_DB_PREFIX . 'etablissement as e ON a.fk_etablissement=' . $_SESSION['etablissementid'];
 		}
@@ -1133,7 +1134,7 @@ class Appel extends CommonObject
 		$absence .= 'AND a.treated=1 ';
 		$absence .= "AND a.fk_eleve != '' ";
 		$absence .= "AND a.status !='present' ";
-		$absence .= 'ORDER BY a.date_creation ASC';
+		$absence .= 'ORDER BY c.heure_debut ASC';
 
 		$resqlAbsenceDuJour = $this->db->query($absence);
 
