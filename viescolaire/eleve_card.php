@@ -426,7 +426,7 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 			}
 
 			print '<tr class="oddeven">';
-			print '<td><a href=' . DOL_URL_ROOT . '/custom/viescolaire/parents_card.php?id=' . $val->rowid . '&action=edit' . '>' . $val->firstname . '</td>';
+			print '<td><a href=' . DOL_URL_ROOT . '/custom/viescolaire/parents_card.php?id=' . $val->id . '&action=edit' . '>' . $val->firstname . '</td>';
 			print '<td>' . $val->lastname . '</td>';
 			print '<td>' . ($typeParent != null ? $typeParent->type : 'Type Inconnu') . '</td>';
 			print "<td><span class='badge  badge-status" . ($val->contact_preferentiel == 1 ? '4' : '8') . " badge-status'>" . ($val->contact_preferentiel == 1 ? 'Oui' : 'Non') . '</td>';

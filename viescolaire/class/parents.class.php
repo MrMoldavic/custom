@@ -252,15 +252,14 @@ class Parents extends CommonObject
 	{
 		$familleClass = new Famille($this->db);
 
-		$this->phone = str_replace(" ", "", $this->phone);
-
 		if($this->mail && !preg_match("#^[a-z0-9._-]+@[a-z0-9._-]{2,}\.[a-z]{2,4}$#", $this->mail))
 		{
 			setEventMessage("Le mail renseigné n'est pas valable",'errors');
 			return -1;
 		}
 
-		if($this->phone && !preg_match('#^0[1-68]([-. ]?[0-9]{2}){4}$#', $this->phone))
+
+		if($this->phone && !preg_match('/^(?:(?:\+|00)33|0)\s*[1-9](?:[\s.-]*\d{2}){4}$/', $this->phone))
 		{
 			setEventMessage('Le numéro de téléphone ne fait pas 10 chiffres.','errors');
 			return -1;
@@ -615,8 +614,7 @@ class Parents extends CommonObject
 	 */
 	public function update(User $user, $notrigger = false)
 	{
-
-		if($this->phone && !preg_match('#^0[1-68]([-. ]?[0-9]{2}){4}$#', $this->phone))
+		if($this->phone && !preg_match('/^(?:(?:\+|00)33|0)\s*[1-9](?:[\s.-]*\d{2}){4}$/', $this->phone))
 		{
 			setEventMessage('Le numéro de téléphone ne fait pas 10 caractères','errors');
 			return -1;
