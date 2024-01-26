@@ -19,6 +19,7 @@ CREATE TABLE llx_scolarite_attribution(
 	rowid integer AUTO_INCREMENT PRIMARY KEY NOT NULL, 
 	fk_cle integer NOT NULL,
 	fk_user_pret integer NOT NULL,
+	fk_annee_scolaire integer NOT NULL,
 	commentaire text, 
 	date_debut_pret datetime NOT NULL, 
 	date_fin_pret datetime, 

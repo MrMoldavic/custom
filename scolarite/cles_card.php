@@ -79,6 +79,8 @@ require_once DOL_DOCUMENT_ROOT.'/core/class/html.formcompany.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formfile.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formprojet.class.php';
 dol_include_once('/scolarite/class/cles.class.php');
+dol_include_once('/scolarite/class/attribution.class.php');
+dol_include_once('/viescolaire/class/dictionary.class.php');
 dol_include_once('/scolarite/lib/scolarite_cles.lib.php');
 
 // Load translation files required by the page
@@ -96,6 +98,7 @@ $contextpage = GETPOST('contextpage', 'aZ') ? GETPOST('contextpage', 'aZ') : str
 $backtopage = GETPOST('backtopage', 'alpha');
 $backtopageforcancel = GETPOST('backtopageforcancel', 'alpha');
 $dol_openinpopup = GETPOST('dol_openinpopup', 'aZ09');
+$closeOrNot = GETPOST('closeOrNot','alpha');
 
 // Initialize technical objects
 $object = new Cles($db);
@@ -206,9 +209,12 @@ if (empty($reshook)) {
 	$autocopy = 'MAIN_MAIL_AUTOCOPY_CLES_TO';
 	$trackid = 'cles'.$object->id;
 	include DOL_DOCUMENT_ROOT.'/core/actions_sendmails.inc.php';
+
+
 }
 
-
+// Action avant Object car modifie des infos de l'object
+include DOL_DOCUMENT_ROOT.'/custom/scolarite/scripts/actions/actions_cles_scolarite.inc.php';
 
 
 /*
@@ -224,21 +230,6 @@ $formproject = new FormProjets($db);
 $title = $langs->trans("Cles");
 $help_url = '';
 llxHeader('', $title, $help_url);
-
-// Example : Adding jquery code
-// print '<script type="text/javascript">
-// jQuery(document).ready(function() {
-// 	function init_myfunc()
-// 	{
-// 		jQuery("#myid").removeAttr(\'disabled\');
-// 		jQuery("#myid").attr(\'disabled\',\'disabled\');
-// 	}
-// 	init_myfunc();
-// 	jQuery("#mybutton").click(function() {
-// 		init_myfunc();
-// 	});
-// });
-// </script>';
 
 
 // Part to create
@@ -343,29 +334,27 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 		$formconfirm = $form->formconfirm($_SERVER["PHP_SELF"].'?id='.$object->id, $langs->trans('ToClone'), $langs->trans('ConfirmCloneAsk', $object->ref), 'confirm_clone', $formquestion, 'yes', 1);
 	}
 
-	// Confirmation of action xxxx (You can use it for xxx = 'close', xxx = 'reopen', ...)
-	if ($action == 'xxx') {
-		$text = $langs->trans('ConfirmActionCles', $object->ref);
-		/*if (! empty($conf->notification->enabled))
-		{
-			require_once DOL_DOCUMENT_ROOT . '/core/class/notify.class.php';
-			$notify = new Notify($db);
-			$text .= '<br>';
-			$text .= $notify->confirmMessage('CLES_CLOSE', $object->socid, $object);
-		}*/
+	if ($action == 'lostKey') {
 
+		$formconfirm = $form->formconfirm($_SERVER['PHP_SELF'].'?id='.$object->id, 'Déclarer la clé perdue', 'Voulez-vous déclarer la clé comme perdue? Ceci va figer le prêt et rendre la clé indisponible.', 'confirm_key_lost', $formquestion, 0, 1);
+	}
+
+	if ($action == 'keyFound') {
 		$formquestion = array();
-		/*
-		$forcecombo=0;
-		if ($conf->browser->name == 'ie') $forcecombo = 1;	// There is a bug in IE10 that make combo inside popup crazy
-		$formquestion = array(
-			// 'text' => $langs->trans("ConfirmClone"),
-			// array('type' => 'checkbox', 'name' => 'clone_content', 'label' => $langs->trans("CloneMainAttributes"), 'value' => 1),
-			// array('type' => 'checkbox', 'name' => 'update_prices', 'label' => $langs->trans("PuttingPricesUpToDate"), 'value' => 1),
-			// array('type' => 'other',    'name' => 'idwarehouse',   'label' => $langs->trans("SelectWarehouseForStockDecrease"), 'value' => $formproduct->selectWarehouses(GETPOST('idwarehouse')?GETPOST('idwarehouse'):'ifone', 'idwarehouse', '', 1, 0, 0, '', 0, $forcecombo))
-		);
-		*/
-		$formconfirm = $form->formconfirm($_SERVER["PHP_SELF"].'?id='.$object->id, $langs->trans('XXX'), $text, 'confirm_xxx', $formquestion, 0, 1, 220);
+
+		$attributionClass = new Attribution($db);
+		$attributionClass->fetch('','',' AND fk_cle='.$id.' AND status ='.Attribution::STATUS_PROBLEME.' ORDER BY rowid DESC');
+
+		if($attributionClass->id)
+		{
+			// Affiche une checkbox dans le formConfirm
+			$formquestion = array(
+				array('type' => 'checkbox', 'name' => 'closeOrNot', 'label' => "Clotûrer l'attribution actuelle?", 'value' => 0),
+			);
+		}
+
+		// Définition des infos dans le formConfirm
+		$formconfirm = $form->formconfirm($_SERVER['PHP_SELF'].'?id='.$object->id, 'Déclarer la clé retrouvée', 'Voulez-vous déclarer la clé comme retrouvée? Choisissez si le contrat doit être clos ou non.', 'confirm_key_found', $formquestion, 0, 1);
 	}
 
 	// Call Hook formConfirm
@@ -387,40 +376,6 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 
 	$morehtmlref = '<div class="refidno">';
 	$morehtmlref .= '(numéro de clé)';
-	/*
-	 // Ref customer
-	 $morehtmlref.=$form->editfieldkey("RefCustomer", 'ref_client', $object->ref_client, $object, 0, 'string', '', 0, 1);
-	 $morehtmlref.=$form->editfieldval("RefCustomer", 'ref_client', $object->ref_client, $object, 0, 'string', '', null, null, '', 1);
-	 // Thirdparty
-	 $morehtmlref.='<br>'.$langs->trans('ThirdParty') . ' : ' . (is_object($object->thirdparty) ? $object->thirdparty->getNomUrl(1) : '');
-	 // Project
-	 if (! empty($conf->project->enabled)) {
-	 $langs->load("projects");
-	 $morehtmlref .= '<br>'.$langs->trans('Project') . ' ';
-	 if ($permissiontoadd) {
-	 //if ($action != 'classify') $morehtmlref.='<a class="editfielda" href="' . $_SERVER['PHP_SELF'] . '?action=classify&token='.newToken().'&id=' . $object->id . '">' . img_edit($langs->transnoentitiesnoconv('SetProject')) . '</a> ';
-	 $morehtmlref .= ' : ';
-	 if ($action == 'classify') {
-	 //$morehtmlref .= $form->form_project($_SERVER['PHP_SELF'] . '?id=' . $object->id, $object->socid, $object->fk_project, 'projectid', 0, 0, 1, 1);
-	 $morehtmlref .= '<form method="post" action="'.$_SERVER['PHP_SELF'].'?id='.$object->id.'">';
-	 $morehtmlref .= '<input type="hidden" name="action" value="classin">';
-	 $morehtmlref .= '<input type="hidden" name="token" value="'.newToken().'">';
-	 $morehtmlref .= $formproject->select_projects($object->socid, $object->fk_project, 'projectid', $maxlength, 0, 1, 0, 1, 0, 0, '', 1);
-	 $morehtmlref .= '<input type="submit" class="button valignmiddle" value="'.$langs->trans("Modify").'">';
-	 $morehtmlref .= '</form>';
-	 } else {
-	 $morehtmlref.=$form->form_project($_SERVER['PHP_SELF'] . '?id=' . $object->id, $object->socid, $object->fk_project, 'none', 0, 0, 0, 1);
-	 }
-	 } else {
-	 if (! empty($object->fk_project)) {
-	 $proj = new Project($db);
-	 $proj->fetch($object->fk_project);
-	 $morehtmlref .= ': '.$proj->getNomUrl();
-	 } else {
-	 $morehtmlref .= '';
-	 }
-	 }
-	 }*/
 	$morehtmlref .= '</div>';
 
 
@@ -429,6 +384,7 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 
 	print '<div class="fichecenter">';
 	print '<div class="fichehalfleft">';
+
 	print '<div class="underbanner clearboth"></div>';
 	print '<table class="border centpercent tableforfield">'."\n";
 
@@ -442,7 +398,24 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 	include DOL_DOCUMENT_ROOT.'/core/tpl/extrafields_view.tpl.php';
 
 	print '</table>';
+
+	print load_fiche_titre('Attributions par année', '', 'fa-key');
+
+	// Appel de la fonction qui affiche les attributions par années
+	$attributionClass = new Attribution($db);
+	$attributionClass->attributionsPerYear($object->id);
+
 	print '</div>';
+
+	// Si la clé est considérée comme perdue, on affiche sa date de perte
+	if ($object->status == Cles::STATUS_PERDUE) {
+		print '<div style="width: 50%">';
+		print load_fiche_titre('Perte de la clé', '', 'fa-question');
+		print '<h4 class="center">Clé perdue le : ' . date('d/m/Y', $object->tms) . '</h4>';
+		print '<hr>';
+		print '</div>';
+	}
+
 	print '</div>';
 
 	print '<div class="clearboth"></div>';
@@ -512,17 +485,23 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 		}
 
 		if (empty($reshook)) {
-			// Send
-			// if (empty($user->socid)) {
-			// 	print dolGetButtonAction($langs->trans('SendMail'), '', 'default', $_SERVER["PHP_SELF"].'?id='.$object->id.'&action=presend&mode=init&token='.newToken().'#formmailbeforetitle');
-			// }
+			// Si le status de la clé n'est pas perdue, on affiche le bouton qui permet de la déclarée comme telle
+			if($object->status != $object::STATUS_PERDUE)
+			{
+				print dolGetButtonAction($langs->trans('Clé perdue'), '', 'danger', $_SERVER['PHP_SELF'] . '?id=' . $object->id . '&action=lostKey&token=' . newToken(), '', $permissiontoadd);
+			}
+			// Si le status de la clé n'est pas retrouvée, on affiche le bouton qui permet de la déclarée comme telle
+			if($object->status == $object::STATUS_PERDUE)
+			{
+				print dolGetButtonAction($langs->trans('Clé retrouvée'), '', 'danger', $_SERVER['PHP_SELF'] . '?id=' . $object->id . '&action=keyFound&token=' . newToken(), '', $permissiontoadd);
+			}
 
-			// // Back to draft
-			// if ($object->status == $object::STATUS_VALIDATED) {
-			// 	print dolGetButtonAction($langs->trans('SetToDraft'), '', 'default', $_SERVER["PHP_SELF"].'?id='.$object->id.'&action=confirm_setdraft&confirm=yes&token='.newToken(), '', $permissiontoadd);
-			// }
-
-			print dolGetButtonAction($langs->trans('Modifier la clé'), '', 'default', $_SERVER["PHP_SELF"].'?id='.$object->id.'&action=edit&token='.newToken(), '', $permissiontoadd);
+			// Si la clé n'est ni perdue ni en cours de prêt, on permet la modif et l'attribution
+			if($object->status != $object::STATUS_VALIDATED && $object->status != $object::STATUS_PERDUE)
+			{
+				print dolGetButtonAction($langs->trans('Attribuer la clé'), '', 'danger','/custom/scolarite/attribution_card.php?fk_cle=' . $object->id . '&action=create&token=' . newToken(), '', $permissiontoadd);
+				print dolGetButtonAction($langs->trans('Modifier la clé'), '', 'default', $_SERVER['PHP_SELF'] . '?id=' . $object->id . '&action=edit&token=' . newToken(), '', $permissiontoadd);
+			}
 
 			// Validate
 			if ($object->status == $object::STATUS_DRAFT) {
@@ -534,78 +513,12 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 				}
 			}
 
-			// Clone
-			//print dolGetButtonAction($langs->trans('ToClone'), '', 'default', $_SERVER['PHP_SELF'].'?id='.$object->id.(!empty($object->socid)?'&socid='.$object->socid:'').'&action=clone&token='.newToken(), '', $permissiontoadd);
-
-			/*
-			if ($permissiontoadd) {
-				if ($object->status == $object::STATUS_ENABLED) {
-					print dolGetButtonAction($langs->trans('Disable'), '', 'default', $_SERVER['PHP_SELF'].'?id='.$object->id.'&action=disable&token='.newToken(), '', $permissiontoadd);
-				} else {
-					print dolGetButtonAction($langs->trans('Enable'), '', 'default', $_SERVER['PHP_SELF'].'?id='.$object->id.'&action=enable&token='.newToken(), '', $permissiontoadd);
-				}
-			}
-			if ($permissiontoadd) {
-				if ($object->status == $object::STATUS_VALIDATED) {
-					print dolGetButtonAction($langs->trans('Cancel'), '', 'default', $_SERVER['PHP_SELF'].'?id='.$object->id.'&action=close&token='.newToken(), '', $permissiontoadd);
-				} else {
-					print dolGetButtonAction($langs->trans('Re-Open'), '', 'default', $_SERVER['PHP_SELF'].'?id='.$object->id.'&action=reopen&token='.newToken(), '', $permissiontoadd);
-				}
-			}
-			*/
-
 			// Delete (need delete permission, or if draft, just need create/modify permission)
 			print dolGetButtonAction($langs->trans('Delete'), '', 'delete', $_SERVER['PHP_SELF'].'?id='.$object->id.'&action=delete&token='.newToken(), '', $permissiontodelete);
 		}
 		print '</div>'."\n";
 	}
 
-
-	// Select mail models is same action as presend
-	if (GETPOST('modelselected')) {
-		$action = 'presend';
-	}
-
-	if ($action != 'presend') {
-		print '<div class="fichecenter"><div class="fichehalfleft">';
-		print '<a name="builddoc"></a>'; // ancre
-
-		$includedocgeneration = 0;
-
-		// Documents
-		if ($includedocgeneration) {
-			$objref = dol_sanitizeFileName($object->ref);
-			$relativepath = $objref.'/'.$objref.'.pdf';
-			$filedir = $conf->scolarite->dir_output.'/'.$object->element.'/'.$objref;
-			$urlsource = $_SERVER["PHP_SELF"]."?id=".$object->id;
-			$genallowed = $permissiontoread; // If you can read, you can build the PDF to read content
-			$delallowed = $permissiontoadd; // If you can create/edit, you can remove a file on card
-			print $formfile->showdocuments('scolarite:Cles', $object->element.'/'.$objref, $filedir, $urlsource, $genallowed, $delallowed, $object->model_pdf, 1, 0, 0, 28, 0, '', '', '', $langs->defaultlang);
-		}
-
-		// Show links to link elements
-		$linktoelem = $form->showLinkToObjectBlock($object, null, array('cles'));
-		$somethingshown = $form->showLinkedObjectBlock($object, $linktoelem);
-
-
-		print '</div><div class="fichehalfright">';
-
-		$MAXEVENT = 10;
-
-		$morehtmlcenter = dolGetButtonTitle($langs->trans('SeeAll'), '', 'fa fa-bars imgforviewmode', dol_buildpath('/scolarite/cles_agenda.php', 1).'?id='.$object->id);
-
-		// List of actions on element
-		include_once DOL_DOCUMENT_ROOT.'/core/class/html.formactions.class.php';
-		$formactions = new FormActions($db);
-		$somethingshown = $formactions->showactions($object, $object->element.'@'.$object->module, (is_object($object->thirdparty) ? $object->thirdparty->id : 0), 1, '', $MAXEVENT, '', $morehtmlcenter);
-
-		print '</div></div>';
-	}
-
-	//Select mail models is same action as presend
-	if (GETPOST('modelselected')) {
-		$action = 'presend';
-	}
 
 	// Presend form
 	$modelmail = 'cles';
@@ -615,6 +528,21 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 
 	include DOL_DOCUMENT_ROOT.'/core/tpl/card_presend.tpl.php';
 }
+
+// Script qui permet l'affichage des menus déroulants
+print '<script>
+    $( ".annee-accordion" ).accordion({
+        collapsible: true,
+        active: 2,
+    });
+    </script>';
+
+print '<script>
+    $( ".annee-accordion-opened" ).accordion({
+        collapsible: true,
+    });
+    </script>';
+
 
 // End of page
 llxFooter();

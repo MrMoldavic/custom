@@ -120,9 +120,8 @@ class Cles extends CommonObject
 	 */
 	public $fields=array(
 		'rowid' => array('type'=>'integer', 'label'=>'TechnicalID', 'enabled'=>'1', 'position'=>1, 'notnull'=>1, 'visible'=>0, 'noteditable'=>'1', 'index'=>1, 'css'=>'left', 'comment'=>"Id"),
-		'type' => array('type'=>'integer', 'label'=>'Type de clé', 'enabled'=>'1', 'position'=>20, 'notnull'=>1, 'visible'=>1, 'index'=>1, 'searchall'=>1,  'validate'=>'1', 'comment'=>"Reference of object", 'arrayofkeyval'=>array('0'=>'Salle de classe (V7) ','1'=>'Salle de classe limitée (V6) ', '2'=>'Pass général', '3'=>'Pass magnétique','4'=>'Ascenceur'), 'css'=>'maxwidth300'),
-		'numero_cle' => array('type'=>'varchar(255)', 'label'=>'Numéro de clé', 'enabled'=>'1', 'position'=>40, 'notnull'=>1, 'visible'=>1, 'css'=>'maxwidth200','showoncombobox'=>'1', 'help'=>"Help text for amount", 'validate'=>'1',),
-		'caractere_ajoute' => array('type'=>'varchar(255)', 'label'=>'Caractère ajouté', 'enabled'=>'1', 'position'=>40, 'notnull'=>1, 'visible'=>3, 'css'=>'minwidth200', 'validate'=>'1','arrayofkeyval'=>array('delta'=>'&#x394;','deltaDelta'=>'&#x394;&#x394;','X'=>'X','XX'=>'XX', 'Y'=>'Y', '1'=>'1','2'=>'2','3'=>'3','4'=>'4')),
+		'type' => array('type'=>'integer', 'label'=>'Type de clé', 'enabled'=>'1', 'position'=>20, 'notnull'=>1, 'visible'=>1, 'index'=>1, 'searchall'=>1,  'validate'=>'1', 'comment'=>"Reference of object", 'arrayofkeyval'=>array('0'=>'Salle de classe (V7) ','1'=>'Salle de classe limitée (V6) ', '2'=>'Pass général', '3'=>'Pass magnétique','4'=>'Ascenceur','5'=>'Placard Poly'), 'css'=>'maxwidth300'),
+		'numero_cle' => array('type'=>'varchar(255)', 'label'=>'Numéro de clé', 'enabled'=>'1', 'position'=>20, 'notnull'=>1, 'visible'=>1, 'css'=>'maxwidth200','showoncombobox'=>'1', 'help'=>"Help text for amount", 'validate'=>'1',),
 		'fk_etablissement' => array('type'=>'integer:Etablissement:custom/scolarite/class/etablissement.class.php:1', 'label'=>'Etablissement', 'foreignkey'=>'etablissement.rowid','enabled'=>'1', 'position'=>20, 'notnull'=>1, 'visible'=>1, 'index'=>1, 'searchall'=>1, 'validate'=>'1', 'comment'=>"Reference of object", 'css'=>'maxwidth400'),
 
 		//'contrat' => array('type'=>'varchar(255)', 'label'=>'Numéro contrat', 'position'=>60, 'notnull'=>-1, 'visible'=>1, 'index'=>1, 'css'=>'maxwidth300', 'help'=>"OrganizationEventLinkToThirdParty", 'validate'=>'1',),
@@ -136,16 +135,13 @@ class Cles extends CommonObject
 		'tms' => array('type'=>'timestamp', 'label'=>'DateModification', 'enabled'=>'1', 'position'=>501, 'notnull'=>0, 'visible'=>-2,),
 		'fk_user_creat' => array('type'=>'integer:User:user/class/user.class.php', 'label'=>'UserAuthor', 'picto'=>'user', 'enabled'=>'1', 'position'=>510, 'notnull'=>1, 'visible'=>-2, 'foreignkey'=>'user.rowid',),
 		'fk_user_modif' => array('type'=>'integer:User:user/class/user.class.php', 'label'=>'UserModif', 'picto'=>'user', 'enabled'=>'1', 'position'=>511, 'notnull'=>-1, 'visible'=>-2,),
-		'status' => array('type'=>'integer', 'label'=>'Status', 'enabled'=>'1', 'position'=>2000, 'notnull'=>1, 'visible'=>0, 'index'=>1,),
+		'status' => array('type'=>'integer', 'label'=>'Status', 'enabled'=>'1', 'position'=>2000, 'notnull'=>1, 'visible'=>2, 'index'=>1,),
 	);
 	public $rowid;
 	public $type;
 	public $numero_cle;
-	public $fk_user_pret;
 	public $contrat;
 	public $etat_contrat;
-	public $fk_ancien_user_pret;
-
 	public $description;
 	public $note_public;
 	public $note_private;
@@ -246,6 +242,17 @@ class Cles extends CommonObject
 	 */
 	public function create(User $user, $notrigger = false)
 	{
+		// On va chercher une clé éxistante avec ce nom de clé
+		$existingKey = $this->fetchAll('','',0,0,array('customsql'=>"numero_cle LIKE '".$this->numero_cle."'"),'AND');
+
+		// Si une clé éxiste, on renvoie une erreur
+		if($existingKey)
+		{
+			setEventMessage('Une clé avec ce numéro éxiste déjà.','errors');
+			return -1;
+		}
+
+		$this->status = self::STATUS_DISPONIBLE;
 		$resultcreate = $this->createCommon($user, $notrigger);
 
 		//$resultvalidate = $this->validate($user, $notrigger);

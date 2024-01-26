@@ -22,14 +22,17 @@
  * \brief       This file is a CRUD class file for Attribution (Create/Read/Update/Delete)
  */
 
-//     ini_set('display_errors', '1');
-// ini_set('display_startup_errors', '1');
-// error_reporting(E_ALL);
+/*ini_set('display_errors', '1');
+ini_set('display_startup_errors', '1');
+error_reporting(E_ALL);*/
 
 // Put here all includes required by your class file
 require_once DOL_DOCUMENT_ROOT.'/core/class/commonobject.class.php';
 require_once DOL_DOCUMENT_ROOT . '/custom/scolarite/class/cles.class.php';
+require_once DOL_DOCUMENT_ROOT . '/custom/management/class/agent.class.php';
 //require_once DOL_DOCUMENT_ROOT . '/product/class/product.class.php';
+
+
 
 /**
  * Class for Attribution
@@ -49,7 +52,7 @@ class Attribution extends CommonObject
 	/**
 	 * @var string Name of table without prefix where object is stored. This is also the key used for extrafields management.
 	 */
-	public $table_element = 'scolarite_attribution';
+	public $table_element = 'attribution';
 
 	/**
 	 * @var int  Does this object support multicompany module ?
@@ -71,6 +74,8 @@ class Attribution extends CommonObject
 	const STATUS_DRAFT = 0;
 	const STATUS_VALIDATED = 4;
 	const STATUS_CANCELED = 9;
+	const STATUS_TERMINATED = 7;
+	const STATUS_PROBLEME = 8;
 
 
 	/**
@@ -117,14 +122,15 @@ class Attribution extends CommonObject
 	 */
 	public $fields=array(
 		'rowid' => array('type'=>'integer', 'label'=>'TechnicalID', 'enabled'=>'1', 'position'=>1, 'notnull'=>1, 'visible'=>0, 'noteditable'=>'1', 'index'=>1, 'css'=>'left', 'comment'=>"Id"),
-		'fk_cle' => array('type'=>'integer:Cles:custom/scolarite/class/cles.class.php:1:(t.status=\'0 \')', 'label'=>'Clé', 'enabled'=>'1', 'position'=>1, 'notnull'=>1, 'visible'=>1, 'foreignkey'=>'cles.rowid','css'=>'maxwidth300',),
-		'fk_user_pret' => array('type'=>'integer:User:user/class/user.class.php', 'label'=>'Bénéficiaire', 'picto'=>'user', 'enabled'=>'1', 'position'=>510, 'notnull'=>1, 'visible'=>1, 'foreignkey'=>'user.rowid','css'=>'maxwidth300',),
+		'fk_cle' => array('type'=>'integer:Cles:custom/scolarite/class/cles.class.php:1:(t.status=1)', 'label'=>'Clé', 'enabled'=>'1', 'position'=>1, 'notnull'=>1, 'visible'=>1, 'foreignkey'=>'cles.rowid','css'=>'maxwidth300',),
+		'fk_user_pret' => array('type'=>'integer:Agent:custom/management/class/agent.class.php', 'label'=>'Bénéficiaire', 'picto'=>'user', 'enabled'=>'1', 'position'=>510, 'notnull'=>1, 'visible'=>1, 'foreignkey'=>'user.rowid','css'=>'maxwidth300',),
 		'commentaire' => array('type'=>'text', 'label'=>'Description', 'enabled'=>'1', 'position'=>60, 'notnull'=>0, 'visible'=>3, 'validate'=>'1', 'css'=>'maxwidth300',),
-		'date_debut_pret' => array('type'=>'datetime', 'label'=>'Date de prêt', 'enabled'=>'1', 'position'=>400, 'notnull'=>1, 'visible'=>1,),
-		'date_fin_pret' => array('type'=>'datetime', 'label'=>'Date fin de prêt', 'enabled'=>'1', 'position'=>500, 'notnull'=>0, 'visible'=>1,),
-		'numero_contrat' => array('type'=>'varchar(255)', 'label'=>'Numéro contrat', 'position'=>60, 'notnull'=>-1, 'visible'=>1, 'index'=>1, 'css'=>'maxwidth300', 'help'=>"OrganizationEventLinkToThirdParty", 'validate'=>'1',),
+		'date_debut_pret' => array('type'=>'date', 'label'=>'Date de prêt', 'enabled'=>'1', 'position'=>400, 'notnull'=>1, 'visible'=>1,),
+		'date_fin_pret' => array('type'=>'date', 'label'=>'Date fin de prêt', 'enabled'=>'1', 'position'=>500, 'notnull'=>0, 'visible'=>1,),
+		'numero_contrat' => array('type'=>'varchar(255)', 'label'=>'Numéro contrat', 'position'=>60, 'notnull'=>-1, 'visible'=>1, 'index'=>1, 'css'=>'maxwidth300','validate'=>'1',),
 		'etat_contrat' => array('type'=>'integer', 'label'=>'Etat du contrat', 'enabled'=>'$conf->project->enabled', 'position'=>52, 'notnull'=>-1, 'visible'=>-1, 'index'=>1, 'css'=>'maxwidth300', 'validate'=>'1', 'arrayofkeyval'=>array('1'=>'Signé, à récupérer','2'=>'Edité, à signer', '3'=>'A éditer','4'=>'Signé et récupéré')),
 		'nom_attribution' => array('type'=>'varchar(255)', 'label'=>'Nom Attribution', 'position'=>1, 'notnull'=>0, 'visible'=>2, 'index'=>1, 'css'=>'maxwidth300', 'validate'=>'1',),
+		'fk_annee_scolaire' => array('type'=>'sellist:c_annee_scolaire:annee', 'label'=>'Année scolaire', 'enabled'=>'1', 'position'=>40, 'notnull'=>1, 'visible'=>1, 'default'=>'null', 'isameasure'=>'1', 'validate'=>'1',),
 
 		'note_public' => array('type'=>'html', 'label'=>'NotePublic', 'enabled'=>'1', 'position'=>61, 'notnull'=>0, 'visible'=>0, 'cssview'=>'wordbreak', 'validate'=>'1',),
 		'note_private' => array('type'=>'html', 'label'=>'NotePrivate', 'enabled'=>'1', 'position'=>62, 'notnull'=>0, 'visible'=>0, 'cssview'=>'wordbreak', 'validate'=>'1',),
@@ -139,9 +145,12 @@ class Attribution extends CommonObject
 	);
 	public $rowid;
 	public $ref;
+	public $date_debut_pret;
+	public $date_fin_pret;
 	public $label;
 	public $amount;
 	public $qty;
+	public $fk_cle;
 	public $fk_soc;
 	public $fk_project;
 	public $description;
@@ -246,40 +255,19 @@ class Attribution extends CommonObject
 	 */
 	public function create(User $user, $notrigger = false)
 	{
-
-		$sql = "SELECT numero_cle, caractere_ajoute FROM ".MAIN_DB_PREFIX."cles WHERE rowid=".$this->fk_cle;
-		$resql = $this->db->query($sql);
-		$cle = $this->db->fetch_object($resql);
-
-		$users = "SELECT firstname, lastname FROM ".MAIN_DB_PREFIX."user WHERE rowid=".$this->fk_user_pret;
-		$resqlUser = $this->db->query($users);
-		$User = $this->db->fetch_object($resqlUser);
-
-		if(!empty($cle->caractere_ajoute))
-		{
-			if($cle->caractere_ajoute == "delta")
-			{
-				$this->nom_attribution = $cle->numero_cle. '(&#x394;) / '.$User->firstname.'-'.$User->lastname;
-			}
-			else
-			{
-				$this->nom_attribution = $cle->numero_cle. '('.$cle->caractere_ajoute.') / '.$User->firstname.'-'.$User->lastname;
-
-			}
-		}
-		else
-		{
-			$this->nom_attribution = $cle->numero_cle.' / '.$User->firstname.'-'.$User->lastname;
-		}
-
-		$cles = new Cles($this->db);
-		$cles->fetch($this->fk_cle);
-		$cles->validate($user, $notrigger);
-
-		$resultvalidate = $this->validate($user, $notrigger);
+		// On récupère l'agent à qui on prête la clé
+		$agentClass = new Agent($this->db);
+		$agentClass->fetch($this->fk_user_pret);
+		// On récupère la clé concernée
+		$cleClass = new Cles($this->db);
+		$cleClass->fetch($this->fk_cle);
+		// Nom de l'attribution
+		$this->nom_attribution = "$cleClass->numero_cle / $agentClass->prenom-$agentClass->nom";
+		// On valide la clé et définissont le status du contrat
+		$cleClass->validate($user, $notrigger);
+		$this->status = Attribution::STATUS_VALIDATED;
 
 		$resultcreate = $this->createCommon($user, $notrigger);
-
 
 		return $resultcreate;
 	}
@@ -391,9 +379,9 @@ class Attribution extends CommonObject
 	 * @param string $ref  Ref
 	 * @return int         <0 if KO, 0 if not found, >0 if OK
 	 */
-	public function fetch($id, $ref = null)
+	public function fetch($id, $ref = null,$moresql = null)
 	{
-		$result = $this->fetchCommon($id, $ref);
+		$result = $this->fetchCommon($id, $ref,$moresql);
 		if ($result > 0 && !empty($this->table_element_line)) {
 			$this->fetchLines();
 		}
@@ -888,9 +876,13 @@ class Attribution extends CommonObject
 			$this->labelStatus[self::STATUS_DRAFT] = $langs->transnoentitiesnoconv('Draft');
 			$this->labelStatus[self::STATUS_VALIDATED] = $langs->transnoentitiesnoconv('Prêt en cours');
 			$this->labelStatus[self::STATUS_CANCELED] = $langs->transnoentitiesnoconv('Disabled');
+			$this->labelStatus[self::STATUS_TERMINATED] = $langs->transnoentitiesnoconv('Prêt terminé');
+			$this->labelStatus[self::STATUS_PROBLEME] = $langs->transnoentitiesnoconv('Problème');
 			$this->labelStatusShort[self::STATUS_DRAFT] = $langs->transnoentitiesnoconv('Draft');
 			$this->labelStatusShort[self::STATUS_VALIDATED] = $langs->transnoentitiesnoconv('Prêt en cours');
 			$this->labelStatusShort[self::STATUS_CANCELED] = $langs->transnoentitiesnoconv('Disabled');
+			$this->labelStatusShort[self::STATUS_TERMINATED] = $langs->transnoentitiesnoconv('Prêt terminé');
+			$this->labelStatusShort[self::STATUS_PROBLEME] = $langs->transnoentitiesnoconv('Problème');
 		}
 
 		$statusType = 'status'.$status;
@@ -1100,6 +1092,51 @@ class Attribution extends CommonObject
 		$this->db->commit();
 
 		return $error;
+	}
+
+	public function attributionsPerYear(int $cle)
+	{
+		global $langs;
+
+		$dictionaryClass = new Dictionary($this->db);
+		$resqlAnneeScolaire = $dictionaryClass->fetchByDictionary('c_annee_scolaire', ['rowid', 'annee', 'annee_actuelle'], 0, '', ' WHERE active = 1 ORDER BY rowid DESC');
+
+		foreach ($resqlAnneeScolaire as $value) {
+			$results = $this->fetchAll('DESC', 'rowid', 0, '', ['fk_cle' => $cle, 'fk_annee_scolaire' => $value->rowid]);
+
+			print '<div class="annee-accordion' . ($value->annee_actuelle == 1 ? '-opened' : '') . '">';
+			print '<h3><span class="badge badge-status4 badge-status">Année ' . $value->annee . ($value->annee_actuelle != 1 ? ' (année précédente)' : '') . '</span></h3>';
+
+			if (count($results) > 0) {
+				print '<table class="tagtable liste">';
+				print '<tbody>';
+
+				print '<tr class="liste_titre">
+					<th class="wrapcolumntitle liste_titre">Prêtée à</th>
+					<th class="wrapcolumntitle liste_titre">Etat</th>
+					<th class="wrapcolumntitle liste_titre">Début</th>
+					<th class="wrapcolumntitle liste_titre">Fin</th>
+					</tr>';
+				print '</tbody>';
+				foreach ($results as $result) {
+					print '<tr class="oddeven">';
+
+					$agentClass = new Agent($this->db);
+					$agentClass->fetch($result->fk_user_pret);
+					print '<td><a href="/custom/scolarite/attribution_card.php?id='.$result->id.'">'.$agentClass->prenom.' '.$agentClass->nom.'</a></td>';
+					print '<td><span class="badge badge-status' . $result->status . ' badge-status">' . $this->LibStatut($result->status) . '</span></td>';
+					print '<td>' . date('d/m/Y', $result->date_debut_pret) . '</td>';
+					print '<td>' . date('d/m/Y', $result->date_fin_pret) . '</td>';
+					print '</tr>';
+				}
+				unset($result);
+				print '</table>';
+			} else {
+				print '<p>Aucune attribution connue pour cette année scolaire.</p>';
+			}
+
+			print '</div>';
+		}
 	}
 }
 
