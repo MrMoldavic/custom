@@ -280,9 +280,6 @@ class Contribution extends CommonObject
 
 			while ($obj = $this->db->fetch_object($resql)) {
 				$response->total += intval($obj->montant_total);
-
-
-
 				$response->actual_contribution += intval($obj->montant);
 			}
 
@@ -305,14 +302,11 @@ class Contribution extends CommonObject
 	public function create(User $user, $notrigger = false)
 	{
 		$familleClass = new Famille($this->db);
-		/*$parentsClass = new Parents($this->db);*/
-
 		$dictionaryClass = new Dictionary($this->db);
 
 		$existingContribution = $this->fetchAll('ASC','rowid','','',['fk_famille'=>$this->fk_famille,'fk_annee_scolaire'=>$this->fk_annee_scolaire]);
 
 		if($existingContribution) setEventMessages("Une contribution avec ces informations existe déjà", null, 'errors');
-		//elseif($this->montant_total == '0') setEventMessages("Le montant total ne peut pas être nul", null, 'errors');
 		else
 		{
 			$famille = $familleClass->fetchBy(['fk_antenne','identifiant_famille','rowid'], $this->fk_famille, 'rowid');
@@ -341,8 +335,6 @@ class Contribution extends CommonObject
 				$parent = new Parents($this->db);
 				$existingAdherent = $parent->fetchAdherentOrTiersByParent($value->firstname, $value->lastname,'adherent');
 
-				//$existingTiers = $parent->fetchAdherentOrTiersByParent($value->firstname, $value->lastname,'societe');
-
 				if($existingAdherent == 0)
 				{
 					$parent->fetch($value->rowid);
@@ -367,19 +359,8 @@ class Contribution extends CommonObject
 
 				}
 
-				/*if($existingTiers->num_rows == 0)
-				{
-					$societe = new Societe($this->db);
-					$societe->nom = "$parent->firstname $parent->lastname";
-					$societe->fk_pays = 1;
-					$resultTiers = $societe->create($user);
-				}*/
-
-
-
 				$parent->fetch($value->rowid);
 				$parent->fk_adherent = ($existingAdherent ? $existingAdherent->rowid : $result);
-				//$parent->fk_tiers = ($existingTiers ? $existingTiers->rowid : $resultTiers);
 				$parent->update($user);
 
 				$contributionContentClass = new ContributionContent($this->db);
@@ -687,11 +668,8 @@ class Contribution extends CommonObject
 				$newIdentifiant .= "$parent->lastname-";
 			}
 
-			/*$newIdentifiant = str_replace(['/'],[''], $famille->identifiant_famille);*/
-
 			$this->fk_antenne = $famille->fk_antenne;
 			$this->ref = "Contribution-$newIdentifiant$anneeScolaire->annee";
-			//$this->status = self::STATUS_VALIDATED;
 			return $this->updateCommon($user, $notrigger);
 
 		}
@@ -751,13 +729,6 @@ class Contribution extends CommonObject
 			return 0;
 		}
 
-		/*if (! ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && !empty($user->rights->viescolaire->contribution->write))
-		 || (!empty($conf->global->MAIN_USE_ADVANCED_PERMS) && !empty($user->rights->viescolaire->contribution->contribution_advance->validate))))
-		 {
-		 $this->error='NotEnoughPermissions';
-		 dol_syslog(get_class($this)."::valid ".$this->error, LOG_ERR);
-		 return -1;
-		 }*/
 
 		$now = dol_now();
 
@@ -868,13 +839,6 @@ class Contribution extends CommonObject
 			return 0;
 		}
 
-		/*if (! ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && !empty($user->rights->viescolaire->write))
-		 || (!empty($conf->global->MAIN_USE_ADVANCED_PERMS) && !empty($user->rights->viescolaire->viescolaire_advance->validate))))
-		 {
-		 $this->error='Permission denied';
-		 return -1;
-		 }*/
-
 		return $this->setStatusCommon($user, self::STATUS_DRAFT, $notrigger, 'CONTRIBUTION_UNVALIDATE');
 	}
 
@@ -892,12 +856,6 @@ class Contribution extends CommonObject
 			return 0;
 		}
 
-		/*if (! ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && !empty($user->rights->viescolaire->write))
-		 || (!empty($conf->global->MAIN_USE_ADVANCED_PERMS) && !empty($user->rights->viescolaire->viescolaire_advance->validate))))
-		 {
-		 $this->error='Permission denied';
-		 return -1;
-		 }*/
 
 		return $this->setStatusCommon($user, self::STATUS_CANCELED, $notrigger, 'CONTRIBUTION_CANCEL');
 	}
@@ -916,12 +874,6 @@ class Contribution extends CommonObject
 			return 0;
 		}
 
-		/*if (! ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && !empty($user->rights->viescolaire->write))
-		 || (!empty($conf->global->MAIN_USE_ADVANCED_PERMS) && !empty($user->rights->viescolaire->viescolaire_advance->validate))))
-		 {
-		 $this->error='Permission denied';
-		 return -1;
-		 }*/
 
 		return $this->setStatusCommon($user, self::STATUS_VALIDATED, $notrigger, 'CONTRIBUTION_REOPEN');
 	}
@@ -1236,13 +1188,13 @@ class Contribution extends CommonObject
 	 *	@param  int		$id       Id of object
 	 *	@return	void
 	 */
-	public function getFactureForParentInContribution($contribution_content_id,$tiers)
+	public function getFactureForParentInContribution(int $contribution_content_id,int $tiers)
 	{
 		$sql = "SELECT f.rowid,f.fk_statut";
 		$sql .= " FROM ".MAIN_DB_PREFIX."facture_extrafields as fe";
 		$sql .= " INNER JOIN ".MAIN_DB_PREFIX."facture as f ON fe.fk_object=f.rowid";
-		$sql .= " WHERE fe.contribution_content = ".((int) $contribution_content_id);
-		$sql .= " AND f.fk_soc = ".((int) $tiers);
+		$sql .= " WHERE fe.contribution_content = ".($contribution_content_id);
+		$sql .= " AND f.fk_soc = ".($tiers);
 
 		$result = $this->db->query($sql);
 
@@ -1346,6 +1298,7 @@ class Contribution extends CommonObject
 				}
 				elseif ($this->status == Self::STATUS_DRAFT)
 				{
+					$PrintModifAndDelete = 1;
 					$dateActuelle = new DateTime();
 					// Vérifiez si nous sommes avant le 1er septembre
 					if ($dateActuelle->format('n') < 9) {
@@ -1367,6 +1320,7 @@ class Contribution extends CommonObject
 						$existingSubscription = new Dictionary($this->db);
 						$res = $existingSubscription->fetchByDictionary('subscription',['rowid'],0,''," WHERE fk_adherent=$line->fk_adherent AND fk_contribution_content=$line->id");
 
+						if($res->rowid) $PrintModifAndDelete = 0;
 						print '<a class="reposition editfielda '.($res ? 'badge badge-status4 badge-status' : '').'" href="'.($res ? '../../adherents/subscription/card.php?rowid='.$res->rowid : $_SERVER["PHP_SELF"].'?action=addSubscription&fk_adherent='.$line->fk_adherent.'&token='.newToken().'&montant='.$line->montant.'&id='.$this->id.'&lineid='.$line->id).'">'.($res ? 'Cotisation payée' : 'Cotiser').'</a>';
 						print '<br>';
 					}else {
@@ -1374,11 +1328,19 @@ class Contribution extends CommonObject
 
 						$existingDon = $this->getDonForAdherentInContribution($line->id);
 
-						if($existingDon)
+						if($existingDon->rowid)
 						{
-							$donClass = new Don($this->db);
+							$donClass = new Don($db);
+
+							if($existingDon->fk_statut == 2 && $line->mail_envoye != 1)
+							{
+								print '<a class="reposition editfielda" href="' . $_SERVER['PHP_SELF'] . '?id='.$this->id.'&action=mailEnvoyeValidation&lineid='.$line->id.'&idDon='.$existingDon->rowid.'">Mail envoyé</a>';
+								print '<br>';
+							}
+
 							print '<a class="reposition editfield badge badge-status'.($existingDon->fk_statut == 2 ? '4' : $existingDon->fk_statut).' badge-status" href="../../don/card.php?action=view&id='.$existingDon->rowid.'">'.$donClass->LibStatut($existingDon->fk_statut).'</a>';
 							print '<br>';
+							$PrintModifAndDelete = 0;
 						}
 						elseif($line->fk_type_contribution_content == 1 && $line->montant != 0)
 						{
@@ -1407,6 +1369,7 @@ class Contribution extends CommonObject
 										$spanColor = '7';
 										break;
 								}
+								$PrintModifAndDelete = 0;
 							}
 
 							print '<a class="reposition editfielda " href="'.($res > 0 ? '../../compta/facture/card.php?facid='.$res->rowid.'&contributionId='.$this->id : $_SERVER["PHP_SELF"].'?id='.$this->id.'&lineid='.$line->id.'&parentId='.$parentClass->id.'&action=createFacture').'">'.($res > 0 ? '<span class="badge badge-status'.$spanColor.' badge-status">'.$stateToPrint.'</span>' : 'Payer la facture').'</a>';
@@ -1424,7 +1387,7 @@ class Contribution extends CommonObject
 					print '<td align="center">';
 
 
-					if($res->rowid == null)
+					if($PrintModifAndDelete == 1)
 					{
 						print '<a class="reposition editfielda" href="'.$_SERVER["PHP_SELF"].'?action=editline&id='. $this->id .'&lineid='.$line->id.'">'.img_edit().'</a>';
 						print '&nbsp;';

@@ -21,9 +21,9 @@
  *		\ingroup    viescolaire
  *		\brief      Page to create/edit/view contribution
  */
-/*ini_set('display_errors', '1');
+ini_set('display_errors', '1');
 ini_set('display_startup_errors', '1');
-error_reporting(E_ALL);*/
+error_reporting(E_ALL);
 //if (! defined('NOREQUIREDB'))              define('NOREQUIREDB', '1');				// Do not create database handler $db
 //if (! defined('NOREQUIREUSER'))            define('NOREQUIREUSER', '1');				// Do not load object $user
 //if (! defined('NOREQUIRESOC'))             define('NOREQUIRESOC', '1');				// Do not load object $mysoc
@@ -78,7 +78,6 @@ if (!$res) {
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formcompany.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formfile.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formprojet.class.php';
-require_once DOL_DOCUMENT_ROOT.'/don/class/don.class.php';
 require_once DOL_DOCUMENT_ROOT.'/adherents/class/subscription.class.php';
 require_once DOL_DOCUMENT_ROOT.'/compta/facture/class/facture.class.php';
 require_once DOL_DOCUMENT_ROOT.'/product/class/product.class.php';
@@ -267,13 +266,12 @@ if ($action == 'updateline')
 		setEventMessages('Ligne de produit mise à jour' , null);
 	}
 }
-
 if ($action == 'addLine')
 {
-	$errors = new stdClass();
-	$errors->message = [];
-	$contributionContentClass = new ContributionContent($db);
-	$res = $contributionContentClass->fetchAll('ASC','rowid','','',['fk_contribution'=>$object->id,"fk_adherent"=>$fk_adherent,'fk_type_contribution_content'=>GETPOST('fk_type_contribution_content','int')]);
+	// $errors = new stdClass();
+	// $errors->message = [];
+	// $contributionContentClass = new ContributionContent($db);
+	// $res = $contributionContentClass->fetchAll('ASC','rowid','','',['fk_contribution'=>$object->id,"fk_adherent"=>$fk_adherent,'fk_type_contribution_content'=>GETPOST('fk_type_contribution_content','int')]);
 
 	/*foreach($res as $val)
 	{
@@ -281,21 +279,49 @@ if ($action == 'addLine')
 		$errors->message[] .= 'Un Don/facture existe déjà pour cet adhérent. Veuillez éditer celui existant';
 	};*/
 
-	if ($errors->nb == 0)
-	{
-		$contributionContentClass->fk_contribution = $object->id;
-		$contributionContentClass->fk_type_contribution_content = GETPOST('fk_type_contribution_content','int');
-		$contributionContentClass->montant = 0;
-		$contributionContentClass->fk_adherent = $fk_adherent;
-		$result = $contributionContentClass->create($user);
+	$contributionContentClass = new ContributionContent($db);
+	$existingContents = $contributionContentClass->fetchAll('rowid','rowid',0,0,['fk_contribution'=>$object->id,'fk_type_contribution_content'=>GETPOST('fk_type_contribution_content','int')]);
 
-		if($result > 0)
-		{
-			setEventMessages('Ligne ajoutée' , null);
+	$count = 0;
+	if(count($existingContents) > 0)
+	{
+		foreach($existingContents as $value) {
+
+			if (GETPOST('fk_type_contribution_content', 'int') == 1) {
+				$parentClass = new Parents($db);
+				$allParents = $parentClass->fetchAll('rowid', 'rowid', 0, 0, ['fk_famille' => $object->fk_famille]);
+
+				foreach ($allParents as $parent) {
+					$factureClass = new Facture($db);
+					if ($parent->fk_tiers) {
+						if ($object->getFactureForParentInContribution($value->id, $parent->fk_tiers)->fk_statut != null) $count++;
+					}
+				}
+
+			} elseif (GETPOST('fk_type_contribution_content', 'int') == 2) {
+
+				// Si il trouve un don avec un statut (donc déjà dans un stade avancé, on incrémente une valeur d'erreur
+				if ($object->getDonForAdherentInContribution($value->id)->fk_statut != null) $count++;
+			}
 		}
-		else $errors->message[] .= 'Une erreur est survenue lors de l\'ajout en base.';
 	}
-	print setEventMessages($errors->message , null, 'errors');
+
+
+	// Si le count est supérieur à 0, c'est qu'il a trouvé un don, qui est donc désormais non modifiable, on crée donc une autre entrée
+	 if($count >= 0)
+	 {
+		 $contributionContentClass->fk_contribution = $object->id;
+		 $contributionContentClass->fk_type_contribution_content = GETPOST('fk_type_contribution_content','int');
+		 $contributionContentClass->montant = 0;
+		 $contributionContentClass->fk_adherent = $fk_adherent;
+		 $result = $contributionContentClass->create($user);
+
+		 setEventMessages('Ligne ajoutée' , null);
+	 }
+	 // Sinon on averti l'utilisateur de modifier celle éxistante, car pas encore dans un état assez avancé
+	 else setEventMessages('Merci d\'éditer une ligne existante.' , null, 'errors');
+
+
 }
 
 if($action == "addSubscription")
@@ -490,6 +516,30 @@ if($action == 'confirmCreateFacture'){
 
 }
 
+if($action == 'mailEnvoyeValidation')
+{
+	$contributionContentClass = new ContributionContent($db);
+	$contributionContentClass->fetch($lineid);
+
+	if($contributionContentClass->id)
+	{
+		$contributionContentClass->mail_envoye = 1;
+		$resUpdate = $contributionContentClass->update($user);
+		if($resUpdate > 0)
+		{
+			$donClass = new Don($db);
+			$donClass->fetch(GETPOST('idDon','int'));
+			$donClass->statut = Don::STATUS_MAIL_ENVOYE;
+			$resUpdateDon = $donClass->update($user);
+
+			if($resUpdateDon > 0)
+			{
+				setEventMessage('Mail noté comme envoyé avec succès!');
+			} else setEventMessage('Une erreur est survenue.','errors');
+		}
+	}else setEventMessage('Une erreur est survenue.','errors');
+}
+
 
 /*
  * View
@@ -619,26 +669,6 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 	// Confirmation of action xxxx (You can use it for xxx = 'close', xxx = 'reopen', ...)
 	if ($action == 'xxx') {
 		$text = $langs->trans('ConfirmActionContribution', $object->ref);
-		/*if (isModEnabled('notification'))
-		{
-			require_once DOL_DOCUMENT_ROOT . '/core/class/notify.class.php';
-			$notify = new Notify($db);
-			$text .= '<br>';
-			$text .= $notify->confirmMessage('CONTRIBUTION_CLOSE', $object->socid, $object);
-		}*/
-
-		$formquestion = array();
-
-		/*
-		$forcecombo=0;
-		if ($conf->browser->name == 'ie') $forcecombo = 1;	// There is a bug in IE10 that make combo inside popup crazy
-		$formquestion = array(
-			// 'text' => $langs->trans("ConfirmClone"),
-			// array('type' => 'checkbox', 'name' => 'clone_content', 'label' => $langs->trans("CloneMainAttributes"), 'value' => 1),
-			// array('type' => 'checkbox', 'name' => 'update_prices', 'label' => $langs->trans("PuttingPricesUpToDate"), 'value' => 1),
-			// array('type' => 'other',    'name' => 'idwarehouse',   'label' => $langs->trans("SelectWarehouseForStockDecrease"), 'value' => $formproduct->selectWarehouses(GETPOST('idwarehouse')?GETPOST('idwarehouse'):'ifone', 'idwarehouse', '', 1, 0, 0, '', 0, $forcecombo))
-		);
-		*/
 		$formconfirm = $form->formconfirm($_SERVER["PHP_SELF"].'?id='.$object->id, $langs->trans('XXX'), $text, 'confirm_xxx', $formquestion, 0, 1, 220);
 	}
 
@@ -660,37 +690,6 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 	$linkback = '<a href="'.dol_buildpath('/viescolaire/contribution_list.php', 1).'?restore_lastsearch_values=1'.(!empty($socid) ? '&socid='.$socid : '').'">'.$langs->trans("BackToList").'</a>';
 
 	$morehtmlref = '<div class="refidno">';
-	/*
-		// Ref customer
-		$morehtmlref .= $form->editfieldkey("RefCustomer", 'ref_client', $object->ref_client, $object, $usercancreate, 'string', '', 0, 1);
-		$morehtmlref .= $form->editfieldval("RefCustomer", 'ref_client', $object->ref_client, $object, $usercancreate, 'string'.(isset($conf->global->THIRDPARTY_REF_INPUT_SIZE) ? ':'.$conf->global->THIRDPARTY_REF_INPUT_SIZE : ''), '', null, null, '', 1);
-		// Thirdparty
-		$morehtmlref .= '<br>'.$object->thirdparty->getNomUrl(1, 'customer');
-		if (empty($conf->global->MAIN_DISABLE_OTHER_LINK) && $object->thirdparty->id > 0) {
-			$morehtmlref .= ' (<a href="'.DOL_URL_ROOT.'/commande/list.php?socid='.$object->thirdparty->id.'&search_societe='.urlencode($object->thirdparty->name).'">'.$langs->trans("OtherOrders").'</a>)';
-		}
-		// Project
-		if (isModEnabled('project')) {
-			$langs->load("projects");
-			$morehtmlref .= '<br>';
-			if ($permissiontoadd) {
-				$morehtmlref .= img_picto($langs->trans("Project"), 'project', 'class="pictofixedwidth"');
-				if ($action != 'classify') {
-					$morehtmlref .= '<a class="editfielda" href="'.$_SERVER['PHP_SELF'].'?action=classify&token='.newToken().'&id='.$object->id.'">'.img_edit($langs->transnoentitiesnoconv('SetProject')).'</a> ';
-				}
-				$morehtmlref .= $form->form_project($_SERVER['PHP_SELF'].'?id='.$object->id, $object->socid, $object->fk_project, ($action == 'classify' ? 'projectid' : 'none'), 0, 0, 0, 1, '', 'maxwidth300');
-			} else {
-				if (!empty($object->fk_project)) {
-					$proj = new Project($db);
-					$proj->fetch($object->fk_project);
-					$morehtmlref .= $proj->getNomUrl(1);
-					if ($proj->title) {
-						$morehtmlref .= '<span class="opacitymedium"> - '.dol_escape_htmltag($proj->title).'</span>';
-					}
-				}
-			}
-		}
-	*/
 	$morehtmlref .= '</div>';
 
 
@@ -703,9 +702,6 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 	print '<table class="border centpercent tableforfield">'."\n";
 
 	// Common attributes
-	//$keyforbreak='fieldkeytoswitchonsecondcolumn';	// We change column just before this field
-	//unset($object->fields['fk_project']);				// Hide field already shown in banner
-	//unset($object->fields['fk_soc']);					// Hide field already shown in banner
 	include DOL_DOCUMENT_ROOT.'/core/tpl/commonfields_view.tpl.php';
 
 	// Other attributes. Fields from hook formObjectOptions and Extrafields.
@@ -714,15 +710,6 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 	print '<tr><td class="titlefield">';
 	print "Montant total";
 	print '</td><td colspan="3" class="amountpaymentcomplete">';
-
-
-	/*$allLines = $object->getLinesArray();
-
-	$countTotal = 0;
-	foreach ($allLines as $oneLine)
-	{
-		$countTotal += $oneLine->montant;
-	}*/
 	print '<span style="color : '.($object->getTotalAmountOfContent() == $object->montant_total ? "green" : "darkgrey").'">'.price($object->getTotalAmountOfContent(), 1, '', 0, -1, -1, $conf->currency).' / '.price($object->montant_total, 1, '', 0, -1, -1, $conf->currency).'</span>';
 	print '</td></tr>';
 
