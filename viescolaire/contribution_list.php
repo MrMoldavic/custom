@@ -77,7 +77,7 @@ if (!$res) {
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formcompany.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/date.lib.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/company.lib.php';
-require_once DOL_DOCUMENT_ROOT.'/don/class/don.class.php';
+/*require_once DOL_DOCUMENT_ROOT.'/don/class/don.class.php';*/
 require_once DOL_DOCUMENT_ROOT.'/compta/facture/class/facture.class.php';
 
 // load viescolaire libraries
@@ -824,8 +824,8 @@ while ($i < $imaxinloop) {
 							elseif($value->fk_type_contribution_content === 2)
 							{
 								$donClass = new Don($db);
-								if($object->getDonForAdherentInContribution($value->id) && ($object->getDonForAdherentInContribution($value->id)->fk_statut != $donClass::STATUS_PAID)) $donsNonTermines++;
-								elseif($object->getDonForAdherentInContribution($value->id) && ($object->getDonForAdherentInContribution($value->id)->fk_statut == $donClass::STATUS_PAID)) $donsTermines++;
+								if($object->getDonForAdherentInContribution($value->id) && ($object->getDonForAdherentInContribution($value->id)->fk_statut != ($donClass::STATUS_PAID || $donClass::STATUS_MAIL_ENVOYE))) $donsNonTermines++;
+								elseif($object->getDonForAdherentInContribution($value->id) && ($object->getDonForAdherentInContribution($value->id)->fk_statut == $donClass::STATUS_PAID || $object->getDonForAdherentInContribution($value->id)->fk_statut == $donClass::STATUS_MAIL_ENVOYE)) $donsTermines++;
 								elseif(!$object->getDonForAdherentInContribution($value->id)) $existingDon++;
 							}
 						}
