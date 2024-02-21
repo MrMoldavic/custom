@@ -120,6 +120,7 @@ class ContributionContent extends CommonObject
 		'fk_adherent' => array('type'=>'integer', 'label'=>'Fkadherent', 'enabled'=>'1', 'position'=>30, 'notnull'=>1, 'visible'=>-1, 'css'=>'maxwidth500 widthcentpercentminusxx',),
 		'fk_type_adherent' => array('type'=>'integer', 'label'=>'Fktypeadherent', 'enabled'=>'1', 'position'=>35, 'notnull'=>1, 'visible'=>-1, 'css'=>'maxwidth500 widthcentpercentminusxx',),
 		'description' => array('type'=>'text', 'label'=>'Description', 'enabled'=>'1', 'position'=>40, 'notnull'=>0, 'visible'=>-1,),
+		'mail_envoye' => array('type'=>'boolean', 'label'=>'Mail envoyé?', 'enabled'=>'1', 'position'=>40, 'notnull'=>0, 'visible'=>1,),
 		'note_public' => array('type'=>'text', 'label'=>'NotePrivate', 'enabled'=>'1', 'position'=>45, 'notnull'=>0, 'visible'=>0, 'cssview'=>'wordbreak',),
 		'note_private' => array('type'=>'text', 'label'=>'NotePublic', 'enabled'=>'1', 'position'=>50, 'notnull'=>0, 'visible'=>0, 'cssview'=>'wordbreak',),
 		'date_creation' => array('type'=>'datetime', 'label'=>'Datecreation', 'enabled'=>'1', 'position'=>55, 'notnull'=>1, 'visible'=>-1,),
@@ -139,6 +140,7 @@ class ContributionContent extends CommonObject
 	public $fk_type_adherent;
 	public $fk_subscription;
 	public $description;
+	public $mail_envoye;
 	public $note_public;
 	public $note_private;
 	public $date_creation;
