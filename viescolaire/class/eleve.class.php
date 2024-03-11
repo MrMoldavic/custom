@@ -110,15 +110,15 @@ class Eleve extends CommonObject
 	 */
 	public $fields = array(
 		'rowid' => array('type' => 'integer(11)', 'label' => 'TechnicalID', 'enabled' => '1', 'position' => 1, 'notnull' => 1, 'visible' => 0, 'noteditable' => '1', 'index' => 1, 'css' => 'left', 'comment' => "Id"),
-		'nom' => array('type' => 'varchar(255)', 'label' => 'Nom', 'enabled' => '1', 'position' => 3, 'notnull' => 1, 'visible' => 1, 'index' => 1, 'searchall' => 1, 'validate' => '1', 'css' => 'maxwidth250', 'showoncombobox' => '1',),
 		'prenom' => array('type' => 'varchar(255)', 'label' => 'Prénom', 'enabled' => '1', 'position' => 2, 'notnull' => 1, 'visible' => 1, 'searchall' => 1, 'css' => 'minwidth250', 'cssview' => 'wordbreak', 'validate' => '1', 'css' => 'maxwidth250','showoncombobox' => '1'),
+		'nom' => array('type' => 'varchar(255)', 'label' => 'Nom', 'enabled' => '1', 'position' => 3, 'notnull' => 1, 'visible' => 1, 'index' => 1, 'searchall' => 1, 'validate' => '1', 'css' => 'maxwidth250', 'showoncombobox' => '1',),
 		'stats_affectations' => array('type' => 'varchar(255)', 'label' => 'Affectations', 'enabled' => '1', 'position' => 4, 'notnull' => 0, 'visible' => 2, 'validate' => '1',),
-		'genre' => array('type' => 'sellist:c_genre:genre', 'label' => 'Genre', 'enabled' => '1', 'position' => 3, 'notnull' => 0, 'visible' => 1, 'validate' => '1','css' => 'maxwidth250',),
-		'geographie_prioritaire' => array('type' => 'sellist:c_geographie_prioritaire:emplacement', 'label' => 'Géographie prioritaire', 'enabled' => '1', 'position' => 3, 'notnull' => 0, 'visible' => 1, 'validate' => '1','css' => 'maxwidth250',),
-		'fk_etablissement' => array('type' => 'integer:Etablissement:custom/scolarite/class/etablissement.class.php:1', 'label' => 'Établissement', 'enabled' => '1', 'position' => 3, 'notnull' => 1, 'visible' => 1, 'default' => '0', 'css' => 'maxwidth250', 'validate' => '1',),
+		'genre' => array('type' => 'sellist:c_genre:genre', 'label' => 'Genre', 'enabled' => '1', 'position' => 6, 'notnull' => 0, 'visible' => 1, 'validate' => '1','css' => 'maxwidth250',),
+		'geographie_prioritaire' => array('type' => 'sellist:c_geographie_prioritaire:emplacement', 'label' => 'Géographie prioritaire', 'enabled' => '1', 'position' => 7, 'notnull' => 0, 'visible' => 1, 'validate' => '1','css' => 'maxwidth250',),
+		//'fk_etablissement' => array('type' => 'integer:Etablissement:custom/scolarite/class/etablissement.class.php:1', 'label' => 'Établissement', 'enabled' => '1', 'position' => 3, 'notnull' => 1, 'visible' => 1, 'default' => '0', 'css' => 'maxwidth250', 'validate' => '1',),
 		'fk_classe_etablissement' => array('type' => 'integer:Classe:custom/scolarite/class/classe.class.php:1:(t.fk_college=(SELECT c.rowid FROM '.MAIN_DB_PREFIX.'etablissement as c WHERE c.rowid=t.fk_college))', 'label' => 'Classe établissement', 'enabled' => '1', 'position' => 4, 'notnull' => 1, 'visible' => 1, 'validate' => '1', 'css' => 'maxwidth250',),
 		'fk_famille' => array('type' => 'integer:Famille:custom/viescolaire/class/famille.class.php:1', 'label' => 'Famille', 'enabled' => '1', 'position' => 1, 'notnull' => 0, 'visible' => 3, 'validate' => '1', 'css' => 'maxwidth250',),
-		'commentaires' => array('type' => 'text', 'label' => 'Commentaires', 'enabled' => '1', 'position' => 6, 'notnull' => 0, 'visible' => 3, 'validate' => '1',),
+		'commentaires' => array('type' => 'text', 'label' => 'Commentaires', 'enabled' => '1', 'position' => 10, 'notnull' => 0, 'visible' => 3, 'validate' => '1',),
 		'note_public' => array('type' => 'html', 'label' => 'NotePublic', 'enabled' => '1', 'position' => 61, 'notnull' => 0, 'visible' => 0, 'cssview' => 'wordbreak', 'validate' => '1',),
 		'note_private' => array('type' => 'html', 'label' => 'NotePrivate', 'enabled' => '1', 'position' => 62, 'notnull' => 0, 'visible' => 0, 'cssview' => 'wordbreak', 'validate' => '1',),
 		'date_creation' => array('type' => 'datetime', 'label' => 'DateCreation', 'enabled' => '1', 'position' => 500, 'notnull' => 1, 'visible' => -2,),
@@ -234,12 +234,33 @@ class Eleve extends CommonObject
 	 */
 	public function create(User $user, $notrigger = false)
 	{
+		if(strlen($this->prenom) > 50)
+		{
+			setEventMessage('Prénom trop long.','errors');
+			return -1;
+		}
+
+		if(strlen($this->nom) > 50)
+		{
+			setEventMessage('Nom trop long.','errors');
+			return -1;
+		}
+
+		if($this->fk_famille)
+		{
+			$familleClass = new Famille($this->db);
+			$familleClass->fetch($this->fk_famille);
+
+			if(!$familleClass->id)
+			{
+				setEventMessage('Erreur, famille invalide.','errors');
+				return -1;
+			}
+		}
 
 		$this->nom = strtoupper($this->nom);
 
 		$resultcreate = $this->createCommon($user, $notrigger);
-
-		//$resultvalidate = $this->validate($user, $notrigger);
 
 		return $resultcreate;
 	}
@@ -1139,6 +1160,8 @@ class Eleve extends CommonObject
 			$sql .= " GROUP BY a.status";
 			$result = $this->db->query($sql);
 
+			if(!$result) return setEventMessage('L\'élève demandé n\'existe pas.','errors');
+
 			while ($objp = $this->db->fetch_object($result))
 			{
 				switch ($objp->status) {
@@ -1264,112 +1287,121 @@ class Eleve extends CommonObject
 
 	}
 
+	private function printSelectAbsenceFormAbsence(int $anneeScolaireId): string
+	{
+		$form = new Form($this->db);
+		$statusAbsencesList = ['tous' => 'Tous', 'present' => 'Présent(e)', 'absenceJ' => 'Absence Justifiée', 'retard' => 'Retard', 'absenceI' => 'Absence injustifiée'];
+
+		$out = '<form action="' . $_SERVER['PHP_SELF'] . '" method="POST">';
+		$out .= '<input type="hidden" name="action" value="changeStatusAbsence">';
+		$out .= '<input type="hidden" name="id" value="' . $this->id . '">';
+		$out .= '<input type="hidden" name="selectedAnneeScolaire" value="' . $anneeScolaireId . '">';
+		$out .= '<input type="hidden" name="token" value="' . newToken() . '">';
+		$out .= '<table class="border centpercent center">';
+		$out .= '<tr>';
+		$out .= '</td></tr>';
+		$out .= '<tr><td class="fieldrequired titlefieldcreate">Selectionnez les absences souhaitées: </td><td>';
+		$out .= $form->selectarray('absenceName', $statusAbsencesList, GETPOST('absenceName', 'aZ09'));
+		$out .= ' <a href="' . DOL_URL_ROOT . '/custom/scolarite/etablissement_card.php?action=create">';
+		$out .= '<span class="fa fa-plus-circle valignmiddle paddingleft" title="Ajouter un type d\'absence"></span>';
+		$out .= '</a>';
+		$out .= '</td>';
+		$out .= '</tr>';
+		$out .= '<td></td>';
+		$out .= '<td>';
+		$out .= '<input type="submit" class="button" value="Valider">';
+		$out .= '</td>';
+		$out .= '</table>';
+		$out .= '</form>';
+
+		return $out;
+	}
+
 	// Fonction pour afficher les différentes absences d'élèves par années scolaires
 	public function printAbsencesTables()
 	{
+		$out = '';
+
+		require_once DOL_DOCUMENT_ROOT . '/custom/scolarite/class/etablissement.class.php';
+
+		$appelClass = new Appel($this->db);
+
 		$dictionaryClass = new Dictionary($this->db);
-		$resqlAnneeScolaire = $dictionaryClass->fetchByDictionary('c_annee_scolaire',['rowid','annee','annee_actuelle'],0,'',' WHERE active = 1 ORDER BY rowid DESC');
+		$resqlAnneeScolaire = $dictionaryClass->fetchByDictionary('c_annee_scolaire', ['rowid', 'annee', 'annee_actuelle'], 0, '', ' WHERE active = 1 ORDER BY rowid DESC');
 
-		foreach($resqlAnneeScolaire as $value)
-		{
-			print '<div class="annee-accordion'.($value->annee_actuelle == 1 ? '-opened' : '').'">';
-			print '<h3><span class="badge badge-status4 badge-status">Année '.$value->annee.($value->annee_actuelle != 1 ? ' (année précédente)' : '').'</span></h3>';
+		foreach ($resqlAnneeScolaire as $value) {
+			$out .= '<div class="annee-accordion' . (GETPOST('selectedAnneeScolaire','int') == $value->rowid ? '-opened' : ($value->annee_actuelle == 1 && !GETPOST('selectedAnneeScolaire','int') ? '-opened' : '')) . '">';
+			$out .= '<h3><span class="badge badge-status4 badge-status">Année ' . $value->annee . ($value->annee_actuelle != 1 ? ' (année précédente)' : '') . '</span></h3>';
 
-			$appelClass = new Appel($this->db);
-			$arr = ['t.fk_eleve'=>$this->id,'t.treated'=>1,'c.fk_annee_scolaire'=>$value->rowid];
-			if(GETPOST('action','alpha') == 'changeStatusAbsence' && GETPOST('absenceName', 'aZ09') != 'tous')
-			{
-				$arr['t.status'] = "%".GETPOST('absenceName','aZ09')."%";
+			$out .= '<div>';
+			$out .= $this->printSelectAbsenceFormAbsence($value->rowid);
+
+			$arr = ['t.fk_eleve' => $this->id, 't.treated' => 1, 'c.fk_annee_scolaire' => $value->rowid];
+			if (GETPOST('action', 'alpha') == 'changeStatusAbsence' && GETPOST('absenceName', 'aZ09') != 'tous') {
+				$arr['t.status'] = '%' . GETPOST('absenceName', 'aZ09') . '%';
 			}
-			$absences = $appelClass->fetchAll('desc','date_creation',0,0,$arr,'AND',' INNER JOIN '.MAIN_DB_PREFIX.'creneau as c ON c.rowid = t.fk_creneau');
 
-				require_once DOL_DOCUMENT_ROOT.'/custom/scolarite/class/etablissement.class.php';
+			$absences = $appelClass->fetchAll('desc', 'date_creation', 0, 0, $arr, 'AND', ' INNER JOIN ' . MAIN_DB_PREFIX . 'creneau as c ON c.rowid = t.fk_creneau');
 
-				$form = new Form($this->db);
-				$statusAbsencesList = ['tous'=>'Tous','present'=>'Présent(e)','absenceJ'=>'Absence Justifiée','retard'=>'Retard','absenceI'=>'Absent(e)'];
+			if (count($absences) > 0) {
+				$out .= '<table class="border centpercent tableforfield">';
+				$out .= '<tbody>';
+				$out .= '<tr>';
+				$out .= '<td>Etablissement</td>';
+				$out .= '<td>Creneau</td>';
+				$out .= '<td>Professeur</td>';
+				$out .= '<td>Justification</td>';
+				$out .= '<td>Date de l\'absence</td>';
+				$out .= '<td>Statut</td>';
+				$out .= '<td></td>';
+				$out .= '</tr>';
 
-				print '<div>';
-				print '<form action="' . $_SERVER['PHP_SELF'] . '" method="POST">';
-				print '<input type="hidden" name="action" value="changeStatusAbsence">';
-				print '<input type="hidden" name="id" value="'.$this->id.'">';
-				print '<input type="hidden" name="token" value="' . newToken() . '">';
-				dol_fiche_head('');
-				print '<table class="border centpercent center">';
-				print '<tr>';
-				print '</td></tr>';
-				print '<tr><td class="fieldrequired titlefieldcreate">Selectionnez les absences souhaitées: </td><td>';
-				print $form->selectarray('absenceName', $statusAbsencesList,GETPOST('absenceName','aZ09'));
-				print ' <a href="' . DOL_URL_ROOT . '/custom/scolarite/etablissement_card.php?action=create">';
-				print '<span class="fa fa-plus-circle valignmiddle paddingleft" title="Ajouter un etablissement"></span>';
-				print '</a>';
-				print '</td>';
-				print '</tr>';
-				print '<td></td>';
-				print '<td>';
-				print '<input type="submit" class="button" value="Valider">';
-				print '</td>';
-				print '</table>';
-				dol_fiche_end();
-				print '</form>';
-
-			if(count($absences) > 0){
-				print '<table class="border centpercent tableforfield">';
-				print '<tbody>';
-				print '<tr>';
-				print '<td>Etablissement</td>';
-				print '<td>Creneau</td>';
-				print '<td>Professeur</td>';
-				print '<td>Justification</td>';
-				print '<td>Date de l\'absence</td>';
-				print '<td>Statut</td>';
-				print '<td></td>';
-				print '</tr>';
-
-				foreach($absences as $absence)
-				{
+				foreach ($absences as $absence) {
 					$etablissementClass = new Etablissement($this->db);
 					$etablissementClass->fetch($absence->fk_etablissement);
 
 					$creneauClass = new Creneau($this->db);
 					$creneauClass->fetch($absence->fk_creneau);
 
-					print '<tr>';
-					print '<td>'.$etablissementClass->diminutif.'</td>';
-					print '<td>'.($creneauClass->nom_creneau != '' ? '<a href="'.DOL_URL_ROOT.'/custom/scolarite/creneau_card.php?id='.$creneauClass->id.' " target="_blank">'.$creneauClass->nom_creneau.'</a>' : '<span class="badge  badge-status8 badge-status" style="color:white;">Erreur créneau</span>').'</td>';
-					print '<td>';
+					$out .= '<tr>';
+					$out .= '<td>' . $etablissementClass->diminutif . '</td>';
+					$out .= '<td>' . ($creneauClass->nom_creneau != '' ? '<a href="' . DOL_URL_ROOT . '/custom/scolarite/creneau_card.php?id=' . $creneauClass->id . ' " target="_blank">' . $creneauClass->nom_creneau . '</a>' : '<span class="badge  badge-status8 badge-status" style="color:white;">Erreur créneau</span>') . '</td>';
+					$out .= '<td>';
 
 					$agentClass = new Agent($this->db);
 					$agentClass->fetch($creneauClass->fk_prof_1);
 
-					if($agentClass->id)	print '<a href="' . DOL_URL_ROOT . '/custom/management/agent_card.php?id=' .  $agentClass->id . '" target="_blank">' .$agentClass->prenom.' '.$agentClass->nom. '</a><br>';
+					if ($agentClass->id) $out .= '<a href="' . DOL_URL_ROOT . '/custom/management/agent_card.php?id=' . $agentClass->id . '" target="_blank">' . $agentClass->prenom . ' ' . $agentClass->nom . '</a><br>';
 
 					$agentClass = new Agent($this->db);
 					$agentClass->fetch($creneauClass->fk_prof_2);
 
-					if($agentClass->id)	print '<a href="' . DOL_URL_ROOT . '/custom/management/agent_card.php?id=' .  $agentClass->id . '" target="_blank">' .$agentClass->prenom.' '.$agentClass->nom. '</a><br>';
+					if ($agentClass->id) $out .= '<a href="' . DOL_URL_ROOT . '/custom/management/agent_card.php?id=' . $agentClass->id . '" target="_blank">' . $agentClass->prenom . ' ' . $agentClass->nom . '</a><br>';
 
 					$agentClass = new Agent($this->db);
 					$agentClass->fetch($creneauClass->fk_prof_3);
 
-					if($agentClass->id) print '<a href="' . DOL_URL_ROOT . '/custom/management/agent_card.php?id=' .  $agentClass->id . '" target="_blank">' .$agentClass->prenom.' '.$agentClass->nom. '</a><br>';
+					if ($agentClass->id) $out .= '<a href="' . DOL_URL_ROOT . '/custom/management/agent_card.php?id=' . $agentClass->id . '" target="_blank">' . $agentClass->prenom . ' ' . $agentClass->nom . '</a><br>';
 
-					print '</td>';
-					print "<td style='overflow-wrap: normal; max-width: 30em'>".($absence->justification != null ? : 'Aucune')."</td>";
+					$out .= '</td>';
+					$out .= "<td style='overflow-wrap: normal; max-width: 30em'>" . ($absence->justification ? : 'Aucune') . '</td>';
 
-					print '<td>'.date('d/m/Y', $absence->date_creation).'</td>';
-					print '<td>'.'<span class="badge  badge-status'.($absence->status == 'retard' ? '1' : ($absence->status == 'absenceJ' ? '7' : ($absence->status == 'present' ? '4' : '8'))).' badge-status" style="color:white;">'.$absence->status.'</span>'.'</td>';
-					print '<td style="padding:1em; "><a href="'.$_SERVER['PHP_SELF'].'?id='.$this->id.'&idAppel='.$value->rowid.'&action=deleteAbsence">'.'❌'.'</a></td>';
+					$out .= '<td>' . date('d/m/Y', $absence->date_creation) . '</td>';
+					$out .= '<td>' . '<span class="badge  badge-status' . ($absence->status == 'retard' ? '1' : ($absence->status == 'absenceJ' ? '7' : ($absence->status == 'present' ? '4' : '8'))) . ' badge-status" style="color:white;">' . $absence->status . '</span>' . '</td>';
+					$out .= '<td style="padding:1em; "><a href="' . $_SERVER['PHP_SELF'] . '?id=' . $this->id . '&idAppel=' . $value->rowid . '&action=deleteAbsence">' . '❌' . '</a></td>';
 
-					print '</tr>';
+					$out .= '</tr>';
 				}
-				print '</tbody>';
-				print '</table>';
+				$out .= '</tbody>';
+				$out .= '</table>';
 
-				print '</div>';
-			}else print '<p>Aucune appel connu pour cette année scolaire</p>';
+			} else $out .= '<p>Aucune appel connu pour cette année scolaire</p>';
 
-			print '</div>';
+			$out .= '</div>';
+			$out .= '</div>';
 		}
+
+		return $out;
 	}
 }
 
