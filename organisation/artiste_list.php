@@ -130,7 +130,7 @@ $search_array_options = $extrafields->getOptionalsFromPost($object->table_elemen
 // Default sort order (if not yet defined by previous GETPOST)
 if (!$sortfield) {
 	reset($object->fields);					// Reset is required to avoid key() to return null.
-	$sortfield = "t.".key($object->fields); // Set here default search field. By default 1st field in definition.
+	$sortfield = "t.artiste"; // Set here default search field. By default 1st field in definition.
 }
 if (!$sortorder) {
 	$sortorder = "ASC";
@@ -334,48 +334,9 @@ include DOL_DOCUMENT_ROOT.'/core/tpl/extrafields_list_search_sql.tpl.php';
 $parameters = array();
 $reshook = $hookmanager->executeHooks('printFieldListWhere', $parameters, $object); // Note that $action and $object may have been modified by hook
 $sql .= $hookmanager->resPrint;
-
-/* If a group by is required
-$sql .= " GROUP BY ";
-foreach($object->fields as $key => $val) {
-	$sql .= "t.".$db->escape($key).", ";
-}
-// Add fields from extrafields
-if (!empty($extrafields->attributes[$object->table_element]['label'])) {
-	foreach ($extrafields->attributes[$object->table_element]['label'] as $key => $val) {
-		$sql .= ($extrafields->attributes[$object->table_element]['type'][$key] != 'separate' ? "ef.".$key.', ' : '');
-	}
-}
-// Add where from hooks
-$parameters = array();
-$reshook = $hookmanager->executeHooks('printFieldListGroupBy', $parameters, $object);    // Note that $action and $object may have been modified by hook
-$sql .= $hookmanager->resPrint;
-$sql = preg_replace('/,\s*$/', '', $sql);
-*/
-
-// Add HAVING from hooks
-/*
-$parameters = array();
-$reshook = $hookmanager->executeHooks('printFieldListHaving', $parameters, $object); // Note that $action and $object may have been modified by hook
-$sql .= empty($hookmanager->resPrint) ? "" : " HAVING 1=1 ".$hookmanager->resPrint;
-*/
-
 // Count total nb of records
 $nbtotalofrecords = '';
 if (empty($conf->global->MAIN_DISABLE_FULL_SCANLIST)) {
-	/* This old and fast method to get and count full list returns all record so use a high amount of memory.
-	$resql = $db->query($sql);
-	$nbtotalofrecords = $db->num_rows($resql);
-	*/
-	/* The slow method does not consume memory on mysql (not tested on pgsql) */
-	/*$resql = $db->query($sql, 0, 'auto', 1);
-	while ($db->fetch_object($resql)) {
-		if (empty($nbtotalofrecords)) {
-			$nbtotalofrecords = 1;    // We can't make +1 because init value is ''
-		 } else {
-			 $nbtotalofrecords++;
-		 }
-	 }*/
 	/* The fast and low memory method to get and count full list converts the sql into a sql count */
 	$sqlforcount = preg_replace('/^SELECT[a-zA-Z0-9\._\s\(\),=<>\:\-\']+\sFROM/', 'SELECT COUNT(*) as nbtotalofrecords FROM', $sql);
 	$resql = $db->query($sqlforcount);
@@ -744,13 +705,13 @@ while ($i < $imaxinloop) {
 				print '>';
 				if ($key == 'status') {
 					print $object->getLibStatut(5);
-				} 
+				}
 				elseif ($key == 'artiste') {
 					print $object->getNomurl();
 				}
 				elseif ($key == 'rowid') {
 					print $object->showOutputField($val, $key, $object->id, '');
-				} 
+				}
 				else {
 					print $object->showOutputField($val, $key, $object->$key, '');
 				}

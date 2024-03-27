@@ -203,7 +203,7 @@ class modOrganisation extends DolibarrModules
 		$this->dictionaries = array(
 			'langs' => 'organisation@organisation',
 			// List of tables we want to see into dictonnary editor
-			'tabname' => array(MAIN_DB_PREFIX . "organisation_c_type_evenement", 
+			'tabname' => array(MAIN_DB_PREFIX . "organisation_c_type_evenement",
 			MAIN_DB_PREFIX . "organisation_c_etat_evenement",
 			MAIN_DB_PREFIX . "organisation_c_type_participation",
 			MAIN_DB_PREFIX . "organisation_c_type_poste",
@@ -245,7 +245,7 @@ class modOrganisation extends DolibarrModules
 
 		// Cronjobs (List of cron jobs entries to add when module is enabled)
 		// unit_frequency must be 60 for minute, 3600 for hour, 86400 for day, 604800 for week
-		$this->cronjobs = array(
+		/*$this->cronjobs = array(
 			0 => array(
 				'label' => 'Test du job',
 				'jobtype' => 'method',
@@ -260,7 +260,7 @@ class modOrganisation extends DolibarrModules
 				'test' => '$conf->organisation->enabled',
 				'priority' => 50,
 			),
-		);
+		);*/
 		// Example: $this->cronjobs=array(
 		//    0=>array('label'=>'My label', 'jobtype'=>'method', 'class'=>'/dir/class/file.class.php', 'objectname'=>'MyClass', 'method'=>'myMethod', 'parameters'=>'param1, param2', 'comment'=>'Comment', 'frequency'=>2, 'unitfrequency'=>3600, 'status'=>0, 'test'=>'$conf->organisation->enabled', 'priority'=>50),
 		//    1=>array('label'=>'My label', 'jobtype'=>'command', 'command'=>'', 'parameters'=>'param1, param2', 'comment'=>'Comment', 'frequency'=>1, 'unitfrequency'=>3600*24, 'status'=>0, 'test'=>'$conf->organisation->enabled', 'priority'=>50)
@@ -273,19 +273,25 @@ class modOrganisation extends DolibarrModules
 		/* BEGIN MODULEBUILDER PERMISSIONS */
 		$this->rights[$r][0] = $this->numero . sprintf("%02d", $r + 1); // Permission id (must not be already used)
 		$this->rights[$r][1] = 'Read objects of Organisation'; // Permission label
-		$this->rights[$r][4] = 'engagement';
+		$this->rights[$r][4] = 'organisation';
 		$this->rights[$r][5] = 'read'; // In php code, permission will be checked by test if ($user->rights->organisation->engagement->read)
 		$r++;
 		$this->rights[$r][0] = $this->numero . sprintf("%02d", $r + 1); // Permission id (must not be already used)
 		$this->rights[$r][1] = 'Create/Update objects of Organisation'; // Permission label
-		$this->rights[$r][4] = 'engagement';
+		$this->rights[$r][4] = 'organisation';
 		$this->rights[$r][5] = 'write'; // In php code, permission will be checked by test if ($user->rights->organisation->engagement->write)
+		$r++;
+		$this->rights[$r][0] = $this->numero . sprintf('%02d', $r + 1); // Permission id (must not be already used)
+		$this->rights[$r][1] = 'Create objects Of Programmation'; // Permission label
+		$this->rights[$r][4] = 'programmation';
+		$this->rights[$r][5] = 'writeProgrammation'; // In php code, permission will be checked by test if ($user->rights->organisation->engagement->delete)
 		$r++;
 		$this->rights[$r][0] = $this->numero . sprintf("%02d", $r + 1); // Permission id (must not be already used)
 		$this->rights[$r][1] = 'Delete objects of Organisation'; // Permission label
-		$this->rights[$r][4] = 'engagement';
+		$this->rights[$r][4] = 'organisation';
 		$this->rights[$r][5] = 'delete'; // In php code, permission will be checked by test if ($user->rights->organisation->engagement->delete)
 		$r++;
+
 		/* END MODULEBUILDER PERMISSIONS */
 
 		// Main menu entries to add
@@ -352,66 +358,6 @@ class modOrganisation extends DolibarrModules
 			'target'=>'',
 			'user'=>2,				                // 0=Menu for internal users, 1=external users, 2=both
 		);
-		/* */
-
-		// $this->menu[$r++]=array(
-		// 	'fk_menu'=>'fk_mainmenu=organisation',      // '' if this is a top menu. For left menu, use 'fk_mainmenu=xxx' or 'fk_mainmenu=xxx,fk_leftmenu=yyy' where xxx is mainmenucode and yyy is a leftmenucode
-		// 	'type'=>'left',                          // This is a Left menu entry
-		// 	'titre'=>'Engagements',
-		// 	'mainmenu'=>'organisation',
-		// 	'leftmenu'=>'engagement',
-		// 	'url'=>'/organisation/organisationindex.php',
-		// 	'langs'=>'organisation@organisation',	        // Lang file to use (without .lang) by module. File must be in langs/code_CODE/ directory.
-		// 	'position'=>1000+$r,
-		// 	'enabled'=>'$conf->organisation->enabled',  // Define condition to show or hide menu entry. Use '$conf->organisation->enabled' if entry must be visible if module is enabled.
-		// 	'perms'=>'1',			                // Use 'perms'=>'$user->rights->organisation->level1->level2' if you want your menu with a permission rules
-		// 	'target'=>'',
-		// 	'user'=>2,				                // 0=Menu for internal users, 1=external users, 2=both
-		// );
-
-        // $this->menu[$r++]=array(
-        //     // '' if this is a top menu. For left menu, use 'fk_mainmenu=xxx' or 'fk_mainmenu=xxx,fk_leftmenu=yyy' where xxx is mainmenucode and yyy is a leftmenucode
-        //     'fk_menu'=>'fk_mainmenu=organisation,fk_leftmenu=engagement',
-        //     // This is a Left menu entry
-        //     'type'=>'left',
-        //     'titre'=>'Liste des engagements',
-        //     'mainmenu'=>'organisation',
-        //     'leftmenu'=>'engagement',
-        //     'url'=>'/organisation/engagement_list.php',
-        //     // Lang file to use (without .lang) by module. File must be in langs/code_CODE/ directory.
-        //     'langs'=>'organisation@organisation',
-        //     'position'=>1100+$r,
-        //     // Define condition to show or hide menu entry. Use '$conf->organisation->enabled' if entry must be visible if module is enabled. Use '$leftmenu==\'system\'' to show if leftmenu system is selected.
-        //     'enabled'=>'$conf->organisation->enabled',
-        //     // Use 'perms'=>'$user->rights->organisation->level1->level2' if you want your menu with a permission rules
-        //     'perms'=>'1',
-        //     'target'=>'',
-        //     // 0=Menu for internal users, 1=external users, 2=both
-        //     'user'=>2,
-        // );
-
-        // $this->menu[$r++]=array(
-        //     // '' if this is a top menu. For left menu, use 'fk_mainmenu=xxx' or 'fk_mainmenu=xxx,fk_leftmenu=yyy' where xxx is mainmenucode and yyy is a leftmenucode
-        //     'fk_menu'=>'fk_mainmenu=organisation,fk_leftmenu=engagement',
-        //     // This is a Left menu entry
-        //     'type'=>'left',
-        //     'titre'=>'Nouvel engagement',
-        //     'mainmenu'=>'organisation',
-        //     'leftmenu'=>'engagement',
-        //     'url'=>'/organisation/engagement_card.php?action=create',
-        //     // Lang file to use (without .lang) by module. File must be in langs/code_CODE/ directory.
-        //     'langs'=>'organisation@organisation',
-        //     'position'=>1100+$r,
-        //     // Define condition to show or hide menu entry. Use '$conf->organisation->enabled' if entry must be visible if module is enabled. Use '$leftmenu==\'system\'' to show if leftmenu system is selected.
-        //     'enabled'=>'$conf->organisation->enabled',
-        //     // Use 'perms'=>'$user->rights->organisation->level1->level2' if you want your menu with a permission rules
-        //     'perms'=>'1',
-        //     'target'=>'',
-        //     // 0=Menu for internal users, 1=external users, 2=both
-        //     'user'=>2
-        // );
-
-
 
 		$this->menu[$r++]=array(
 			'fk_menu'=>'fk_mainmenu=organisation',      // '' if this is a top menu. For left menu, use 'fk_mainmenu=xxx' or 'fk_mainmenu=xxx,fk_leftmenu=yyy' where xxx is mainmenucode and yyy is a leftmenucode

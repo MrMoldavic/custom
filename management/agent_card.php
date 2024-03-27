@@ -119,7 +119,7 @@ if ($action == 'activation') {
 	$resql = $db->query($sql);
 
 	setEventMessage('Agent activé avec succès');
-	
+
 }
 
 if ($action == 'deleteStatut') {
@@ -145,18 +145,6 @@ if (GETPOST('res', 'aZ09') == "success") {
 if (GETPOST('res', 'aZ09') == "successAppetence") {
 	setEventMessage('Appétence ajoutée avec succès');
 }
-
-
-
-
-
-
-
-
-
-
-
-
 
 // Initialize technical objects
 $object = new Agent($db);
@@ -190,7 +178,8 @@ include DOL_DOCUMENT_ROOT.'/core/actions_fetchobject.inc.php'; // Must be includ
 $enablepermissioncheck = 1;
 if ($enablepermissioncheck) {
 	$permissiontoread = $user->rights->management->agent->read;
-	$permissiontoadd = $user->rights->management->agent->write; // Used by the include of actions_addupdatedelete.inc.php and actions_lineupdown.inc.php
+	$permissiontoadd = $user->rights->management->agent->write;
+	$permissiontoaddAppetence = $user->rights->management->agent->createAppetence ;// Used by the include of actions_addupdatedelete.inc.php and actions_lineupdown.inc.php
 	$permissiontodelete = $user->rights->management->agent->delete || ($permissiontoadd && isset($object->status) && $object->status == $object::STATUS_DRAFT);
 	$permissionnote = $user->rights->management->agent->write; // Used by the include of actions_setnotes.inc.php
 	$permissiondellink = $user->rights->management->agent->write; // Used by the include of actions_dellink.inc.php
@@ -202,6 +191,7 @@ if ($enablepermissioncheck) {
 	$permissiondellink = 1;
 }
 
+
 $upload_dir = $conf->management->multidir_output[isset($object->entity) ? $object->entity : 1].'/agent';
 
 // Security check (enable the most restrictive one)
@@ -211,6 +201,7 @@ $upload_dir = $conf->management->multidir_output[isset($object->entity) ? $objec
 //restrictedArea($user, $object->element, $object->id, $object->table_element, '', 'fk_soc', 'rowid', $isdraft);
 if (empty($conf->management->enabled)) accessforbidden();
 if (!$permissiontoread) accessforbidden();
+
 
 
 /*
@@ -269,12 +260,6 @@ if (empty($reshook)) {
 	include DOL_DOCUMENT_ROOT.'/core/actions_sendmails.inc.php';
 }
 
-
-
-
-
-
-
 /*
  * View
  *
@@ -288,22 +273,6 @@ $formproject = new FormProjets($db);
 $title = $langs->trans("Agent");
 $help_url = '';
 llxHeader('', $title, $help_url);
-
-// Example : Adding jquery code
-// print '<script type="text/javascript">
-// jQuery(document).ready(function() {
-// 	function init_myfunc()
-// 	{
-// 		jQuery("#myid").removeAttr(\'disabled\');
-// 		jQuery("#myid").attr(\'disabled\',\'disabled\');
-// 	}
-// 	init_myfunc();
-// 	jQuery("#mybutton").click(function() {
-// 		init_myfunc();
-// 	});
-// });
-// </script>';
-
 
 // Part to create
 if ($action == 'create') {
@@ -407,30 +376,6 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 		$formconfirm = $form->formconfirm($_SERVER["PHP_SELF"].'?id='.$object->id, $langs->trans('ToClone'), $langs->trans('ConfirmCloneAsk', $object->ref), 'confirm_clone', $formquestion, 'yes', 1);
 	}
 
-	// Confirmation of action xxxx (You can use it for xxx = 'close', xxx = 'reopen', ...)
-	if ($action == 'xxx') {
-		$text = $langs->trans('ConfirmActionAgent', $object->ref);
-		/*if (! empty($conf->notification->enabled))
-		{
-			require_once DOL_DOCUMENT_ROOT . '/core/class/notify.class.php';
-			$notify = new Notify($db);
-			$text .= '<br>';
-			$text .= $notify->confirmMessage('AGENT_CLOSE', $object->socid, $object);
-		}*/
-
-		$formquestion = array();
-		/*
-		$forcecombo=0;
-		if ($conf->browser->name == 'ie') $forcecombo = 1;	// There is a bug in IE10 that make combo inside popup crazy
-		$formquestion = array(
-			// 'text' => $langs->trans("ConfirmClone"),
-			// array('type' => 'checkbox', 'name' => 'clone_content', 'label' => $langs->trans("CloneMainAttributes"), 'value' => 1),
-			// array('type' => 'checkbox', 'name' => 'update_prices', 'label' => $langs->trans("PuttingPricesUpToDate"), 'value' => 1),
-			// array('type' => 'other',    'name' => 'idwarehouse',   'label' => $langs->trans("SelectWarehouseForStockDecrease"), 'value' => $formproduct->selectWarehouses(GETPOST('idwarehouse')?GETPOST('idwarehouse'):'ifone', 'idwarehouse', '', 1, 0, 0, '', 0, $forcecombo))
-		);
-		*/
-		$formconfirm = $form->formconfirm($_SERVER["PHP_SELF"].'?id='.$object->id, $langs->trans('XXX'), $text, 'confirm_xxx', $formquestion, 0, 1, 220);
-	}
 
 	// Call Hook formConfirm
 	$parameters = array('formConfirm' => $formconfirm, 'lineid' => $lineid);
@@ -465,61 +410,29 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 		foreach($resqlStatus as $value)
 		{
 			$sqlStatut = "SELECT nom, color, rowid FROM ".MAIN_DB_PREFIX."management_typestatut WHERE rowid=".$value['fk_type_statut'];
-			$resqlStatut = $db->query($sqlStatut);	
+			$resqlStatut = $db->query($sqlStatut);
 			$objectStatuts = $db->fetch_object($resqlStatut);
 
 
 			$morehtmlref.= '<span class="badge  badge-status'.$objectStatuts->color.' badge-status">';
-			if($user->id == $object->fk_user || $permissiontoadd)
+			if($permissiontoadd)
 			{
 				$morehtmlref.= '<a href="'.DOL_URL_ROOT.'/custom/management/agent_card.php?id='.$object->id.'&statut='.$objectStatuts->rowid.'&action=deleteStatut'.'">x   </a>';
 			}
 			$morehtmlref.= $objectStatuts->nom.'</span>    ';
 		}
 	}
-	if($user->id == $object->fk_user || $permissiontoadd)
+	if($permissiontoadd)
 	{
 		$morehtmlref.= '<span class="badge  badge-status'.$objectStatuts->color.' badge-status">';
 		$morehtmlref.= '<a href="'.DOL_URL_ROOT.'/custom/management/statut_card.php?action=create&fk_agent='.$object->id.'">+   </a>';
-		$morehtmlref.= '</span>    ';	
+		$morehtmlref.= '</span>    ';
 	}
-	
-	 /*
-	 // Thirdparty
-	 $morehtmlref.='<br>'.$langs->trans('ThirdParty') . ' : ' . (is_object($object->thirdparty) ? $object->thirdparty->getNomUrl(1) : '');
-	 // Project
-	 if (! empty($conf->project->enabled)) {
-	 $langs->load("projects");
-	 $morehtmlref .= '<br>'.$langs->trans('Project') . ' ';
-	 if ($permissiontoadd) {
-	 //if ($action != 'classify') $morehtmlref.='<a class="editfielda" href="' . $_SERVER['PHP_SELF'] . '?action=classify&token='.newToken().'&id=' . $object->id . '">' . img_edit($langs->transnoentitiesnoconv('SetProject')) . '</a> ';
-	 $morehtmlref .= ' : ';
-	 if ($action == 'classify') {
-	 //$morehtmlref .= $form->form_project($_SERVER['PHP_SELF'] . '?id=' . $object->id, $object->socid, $object->fk_project, 'projectid', 0, 0, 1, 1);
-	 $morehtmlref .= '<form method="post" action="'.$_SERVER['PHP_SELF'].'?id='.$object->id.'">';
-	 $morehtmlref .= '<input type="hidden" name="action" value="classin">';
-	 $morehtmlref .= '<input type="hidden" name="token" value="'.newToken().'">';
-	 $morehtmlref .= $formproject->select_projects($object->socid, $object->fk_project, 'projectid', $maxlength, 0, 1, 0, 1, 0, 0, '', 1);
-	 $morehtmlref .= '<input type="submit" class="button valignmiddle" value="'.$langs->trans("Modify").'">';
-	 $morehtmlref .= '</form>';
-	 } else {
-	 $morehtmlref.=$form->form_project($_SERVER['PHP_SELF'] . '?id=' . $object->id, $object->socid, $object->fk_project, 'none', 0, 0, 0, 1);
-	 }
-	 } else {
-	 if (! empty($object->fk_project)) {
-	 $proj = new Project($db);
-	 $proj->fetch($object->fk_project);
-	 $morehtmlref .= ': '.$proj->getNomUrl();
-	 } else {
-	 $morehtmlref .= '';
-	 }
-	 }
-	 }*/
 	$morehtmlref .= '</div>';
 
 
 	dol_banner_tab($object, 'ref', $linkback, 1, 'ref', 'nom', $morehtmlref);
-	
+
 
 
 	print '<div class="fichecenter">';
@@ -551,15 +464,15 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 		foreach($resqlAppetence as $value)
 		{
 			$sqlAppetence = "SELECT type, rowid FROM ".MAIN_DB_PREFIX."management_c_type_appetence WHERE rowid=".$value['fk_type_appetence'];
-			$resqlAppentence = $db->query($sqlAppetence);	
+			$resqlAppentence = $db->query($sqlAppetence);
 			$objectAppetence = $db->fetch_object($resqlAppentence);
 
 			$sqlPoste= "SELECT poste, rowid FROM ".MAIN_DB_PREFIX."organisation_c_type_poste WHERE rowid=".$value['fk_type_poste'];
-			$resqlPoste = $db->query($sqlPoste);	
+			$resqlPoste = $db->query($sqlPoste);
 			$objectPoste= $db->fetch_object($resqlPoste);
 
 			print '<span class="badge  badge-status4 badge-status">';
-			if($user->id == $object->fk_user || $permissiontoadd)
+			if($permissiontoadd || ($permissiontoaddAppetence && $user->id == $object->fk_user))
 			{
 				print '<a href="'.DOL_URL_ROOT.'/custom/management/agent_card.php?id='.$object->id.'&appetence='.$value['rowid'].'&action=deleteAppetence'.'">x   </a>';
 			}
@@ -567,11 +480,11 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 		}
 	}
 
-	if($user->id == $object->fk_user || $permissiontoadd)
+	if($permissiontoadd || ($permissiontoaddAppetence && $user->id == $object->fk_user))
 	{
 		print '<span class="badge  badge-status7 badge-status">';
 		print '<a href="'.DOL_URL_ROOT.'/custom/management/appetence_card.php?action=create&fk_agent='.$object->id.'">+   </a>';
-		print '</span>';	
+		print '</span>';
 	}
 
 	print '</div>';
@@ -580,58 +493,6 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 	print '<div class="clearboth"></div>';
 
 	print dol_get_fiche_end();
-
-
-	/*
-	 * Lines
-	 */
-
-	if (!empty($object->table_element_line)) {
-		// Show object lines
-		$result = $object->getLinesArray();
-
-		print '	<form name="addproduct" id="addproduct" action="'.$_SERVER["PHP_SELF"].'?id='.$object->id.(($action != 'editline') ? '' : '#line_'.GETPOST('lineid', 'int')).'" method="POST">
-		<input type="hidden" name="token" value="' . newToken().'">
-		<input type="hidden" name="action" value="' . (($action != 'editline') ? 'addline' : 'updateline').'">
-		<input type="hidden" name="mode" value="">
-		<input type="hidden" name="page_y" value="">
-		<input type="hidden" name="id" value="' . $object->id.'">
-		';
-
-		if (!empty($conf->use_javascript_ajax) && $object->status == 0) {
-			include DOL_DOCUMENT_ROOT.'/core/tpl/ajaxrow.tpl.php';
-		}
-
-		print '<div class="div-table-responsive-no-min">';
-		if (!empty($object->lines) || ($object->status == $object::STATUS_DRAFT && $permissiontoadd && $action != 'selectlines' && $action != 'editline')) {
-			print '<table id="tablelines" class="noborder noshadow" width="100%">';
-		}
-
-		if (!empty($object->lines)) {
-			$object->printObjectLines($action, $mysoc, null, GETPOST('lineid', 'int'), 1);
-		}
-
-		// Form to add new line
-		if ($object->status == 0 && $permissiontoadd && $action != 'selectlines') {
-			if ($action != 'editline') {
-				// Add products/services form
-
-				$parameters = array();
-				$reshook = $hookmanager->executeHooks('formAddObjectLine', $parameters, $object, $action); // Note that $action and $object may have been modified by hook
-				if ($reshook < 0) setEventMessages($hookmanager->error, $hookmanager->errors, 'errors');
-				if (empty($reshook))
-					$object->formAddObjectLine(1, $mysoc, $soc);
-			}
-		}
-
-		if (!empty($object->lines) || ($object->status == $object::STATUS_DRAFT && $permissiontoadd && $action != 'selectlines' && $action != 'editline')) {
-			print '</table>';
-		}
-		print '</div>';
-
-		print "</form>\n";
-	}
-	// Buttons for actions
 
 	if ($action != 'presend' && $action != 'editline') {
 		print '<div class="tabsAction">'."\n";

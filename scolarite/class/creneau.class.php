@@ -22,9 +22,9 @@
  * \brief       This file is a CRUD class file for Creneau (Create/Read/Update/Delete)
  */
 
-//   ini_set('display_errors', '1');
-// ini_set('display_startup_errors', '1');
-// error_reporting(E_ALL);
+/*ini_set('display_errors', '1');
+ini_set('display_startup_errors', '1');
+error_reporting(E_ALL);*/
 // Put here all includes required by your class file
 require_once DOL_DOCUMENT_ROOT.'/core/class/commonobject.class.php';
 //require_once DOL_DOCUMENT_ROOT . '/societe/class/societe.class.php';
@@ -107,25 +107,25 @@ class Creneau extends CommonObject
 	 * @var array  Array with all fields and their property. Do not use it as a static var. It may be modified by constructor.
 	 */
 	public $fields=array(
-		'rowid' => array('type'=>'integer(11) ', 'label'=>'TechnicalID', 'enabled'=>'1', 'position'=>1, 'notnull'=>1, 'visible'=>2, 'noteditable'=>'1', 'index'=>1, 'css'=>'left', 'comment'=>"Id"),
-		'fk_dispositif' => array('type'=>'integer:Dispositif:custom/scolarite/class/dispositif.class.php:1', 'label'=>'Dispositif', 'enabled'=>'1', 'position'=>1, 'notnull'=>1, 'visible'=>1, 'index'=>1, 'searchall'=>1, 'css'=>'maxwidth300', 'validate'=>'1',),
+		'rowid' => array('type'=>'integer(11)', 'label'=>'TechnicalID', 'enabled'=>'1', 'position'=>1, 'notnull'=>1, 'visible'=>2, 'noteditable'=>'1', 'index'=>1, 'css'=>'left', 'comment'=>"Id"),
+		'fk_dispositif' => array('type'=>'integer:Dispositif:custom/scolarite/class/dispositif.class.php', 'label'=>'Dispositif', 'enabled'=>'1', 'position'=>1, 'notnull'=>1, 'visible'=>1, 'index'=>1, 'searchall'=>1, 'css'=>'maxwidth300', 'validate'=>'1',),
 		'fk_type_classe' => array('type'=>'sellist:type_classe:type', 'label'=>'Type de classe', 'enabled'=>'1', 'position'=>2, 'notnull'=>1, 'visible'=>1, 'searchall'=>1, 'css'=>'minwidth300', 'validate'=>'1',),
 		'fk_instrument_enseigne' => array('type'=>'sellist:c_instrument_enseigne:instrument', 'label'=>'Instrument enseigné', 'enabled'=>'1', 'position'=>1, 'notnull'=>0, 'visible'=>1, 'help'=>"Laissez vide si groupe",),
 		'fk_niveau' => array('type'=>'sellist:c_niveaux:niveau', 'label'=>'Niveau du cours/groupe', 'enabled'=>'1', 'position'=>2, 'notnull'=>1, 'visible'=>3, 'help'=>"Niveau des élèves dans le groupe",),
-		'fk_prof_1' => array('type'=>'integer:Agent:custom/management/class/agent.class.php:1:(t.status!=9)', 'label'=>'Agent n°1', 'enabled'=>'1', 'position'=>5, 'notnull'=>0, 'visible'=>1, 'css'=>'maxwidth200',),
-		'fk_prof_2' => array('type'=>'integer:Agent:custom/management/class/agent.class.php:1:(t.status!=9)', 'label'=>'Agent n°2', 'enabled'=>'1', 'position'=>6, 'notnull'=>0, 'visible'=>1, 'css'=>'maxwidth200',),
-		'fk_prof_3' => array('type'=>'integer:Agent:custom/management/class/agent.class.php:1:(t.status!=9)', 'label'=>'Agent n°3', 'enabled'=>'1', 'position'=>7, 'notnull'=>0, 'visible'=>1, 'css'=>'maxwidth200',),
-		'professeurs' => array('type'=>'varchar(255)', 'label'=>'Agents', 'enabled'=>'1', 'position'=>4, 'notnull'=>0, 'visible'=>2, 'css'=>'minwidth200', 'validate'=>'1',),
-		'eleves' => array('type'=>'varchar(255)', 'label'=>'Éleves', 'enabled'=>'1', 'position'=>4, 'notnull'=>0, 'visible'=>2, 'css'=>'minwidth200', 'validate'=>'1',),
+		///'fk_prof_1' => array('type'=>'integer:Agent:custom/management/class/agent.class.php:1:(t.status!=9)', 'label'=>'Agent n°1', 'enabled'=>'1', 'position'=>5, 'notnull'=>0, 'visible'=>1, 'css'=>'maxwidth200',),
+		//'fk_prof_2' => array('type'=>'integer:Agent:custom/management/class/agent.class.php:1:(t.status!=9)', 'label'=>'Agent n°2', 'enabled'=>'1', 'position'=>6, 'notnull'=>0, 'visible'=>1, 'css'=>'maxwidth200',),
+		//'fk_prof_3' => array('type'=>'integer:Agent:custom/management/class/agent.class.php:1:(t.status!=9)', 'label'=>'Agent n°3', 'enabled'=>'1', 'position'=>7, 'notnull'=>0, 'visible'=>1, 'css'=>'maxwidth200',),
+		//'professeurs' => array('type'=>'varchar(255)', 'label'=>'Agents', 'enabled'=>'1', 'position'=>4, 'notnull'=>0, 'visible'=>2, 'css'=>'minwidth200', 'validate'=>'1',),
 		'infos_creneau' => array('type'=>'varchar(255)', 'label'=>'Infos créneau', 'enabled'=>'1', 'position'=>3, 'notnull'=>0, 'visible'=>2, 'searchall'=>1, 'css'=>'minwidth300', 'validate'=>'1',),
-		'nombre_places' => array('type'=>'integer', 'label'=>'Nb élèves', 'enabled'=>'1', 'position'=>3, 'notnull'=>1, 'visible'=>1, 'css'=>'maxwidth400', 'validate'=>'1',),
+		'nombre_places' => array('type'=>'integer', 'label'=>'Nombres de places', 'enabled'=>'1', 'position'=>3, 'notnull'=>1, 'visible'=>1, 'css'=>'maxwidth400', 'validate'=>'1',),
 		'fk_annee_scolaire' => array('type'=>'sellist:c_annee_scolaire:annee', 'label'=>'Année Scolaire', 'enabled'=>'1', 'position'=>7, 'notnull'=>1, 'visible'=>-1,),
-		'heure_debut' => array('type'=>'sellist:c_heure:heure', 'label'=>'Heure de début', 'enabled'=>'1', 'position'=>40, 'notnull'=>1, 'visible'=>1, 'css'=>'minwidth100', 'help'=>"Format : 12:00 / 08:30 ", 'validate'=>'1',),
-		'minutes_debut' => array('type'=>'varchar(255)', 'label'=>'Minutes de début', 'enabled'=>'1', 'position'=>41, 'notnull'=>1, 'visible'=>3, 'css'=>'minwidth100', 'help'=>"Laissez vide si heure pile", 'arrayofkeyval'=>array('00'=>'00', '15'=>'15', '30'=>'30', '45'=>'45'), 'validate'=>'1',),
-		'heure_fin' => array('type'=>'sellist:c_heure:heure', 'label'=>'Heure de fin', 'enabled'=>'1', 'position'=>42, 'notnull'=>1, 'visible'=>1, 'css'=>'minwidth100', 'help'=>"Format : 12:00 / 08:30 ", 'validate'=>'1',),
-		'minutes_fin' => array('type'=>'varchar(255)', 'label'=>'Minutes de fin', 'enabled'=>'1', 'position'=>43, 'notnull'=>1, 'visible'=>3, 'css'=>'minwidth100', 'help'=>"Laissez vide si heure pile", 'arrayofkeyval'=>array('00'=>'00', '15'=>'15', '30'=>'30', '45'=>'45'), 'validate'=>'1',),
-		'jour' => array('type'=>'sellist:c_jour:jour:rowid::(active=1):rowid', 'label'=>'Jour de la semaine', 'enabled'=>'1', 'position'=>39, 'notnull'=>1, 'visible'=>1, 'searchall'=>1, 'css'=>'maxwidth300', 'cssview'=>'wordbreak', 'validate'=>'1',),
-		'fk_salle' => array('type'=>'integer:Salle:custom/scolarite/class/salle.class.php:1:(t.status=4)', 'label'=>'Salle', 'enabled'=>'1', 'position'=>44, 'notnull'=>0, 'visible'=>3, 'searchall'=>1, 'css'=>'maxwidth200', 'cssview'=>'wordbreak',),
+		'heure_debut' => array('type'=>'duration', 'label'=>'Heure de début', 'enabled'=>'1', 'position'=>40, 'notnull'=>1, 'visible'=>1, 'css'=>'minwidth100', 'help'=>"Format : 12:00 / 08:30 ", 'validate'=>'1',),
+		//'minutes_debut' => array('type'=>'varchar(255)', 'label'=>'Minutes de début', 'enabled'=>'1', 'position'=>41, 'notnull'=>1, 'visible'=>3, 'css'=>'minwidth100', 'help'=>"Laissez vide si heure pile", 'arrayofkeyval'=>array('00'=>'00', '15'=>'15', '30'=>'30', '45'=>'45'), 'validate'=>'1',),
+		'heure_fin' => array('type'=>'duration', 'label'=>'Heure de fin', 'enabled'=>'1', 'position'=>42, 'notnull'=>1, 'visible'=>1, 'css'=>'minwidth100', 'help'=>"Format : 12:00 / 08:30 ", 'validate'=>'1',),
+		//'minutes_fin' => array('type'=>'varchar(255)', 'label'=>'Minutes de fin', 'enabled'=>'1', 'position'=>43, 'notnull'=>1, 'visible'=>3, 'css'=>'minwidth100', 'help'=>"Laissez vide si heure pile", 'arrayofkeyval'=>array('00'=>'00', '15'=>'15', '30'=>'30', '45'=>'45'), 'validate'=>'1',),
+		//'sellist:TableName:LabelFieldName[:KeyFieldName[:KeyFieldParent[:Filter[:Sortfield]]]]
+		'jour' => array('type'=>'sellist:c_jour:jour:rowid::(active=1)', 'label'=>'Jour de la semaine', 'enabled'=>'1', 'position'=>39, 'notnull'=>1, 'visible'=>1, 'searchall'=>1, 'css'=>'maxwidth300', 'cssview'=>'wordbreak', 'validate'=>'1',),
+		'fk_salle' => array('type'=>'integer:Salle:custom/scolarite/class/salle.class.php::(t.status=4)', 'label'=>'Salle', 'enabled'=>'1', 'position'=>44, 'notnull'=>0, 'visible'=>3, 'searchall'=>1, 'css'=>'maxwidth200', 'cssview'=>'wordbreak',),
 		'commentaires' => array('type'=>'text', 'label'=>'Commentaires', 'enabled'=>'1', 'position'=>45, 'notnull'=>0, 'visible'=>3, 'isameasure'=>'1', 'css'=>'maxwidth400', 'help'=>"Help text for quantity", 'validate'=>'1',),
 		'nom_groupe' => array('type'=>'varchar(255)', 'label'=>'Nom du groupe', 'enabled'=>'1', 'position'=>1, 'notnull'=>0, 'visible'=>3, 'css'=>'maxwidth400', 'help'=>"Écriture : Nom pour un groupe seulement (nom de cours généré automatiquement)", 'validate'=>'1',),
 		'nom_creneau' => array('type'=>'varchar(255)', 'label'=>'Nom du créneau', 'enabled'=>'1', 'position'=>0, 'notnull'=>0, 'visible'=>0, 'css'=>'maxwidth400', 'showoncombobox'=>'1', 'validate'=>'1',),
@@ -261,7 +261,6 @@ class Creneau extends CommonObject
 	{
 		if($this->fk_salle)
 		{
-
 			$existingCreneau = "SELECT rowid FROM ".MAIN_DB_PREFIX."creneau WHERE fk_salle=".$this->fk_salle." AND heure_debut=".$this->heure_debut." AND fk_annee_scolaire =".$this->fk_annee_scolaire." AND jour=".$this->jour;
 			$resqlExistingCreneau = $this->db->query($existingCreneau);
 			if($resqlExistingCreneau->num_rows > 0)
@@ -284,10 +283,6 @@ class Creneau extends CommonObject
 				return setEventMessage('Désolé, un des professeur séléctionné à déjà cours à cette heure-ci.','errors');
 			}
 		}
-
-
-
-
 
 		if(!$this->nom_groupe && !$this->fk_instrument_enseigne)
 		{
@@ -343,9 +338,9 @@ class Creneau extends CommonObject
 
 				$this->nom_creneau .= $object->jour . '-';
 
-				$heure = "SELECT h.heure FROM ".MAIN_DB_PREFIX."c_heure as h WHERE h.rowid =".$this->heure_debut;
+				/*$heure = "SELECT h.heure FROM ".MAIN_DB_PREFIX."c_heure as h WHERE h.rowid =".$this->hour_debut;
 				$resql = $this->db->query($heure);
-				$object = $this->db->fetch_object($resql);
+				$object = $this->db->fetch_object($resql);*/
 
 
 				if(!$this->minutes_debut)

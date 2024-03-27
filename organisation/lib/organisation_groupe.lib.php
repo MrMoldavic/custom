@@ -42,7 +42,7 @@ function groupePrepareHead($object)
 	$head = array();
 
 	$head[$h][0] = dol_buildpath("/organisation/groupe_card.php", 1).'?id='.$object->id;
-	$head[$h][1] = $langs->trans("Card");
+	$head[$h][1] = "Fiche du groupe";
 	$head[$h][2] = 'card';
 	$h++;
 
@@ -51,13 +51,6 @@ function groupePrepareHead($object)
 	$head[$h][2] = 'Interpretations';
 	$h++;
 
-
-	if ($showtabofpagecontact) {
-		$head[$h][0] = dol_buildpath("/organisation/groupe_contact.php", 1).'?id='.$object->id;
-		$head[$h][1] = $langs->trans("Contacts");
-		$head[$h][2] = 'contact';
-		$h++;
-	}
 
 	if ($showtabofpagenote) {
 		if (isset($object->fields['note_public']) || isset($object->fields['note_private'])) {
@@ -90,13 +83,6 @@ function groupePrepareHead($object)
 			$head[$h][1] .= '<span class="badge marginleftonlyshort">'.($nbFiles + $nbLinks).'</span>';
 		}
 		$head[$h][2] = 'document';
-		$h++;
-	}
-
-	if ($showtabofpageagenda) {
-		$head[$h][0] = dol_buildpath("/organisation/groupe_agenda.php", 1).'?id='.$object->id;
-		$head[$h][1] = $langs->trans("Events");
-		$head[$h][2] = 'agenda';
 		$h++;
 	}
 

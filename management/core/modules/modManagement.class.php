@@ -276,6 +276,11 @@ class modManagement extends DolibarrModules
 		$this->rights[$r][4] = 'agent';
 		$this->rights[$r][5] = 'write'; // In php code, permission will be checked by test if ($user->rights->management->agent->write)
 		$r++;
+		$this->rights[$r][0] = $this->numero . sprintf('%02d', $r + 1); // Permission id (must not be already used)
+		$this->rights[$r][1] = 'Create/Update objects of Appetence'; // Permission label
+		$this->rights[$r][4] = 'agent';
+		$this->rights[$r][5] = 'createAppetence'; // In php code, permission will be checked by test if ($user->rights->management->agent->write)
+		$r++;
 		$this->rights[$r][0] = $this->numero . sprintf("%02d", $r + 1); // Permission id (must not be already used)
 		$this->rights[$r][1] = 'Delete objects of Management'; // Permission label
 		$this->rights[$r][4] = 'agent';

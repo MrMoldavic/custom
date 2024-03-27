@@ -120,9 +120,9 @@ class Contrat extends CommonObject
 		'fk_type_contrat' => array('type'=>'integer:TypeContrat:custom/management/class/typecontrat.class.php:1', 'label'=>'Type de contrat','css'=>'maxwidth300', 'enabled'=>'1', 'position'=>40, 'notnull'=>1, 'visible'=>1, 'validate'=>'1',),
 		'date_debut' => array('type'=>'date', 'label'=>'Date de début', 'enabled'=>'1', 'position'=>45, 'notnull'=>1, 'visible'=>1, 'default'=>'0', 'isameasure'=>'1', 'css'=>'maxwidth75imp', 'help'=>"Help text for quantity", 'validate'=>'1',),
 		'date_fin' => array('type'=>'date', 'label'=>'Date de fin', 'enabled'=>'$conf->societe->enabled', 'position'=>50, 'notnull'=>-1, 'visible'=>1, 'index'=>1, 'css'=>'maxwidth300', 'help'=>"OrganizationEventLinkToThirdParty", 'validate'=>'1',),
-		'duree' => array('type'=>'varchar(255)', 'label'=>'Durée','arrayofkeyval'=>array('1'=>'Déterminée', '0'=>'Indéterminée'), 'css'=>'maxwidth300', 'position'=>52, 'notnull'=>1, 'visible'=>-1, 'index'=>1, 'validate'=>'1',),
-		'nombre_mois' => array('type'=>'integer', 'label'=>'Nombre de mois','css'=>'maxwidth300', 'enabled'=>'1', 'position'=>60, 'notnull'=>0, 'visible'=>3, 'validate'=>'1',),
-		'salaire_brut' => array('type'=>'varchar(255)', 'label'=>'Salaire Brut', 'enabled'=>'1','css'=>'maxwidth300', 'position'=>60, 'notnull'=>0, 'visible'=>1, 'validate'=>'1',),
+		//'duree' => array('type'=>'varchar(255)', 'label'=>'Durée','arrayofkeyval'=>array('1'=>'Déterminée', '0'=>'Indéterminée'), 'css'=>'maxwidth300', 'position'=>52, 'notnull'=>1, 'visible'=>-1, 'index'=>1, 'validate'=>'1',),
+		//'nombre_mois' => array('type'=>'integer', 'label'=>'Nombre de mois','css'=>'maxwidth300', 'enabled'=>'1', 'position'=>60, 'notnull'=>0, 'visible'=>3, 'validate'=>'1',),
+		'salaire_brut' => array('type'=>'double', 'label'=>'Salaire Brut', 'enabled'=>'1','css'=>'maxwidth300', 'position'=>60, 'notnull'=>0, 'visible'=>1, 'validate'=>'1',),
 		'salaire_net' => array('type'=>'varchar(255)', 'label'=>'Salaire Net', 'enabled'=>'1','css'=>'maxwidth300', 'position'=>60, 'notnull'=>0, 'visible'=>1, 'validate'=>'1',),
 		'ancienne_ref' => array('type'=>'varchar(255)', 'label'=>'Ancienne référence du contrat', 'enabled'=>'1','css'=>'maxwidth300', 'position'=>70, 'notnull'=>0, 'visible'=>1, 'validate'=>'1',),
 		'alternance' => array('type'=>'boolean', 'label'=>'Contrat en alternance', 'enabled'=>'1','css'=>'maxwidth300', 'position'=>70, 'notnull'=>0, 'visible'=>1, 'validate'=>'1',),
@@ -255,7 +255,7 @@ class Contrat extends CommonObject
 
 		$sql = "SELECT diminutif FROM ".MAIN_DB_PREFIX."management_typestatut";
         $sql .= " WHERE rowid = ".$this ->fk_statut;
-        $result = $this->db->query($sql); 
+        $result = $this->db->query($sql);
 		$diminutif = $this->db->fetch_object($result);
 
 		$this->ref = $diminutif->diminutif.'-'.$this->cote;
@@ -269,7 +269,7 @@ class Contrat extends CommonObject
         $sql = "SELECT cote FROM ".MAIN_DB_PREFIX."management_contrat";
         $sql .= " WHERE fk_statut = ".$this ->fk_statut;
         $sql .= " ORDER BY cote DESC LIMIT 1";
-        $result = $this->db->query($sql); 
+        $result = $this->db->query($sql);
         $cote_list = $this->db->fetch_object($result);
         if (empty($cote_list)) $this->cote = 1; // If $cote_list is empty, this is the first materiel of this type -> cote = 1
         else $this->cote = $cote_list->cote + 1;

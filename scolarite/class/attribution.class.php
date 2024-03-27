@@ -123,11 +123,11 @@ class Attribution extends CommonObject
 	public $fields=array(
 		'rowid' => array('type'=>'integer', 'label'=>'TechnicalID', 'enabled'=>'1', 'position'=>1, 'notnull'=>1, 'visible'=>0, 'noteditable'=>'1', 'index'=>1, 'css'=>'left', 'comment'=>"Id"),
 		'fk_cle' => array('type'=>'integer:Cles:custom/scolarite/class/cles.class.php:1:(t.status=1)', 'label'=>'Clé', 'enabled'=>'1', 'position'=>1, 'notnull'=>1, 'visible'=>1, 'foreignkey'=>'cles.rowid','css'=>'maxwidth300',),
-		'fk_user_pret' => array('type'=>'integer:Agent:custom/management/class/agent.class.php', 'label'=>'Bénéficiaire', 'picto'=>'user', 'enabled'=>'1', 'position'=>510, 'notnull'=>1, 'visible'=>1, 'foreignkey'=>'user.rowid','css'=>'maxwidth300',),
+		'fk_user_pret' => array('type'=>'integer:Agent:custom/management/class/agent.class.php', 'label'=>'Bénéficiaire', 'picto'=>'user', 'enabled'=>'1', 'position'=>50, 'notnull'=>1, 'visible'=>1, 'foreignkey'=>'user.rowid','css'=>'maxwidth300',),
 		'commentaire' => array('type'=>'text', 'label'=>'Description', 'enabled'=>'1', 'position'=>60, 'notnull'=>0, 'visible'=>3, 'validate'=>'1', 'css'=>'maxwidth300',),
-		'date_debut_pret' => array('type'=>'date', 'label'=>'Date de prêt', 'enabled'=>'1', 'position'=>400, 'notnull'=>1, 'visible'=>1,),
-		'date_fin_pret' => array('type'=>'date', 'label'=>'Date fin de prêt', 'enabled'=>'1', 'position'=>500, 'notnull'=>0, 'visible'=>1,),
-		'numero_contrat' => array('type'=>'varchar(255)', 'label'=>'Numéro contrat', 'position'=>60, 'notnull'=>-1, 'visible'=>1, 'index'=>1, 'css'=>'maxwidth300','validate'=>'1',),
+		'date_debut_pret' => array('type'=>'date', 'label'=>'Date de prêt', 'enabled'=>'1', 'position'=>51, 'notnull'=>1, 'visible'=>1,),
+		'date_fin_pret' => array('type'=>'date', 'label'=>'Date fin de prêt', 'enabled'=>'1', 'position'=>52, 'notnull'=>0, 'visible'=>1,),
+		//'numero_contrat' => array('type'=>'varchar(255)', 'label'=>'Numéro contrat', 'position'=>53, 'notnull'=>-1, 'visible'=>1, 'index'=>1, 'css'=>'maxwidth300','validate'=>'1',),
 		'etat_contrat' => array('type'=>'integer', 'label'=>'Etat du contrat', 'enabled'=>'$conf->project->enabled', 'position'=>52, 'notnull'=>-1, 'visible'=>-1, 'index'=>1, 'css'=>'maxwidth300', 'validate'=>'1', 'arrayofkeyval'=>array('1'=>'Signé, à récupérer','2'=>'Edité, à signer', '3'=>'A éditer','4'=>'Signé et récupéré')),
 		'nom_attribution' => array('type'=>'varchar(255)', 'label'=>'Nom Attribution', 'position'=>1, 'notnull'=>0, 'visible'=>2, 'index'=>1, 'css'=>'maxwidth300', 'validate'=>'1',),
 		'fk_annee_scolaire' => array('type'=>'sellist:c_annee_scolaire:annee', 'label'=>'Année scolaire', 'enabled'=>'1', 'position'=>40, 'notnull'=>1, 'visible'=>1, 'default'=>'null', 'isameasure'=>'1', 'validate'=>'1',),
@@ -263,6 +263,7 @@ class Attribution extends CommonObject
 		$cleClass->fetch($this->fk_cle);
 		// Nom de l'attribution
 		$this->nom_attribution = "$cleClass->numero_cle / $agentClass->prenom-$agentClass->nom";
+
 		// On valide la clé et définissont le status du contrat
 		$cleClass->validate($user, $notrigger);
 		$this->status = Attribution::STATUS_VALIDATED;

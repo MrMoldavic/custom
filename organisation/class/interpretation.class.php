@@ -21,6 +21,9 @@
  * \ingroup     organisation
  * \brief       This file is a CRUD class file for Interpretation (Create/Read/Update/Delete)
  */
+/*ini_set('display_errors', '1');
+ini_set('display_startup_errors', '1');
+error_reporting(E_ALL);*/
 
 // Put here all includes required by your class file
 require_once DOL_DOCUMENT_ROOT.'/core/class/commonobject.class.php';
@@ -66,7 +69,7 @@ class Interpretation extends CommonObject
 
 	const STATUS_DRAFT = 5;
 	const STATUS_VALIDATED = 4;
-	const STATUS_CANCELED = 9;
+	const STATUS_ABANDONNED = 9;
 	const STATUS_RESERVED = 2;
 	const STATUS_INWORK = 1;
 
@@ -114,12 +117,12 @@ class Interpretation extends CommonObject
 	 * @var array  Array with all fields and their property. Do not use it as a static var. It may be modified by constructor.
 	 */
 	public $fields=array(
-		'rowid' => array('type'=>'integer', 'label'=>'TechnicalID', 'enabled'=>'1', 'position'=>1, 'notnull'=>1, 'visible'=>0, 'noteditable'=>'1', 'index'=>1, 'css'=>'left', 'comment'=>"Id", 'showoncombobox'=>'1',),
+		'rowid' => array('type'=>'integer', 'label'=>'Identifiant', 'enabled'=>'1', 'position'=>1, 'notnull'=>1, 'visible'=>0, 'noteditable'=>'1', 'index'=>1, 'css'=>'left', 'comment'=>"Id", 'showoncombobox'=>'1',),
 		'fk_morceau' => array('type'=>'integer:Morceau:custom/organisation/class/morceau.class.php:1', 'label'=>'Titre concerné', 'enabled'=>'1', 'position'=>20, 'notnull'=>1, 'visible'=>1, 'index'=>1,'css'=>'maxwidth300', 'searchall'=>1, 'validate'=>'1'),
-		'fk_groupe' => array('type'=>'integer:Groupe:custom/organisation/class/groupe.class.php:1', 'label'=>'Groupe concerné', 'enabled'=>'1', 'position'=>30, 'notnull'=>1, 'visible'=>1, 'searchall'=>1, 'css'=>'maxwidth300', 'validate'=>'1',),
+		'fk_groupe' => array('type'=>'integer:Groupe:custom/organisation/class/groupe.class.php:1','label'=>'Groupe concerné', 'enabled'=>'1', 'position'=>30, 'notnull'=>1, 'visible'=>1, 'searchall'=>1, 'css'=>'maxwidth300', 'validate'=>'1',),
 		'temps' => array('type'=>'integer', 'label'=>'Temps (en minutes) de l\'interpretation', 'enabled'=>'1', 'position'=>35, 'notnull'=>1, 'visible'=>1,'validate'=>'1', 'help'=>"Arrondir au dessus si nécessaire (morceau de 3min45=>4min)",),
-		'date_debut_interpretation' => array('type'=>'date', 'label'=>'Date de début d\'interprétation', 'enabled'=>'1', 'position'=>40, 'notnull'=>1, 'visible'=>1,'validate'=>'1',),
-		'date_fin_interpretation' => array('type'=>'date', 'label'=>'Date de fin d\'interprétation', 'enabled'=>'1', 'position'=>45, 'notnull'=>0, 'visible'=>1, 'default'=>'0', 'isameasure'=>'1', 'css'=>'maxwidth75imp', 'help'=>"Help text for quantity", 'validate'=>'1',),
+		'date_debut_interpretation' => array('type'=>'date', 'label'=>'Date de début d\'interprétation', 'enabled'=>'1', 'position'=>40, 'visible'=>2),
+		'date_fin_interpretation' => array('type'=>'date', 'label'=>'Date de fin d\'interprétation', 'enabled'=>'1', 'position'=>45, 'notnull'=>0, 'visible'=>5, 'css'=>'maxwidth75imp', 'validate'=>'1',),
 		'note_public' => array('type'=>'html', 'label'=>'Infos supplémentaires', 'enabled'=>'1', 'position'=>61, 'notnull'=>0, 'visible'=>1, 'cssview'=>'wordbreak', 'validate'=>'1',),
 		'note_private' => array('type'=>'html', 'label'=>'NotePrivate', 'enabled'=>'1', 'position'=>62, 'notnull'=>0, 'visible'=>0, 'cssview'=>'wordbreak', 'validate'=>'1',),
 		'date_creation' => array('type'=>'datetime', 'label'=>'DateCreation', 'enabled'=>'1', 'position'=>500, 'notnull'=>1, 'visible'=>-2,),
@@ -129,17 +132,16 @@ class Interpretation extends CommonObject
 		'last_main_doc' => array('type'=>'varchar(255)', 'label'=>'LastMainDoc', 'enabled'=>'1', 'position'=>600, 'notnull'=>0, 'visible'=>0,),
 		'import_key' => array('type'=>'varchar(14)', 'label'=>'ImportId', 'enabled'=>'1', 'position'=>1000, 'notnull'=>-1, 'visible'=>-2,),
 		'model_pdf' => array('type'=>'varchar(255)', 'label'=>'Model pdf', 'enabled'=>'1', 'position'=>1010, 'notnull'=>-1, 'visible'=>0,),
-		'status' => array('type'=>'integer', 'label'=>'Etat de l\'interprétation', 'enabled'=>'1', 'position'=>2000, 'notnull'=>1, 'visible'=>1, 'index'=>1, 'arrayofkeyval'=>array('2'=>'Réservée', '1'=>'En travail','4'=>'Prête','5'=>'Abandonnée', '9'=>'Délaissée'), 'validate'=>'1',),
+		'status' => array('type'=>'integer', 'label'=>'Etat de l\'interprétation', 'enabled'=>'1', 'position'=>2000, 'notnull'=>1, 'visible'=>1, 'index'=>1, 'arrayofkeyval'=>array(Interpretation::STATUS_RESERVED=>'Réservée', Interpretation::STATUS_INWORK=>'En travail',Interpretation::STATUS_VALIDATED=>'Prête',Interpretation::STATUS_ABANDONNED=>'Abandonnée'), 'validate'=>'1',),
 	);
 
 	public $rowid;
-	public $ref;
-	public $label;
-	public $amount;
-	public $qty;
-	public $fk_soc;
-	public $fk_project;
-	public $description;
+	public $fk_morceau;
+	public $fk_groupe;
+	public $temps;
+	public $date_debut_interpretation;
+	public $date_fin_interpretation;
+
 	public $note_public;
 	public $note_private;
 	public $date_creation;
@@ -207,18 +209,18 @@ class Interpretation extends CommonObject
 			$this->fields['entity']['enabled'] = 0;
 		}
 
-		// Example to show how to set values of fields definition dynamically
-		/*if ($user->rights->organisation->interpretation->read) {
-			$this->fields['myfield']['visible'] = 1;
-			$this->fields['myfield']['noteditable'] = 0;
-		}*/
-
 		// Unset fields that are disabled
 		foreach ($this->fields as $key => $val) {
 			if (isset($val['enabled']) && empty($val['enabled'])) {
 				unset($this->fields[$key]);
 			}
 		}
+
+		if(GETPOST('fk_groupe','int'))
+		{
+			$this->fields['fk_groupe']['noteditable'] = 1;
+		}
+
 
 		// Translate some data of arrayofkeyval
 		if (is_object($langs)) {
@@ -241,111 +243,30 @@ class Interpretation extends CommonObject
 	 */
 	public function create(User $user, $notrigger = false)
 	{
-		$resultcreate = $this->createCommon($user, $notrigger);
+		$existingInterpretation = $this->fetchAll('','','','',array('fk_groupe'=>GETPOST('fk_groupe','int'),'fk_morceau'=>GETPOST('fk_morceau','int')));
 
-		//$resultvalidate = $this->validate($user, $notrigger);
-
-		return $resultcreate;
-	}
-
-	/**
-	 * Clone an object into another one
-	 *
-	 * @param  	User 	$user      	User that creates
-	 * @param  	int 	$fromid     Id of object to clone
-	 * @return 	mixed 				New object created, <0 if KO
-	 */
-	public function createFromClone(User $user, $fromid)
-	{
-		global $langs, $extrafields;
-		$error = 0;
-
-		dol_syslog(__METHOD__, LOG_DEBUG);
-
-		$object = new self($this->db);
-
-		$this->db->begin();
-
-		// Load source object
-		$result = $object->fetchCommon($fromid);
-		if ($result > 0 && !empty($object->table_element_line)) {
-			$object->fetchLines();
-		}
-
-		// get lines so they will be clone
-		//foreach($this->lines as $line)
-		//	$line->fetch_optionals();
-
-		// Reset some properties
-		unset($object->id);
-		unset($object->fk_user_creat);
-		unset($object->import_key);
-
-		// Clear fields
-		if (property_exists($object, 'ref')) {
-			$object->ref = empty($this->fields['ref']['default']) ? "Copy_Of_".$object->ref : $this->fields['ref']['default'];
-		}
-		if (property_exists($object, 'label')) {
-			$object->label = empty($this->fields['label']['default']) ? $langs->trans("CopyOf")." ".$object->label : $this->fields['label']['default'];
-		}
-		if (property_exists($object, 'status')) {
-			$object->status = self::STATUS_DRAFT;
-		}
-		if (property_exists($object, 'date_creation')) {
-			$object->date_creation = dol_now();
-		}
-		if (property_exists($object, 'date_modification')) {
-			$object->date_modification = null;
-		}
-		// ...
-		// Clear extrafields that are unique
-		if (is_array($object->array_options) && count($object->array_options) > 0) {
-			$extrafields->fetch_name_optionals_label($this->table_element);
-			foreach ($object->array_options as $key => $option) {
-				$shortkey = preg_replace('/options_/', '', $key);
-				if (!empty($extrafields->attributes[$this->table_element]['unique'][$shortkey])) {
-					//var_dump($key);
-					//var_dump($clonedObj->array_options[$key]); exit;
-					unset($object->array_options[$key]);
-				}
-			}
-		}
-
-		// Create clone
-		$object->context['createfromclone'] = 'createfromclone';
-		$result = $object->createCommon($user);
-		if ($result < 0) {
-			$error++;
-			$this->error = $object->error;
-			$this->errors = $object->errors;
-		}
-
-		if (!$error) {
-			// copy internal contacts
-			if ($this->copy_linked_contact($object, 'internal') < 0) {
-				$error++;
-			}
-		}
-
-		if (!$error) {
-			// copy external contacts if same company
-			if (!empty($object->socid) && property_exists($this, 'fk_soc') && $this->fk_soc == $object->socid) {
-				if ($this->copy_linked_contact($object, 'external') < 0) {
-					$error++;
-				}
-			}
-		}
-
-		unset($object->context['createfromclone']);
-
-		// End
-		if (!$error) {
-			$this->db->commit();
-			return $object;
-		} else {
-			$this->db->rollback();
+		if(count($existingInterpretation) > 0)
+		{
+			setEventMessage('Une interprétation de ce morceau par ce groupe éxiste déjà. Veuillez modifier le morceau choisi ou ','errors');
 			return -1;
 		}
+
+		$agentClass = new Agent($this->db);
+		$agentClass->fetch('','',' AND fk_user='.$user->id);
+
+		$this->fk_user_creat = $agentClass->id;
+
+		if($this->status == self::STATUS_ABANDONNED)
+		{
+			$this->date_fin_interpretation = date('Y-m-d');
+		}
+
+		if(!GETPOST('date_debut_interpretation','alpha'))
+		{
+			$this->date_debut_interpretation = date('Y-m-d');
+		}
+
+		return $this->createCommon($user, $notrigger);
 	}
 
 	/**
@@ -389,7 +310,7 @@ class Interpretation extends CommonObject
 	 * @param  string      $filtermode   Filter mode (AND or OR)
 	 * @return array|int                 int <0 if KO, array of pages if OK
 	 */
-	public function fetchAll($sortorder = '', $sortfield = '', $limit = 0, $offset = 0, array $filter = array(), $filtermode = 'AND')
+	public function fetchAll($sortorder = '', $sortfield = '', $limit = 0, $offset = 0, array $filter = array(), $filtermode = 'AND', $innerJoin = null)
 	{
 		global $conf;
 
@@ -400,6 +321,10 @@ class Interpretation extends CommonObject
 		$sql = "SELECT ";
 		$sql .= $this->getFieldList('t');
 		$sql .= " FROM ".MAIN_DB_PREFIX.$this->table_element." as t";
+		if($innerJoin)
+		{
+			$sql .= $innerJoin;
+		}
 		if (isset($this->ismultientitymanaged) && $this->ismultientitymanaged == 1) {
 			$sql .= " WHERE t.entity IN (".getEntity($this->element).")";
 		} else {
@@ -467,6 +392,21 @@ class Interpretation extends CommonObject
 	 */
 	public function update(User $user, $notrigger = false)
 	{
+		if($this->status == self::STATUS_ABANDONNED && !$this->date_fin_interpretation)
+		{
+			$this->date_fin_interpretation = date('Y-m-d');
+		}
+
+		if($this->status != self::STATUS_ABANDONNED && $this->date_fin_interpretation)
+		{
+			$this->date_fin_interpretation = null;
+		}
+
+		$agentClass = new Agent($this->db);
+		$agentClass->fetch('','',' AND fk_user='.$user->id);
+
+		$this->fk_user_creat = $agentClass->id;
+
 		return $this->updateCommon($user, $notrigger);
 	}
 
@@ -480,7 +420,6 @@ class Interpretation extends CommonObject
 	public function delete(User $user, $notrigger = false)
 	{
 		return $this->deleteCommon($user, $notrigger);
-		//return $this->deleteCommon($user, $notrigger, 1);
 	}
 
 	/**
@@ -522,15 +461,6 @@ class Interpretation extends CommonObject
 			dol_syslog(get_class($this)."::validate action abandonned: already validated", LOG_WARNING);
 			return 0;
 		}
-
-		/*if (! ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->organisation->interpretation->write))
-		 || (! empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->organisation->interpretation->interpretation_advance->validate))))
-		 {
-		 $this->error='NotEnoughPermissions';
-		 dol_syslog(get_class($this)."::valid ".$this->error, LOG_ERR);
-		 return -1;
-		 }*/
-
 		$now = dol_now();
 
 		$this->db->begin();
@@ -640,14 +570,6 @@ class Interpretation extends CommonObject
 		if ($this->status <= self::STATUS_DRAFT) {
 			return 0;
 		}
-
-		/*if (! ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->organisation->write))
-		 || (! empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->organisation->organisation_advance->validate))))
-		 {
-		 $this->error='Permission denied';
-		 return -1;
-		 }*/
-
 		return $this->setStatusCommon($user, self::STATUS_DRAFT, $notrigger, 'INTERPRETATION_UNVALIDATE');
 	}
 
@@ -664,14 +586,6 @@ class Interpretation extends CommonObject
 		if ($this->status != self::STATUS_VALIDATED) {
 			return 0;
 		}
-
-		/*if (! ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->organisation->write))
-		 || (! empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->organisation->organisation_advance->validate))))
-		 {
-		 $this->error='Permission denied';
-		 return -1;
-		 }*/
-
 		return $this->setStatusCommon($user, self::STATUS_CANCELED, $notrigger, 'INTERPRETATION_CANCEL');
 	}
 
@@ -688,13 +602,6 @@ class Interpretation extends CommonObject
 		if ($this->status != self::STATUS_CANCELED) {
 			return 0;
 		}
-
-		/*if (! ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->organisation->write))
-		 || (! empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->organisation->organisation_advance->validate))))
-		 {
-		 $this->error='Permission denied';
-		 return -1;
-		 }*/
 
 		return $this->setStatusCommon($user, self::STATUS_VALIDATED, $notrigger, 'INTERPRETATION_REOPEN');
 	}
@@ -850,22 +757,22 @@ class Interpretation extends CommonObject
 		if (empty($this->labelStatus) || empty($this->labelStatusShort)) {
 			global $langs;
 			//$langs->load("organisation@organisation");
-			$this->labelStatus[self::STATUS_DRAFT] = $langs->transnoentitiesnoconv('Abandonnée');
+			$this->labelStatus[self::STATUS_DRAFT] = $langs->transnoentitiesnoconv('Brouillon');
 			$this->labelStatus[self::STATUS_VALIDATED] = $langs->transnoentitiesnoconv('Prête');
-			$this->labelStatus[self::STATUS_CANCELED] = $langs->transnoentitiesnoconv('Délaissée');
+			$this->labelStatus[self::STATUS_ABANDONNED] = $langs->transnoentitiesnoconv('Abandonnée');
 			$this->labelStatus[self::STATUS_RESERVED] = $langs->transnoentitiesnoconv('Réservée');
 			$this->labelStatus[self::STATUS_INWORK] = $langs->transnoentitiesnoconv('En travail');
 
-			$this->labelStatusShort[self::STATUS_DRAFT] = $langs->transnoentitiesnoconv('Abandonnée');
+			$this->labelStatusShort[self::STATUS_DRAFT] = $langs->transnoentitiesnoconv('Brouillon');
 			$this->labelStatusShort[self::STATUS_VALIDATED] = $langs->transnoentitiesnoconv('Prête');
-			$this->labelStatusShort[self::STATUS_CANCELED] = $langs->transnoentitiesnoconv('Délaissée');
+			$this->labelStatusShort[self::STATUS_ABANDONNED] = $langs->transnoentitiesnoconv('Abandonnée');
 			$this->labelStatusShort[self::STATUS_RESERVED] = $langs->transnoentitiesnoconv('Réservée');
 			$this->labelStatusShort[self::STATUS_INWORK] = $langs->transnoentitiesnoconv('En travail');
 		}
 
 		$statusType = 'status'.$status;
 		//if ($status == self::STATUS_VALIDATED) $statusType = 'status1';
-		if ($status == self::STATUS_CANCELED) {
+		if ($status == self::STATUS_ABANDONNED) {
 			$statusType = 'status6';
 		}
 
@@ -1070,6 +977,66 @@ class Interpretation extends CommonObject
 		$this->db->commit();
 
 		return $error;
+	}
+
+
+	/**
+	 * Affiche le tableau des interprétations d'un groupe
+	 *
+	 * @return	string		tableau
+	 */
+	public function printTableInterpretation(int $idGroupe)
+	{
+		$out = '';
+		// Récupération de toutes les interprétations
+		$interpretations = $this->fetchAll('', '', 0, 0, array('fk_groupe'=>$idGroupe));
+
+		$out .= load_fiche_titre("Liste des interprétations", '', 'fa-music');
+		// Si au moins une existe
+		if (count($interpretations) > 0) {
+			$out .= '<table class="tagtable nobottomiftotal liste">';
+			$out .= '<tbody>';
+			$out .= '<tr>';
+			$out .= '<td style="padding:1em">Titre</td>';
+			$out .= '<td style="padding:1em">Durée</td>';
+			$out .= '<td style="padding:1em">Début d\'interprétation</td>';
+			$out .= '<td style="padding:1em">Fin d\'interprétation</td>';
+			$out .= '<td style="padding:1em">Etat</td>';
+			$out .= '<td style="padding:1em">Proposé par</td>';
+			$out .= '<td style="padding:1em" colspan="3"></td>';
+			$out .= '</tr>';
+
+			foreach ($interpretations as $interpretation) {
+				// On fetch le morceau
+				$morceauClass = new Morceau($this->db);
+				$morceauClass->fetch($interpretation->fk_morceau);
+				// On fetch l'artiste
+				$artisteClass = new Artiste($this->db);
+				$artisteClass->fetch($morceauClass->fk_artiste);
+				// On fetch l'agent qui à proposé le morceau
+				$agentClass = new Agent($this->db);
+				$agentClass->fetch($interpretation->fk_user_creat);
+
+				$out .= '<tr>';
+				$out .= '<td style="padding:1em"><a href="morceau_card.php?id='.$morceauClass->id.'" >' . $morceauClass->titre . '</a></td>';
+				$out .= '<td style="padding:1em">' . ($interpretation->temps ? ($interpretation->temps . 'min') : '') . '</td>';
+				$out .= '<td style="padding:1em"><span class="badge  badge-status4 badge-status">' . date('d/m/Y', $interpretation->date_debut_interpretation) . '</span></td>';
+				$out .= '<td style="padding:1em">' . (!empty($interpretation->date_fin_interpretation) ? '<span class="badge  badge-status8 badge-status">' . date('d/m/Y', $interpretation->date_fin_interpretation) : 'Indéfinie').'</span>' . '</td>';
+				$out .= '<td style="padding:1em"><span class="badge  badge-status' . $interpretation->status . ' badge-status">' . $this->LibStatut($interpretation->status) . '</td>';
+				$out .= '<td style="padding:1em">' . $agentClass->prenom . ' ' . $agentClass->nom . '</td>';
+				$out .= '<td style="padding:1em"><a href="/custom/organisation/interpretation_card.php?id=' . $interpretation->id . '&action=edit&token=' . newToken() . '&fk_groupe='.$idGroupe.'">' . '✏️' . '</a></td>';
+				if($interpretation->status == self::STATUS_VALIDATED || $interpretation->status == self::STATUS_INWORK)
+				{
+					$out .= '<td style="padding:1em"><a href="/custom/organisation/programmation_card.php?action=create&token=' . newToken() . '&fk_interpretation=' . $interpretation->id . '&evenementid=' . GETPOST('evenementid','int'). '">' . '📆' . '</a></td>';
+				}
+				$out .= '<td style="padding:1em"><a href="' . $_SERVER['PHP_SELF'] . '?id=' . $idGroupe . '&action=deleteInterpretation&fk_interpretation=' . $interpretation->id . '">' . '❌' . '</a></td>';
+				$out .= '</tr>';
+			}
+			$out .= '</tbody>';
+			$out .= '</table>';
+		}
+
+		return $out;
 	}
 }
 

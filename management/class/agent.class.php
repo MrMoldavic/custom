@@ -120,7 +120,7 @@ class Agent extends CommonObject
 		'fk_user' => array('type'=>'integer:User:user/class/user.class.php:0:(t.statut != 0)', 'label'=>'Utilisateur lié', 'picto'=>'user', 'enabled'=>'1', 'position'=>40, 'notnull'=>1, 'visible'=>1, 'css'=>'maxwidth300', 'validate'=>'1',),
 		'adresse' => array('type'=>'varchar(255)', 'label'=>'Adresse', 'picto'=>'home', 'enabled'=>'1', 'position'=>45, 'notnull'=>0, 'visible'=>1, 'css'=>'minwidth300', 'validate'=>'1',),
 		'code_postal' => array('type'=>'varchar(255)', 'label'=>'Code Postal', 'enabled'=>'', 'position'=>50, 'notnull'=>-1, 'visible'=>1, 'index'=>1, 'css'=>'maxwidth300', 'validate'=>'1',),
-		'discord' => array('type'=>'varchar(255)', 'label'=>'@ Discord', 'enabled'=>'', 'position'=>51, 'notnull'=>-1, 'visible'=>1, 'index'=>1, 'css'=>'maxwidth300', 'validate'=>'1',),
+		'discord' => array('type'=>'varchar(255)', 'label'=>'@ Discord', 'enabled'=>'1', 'position'=>51, 'notnull'=>-1, 'visible'=>1,'css'=>'maxwidth300', 'validate'=>'1',),
 		'fk_annee_scolaire' => array('type'=>'sellist:c_annee_scolaire:annee', 'label'=>'Année Scolaire', 'enabled'=>'1', 'position'=>52, 'notnull'=>1, 'visible'=>-1,),
 		'commune' => array('type'=>'varchar(255)', 'label'=>'Commune', 'enabled'=>'$conf->project->enabled', 'position'=>53, 'notnull'=>-1, 'visible'=>-1, 'index'=>1, 'css'=>'maxwidth300', 'validate'=>'1',),
 		'mail_perso' => array('type'=>'varchar(255)', 'label'=>'Mail Personel', 'picto'=>'email', 'enabled'=>'1', 'position'=>60, 'notnull'=>0, 'visible'=>1, 'validate'=>'1',),
@@ -394,9 +394,9 @@ class Agent extends CommonObject
 	 * @param string $ref  Ref
 	 * @return int         <0 if KO, 0 if not found, >0 if OK
 	 */
-	public function fetch($id, $ref = null)
+	public function fetch($id, $ref = null,$moresql = null)
 	{
-		$result = $this->fetchCommon($id, $ref);
+		$result = $this->fetchCommon($id, $ref, $moresql);
 		if ($result > 0 && !empty($this->table_element_line)) {
 			$this->fetchLines();
 		}

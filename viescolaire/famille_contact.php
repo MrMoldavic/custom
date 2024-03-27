@@ -23,9 +23,9 @@
  */
 
 
-ini_set('display_errors', '1');
+/*ini_set('display_errors', '1');
 ini_set('display_startup_errors', '1');
-error_reporting(E_ALL);
+error_reporting(E_ALL);*/
 
 
 
@@ -174,7 +174,7 @@ if ($action == 'create') // SELECTION DU TYPE DE KIT
 
 	print '</div>';
 
-	
+
 	if(GETPOSTISSET('etablissement', 'int'))
 	{
 		$date = GETPOST('date_evenement','varchar');
@@ -194,24 +194,24 @@ if ($action == 'create') // SELECTION DU TYPE DE KIT
 			$sqlEquip = "SELECT s.rowid,s.salle FROM ". MAIN_DB_PREFIX . "salles as s WHERE fk_college=".GETPOST('etablissement', 'varchar')." AND equipement="."'".GETPOST('equipement', 'varchar')."'";
 			$resqlEquip = $db->query($sqlEquip);
 		}
-	
-		
-	
+
+
+
 		$salleDispos = [];
 		foreach($resqlEquip as $salle)
 		{
 			$sql = "SELECT COUNT(*) as total FROM " . MAIN_DB_PREFIX . "creneau as c INNER JOIN " . MAIN_DB_PREFIX . "dispositif as d ON c.fk_dispositif = d.rowid INNER JOIN " . MAIN_DB_PREFIX . "c_heure as h ON c.heure_debut = h.rowid WHERE d.fk_etablissement =" . GETPOST('etablissement', 'int') . " AND c.jour=" . strftime('%u') . " AND h.heure =" .GETPOST('date_evenementhour', 'varchar')." AND c.fk_salle=".$salle['rowid']." AND c.status =" . 4 ." ORDER BY h.rowid DESC";
 			$resqlSalle= $db->query($sql);
 			$objSalle = $db->fetch_object($resqlSalle);
-		
+
 			if($objSalle->total == 0)
 			{
 				$salleDispos[] .= $salle['salle'];
 			}
-	
+
 		}
 		print '<h3>';
-	
+
 		if(GETPOST('equipement', 'varchar') == "")
 		{
 			print 'Liste des salles disponibles à '.GETPOST('date_evenementhour', 'varchar').'h le '.GETPOST('date_evenement', 'varchar').':';
@@ -233,11 +233,11 @@ if ($action == 'create') // SELECTION DU TYPE DE KIT
 				print '<li>'.$value.'</li>';
 			}
 		}
-		
+
 		print '</ul>';
 	}
 
-	
+
 }
 
 // End of page

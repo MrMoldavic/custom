@@ -65,7 +65,8 @@ class Proposition extends CommonObject
 
 
 	const STATUS_DRAFT = 0;
-	const STATUS_VALIDATED = 1;
+	const STATUS_VALIDATED = 4;
+	const STATUS_PROGRAMMED = 5;
 	const STATUS_CANCELED = 9;
 
 
@@ -113,12 +114,12 @@ class Proposition extends CommonObject
 	 */
 	public $fields=array(
 		'rowid' => array('type'=>'integer', 'label'=>'TechnicalID', 'enabled'=>'1', 'position'=>1, 'notnull'=>1, 'visible'=>0, 'noteditable'=>'1', 'index'=>1, 'css'=>'left', 'comment'=>"Id"),
-		'fk_groupe' => array('type'=>'integer:Groupe:custom/organisation/class/groupe.class.php:1', 'label'=>'Groupe concerné', 'enabled'=>'1', 'position'=>20, 'notnull'=>1, 'visible'=>1,'css'=>'maxwidth300', 'index'=>1, 'searchall'=>1, 'showoncombobox'=>'1', 'validate'=>'1'),
-		'fk_evenement' => array('type'=>'integer:Evenement:custom/organisation/class/evenement.class.php:1', 'label'=>'Événement', 'enabled'=>'1', 'position'=>30, 'notnull'=>1, 'visible'=>1, 'searchall'=>1, 'css'=>'minwidth300', 'css'=>'maxwidth300', 'validate'=>'1',),
-		'description' => array('type'=>'text', 'label'=>'details', 'enabled'=>'1', 'position'=>60, 'notnull'=>0, 'visible'=>3, 'validate'=>'1',),
+		'fk_groupe' => array('type'=>'integer:Groupe:custom/organisation/class/groupe.class.php:1:t.status='.Groupe::STATUS_VALIDATED, 'label'=>'Groupe concerné :', 'enabled'=>'1', 'position'=>20, 'notnull'=>1, 'visible'=>1,'css'=>'maxwidth300', 'index'=>1, 'searchall'=>1, 'showoncombobox'=>'1', 'validate'=>'1'),
+		'fk_evenement' => array('type'=>'integer:Evenement:custom/organisation/class/evenement.class.php:0:t.status='.Evenement::STATUS_VALIDATED, 'label'=>'Événement concerné :', 'enabled'=>'1', 'position'=>30, 'notnull'=>1, 'visible'=>1, 'searchall'=>1, 'css'=>'maxwidth300', 'validate'=>'1',),
+		'description' => array('type'=>'text', 'label'=>'Détails :', 'enabled'=>'1', 'position'=>60,'notnull'=>1, 'visible'=>3, 'validate'=>1, 'help'=>'Type de formation présente au concert.<br> Ex: "Élève seul + professeur accompagnant" (puis listez des besoins spécifiques sous forme de liste)'),
 		'position' => array('type'=>'integer', 'label'=>'Position conduite', 'enabled'=>'1', 'position'=>61, 'notnull'=>0, 'visible'=>0, 'validate'=>'1',),
 
-		'date_proposition' => array('type'=>'date', 'label'=>'Date de la proposition', 'enabled'=>'1', 'position'=>500, 'notnull'=>1, 'visible'=>1,),
+		'date_proposition' => array('type'=>'date', 'label'=>'Date de la proposition :', 'enabled'=>'1', 'position'=>500, 'notnull'=>1, 'visible'=>2,),
 		'note_public' => array('type'=>'html', 'label'=>'NotePublic', 'enabled'=>'1', 'position'=>61, 'notnull'=>0, 'visible'=>0, 'cssview'=>'wordbreak', 'validate'=>'1',),
 		'note_private' => array('type'=>'html', 'label'=>'NotePrivate', 'enabled'=>'1', 'position'=>62, 'notnull'=>0, 'visible'=>0, 'cssview'=>'wordbreak', 'validate'=>'1',),
 		'date_creation' => array('type'=>'datetime', 'label'=>'DateCreation', 'enabled'=>'1', 'position'=>500, 'notnull'=>1, 'visible'=>-2,),
@@ -149,6 +150,10 @@ class Proposition extends CommonObject
 	public $import_key;
 	public $model_pdf;
 	public $status;
+
+	public $position;
+	public $fk_groupe;
+	public $fk_evenement;
 	// END MODULEBUILDER PROPERTIES
 
 
@@ -206,11 +211,15 @@ class Proposition extends CommonObject
 			$this->fields['entity']['enabled'] = 0;
 		}
 
-		// Example to show how to set values of fields definition dynamically
-		/*if ($user->rights->organisation->proposition->read) {
-			$this->fields['myfield']['visible'] = 1;
-			$this->fields['myfield']['noteditable'] = 0;
-		}*/
+		if(GETPOST('fk_evenement'))
+		{
+			$this->fields['fk_evenement']['noteditable'] = 1;
+		}
+
+		if(GETPOST('fk_groupe') || GETPOST('action') == 'edit')
+		{
+			$this->fields['fk_groupe']['noteditable'] = 1;
+		}
 
 		// Unset fields that are disabled
 		foreach ($this->fields as $key => $val) {
@@ -240,36 +249,38 @@ class Proposition extends CommonObject
 	 */
 	public function create(User $user, $notrigger = false)
 	{
-		$existingProposition = "SELECT fk_groupe, fk_evenement, rowid FROM ".MAIN_DB_PREFIX."organisation_proposition WHERE fk_groupe=".$this->fk_groupe." AND fk_evenement=".$this->fk_evenement;
-		$resqlPropostion = $this->db->query($existingProposition);
-
-		$error = 0;
-		if($resqlPropostion->num_rows != 0)
+		// Fetch d'une proposition similaire existante
+		$existingProposition = $this->fetch('',''," AND fk_groupe=$this->fk_groupe AND fk_evenement=$this->fk_evenement");
+		if($existingProposition)
 		{
-			setEventMessage('Une proposition de groupe pour cet événement éxiste déjà.', 'errors'); 
-			$error++;
+			setEventMessage('Ce groupe à déjà été proposé à cet événement.', 'errors');
+			header('Location: '.GETPOST('backtopage','alpha'));
+			exit;
 		}
-		
-		if($error == 0)
-		{
-			$position = "SELECT position, rowid FROM ".MAIN_DB_PREFIX."organisation_proposition WHERE fk_evenement=".$this->fk_evenement." ORDER BY position DESC LIMIT 1";
-			$resqlPosition = $this->db->query($position);
 
-			if(!$resqlPosition)
-			{
-				$this->position = 1;
-			}
-			else
-			{
-				$objProposition = $this->db->fetch_object($resqlPosition);
-				$this->position = $objProposition->position+1;
-			}
-	
-			$resultcreate = $this->createCommon($user, $notrigger);
-			// $resultvalidate = $this->validate($user, $notrigger);
-			return $resultcreate;
+		// Rechcerche de la plus haute position existante dans la conduite du concert visé
+		// (un SQL MAX() aurait pu suffir mais pas possible avec le fetch de base de Dolibarr)
+		$propositionClass = new Proposition($this->db);
+		$propositionClass->fetch('',''," AND fk_evenement=$this->fk_evenement ORDER BY position DESC");
+
+		// Définition de la position par défaut
+		$this->position = 1;
+		// Overwrite si une position > 0 à été trouvée
+		if($propositionClass->id) $this->position = $propositionClass->position+1;
+
+		$this->status = self::STATUS_DRAFT;
+		$this->date_proposition = date('Y-m-d');
+
+		$resCreate = $this->createCommon($user, $notrigger);
+
+		if($resCreate > 0)
+		{
+			setEventMessage('Groupe proposé au concert avec succès! Votre demande pourra être refusée par l\'organisateur.');
+		} else {
+			setEventMessage('Une erreur est survenue.','errors');
 		}
-		
+
+		return $resCreate;
 	}
 
 	/**
@@ -379,9 +390,9 @@ class Proposition extends CommonObject
 	 * @param string $ref  Ref
 	 * @return int         <0 if KO, 0 if not found, >0 if OK
 	 */
-	public function fetch($id, $ref = null)
+	public function fetch($id, $ref = null, $moresql = '')
 	{
-		$result = $this->fetchCommon($id, $ref);
+		$result = $this->fetchCommon($id, $ref, $moresql);
 		if ($result > 0 && !empty($this->table_element_line)) {
 			$this->fetchLines();
 		}
@@ -413,7 +424,7 @@ class Proposition extends CommonObject
 	 * @param  string      $filtermode   Filter mode (AND or OR)
 	 * @return array|int                 int <0 if KO, array of pages if OK
 	 */
-	public function fetchAll($sortorder = '', $sortfield = '', $limit = 0, $offset = 0, array $filter = array(), $filtermode = 'AND')
+	public function fetchAll($sortorder = '', $sortfield = '', $limit = 0, $offset = 0, array $filter = array(), $filtermode = 'AND',$beforeFrom = null)
 	{
 		global $conf;
 
@@ -422,6 +433,10 @@ class Proposition extends CommonObject
 		$records = array();
 
 		$sql = "SELECT ";
+		if($beforeFrom)
+		{
+			$sql .= $beforeFrom;
+		}
 		$sql .= $this->getFieldList('t');
 		$sql .= " FROM ".MAIN_DB_PREFIX.$this->table_element." as t";
 		if (isset($this->ismultientitymanaged) && $this->ismultientitymanaged == 1) {
@@ -491,7 +506,18 @@ class Proposition extends CommonObject
 	 */
 	public function update(User $user, $notrigger = false)
 	{
-		return $this->updateCommon($user, $notrigger);
+
+		$this->date_proposition = date('Y-m-d');
+
+		$reUpdate = $this->updateCommon($user, $notrigger);
+		if(GETPOST('reprogrammation') && $reUpdate > 0)
+		{
+			$evenementClass = new Evenement($this->db);
+			$evenementClass->fetch($this->fk_evenement);
+			setEventMessage("Groupe reprogrammé au concert {$evenementClass->nom_evenement} avec succès!");
+		}
+
+		return $reUpdate;
 	}
 
 	/**
@@ -506,25 +532,6 @@ class Proposition extends CommonObject
 		return $this->deleteCommon($user, $notrigger);
 		//return $this->deleteCommon($user, $notrigger, 1);
 	}
-
-	/**
-	 *  Delete a line of object in database
-	 *
-	 *	@param  User	$user       User that delete
-	 *  @param	int		$idline		Id of line to delete
-	 *  @param 	bool 	$notrigger  false=launch triggers after, true=disable triggers
-	 *  @return int         		>0 if OK, <0 if KO
-	 */
-	public function deleteLine(User $user, $idline, $notrigger = false)
-	{
-		if ($this->status < 0) {
-			$this->error = 'ErrorDeleteLineNotAllowedByObjectStatus';
-			return -2;
-		}
-
-		return $this->deleteLineCommon($user, $idline, $notrigger);
-	}
-
 
 	/**
 	 *	Validate object
@@ -665,13 +672,6 @@ class Proposition extends CommonObject
 			return 0;
 		}
 
-		/*if (! ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->organisation->write))
-		 || (! empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->organisation->organisation_advance->validate))))
-		 {
-		 $this->error='Permission denied';
-		 return -1;
-		 }*/
-
 		return $this->setStatusCommon($user, self::STATUS_DRAFT, $notrigger, 'PROPOSITION_UNVALIDATE');
 	}
 
@@ -689,13 +689,6 @@ class Proposition extends CommonObject
 			return 0;
 		}
 
-		/*if (! ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->organisation->write))
-		 || (! empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->organisation->organisation_advance->validate))))
-		 {
-		 $this->error='Permission denied';
-		 return -1;
-		 }*/
-
 		return $this->setStatusCommon($user, self::STATUS_CANCELED, $notrigger, 'PROPOSITION_CANCEL');
 	}
 
@@ -712,13 +705,6 @@ class Proposition extends CommonObject
 		if ($this->status != self::STATUS_CANCELED) {
 			return 0;
 		}
-
-		/*if (! ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->organisation->write))
-		 || (! empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->organisation->organisation_advance->validate))))
-		 {
-		 $this->error='Permission denied';
-		 return -1;
-		 }*/
 
 		return $this->setStatusCommon($user, self::STATUS_VALIDATED, $notrigger, 'PROPOSITION_REOPEN');
 	}
@@ -876,9 +862,11 @@ class Proposition extends CommonObject
 			//$langs->load("organisation@organisation");
 			$this->labelStatus[self::STATUS_DRAFT] = $langs->transnoentitiesnoconv('Brouillon');
 			$this->labelStatus[self::STATUS_VALIDATED] = $langs->transnoentitiesnoconv('En cours');
+			$this->labelStatus[self::STATUS_PROGRAMMED] = $langs->transnoentitiesnoconv('Programmée');
 			$this->labelStatus[self::STATUS_CANCELED] = $langs->transnoentitiesnoconv('Disabled');
 			$this->labelStatusShort[self::STATUS_DRAFT] = $langs->transnoentitiesnoconv('Brouillon');
 			$this->labelStatusShort[self::STATUS_VALIDATED] = $langs->transnoentitiesnoconv('En cours');
+			$this->labelStatusShort[self::STATUS_PROGRAMMED] = $langs->transnoentitiesnoconv('Programmée');
 			$this->labelStatusShort[self::STATUS_CANCELED] = $langs->transnoentitiesnoconv('Disabled');
 		}
 

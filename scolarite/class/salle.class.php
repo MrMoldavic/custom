@@ -104,12 +104,13 @@ class Salle extends CommonObject
 	 */
 	public $fields=array(
 		'rowid' => array('type'=>'integer', 'label'=>'TechnicalID', 'enabled'=>'1', 'position'=>1, 'notnull'=>1, 'visible'=>0, 'noteditable'=>'1', 'index'=>1, 'css'=>'left', 'comment'=>"Id"),
-		'salle' => array('type'=>'varchar(255)', 'label'=>'Nom de la salle', 'enabled'=>'1', 'position'=>20, 'notnull'=>1, 'visible'=>1, 'index'=>1, 'searchall'=>1,  'validate'=>'1', 'comment'=>"Reference of object", 'css'=>'maxwidth300',),
-		'fk_college' => array('type'=>'integer:Etablissement:custom/scolarite/class/etablissement.class.php:1', 'label'=>'Etablissements', 'foreignkey'=>'etablissement.rowid','enabled'=>'1', 'position'=>40, 'notnull'=>1, 'visible'=>1, 'index'=>1, 'searchall'=>1, 'validate'=>'1', 'comment'=>"Reference of object", 'css'=>'maxwidth300',),
-		'nom_complet' => array('type'=>'varchar(255)', 'label'=>'nom complet de la salle', 'enabled'=>'1', 'position'=>20, 'notnull'=>0, 'visible'=>0, 'index'=>1, 'searchall'=>1, 'validate'=>'1' ,'showoncombobox'=>'1',),
+		'salle' => array('type'=>'varchar(255)', 'label'=>'Nom de la salle', 'enabled'=>'1', 'position'=>20, 'notnull'=>1, 'visible'=>1, 'index'=>1, 'searchall'=>1,  'validate'=>'1', 'comment'=>"Reference of object", 'css'=>'maxwidth300','showoncombobox'=>'1',),
+		'fk_college' => array('type'=>'integer:Etablissement:custom/scolarite/class/etablissement.class.php:1', 'label'=>'Antenne', 'foreignkey'=>'etablissement.rowid','enabled'=>'1', 'position'=>40, 'notnull'=>1, 'visible'=>1, 'index'=>1, 'searchall'=>1, 'validate'=>'1', 'comment'=>"Reference of object", 'css'=>'maxwidth300',),
+		'nom_complet' => array('type'=>'varchar(255)', 'label'=>'nom complet de la salle', 'enabled'=>'1', 'position'=>20, 'notnull'=>0, 'visible'=>0, 'index'=>1, 'searchall'=>1, 'validate'=>'1' ,),
 		'equipement' => array('type'=>'varchar(255)', 'label'=>'Équipement présent dans la salle', 'enabled'=>'1', 'position'=>30, 'notnull'=>0, 'visible'=>1, 'index'=>1, 'searchall'=>1, 'validate'=>'1', 'arrayofkeyval'=>array('Aucun'=>'Aucun', 'guitareE'=>'Guitares électriques (Amplis) ','MAO'=>'MAO','Piano'=>'Piano','Batterie'=>'Batterie','Groupe'=>'Groupe','Bureau'=>'Bureau','Indisponible'=>'Indisponible'), 'css'=>'maxwidth200',),
 		'status' => array('type'=>'integer', 'label'=>'Status', 'enabled'=>'1', 'position'=>2000, 'notnull'=>1, 'visible'=>2, 'index'=>1, 'arrayofkeyval'=>array('0'=>'Brouillon', '1'=>'Valid&eacute;', '9'=>'Annul&eacute;'), 'validate'=>'1',),
 	);
+
 	public $rowid;
 	public $ref;
 	public $fk_college;
@@ -214,105 +215,6 @@ class Salle extends CommonObject
 		$resultcreate = $this->createCommon($user, $notrigger);
 
 		return $resultcreate;
-	}
-
-	/**
-	 * Clone an object into another one
-	 *
-	 * @param  	User 	$user      	User that creates
-	 * @param  	int 	$fromid     Id of object to clone
-	 * @return 	mixed 				New object created, <0 if KO
-	 */
-	public function createFromClone(User $user, $fromid)
-	{
-		global $langs, $extrafields;
-		$error = 0;
-
-		dol_syslog(__METHOD__, LOG_DEBUG);
-
-		$object = new self($this->db);
-
-		$this->db->begin();
-
-		// Load source object
-		$result = $object->fetchCommon($fromid);
-		if ($result > 0 && !empty($object->table_element_line)) {
-			$object->fetchLines();
-		}
-
-		// get lines so they will be clone
-		//foreach($this->lines as $line)
-		//	$line->fetch_optionals();
-
-		// Reset some properties
-		unset($object->id);
-		unset($object->fk_user_creat);
-		unset($object->import_key);
-
-		// Clear fields
-		if (property_exists($object, 'ref')) {
-			$object->ref = empty($this->fields['ref']['default']) ? "Copy_Of_".$object->ref : $this->fields['ref']['default'];
-		}
-		if (property_exists($object, 'label')) {
-			$object->label = empty($this->fields['label']['default']) ? $langs->trans("CopyOf")." ".$object->label : $this->fields['label']['default'];
-		}
-		if (property_exists($object, 'status')) {
-			$object->status = self::STATUS_DRAFT;
-		}
-		if (property_exists($object, 'date_creation')) {
-			$object->date_creation = dol_now();
-		}
-		if (property_exists($object, 'date_modification')) {
-			$object->date_modification = null;
-		}
-		// ...
-		// Clear extrafields that are unique
-		if (is_array($object->array_options) && count($object->array_options) > 0) {
-			$extrafields->fetch_name_optionals_label($this->table_element);
-			foreach ($object->array_options as $key => $option) {
-				$shortkey = preg_replace('/options_/', '', $key);
-				if (!empty($extrafields->attributes[$this->table_element]['unique'][$shortkey])) {
-					//var_dump($key); var_dump($clonedObj->array_options[$key]); exit;
-					unset($object->array_options[$key]);
-				}
-			}
-		}
-
-		// Create clone
-		$object->context['createfromclone'] = 'createfromclone';
-		$result = $object->createCommon($user);
-		if ($result < 0) {
-			$error++;
-			$this->error = $object->error;
-			$this->errors = $object->errors;
-		}
-
-		if (!$error) {
-			// copy internal contacts
-			if ($this->copy_linked_contact($object, 'internal') < 0) {
-				$error++;
-			}
-		}
-
-		if (!$error) {
-			// copy external contacts if same company
-			if (!empty($object->socid) && property_exists($this, 'fk_soc') && $this->fk_soc == $object->socid) {
-				if ($this->copy_linked_contact($object, 'external') < 0) {
-					$error++;
-				}
-			}
-		}
-
-		unset($object->context['createfromclone']);
-
-		// End
-		if (!$error) {
-			$this->db->commit();
-			return $object;
-		} else {
-			$this->db->rollback();
-			return -1;
-		}
 	}
 
 	/**
@@ -434,15 +336,15 @@ class Salle extends CommonObject
 	 */
 	public function update(User $user, $notrigger = false)
 	{
-		$sql = "SELECT diminutif FROM ".MAIN_DB_PREFIX."etablissement WHERE rowid=".$this->fk_college;
+		/*$sql = "SELECT diminutif FROM ".MAIN_DB_PREFIX."etablissement WHERE rowid=".$this->fk_college;
 		$resql = $this->db->query($sql);
-		$diminutif = $this->db->fetch_object($resql);
+		$diminutif = $this->db->fetch_object($resql);*/
 
 		//$sqlUpdate = "UPDATE ".MAIN_DB_PREFIX."salles SET nom_complet="."'".$diminutif->diminutif." - ".$this->salle."'".",salle="."'".$this->salle."'".",fk_college=".$this->fk_college." WHERE rowid=".$this->id;
 		// $resqlUpdate = $this->db->query($sqlUpdate);
 
-
-		$this->nom_complet = $diminutif->diminutif.' - '.$this->salle;
+/*
+		$this->nom_complet = $diminutif->diminutif.' - '.$this->salle;*/
 
 		return $this->updateCommon($user, $notrigger);
 	}
@@ -773,7 +675,7 @@ class Salle extends CommonObject
 		}
 
 		if ($withpicto != 2) {
-			$result .= $this->nom_complet;
+			$result .= $this->returnCompleteSalleName();
 		}
 
 		$result .= $linkend;
@@ -1051,6 +953,14 @@ class Salle extends CommonObject
 		$this->db->commit();
 
 		return $error;
+	}
+
+	public function returnCompleteSalleName()
+	{
+		$etablissementClass = new Etablissement($this->db);
+		$etablissementClass->fetch($this->fk_college);
+
+		return "$etablissementClass->diminutif - $this->salle";
 	}
 }
 

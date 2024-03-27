@@ -56,17 +56,15 @@ function evenementPrepareHead($object)
 	$head[$h][2] = 'Postes';
 	$h++;
 
-	$head[$h][0] = dol_buildpath("/organisation/evenement_repetition.php", 1).'?id='.$object->id;
+/*	$head[$h][0] = dol_buildpath("/organisation/evenement_repetition.php", 1).'?id='.$object->id;
 	$head[$h][1] = $langs->trans("Repetition");
 	$head[$h][2] = 'Repetition';
-	$h++;
+	$h++;*/
 
-	// if ($showtabofpagecontact) {
-	// 	$head[$h][0] = dol_buildpath("/organisation/evenement_contact.php", 1).'?id='.$object->id;
-	// 	$head[$h][1] = $langs->trans("Contacts");
-	// 	$head[$h][2] = 'contact';
-	// 	$h++;
-	// }
+	$head[$h][0] = dol_buildpath('/organisation/evenement_autorisations.php', 1) . '?id=' . $object->id;
+	$head[$h][1] = $langs->trans('Autorisations');
+	$head[$h][2] = 'Autorisations ';
+	$h++;
 
 	if ($showtabofpagenote) {
 		if (isset($object->fields['note_public']) || isset($object->fields['note_private'])) {
@@ -101,13 +99,6 @@ function evenementPrepareHead($object)
 		$head[$h][2] = 'document';
 		$h++;
 	}
-
-	// if ($showtabofpageagenda) {
-	// 	$head[$h][0] = dol_buildpath("/organisation/evenement_agenda.php", 1).'?id='.$object->id;
-	// 	$head[$h][1] = $langs->trans("Events");
-	// 	$head[$h][2] = 'agenda';
-	// 	$h++;
-	// }
 
 	// Show more tabs from modules
 	// Entries must be declared in modules descriptor with line

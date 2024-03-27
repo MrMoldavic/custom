@@ -111,11 +111,11 @@ class Groupe extends CommonObject
 	/**
 	 * @var array  Array with all fields and their property. Do not use it as a static var. It may be modified by constructor.
 	 */
-	
+
 	public $fields=array(
 		'rowid' => array('type'=>'integer', 'label'=>'TechnicalID', 'enabled'=>'1', 'position'=>1, 'notnull'=>1, 'visible'=>0, 'noteditable'=>'1', 'index'=>1, 'css'=>'left', 'comment'=>"Id"),
 		'nom_groupe' => array('type'=>'varchar(128)', 'label'=>'Nom du groupe', 'enabled'=>'1', 'position'=>20, 'notnull'=>1, 'visible'=>1,'index'=>1,'css'=>'maxwidth300', 'searchall'=>1, 'showoncombobox'=>'1', 'validate'=>'1',),
-		'fk_antenne' => array('type'=>'integer:Etablissement:custom/scolarite/class/etablissement.class.php:1', 'label'=>'Antenne', 'enabled'=>'1', 'position'=>30,'css'=>'maxwidth300', 'notnull'=>0, 'visible'=>1, 'css'=>'maxwidth300', 'validate'=>'1',),
+		'fk_antenne' => array('type'=>'integer:Etablissement:custom/scolarite/class/etablissement.class.php:1', 'label'=>'Antenne', 'enabled'=>'1', 'position'=>30,'css'=>'maxwidth300', 'notnull'=>1, 'visible'=>1, 'css'=>'maxwidth300', 'validate'=>'1',),
 		'fk_creneau' => array('type'=>'integer:Creneau:custom/scolarite/class/creneau.class.php:1', 'label'=>'Créneau affilié', 'enabled'=>'1','css'=>'maxwidth400', 'position'=>40, 'notnull'=>0, 'visible'=>1, 'validate'=>'1',),
 		'date_fin_groupe' => array('type'=>'datetime', 'label'=>'DateFin', 'enabled'=>'1', 'position'=>500, 'notnull'=>0, 'visible'=>-2,),
 		'description' => array('type'=>'text', 'label'=>'Description', 'enabled'=>'1', 'position'=>60, 'notnull'=>0, 'visible'=>3, 'validate'=>'1',),
@@ -147,6 +147,8 @@ class Groupe extends CommonObject
 	public $import_key;
 	public $model_pdf;
 	public $status;
+
+	public int $fk_antenne;
 	// END MODULEBUILDER PROPERTIES
 
 
@@ -204,12 +206,6 @@ class Groupe extends CommonObject
 			$this->fields['entity']['enabled'] = 0;
 		}
 
-		// Example to show how to set values of fields definition dynamically
-		/*if ($user->rights->organisation->groupe->read) {
-			$this->fields['myfield']['visible'] = 1;
-			$this->fields['myfield']['noteditable'] = 0;
-		}*/
-
 		// Unset fields that are disabled
 		foreach ($this->fields as $key => $val) {
 			if (isset($val['enabled']) && empty($val['enabled'])) {
@@ -238,111 +234,17 @@ class Groupe extends CommonObject
 	 */
 	public function create(User $user, $notrigger = false)
 	{
-		$resultcreate = $this->createCommon($user, $notrigger);
+		// Recherche si l'artiste éxiste déjà
+		$existingGroupe = $this->fetchAll('','',0,0,array('nom_groupe'=>'%'.$this->nom_groupe.'%','fk_antenne'=>$this->fk_antenne));
 
-		//$resultvalidate = $this->validate($user, $notrigger);
-
-		return $resultcreate;
-	}
-
-	/**
-	 * Clone an object into another one
-	 *
-	 * @param  	User 	$user      	User that creates
-	 * @param  	int 	$fromid     Id of object to clone
-	 * @return 	mixed 				New object created, <0 if KO
-	 */
-	public function createFromClone(User $user, $fromid)
-	{
-		global $langs, $extrafields;
-		$error = 0;
-
-		dol_syslog(__METHOD__, LOG_DEBUG);
-
-		$object = new self($this->db);
-
-		$this->db->begin();
-
-		// Load source object
-		$result = $object->fetchCommon($fromid);
-		if ($result > 0 && !empty($object->table_element_line)) {
-			$object->fetchLines();
-		}
-
-		// get lines so they will be clone
-		//foreach($this->lines as $line)
-		//	$line->fetch_optionals();
-
-		// Reset some properties
-		unset($object->id);
-		unset($object->fk_user_creat);
-		unset($object->import_key);
-
-		// Clear fields
-		if (property_exists($object, 'ref')) {
-			$object->ref = empty($this->fields['ref']['default']) ? "Copy_Of_".$object->ref : $this->fields['ref']['default'];
-		}
-		if (property_exists($object, 'label')) {
-			$object->label = empty($this->fields['label']['default']) ? $langs->trans("CopyOf")." ".$object->label : $this->fields['label']['default'];
-		}
-		if (property_exists($object, 'status')) {
-			$object->status = self::STATUS_DRAFT;
-		}
-		if (property_exists($object, 'date_creation')) {
-			$object->date_creation = dol_now();
-		}
-		if (property_exists($object, 'date_modification')) {
-			$object->date_modification = null;
-		}
-		// ...
-		// Clear extrafields that are unique
-		if (is_array($object->array_options) && count($object->array_options) > 0) {
-			$extrafields->fetch_name_optionals_label($this->table_element);
-			foreach ($object->array_options as $key => $option) {
-				$shortkey = preg_replace('/options_/', '', $key);
-				if (!empty($extrafields->attributes[$this->table_element]['unique'][$shortkey])) {
-					//var_dump($key);
-					//var_dump($clonedObj->array_options[$key]); exit;
-					unset($object->array_options[$key]);
-				}
-			}
-		}
-
-		// Create clone
-		$object->context['createfromclone'] = 'createfromclone';
-		$result = $object->createCommon($user);
-		if ($result < 0) {
-			$error++;
-			$this->error = $object->error;
-			$this->errors = $object->errors;
-		}
-
-		if (!$error) {
-			// copy internal contacts
-			if ($this->copy_linked_contact($object, 'internal') < 0) {
-				$error++;
-			}
-		}
-
-		if (!$error) {
-			// copy external contacts if same company
-			if (!empty($object->socid) && property_exists($this, 'fk_soc') && $this->fk_soc == $object->socid) {
-				if ($this->copy_linked_contact($object, 'external') < 0) {
-					$error++;
-				}
-			}
-		}
-
-		unset($object->context['createfromclone']);
-
-		// End
-		if (!$error) {
-			$this->db->commit();
-			return $object;
-		} else {
-			$this->db->rollback();
+		if(count($existingGroupe) > 0)
+		{
+			setEventMessage('Ce groupe existe déjà.', 'errors');
 			return -1;
 		}
+
+		$this->status = self::STATUS_VALIDATED;
+		return $this->createCommon($user, $notrigger);
 	}
 
 	/**
@@ -352,9 +254,9 @@ class Groupe extends CommonObject
 	 * @param string $ref  Ref
 	 * @return int         <0 if KO, 0 if not found, >0 if OK
 	 */
-	public function fetch($id, $ref = null)
+	public function fetch($id, $ref = null,$moresql = null)
 	{
-		$result = $this->fetchCommon($id, $ref);
+		$result = $this->fetchCommon($id, $ref,$moresql);
 		if ($result > 0 && !empty($this->table_element_line)) {
 			$this->fetchLines();
 		}
@@ -386,7 +288,7 @@ class Groupe extends CommonObject
 	 * @param  string      $filtermode   Filter mode (AND or OR)
 	 * @return array|int                 int <0 if KO, array of pages if OK
 	 */
-	public function fetchAll($sortorder = '', $sortfield = '', $limit = 0, $offset = 0, array $filter = array(), $filtermode = 'AND')
+	public function fetchAll($sortorder = '', $sortfield = '', $limit = 0, $offset = 0, array $filter = array(), $filtermode = 'AND',$innerJoin = null)
 	{
 		global $conf;
 
@@ -397,6 +299,10 @@ class Groupe extends CommonObject
 		$sql = "SELECT ";
 		$sql .= $this->getFieldList('t');
 		$sql .= " FROM ".MAIN_DB_PREFIX.$this->table_element." as t";
+		if($innerJoin)
+		{
+			$sql .= $innerJoin;
+		}
 		if (isset($this->ismultientitymanaged) && $this->ismultientitymanaged == 1) {
 			$sql .= " WHERE t.entity IN (".getEntity($this->element).")";
 		} else {
@@ -464,6 +370,15 @@ class Groupe extends CommonObject
 	 */
 	public function update(User $user, $notrigger = false)
 	{
+		// Recherche si un groupe éxiste déjà
+		$existingGroupe = $this->fetch('',''," AND rowid !=$this->id AND nom_groupe LIKE '%$this->nom_groupe%'");
+
+		if($existingGroupe > 0)
+		{
+			setEventMessage('Cet artiste existe déjà.', 'errors');
+			return -1;
+		}
+
 		return $this->updateCommon($user, $notrigger);
 	}
 
@@ -519,14 +434,6 @@ class Groupe extends CommonObject
 			dol_syslog(get_class($this)."::validate action abandonned: already validated", LOG_WARNING);
 			return 0;
 		}
-
-		/*if (! ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->organisation->groupe->write))
-		 || (! empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->organisation->groupe->groupe_advance->validate))))
-		 {
-		 $this->error='NotEnoughPermissions';
-		 dol_syslog(get_class($this)."::valid ".$this->error, LOG_ERR);
-		 return -1;
-		 }*/
 
 		$now = dol_now();
 
@@ -761,7 +668,7 @@ class Groupe extends CommonObject
 
 		$result .= $linkstart;
 
-		
+
 
 		if ($withpicto != 2) {
 			$result .= $this->nom_groupe;
@@ -1034,6 +941,99 @@ class Groupe extends CommonObject
 		$this->db->commit();
 
 		return $error;
+	}
+
+	/**
+	 * Fonctio retournant la liste des engagements d'un groupe, sous forme de liste
+	 *
+	 * @return	int			0 if OK, <>0 if KO (this function is used also by cron so only 0 is OK)
+	 */
+	public function printEngagements(): string
+	{
+		$out = '';
+		$liaisonInstrumentClass = new LiaisonInstrument($this->db);
+
+		$engagementClass = new Engagement($this->db);
+		$engagements = $engagementClass->fetchAll('DESC','fk_agent',0,0,array('fk_groupe'=>$this->id));
+
+		if(count($engagements) > 0)
+		{
+			$out .= '<ul>';
+			foreach ($engagements as $engagement)
+			{
+				if($engagement->fk_eleve)
+				{
+					$eleveClass = new Eleve($this->db);
+					$eleveClass->fetch($engagement->fk_eleve);
+
+					$out .= "<li> $eleveClass->prenom $eleveClass->nom</li>";
+				} else {
+					$agentClass = new Agent($this->db);
+					$agentClass->fetch($engagement->fk_agent);
+
+					$out .= "<li> $agentClass->prenom $agentClass->nom <i>(Encadrant)</i></li>";
+				}
+				$out .= $liaisonInstrumentClass->printLiaisonInstrument((int) $engagement->id);
+			}
+
+			$out .= '</ul>';
+		} else $out .= 'Aucun engagement connu pour ce groupe!';
+
+		return $out;
+	}
+
+	public function printPassageConcertGroupe()
+	{
+		$out = '';
+		// fetch des morceaux existants
+
+		$propositionClass = new Proposition($this->db);
+		$propositions = $propositionClass->fetchAll('DESC','fk_evenement',0,0,array('fk_groupe'=>$this->id));
+		$out .= load_fiche_titre('Liste des passages de ce groupe en concert', '', 'fa-music');
+
+		// Si des morceaux existent, affichage d'un tableau
+		if(count($propositions) > 0)
+		{
+			$out .= '<table class="tagtable nobottomiftotal liste">';
+			$out .= '<tbody>';
+			$out .= '<tr>';
+			$out .= '<td style="padding: 0.5em">Morceaux</td>';
+			$out .= '<td style="padding: 0.5em">Concert</td>';
+			$out .= '<td style="padding: 0.5em">Position</td>';
+			$out .= '</tr>';
+
+			foreach($propositions as $value)
+			{
+				$evenementClass = new Evenement($this->db);
+				$evenementClass->fetch($value->fk_evenement);
+
+				$out .= '<tr>';
+				$out .= '<td  style="padding: 0.5em">';
+
+				$programmationClass = new Programmation($this->db);
+				$programmations = $programmationClass->fetchAll('','',0,'',array('fk_proposition'=>$value->id,'fk_evenement'=>$evenementClass->id));
+
+				if($programmations){
+					$out .= '<ul>';
+					foreach ($programmations as $programmation) {
+						// Appel de la fonction qui affiche les lines de programmation
+						$proposedProgrammations = $evenementClass->printProgrammationLines((object)$programmation, true);
+						$out .= "<li>$proposedProgrammations[1] / $proposedProgrammations[0]min</li>";
+					}
+					$out .= '</ul>';
+				} else $out .= 'Aucun morceau proposé.';
+
+				$out .= '</td>';
+				$out .= '<td style="padding: 0.5em"> <a href="' . DOL_URL_ROOT . '/custom/organisation/evenement_organisation.php?id=' . $value->fk_evenement. '">' .$evenementClass->nom_evenement.'</a></td>';
+				$out .= '<td style="padding: 0.5em">'.($value->status == Proposition::STATUS_PROGRAMMED ? $value->position : 'Position à définir').'</a></td>';
+				$out .= '</tr>';
+			}
+
+			$out .= '</tbody>';
+			$out .= '</table>';
+		} else $out .= 'Aucune passage connu pour ce groupe.';
+
+		return $out;
 	}
 }
 

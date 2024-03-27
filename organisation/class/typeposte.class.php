@@ -1,6 +1,6 @@
 <?php
 /* Copyright (C) 2017  Laurent Destailleur <eldy@users.sourceforge.net>
- * Copyright (C) ---Put here your own copyright and developer email---
+ * Copyright (C) 2023 Baptiste Diodati <baptiste.diodati@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,38 +17,35 @@
  */
 
 /**
- * \file        class/souhait.class.php
- * \ingroup     viescolaire
- * \brief       This file is a CRUD class file for Souhait (Create/Read/Update/Delete)
+ * \file        class/poste.class.php
+ * \ingroup     organisation
+ * \brief       This file is a CRUD class file for Poste (Create/Read/Update/Delete)
  */
-
-//  ini_set('display_errors', '1');
-// ini_set('display_startup_errors', '1');
-// error_reporting(E_ALL);
 
 // Put here all includes required by your class file
-require_once DOL_DOCUMENT_ROOT . '/core/class/commonobject.class.php';
-require_once DOL_DOCUMENT_ROOT . '/custom/viescolaire/class/eleve.class.php';
+require_once DOL_DOCUMENT_ROOT.'/core/class/commonobject.class.php';
+//require_once DOL_DOCUMENT_ROOT . '/societe/class/societe.class.php';
+//require_once DOL_DOCUMENT_ROOT . '/product/class/product.class.php';
 
 /**
- * Class for Souhait
+ * Class for Poste
  */
-class Souhait extends CommonObject
+class TypePoste extends CommonObject
 {
 	/**
 	 * @var string ID of module.
 	 */
-	public $module = 'viescolaire';
+	public $module = 'organisation';
 
 	/**
 	 * @var string ID to identify managed object.
 	 */
-	public $element = 'souhait';
+	public $element = 'typeposte';
 
 	/**
 	 * @var string Name of table without prefix where object is stored. This is also the key used for extrafields management.
 	 */
-	public $table_element = 'souhait';
+	public $table_element = 'organisation_c_type_poste';
 
 	/**
 	 * @var int  Does this object support multicompany module ?
@@ -62,9 +59,9 @@ class Souhait extends CommonObject
 	public $isextrafieldmanaged = 1;
 
 	/**
-	 * @var string String with name of icon for souhait. Must be the part after the 'object_' into object_souhait.png
+	 * @var string String with name of icon for poste. Must be a 'fa-xxx' fontawesome code (or 'fa-xxx_fa_color_size') or 'poste@organisation' if picto is file 'img/object_poste.png'.
 	 */
-	public $picto = 'souhait@viescolaire';
+	public $picto = 'fa-file';
 
 
 	const STATUS_DRAFT = 0;
@@ -73,15 +70,26 @@ class Souhait extends CommonObject
 
 
 	/**
-	 *  'type' field format ('integer', 'integer:ObjectClass:PathToClass[:AddCreateButtonOrNot[:Filter[:Sortfield]]]', 'sellist:TableName:LabelFieldName[:KeyFieldName[:KeyFieldParent[:Filter[:Sortfield]]]]', 'varchar(x)', 'double(24,8)', 'real', 'price', 'text', 'text:none', 'html', 'date', 'datetime', 'timestamp', 'duration', 'mail', 'phone', 'url', 'password')
-	 *         Note: Filter can be a string like "(t.ref:like:'SO-%') or (t.date_creation:<:'20160101') or (t.nature:is:NULL)"
+	 *  'type' field format:
+	 *  	'integer', 'integer:ObjectClass:PathToClass[:AddCreateButtonOrNot[:Filter[:Sortfield]]]',
+	 *  	'select' (list of values are in 'options'),
+	 *  	'sellist:TableName:LabelFieldName[:KeyFieldName[:KeyFieldParent[:Filter[:Sortfield]]]]',
+	 *  	'chkbxlst:...',
+	 *  	'varchar(x)',
+	 *  	'text', 'text:none', 'html',
+	 *   	'double(24,8)', 'real', 'price',
+	 *  	'date', 'datetime', 'timestamp', 'duration',
+	 *  	'boolean', 'checkbox', 'radio', 'array',
+	 *  	'mail', 'phone', 'url', 'password', 'ip'
+	 *		Note: Filter must be a Dolibarr filter syntax string. Example: "(t.ref:like:'SO-%') or (t.date_creation:<:'20160101') or (t.status:!=:0) or (t.nature:is:NULL)"
 	 *  'label' the translation key.
 	 *  'picto' is code of a picto to show before value in forms
-	 *  'enabled' is a condition when the field must be managed (Example: 1 or '$conf->global->MY_SETUP_PARAM)
+	 *  'enabled' is a condition when the field must be managed (Example: 1 or '$conf->global->MY_SETUP_PARAM' or 'isModEnabled("multicurrency")' ...)
 	 *  'position' is the sort order of field.
 	 *  'notnull' is set to 1 if not null in database. Set to -1 if we must set data to null if empty ('' or 0).
 	 *  'visible' says if field is visible in list (Examples: 0=Not visible, 1=Visible on list and create/update/view forms, 2=Visible on list only, 3=Visible on create/update/view form only (not list), 4=Visible on list and update/view form only (not create). 5=Visible on list and view only (not create/not update). Using a negative value means field is not shown by default on list but can be selected for viewing)
 	 *  'noteditable' says if field is not editable (1 or 0)
+	 *  'alwayseditable' says if field can be modified also when status is not draft ('1' or '0')
 	 *  'default' is a default value for creation (can still be overwrote by the Setup of Default Values if field is editable in creation form). Note: If default is set to '(PROV)' and field is 'ref', the default value will be set to '(PROVid)' where id is rowid when a new record is created.
 	 *  'index' if we want an index in database.
 	 *  'foreignkey'=>'tablename.field' if the field is a foreign key (it is recommanded to name the field fk_...).
@@ -104,45 +112,16 @@ class Souhait extends CommonObject
 	/**
 	 * @var array  Array with all fields and their property. Do not use it as a static var. It may be modified by constructor.
 	 */
-	public $fields = array(
-		'rowid' => array('type' => 'integer(11)', 'label' => 'TechnicalID', 'enabled' => '1', 'position' => 1, 'notnull' => 1, 'visible' => 0, 'noteditable' => '1', 'index' => 1, 'css' => 'left', 'comment' => "Id"),
-		'nom_souhait' => array('type' => 'varchar(255)', 'label' => 'Nom du souhait', 'enabled' => '1', 'position' => 1, 'notnull' => 0, 'visible' => 0,'help'=>'','showoncombobox'=>'1', 'css' => 'maxwidth400', ),
-		'fk_eleve' => array('type' => 'integer:Eleve:custom/viescolaire/class/eleve.class.php:1:(t.status!=9)', 'label' => 'Élève', 'enabled' => '1', 'position' => 1, 'notnull' => 1, 'visible' => 1, 'index' => 1, 'searchall' => 1, 'foreignkey' => 'eleve.rowid', 'validate' => '1', 'css' => 'maxwidth250'),
-		'fk_type_classe' => array('type' => 'sellist:type_classe:type', 'label' => 'Type de classe', 'enabled' => '1', 'position' => 2, 'notnull' => 1, 'visible' => 1, 'searchall' => 1, 'css' => 'maxwidth300', 'validate' => '1',),
-		'fk_instru_enseigne' => array('type' => 'sellist:c_instrument_enseigne:instrument', 'label' => 'Instrument souhaité', 'enabled' => '1', 'position' => 3, 'notnull' => 1, 'visible' => 1, 'validate' => '1',),
-		'fk_niveau' => array('type' => 'sellist:c_niveaux:niveau', 'label' => 'Niveau de l\'élève', 'enabled' => '1', 'position' => 3, 'notnull' => 1, 'visible' => 1, 'validate' => '1',),
-		'fk_annee_scolaire' => array('type' => 'sellist:c_annee_scolaire:annee', 'label' => 'Année scolaire concernée', 'enabled' => '1', 'position' => 4, 'notnull' => 1, 'visible' => 1, 'validate' => '1',),
-		'details' => array('type' => 'text', 'label' => 'Appréciation de l\'élève (fin d\'année)','enabled' => '1','visible' => '0', 'position' => 5, 'notnull' => 0, 'css' => 'maxwidth75imp', 'validate' => '1', ),
-		'disponibilite' => array('type' => 'text', 'label' => 'Disponibilitées', 'enabled' => '1', 'position' => 4, 'notnull' => 0, 'visible' => 1, 'index' => 1, 'css' => 'maxwidth500 widthcentpercentminusxx', 'help' => "Disponibilitées de l'élèves, sous forme de texte.", 'validate' => '1',),
-		'note_public' => array('type' => 'html', 'label' => 'NotePublic', 'enabled' => '1', 'position' => 61, 'notnull' => 0, 'visible' => 0, 'cssview' => 'wordbreak', 'validate' => '1',),
-		'note_private' => array('type' => 'html', 'label' => 'NotePrivate', 'enabled' => '1', 'position' => 62, 'notnull' => 0, 'visible' => 0, 'cssview' => 'wordbreak', 'validate' => '1',),
-		'date_creation' => array('type' => 'datetime', 'label' => 'DateCreation', 'enabled' => '1', 'position' => 1014, 'notnull' => 1, 'visible' => -2,),
-		'tms' => array('type' => 'timestamp', 'label' => 'DateModification', 'enabled' => '1', 'position' => 501, 'notnull' => 0, 'visible' => -2,),
-		'fk_user_creat' => array('type' => 'integer:User:user/class/user.class.php', 'label' => 'UserAuthor', 'enabled' => '1', 'position' => 1012, 'notnull' => 1, 'visible' => -2, 'foreignkey' => 'user.rowid',),
-		'fk_user_modif' => array('type' => 'integer:User:user/class/user.class.php', 'label' => 'UserModif', 'enabled' => '1', 'position' => 511, 'notnull' => -1, 'visible' => -2,),
-		'last_main_doc' => array('type' => 'varchar(255)', 'label' => 'LastMainDoc', 'enabled' => '1', 'position' => 600, 'notnull' => 0, 'visible' => 0,),
-		'model_pdf' => array('type' => 'varchar(255)', 'label' => 'Model pdf', 'enabled' => '1', 'position' => 1010, 'notnull' => -1, 'visible' => 0,),
-		'status' => array('type' => 'integer', 'label' => 'Etat', 'enabled' => '1', 'position' => 1011, 'notnull' => 1, 'visible' => 2, 'default' => 0),
+	public $fields=array(
+		'rowid' => array('type'=>'integer', 'label'=>'TechnicalID', 'enabled'=>'1', 'position'=>1, 'notnull'=>1, 'visible'=>0, 'noteditable'=>'1', 'index'=>1, 'css'=>'left', 'comment'=>"Id"),
+		'poste' => array('type'=>'varchar', 'label'=>'poste', 'enabled'=>'1', 'position'=>1, 'notnull'=>1, 'visible'=>1, 'searchall'=>1, 'showoncombobox'=>'1', 'validate'=>'1', 'comment'=>"Reference of object"),
+		'active' => array('type'=>'boolean', 'label'=>'Active', 'enabled'=>'1', 'position'=>2, 'notnull'=>1, 'visible'=>1, 'searchall'=>1, 'comment'=>"Reference of object"),
 	);
 
 	public $rowid;
-	public $nom_souhait;
-	public $fk_eleve;
-	public $eleve_object;
-	public $fk_type_classe;
-	public $fk_instru_enseigne;
-	public $details;
-	public $disponibilite;
-	public $note_public;
-	public $note_private;
-	public $date_creation;
-	public $tms;
-	public $fk_user_creat;
-	public $fk_user_modif;
-	public $last_main_doc;
-	public $import_key;
-	public $model_pdf;
-	public $status;
+	public $poste;
+	public $active;
+
 	// END MODULEBUILDER PROPERTIES
 
 
@@ -151,17 +130,17 @@ class Souhait extends CommonObject
 	// /**
 	//  * @var string    Name of subtable line
 	//  */
-	// public $table_element_line = 'viescolaire_souhaitline';
+	// public $table_element_line = 'organisation_posteline';
 
 	// /**
 	//  * @var string    Field with ID of parent key if this object has a parent
 	//  */
-	// public $fk_element = 'fk_souhait';
+	// public $fk_element = 'fk_poste';
 
 	// /**
 	//  * @var string    Name of subtable class that manage subtable lines
 	//  */
-	// public $class_element_line = 'Souhaitline';
+	// public $class_element_line = 'Posteline';
 
 	// /**
 	//  * @var array	List of child tables. To test if we can delete object.
@@ -173,10 +152,10 @@ class Souhait extends CommonObject
 	//  *               If name matches '@ClassNAme:FilePathClass;ParentFkFieldName' it will
 	//  *               call method deleteByParentField(parentId, ParentFkFieldName) to fetch and delete child object
 	//  */
-	// protected $childtablesoncascade = array('viescolaire_souhaitdet');
+	// protected $childtablesoncascade = array('organisation_postedet');
 
 	// /**
-	//  * @var SouhaitLine[]     Array of subtable lines
+	//  * @var PosteLine[]     Array of subtable lines
 	//  */
 	// public $lines = array();
 
@@ -189,33 +168,22 @@ class Souhait extends CommonObject
 	 */
 	public function __construct(DoliDB $db)
 	{
-		global $conf, $langs, $user;
+		global $conf, $langs;
 
 		$this->db = $db;
 
-		if (empty($conf->global->MAIN_SHOW_TECHNICAL_ID) && isset($this->fields['rowid'])) {
+		if (empty($conf->global->MAIN_SHOW_TECHNICAL_ID) && isset($this->fields['rowid']) && !empty($this->fields['ref'])) {
 			$this->fields['rowid']['visible'] = 0;
 		}
-		if (empty($conf->multicompany->enabled) && isset($this->fields['entity'])) {
+		if (!isModEnabled('multicompany') && isset($this->fields['entity'])) {
 			$this->fields['entity']['enabled'] = 0;
 		}
 
-		// Affichage de la partie affectation que si un administrateur l'a décidé
-		if (intval($conf->global->TIME_FOR_APPRECIATION)) {
-			$this->fields['details']['visible'] = 1;
-
-			// Si l'utilisateur n'as pas les droits en écriture, on enlève tout les autres champs
-			if(!$user->rights->viescolaire->eleve->write)
-			{
-				$this->fields['fk_eleve']['visible'] = 0;
-				$this->fields['fk_type_classe']['visible'] = 0;
-				$this->fields['fk_instru_enseigne']['visible'] = 0;
-				$this->fields['fk_niveau']['visible'] = 0;
-				$this->fields['fk_annee_scolaire']['visible'] = 0;
-				$this->fields['disponibilite']['visible'] = 0;
-			}
-		}
-
+		// Example to show how to set values of fields definition dynamically
+		/*if ($user->rights->organisation->poste->read) {
+			$this->fields['myfield']['visible'] = 1;
+			$this->fields['myfield']['noteditable'] = 0;
+		}*/
 
 		// Unset fields that are disabled
 		foreach ($this->fields as $key => $val) {
@@ -223,8 +191,6 @@ class Souhait extends CommonObject
 				unset($this->fields[$key]);
 			}
 		}
-
-
 
 		// Translate some data of arrayofkeyval
 		if (is_object($langs)) {
@@ -247,35 +213,11 @@ class Souhait extends CommonObject
 	 */
 	public function create(User $user, $notrigger = false)
 	{
-		if($this->fk_type_classe == "1" && $this->fk_instru_enseigne == "5")
-		{
-			setEventMessage('Type d\'instrument incompatible avec un cours','errors');
-		}
-		elseif(!$this->fk_annee_scolaire) setEventMessage('Veuillez choisir une année scolaire','errors');
-		else
-		{
-			$eleve = new Eleve($this->db);
-			$eleve->fetch($this->fk_eleve);
+		$resultcreate = $this->createCommon($user, $notrigger);
 
-			$type_cours = "SELECT t.type FROM ".MAIN_DB_PREFIX."type_classe as t WHERE t.rowid =".$this->fk_type_classe;
-			$resql = $this->db->query($type_cours);
-			$obj = $this->db->fetch_object($resql);
+		//$resultvalidate = $this->validate($user, $notrigger);
 
-			$instrument_enseigne = "SELECT i.instrument FROM ".MAIN_DB_PREFIX."c_instrument_enseigne as i WHERE i.rowid =".$this->fk_instru_enseigne;
-			$resql = $this->db->query($instrument_enseigne);
-			$object = $this->db->fetch_object($resql);
-
-			$niveau = "SELECT n.niveau FROM ".MAIN_DB_PREFIX."c_niveaux as n WHERE n.rowid =".$this->fk_niveau;
-			$resql = $this->db->query($niveau);
-			$object1 = $this->db->fetch_object($resql);
-
-			$this->nom_souhait= $eleve->nom .'-'. $eleve->prenom .'-'. $obj->type .'-'. $object->instrument . '-' . $object1->niveau;
-
-			$resultcreate = $this->createCommon($user, $notrigger);
-
-			return $resultcreate;
-		}
-
+		return $resultcreate;
 	}
 
 	/**
@@ -303,8 +245,8 @@ class Souhait extends CommonObject
 		}
 
 		// get lines so they will be clone
-		// foreach($this->lines as $line)
-		// 	$line->fetch_optionals();
+		//foreach($this->lines as $line)
+		//	$line->fetch_optionals();
 
 		// Reset some properties
 		unset($object->id);
@@ -313,10 +255,10 @@ class Souhait extends CommonObject
 
 		// Clear fields
 		if (property_exists($object, 'ref')) {
-			$object->ref = empty($this->fields['ref']['default']) ? "Copy_Of_" . $object->ref : $this->fields['ref']['default'];
+			$object->ref = empty($this->fields['ref']['default']) ? "Copy_Of_".$object->ref : $this->fields['ref']['default'];
 		}
 		if (property_exists($object, 'label')) {
-			$object->label = empty($this->fields['label']['default']) ? $langs->trans("CopyOf") . " " . $object->label : $this->fields['label']['default'];
+			$object->label = empty($this->fields['label']['default']) ? $langs->trans("CopyOf")." ".$object->label : $this->fields['label']['default'];
 		}
 		if (property_exists($object, 'status')) {
 			$object->status = self::STATUS_DRAFT;
@@ -334,7 +276,8 @@ class Souhait extends CommonObject
 			foreach ($object->array_options as $key => $option) {
 				$shortkey = preg_replace('/options_/', '', $key);
 				if (!empty($extrafields->attributes[$this->table_element]['unique'][$shortkey])) {
-					//var_dump($key); var_dump($clonedObj->array_options[$key]); exit;
+					//var_dump($key);
+					//var_dump($clonedObj->array_options[$key]); exit;
 					unset($object->array_options[$key]);
 				}
 			}
@@ -384,71 +327,13 @@ class Souhait extends CommonObject
 	 * @param string $ref  Ref
 	 * @return int         <0 if KO, 0 if not found, >0 if OK
 	 */
-	public function fetch($id, $ref = null)
+	public function fetch($id, $ref = null, $moresql = null)
 	{
-		$result = $this->fetchCommon($id, $ref);
+		$result = $this->fetchCommon($id, $ref, $moresql);
 		if ($result > 0 && !empty($this->table_element_line)) {
 			$this->fetchLines();
 		}
-		$this->eleve_object = new Eleve($this->db);
-		$this->eleve_object->fetch($this->fk_eleve);
-
-
 		return $result;
-	}
-
-
-	/**
-	 * Delete object in database
-	 *
-	 * @param array $parameters array of column to fetch
-	 * @param int $id id of item requested for direct fetch
-	 * @param string $column string column requested for direct fetch
-	 * @return int <0 if KO, >0 if OK
-	 */
-	public function fetchBy(array $parameters, int $id = 0, string $column = '')
-	{
-		$sql = "SELECT ";
-		for($i=0;$i<count($parameters);$i++)
-		{
-			$sql .= $this->db->sanitize($this->db->escape($parameters[$i])).', ';
-		}
-		$sql = substr($sql, 0, -2);
-		$sql .= " FROM ".MAIN_DB_PREFIX.$this->table_element;
-
-		if($id)
-		{
-			$sql .= " WHERE ".$this->db->sanitize($this->db->escape($column))." = ".$this->db->sanitize($this->db->escape($id));
-		}
-		$resql = $this->db->query($sql);
-
-
-		if ($resql) {
-			$num = $this->db->num_rows($resql);
-			$i = 0;
-			if($num == 1)
-			{
-				$records = $this->db->fetch_object($resql);
-			}
-			else
-			{
-				$records = array();
-				while ($i < ($limit ? min($limit, $num) : $num)) {
-					$obj = $this->db->fetch_object($resql);
-					$records[$obj->rowid] = $obj;
-					$i++;
-				}
-			}
-
-			$this->db->free($resql);
-
-			return $records;
-		} else {
-			$this->errors[] = 'Error '.$this->db->lasterror();
-			dol_syslog(__METHOD__.' '.join(',', $this->errors), LOG_ERR);
-
-			return -1;
-		}
 	}
 
 	/**
@@ -486,9 +371,9 @@ class Souhait extends CommonObject
 
 		$sql = "SELECT ";
 		$sql .= $this->getFieldList('t');
-		$sql .= " FROM " . MAIN_DB_PREFIX . $this->table_element . " as t";
+		$sql .= " FROM ".$this->db->prefix().$this->table_element." as t";
 		if (isset($this->ismultientitymanaged) && $this->ismultientitymanaged == 1) {
-			$sql .= " WHERE t.entity IN (" . getEntity($this->table_element) . ")";
+			$sql .= " WHERE t.entity IN (".getEntity($this->element).")";
 		} else {
 			$sql .= " WHERE 1 = 1";
 		}
@@ -497,20 +382,20 @@ class Souhait extends CommonObject
 		if (count($filter) > 0) {
 			foreach ($filter as $key => $value) {
 				if ($key == 't.rowid') {
-					$sqlwhere[] = $key . " = " . ((int) $value);
+					$sqlwhere[] = $key." = ".((int) $value);
 				} elseif (in_array($this->fields[$key]['type'], array('date', 'datetime', 'timestamp'))) {
-					$sqlwhere[] = $key . " = '" . $this->db->idate($value) . "'";
+					$sqlwhere[] = $key." = '".$this->db->idate($value)."'";
 				} elseif ($key == 'customsql') {
 					$sqlwhere[] = $value;
 				} elseif (strpos($value, '%') === false) {
-					$sqlwhere[] = $key . " IN (" . $this->db->sanitize($this->db->escape($value)) . ")";
+					$sqlwhere[] = $key." IN (".$this->db->sanitize($this->db->escape($value)).")";
 				} else {
-					$sqlwhere[] = $key . " LIKE '%" . $this->db->escape($value) . "%'";
+					$sqlwhere[] = $key." LIKE '%".$this->db->escape($value)."%'";
 				}
 			}
 		}
 		if (count($sqlwhere) > 0) {
-			$sql .= " AND (" . implode(" " . $filtermode . " ", $sqlwhere) . ")";
+			$sql .= " AND (".implode(" ".$filtermode." ", $sqlwhere).")";
 		}
 
 		if (!empty($sortfield)) {
@@ -538,8 +423,8 @@ class Souhait extends CommonObject
 
 			return $records;
 		} else {
-			$this->errors[] = 'Error ' . $this->db->lasterror();
-			dol_syslog(__METHOD__ . ' ' . join(',', $this->errors), LOG_ERR);
+			$this->errors[] = 'Error '.$this->db->lasterror();
+			dol_syslog(__METHOD__.' '.join(',', $this->errors), LOG_ERR);
 
 			return -1;
 		}
@@ -554,22 +439,6 @@ class Souhait extends CommonObject
 	 */
 	public function update(User $user, $notrigger = false)
 	{
-		$eleve = new Eleve($this->db);
-		$eleve->fetch($this->fk_eleve);
-		$type_cours = "SELECT t.type FROM ".MAIN_DB_PREFIX."type_classe as t WHERE t.rowid =".$this->fk_type_classe;
-		$resql = $this->db->query($type_cours);
-		$obj = $this->db->fetch_object($resql);
-
-		$instrument_enseigne = "SELECT i.instrument FROM ".MAIN_DB_PREFIX."c_instrument_enseigne as i WHERE i.rowid =".$this->fk_instru_enseigne;
-		$resql = $this->db->query($instrument_enseigne);
-		$object = $this->db->fetch_object($resql);
-
-		$niveau = "SELECT n.niveau FROM ".MAIN_DB_PREFIX."c_niveaux as n WHERE n.rowid =".$this->fk_niveau;
-		$resql = $this->db->query($niveau);
-		$object1 = $this->db->fetch_object($resql);
-
-		$this->nom_souhait=$eleve->nom .'-'. $eleve->prenom .'-'. $obj->type .'-'. $object->instrument . '-' . $object1->niveau;
-
 		return $this->updateCommon($user, $notrigger);
 	}
 
@@ -577,7 +446,7 @@ class Souhait extends CommonObject
 	 * Delete object in database
 	 *
 	 * @param User $user       User that deletes
-	 * @param bool $notrigger  false=launch triggers after, true=disable triggers
+	 * @param bool $notrigger  false=launch triggers, true=disable triggers
 	 * @return int             <0 if KO, >0 if OK
 	 */
 	public function delete(User $user, $notrigger = false)
@@ -616,18 +485,18 @@ class Souhait extends CommonObject
 	{
 		global $conf, $langs;
 
-		require_once DOL_DOCUMENT_ROOT . '/core/lib/files.lib.php';
+		require_once DOL_DOCUMENT_ROOT.'/core/lib/files.lib.php';
 
 		$error = 0;
 
 		// Protection
 		if ($this->status == self::STATUS_VALIDATED) {
-			dol_syslog(get_class($this) . "::validate action abandonned: already validated", LOG_WARNING);
+			dol_syslog(get_class($this)."::validate action abandonned: already validated", LOG_WARNING);
 			return 0;
 		}
 
-		/*if (! ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->viescolaire->souhait->write))
-		 || (! empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->viescolaire->souhait->souhait_advance->validate))))
+		/*if (! ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && !empty($user->rights->organisation->poste->write))
+		 || (!empty($conf->global->MAIN_USE_ADVANCED_PERMS) && !empty($user->rights->organisation->poste->poste_advance->validate))))
 		 {
 		 $this->error='NotEnoughPermissions';
 		 dol_syslog(get_class($this)."::valid ".$this->error, LOG_ERR);
@@ -648,17 +517,18 @@ class Souhait extends CommonObject
 
 		if (!empty($num)) {
 			// Validate
-			$sql = "UPDATE " . MAIN_DB_PREFIX . $this->table_element;
-			$sql .= " SET  status = " . self::STATUS_VALIDATED;
+			$sql = "UPDATE ".MAIN_DB_PREFIX.$this->table_element;
+			$sql .= " SET ref = '".$this->db->escape($num)."',";
+			$sql .= " status = ".self::STATUS_VALIDATED;
 			if (!empty($this->fields['date_validation'])) {
-				$sql .= ", date_validation = '" . $this->db->idate($now) . "'";
+				$sql .= ", date_validation = '".$this->db->idate($now)."'";
 			}
 			if (!empty($this->fields['fk_user_valid'])) {
-				$sql .= ", fk_user_valid = " . ((int) $user->id);
+				$sql .= ", fk_user_valid = ".((int) $user->id);
 			}
-			$sql .= " WHERE rowid = " . ((int) $this->id);
+			$sql .= " WHERE rowid = ".((int) $this->id);
 
-			dol_syslog(get_class($this) . "::validate()", LOG_DEBUG);
+			dol_syslog(get_class($this)."::validate()", LOG_DEBUG);
 			$resql = $this->db->query($sql);
 			if (!$resql) {
 				dol_print_error($this->db);
@@ -668,7 +538,7 @@ class Souhait extends CommonObject
 
 			if (!$error && !$notrigger) {
 				// Call trigger
-				$result = $this->call_trigger('SOUHAIT_VALIDATE', $user);
+				$result = $this->call_trigger('POSTE_VALIDATE', $user);
 				if ($result < 0) {
 					$error++;
 				}
@@ -682,31 +552,30 @@ class Souhait extends CommonObject
 			// Rename directory if dir was a temporary ref
 			if (preg_match('/^[\(]?PROV/i', $this->ref)) {
 				// Now we rename also files into index
-				$sql = 'UPDATE ' . MAIN_DB_PREFIX . "ecm_files set filename = CONCAT('" . $this->db->escape($this->newref) . "', SUBSTR(filename, " . (strlen($this->ref) + 1) . ")), filepath = 'souhait/" . $this->db->escape($this->newref) . "'";
-				$sql .= " WHERE filename LIKE '" . $this->db->escape($this->ref) . "%' AND filepath = 'souhait/" . $this->db->escape($this->ref) . "' and entity = " . $conf->entity;
+				$sql = 'UPDATE '.MAIN_DB_PREFIX."ecm_files set filename = CONCAT('".$this->db->escape($this->newref)."', SUBSTR(filename, ".(strlen($this->ref) + 1).")), filepath = 'poste/".$this->db->escape($this->newref)."'";
+				$sql .= " WHERE filename LIKE '".$this->db->escape($this->ref)."%' AND filepath = 'poste/".$this->db->escape($this->ref)."' and entity = ".$conf->entity;
 				$resql = $this->db->query($sql);
 				if (!$resql) {
-					$error++;
-					$this->error = $this->db->lasterror();
+					$error++; $this->error = $this->db->lasterror();
 				}
 
 				// We rename directory ($this->ref = old ref, $num = new ref) in order not to lose the attachments
 				$oldref = dol_sanitizeFileName($this->ref);
 				$newref = dol_sanitizeFileName($num);
-				$dirsource = $conf->viescolaire->dir_output . '/souhait/' . $oldref;
-				$dirdest = $conf->viescolaire->dir_output . '/souhait/' . $newref;
+				$dirsource = $conf->organisation->dir_output.'/poste/'.$oldref;
+				$dirdest = $conf->organisation->dir_output.'/poste/'.$newref;
 				if (!$error && file_exists($dirsource)) {
-					dol_syslog(get_class($this) . "::validate() rename dir " . $dirsource . " into " . $dirdest);
+					dol_syslog(get_class($this)."::validate() rename dir ".$dirsource." into ".$dirdest);
 
 					if (@rename($dirsource, $dirdest)) {
 						dol_syslog("Rename ok");
 						// Rename docs starting with $oldref with $newref
-						$listoffiles = dol_dir_list($conf->viescolaire->dir_output . '/souhait/' . $newref, 'files', 1, '^' . preg_quote($oldref, '/'));
+						$listoffiles = dol_dir_list($conf->organisation->dir_output.'/poste/'.$newref, 'files', 1, '^'.preg_quote($oldref, '/'));
 						foreach ($listoffiles as $fileentry) {
 							$dirsource = $fileentry['name'];
-							$dirdest = preg_replace('/^' . preg_quote($oldref, '/') . '/', $newref, $dirsource);
-							$dirsource = $fileentry['path'] . '/' . $dirsource;
-							$dirdest = $fileentry['path'] . '/' . $dirdest;
+							$dirdest = preg_replace('/^'.preg_quote($oldref, '/').'/', $newref, $dirsource);
+							$dirsource = $fileentry['path'].'/'.$dirsource;
+							$dirdest = $fileentry['path'].'/'.$dirdest;
 							@rename($dirsource, $dirdest);
 						}
 					}
@@ -744,14 +613,14 @@ class Souhait extends CommonObject
 			return 0;
 		}
 
-		/*if (! ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->viescolaire->write))
-		 || (! empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->viescolaire->viescolaire_advance->validate))))
+		/*if (! ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && !empty($user->rights->organisation->write))
+		 || (!empty($conf->global->MAIN_USE_ADVANCED_PERMS) && !empty($user->rights->organisation->organisation_advance->validate))))
 		 {
 		 $this->error='Permission denied';
 		 return -1;
 		 }*/
 
-		return $this->setStatusCommon($user, self::STATUS_DRAFT, $notrigger, 'SOUHAIT_UNVALIDATE');
+		return $this->setStatusCommon($user, self::STATUS_DRAFT, $notrigger, 'POSTE_UNVALIDATE');
 	}
 
 	/**
@@ -768,14 +637,14 @@ class Souhait extends CommonObject
 			return 0;
 		}
 
-		/*if (! ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->viescolaire->write))
-		 || (! empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->viescolaire->viescolaire_advance->validate))))
+		/*if (! ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && !empty($user->rights->organisation->write))
+		 || (!empty($conf->global->MAIN_USE_ADVANCED_PERMS) && !empty($user->rights->organisation->organisation_advance->validate))))
 		 {
 		 $this->error='Permission denied';
 		 return -1;
 		 }*/
 
-		return $this->setStatusCommon($user, self::STATUS_CANCELED, $notrigger, 'SOUHAIT_CANCEL');
+		return $this->setStatusCommon($user, self::STATUS_CANCELED, $notrigger, 'POSTE_CANCEL');
 	}
 
 	/**
@@ -788,18 +657,18 @@ class Souhait extends CommonObject
 	public function reopen($user, $notrigger = 0)
 	{
 		// Protection
-		if ($this->status != self::STATUS_CANCELED) {
+		if ($this->status == self::STATUS_VALIDATED) {
 			return 0;
 		}
 
-		/*if (! ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->viescolaire->write))
-		 || (! empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->viescolaire->viescolaire_advance->validate))))
+		/*if (! ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && !empty($user->rights->organisation->write))
+		 || (!empty($conf->global->MAIN_USE_ADVANCED_PERMS) && !empty($user->rights->organisation->organisation_advance->validate))))
 		 {
 		 $this->error='Permission denied';
 		 return -1;
 		 }*/
 
-		return $this->setStatusCommon($user, self::STATUS_VALIDATED, $notrigger, 'SOUHAIT_REOPEN');
+		return $this->setStatusCommon($user, self::STATUS_VALIDATED, $notrigger, 'POSTE_REOPEN');
 	}
 
 	/**
@@ -822,15 +691,14 @@ class Souhait extends CommonObject
 
 		$result = '';
 
-		// $label = img_picto('', $this->picto).' <u>'.$langs->trans("Souhait").'</u>';
+		$label = img_picto('', $this->picto).' <u>'.$langs->trans("Poste").'</u>';
 		if (isset($this->status)) {
 			$label .= ' '.$this->getLibStatut(5);
 		}
-		// $label .= '<br>';
-		// $label .= '<b>'.$langs->trans('Type de classe:').':</b> '.$this->fk_type_classe. '<br>';
+		$label .= '<br>';
+		$label .= '<b>'.$langs->trans('Ref').':</b> '.$this->ref;
 
-
-		$url = dol_buildpath('/viescolaire/souhait_card.php', 1) . '?id=' . $this->id;
+		$url = dol_buildpath('/organisation/poste_card.php', 1).'?id='.$this->id;
 
 		if ($option != 'nolink') {
 			// Add param to save lastsearch_values or not
@@ -846,21 +714,21 @@ class Souhait extends CommonObject
 		$linkclose = '';
 		if (empty($notooltip)) {
 			if (!empty($conf->global->MAIN_OPTIMIZEFORTEXTBROWSER)) {
-				$label = $langs->trans("ShowSouhait");
-				$linkclose .= ' alt="' . dol_escape_htmltag($label, 1) . '"';
+				$label = $langs->trans("ShowPoste");
+				$linkclose .= ' alt="'.dol_escape_htmltag($label, 1).'"';
 			}
-			$linkclose .= ' title="' . dol_escape_htmltag($label, 1) . '"';
-			$linkclose .= ' class="classfortooltip' . ($morecss ? ' ' . $morecss : '') . '"';
+			$linkclose .= ' title="'.dol_escape_htmltag($label, 1).'"';
+			$linkclose .= ' class="classfortooltip'.($morecss ? ' '.$morecss : '').'"';
 		} else {
-			$linkclose = ($morecss ? ' class="' . $morecss . '"' : '');
+			$linkclose = ($morecss ? ' class="'.$morecss.'"' : '');
 		}
 
 		if ($option == 'nolink' || empty($url)) {
 			$linkstart = '<span';
 		} else {
-			$linkstart = '<a href="' . $url . '"';
+			$linkstart = '<a href="'.$url.'"';
 		}
-		$linkstart .= $linkclose . '>';
+		$linkstart .= $linkclose.'>';
 		if ($option == 'nolink' || empty($url)) {
 			$linkend = '</span>';
 		} else {
@@ -871,43 +739,43 @@ class Souhait extends CommonObject
 
 		if (empty($this->showphoto_on_popup)) {
 			if ($withpicto) {
-				$result .= img_object(($notooltip ? '' : $label), ($this->picto ? $this->picto : 'generic'), ($notooltip ? (($withpicto != 2) ? 'class="paddingright"' : '') : 'class="' . (($withpicto != 2) ? 'paddingright ' : '') . 'classfortooltip"'), 0, 0, $notooltip ? 0 : 1);
+				$result .= img_object(($notooltip ? '' : $label), ($this->picto ? $this->picto : 'generic'), ($notooltip ? (($withpicto != 2) ? 'class="paddingright"' : '') : 'class="'.(($withpicto != 2) ? 'paddingright ' : '').'classfortooltip"'), 0, 0, $notooltip ? 0 : 1);
 			}
 		} else {
 			if ($withpicto) {
-				require_once DOL_DOCUMENT_ROOT . '/core/lib/files.lib.php';
+				require_once DOL_DOCUMENT_ROOT.'/core/lib/files.lib.php';
 
 				list($class, $module) = explode('@', $this->picto);
-				$upload_dir = $conf->$module->multidir_output[$conf->entity] . "/$class/" . dol_sanitizeFileName($this->ref);
+				$upload_dir = $conf->$module->multidir_output[$conf->entity]."/$class/".dol_sanitizeFileName($this->ref);
 				$filearray = dol_dir_list($upload_dir, "files");
 				$filename = $filearray[0]['name'];
 				if (!empty($filename)) {
 					$pospoint = strpos($filearray[0]['name'], '.');
 
-					$pathtophoto = $class . '/' . $this->ref . '/thumbs/' . substr($filename, 0, $pospoint) . '_mini' . substr($filename, $pospoint);
-					if (empty($conf->global->{strtoupper($module . '_' . $class) . '_FORMATLISTPHOTOSASUSERS'})) {
-						$result .= '<div class="floatleft inline-block valignmiddle divphotoref"><div class="photoref"><img class="photo' . $module . '" alt="No photo" border="0" src="' . DOL_URL_ROOT . '/viewimage.php?modulepart=' . $module . '&entity=' . $conf->entity . '&file=' . urlencode($pathtophoto) . '"></div></div>';
+					$pathtophoto = $class.'/'.$this->ref.'/thumbs/'.substr($filename, 0, $pospoint).'_mini'.substr($filename, $pospoint);
+					if (empty($conf->global->{strtoupper($module.'_'.$class).'_FORMATLISTPHOTOSASUSERS'})) {
+						$result .= '<div class="floatleft inline-block valignmiddle divphotoref"><div class="photoref"><img class="photo'.$module.'" alt="No photo" border="0" src="'.DOL_URL_ROOT.'/viewimage.php?modulepart='.$module.'&entity='.$conf->entity.'&file='.urlencode($pathtophoto).'"></div></div>';
 					} else {
-						$result .= '<div class="floatleft inline-block valignmiddle divphotoref"><img class="photouserphoto userphoto" alt="No photo" border="0" src="' . DOL_URL_ROOT . '/viewimage.php?modulepart=' . $module . '&entity=' . $conf->entity . '&file=' . urlencode($pathtophoto) . '"></div>';
+						$result .= '<div class="floatleft inline-block valignmiddle divphotoref"><img class="photouserphoto userphoto" alt="No photo" border="0" src="'.DOL_URL_ROOT.'/viewimage.php?modulepart='.$module.'&entity='.$conf->entity.'&file='.urlencode($pathtophoto).'"></div>';
 					}
 
 					$result .= '</div>';
 				} else {
-					$result .= img_object(($notooltip ? '' : $label), ($this->picto ? $this->picto : 'generic'), ($notooltip ? (($withpicto != 2) ? 'class="paddingright"' : '') : 'class="' . (($withpicto != 2) ? 'paddingright ' : '') . 'classfortooltip"'), 0, 0, $notooltip ? 0 : 1);
+					$result .= img_object(($notooltip ? '' : $label), ($this->picto ? $this->picto : 'generic'), ($notooltip ? (($withpicto != 2) ? 'class="paddingright"' : '') : 'class="'.(($withpicto != 2) ? 'paddingright ' : '').'classfortooltip"'), 0, 0, $notooltip ? 0 : 1);
 				}
 			}
 		}
 
 		if ($withpicto != 2) {
-			$result .= $this->nom_souhait;
+			$result .= $this->ref;
 		}
 
 		$result .= $linkend;
 		//if ($withpicto != 2) $result.=(($addlabel && $this->label) ? $sep . dol_trunc($this->label, ($addlabel > 1 ? $addlabel : 0)) : '');
 
 		global $action, $hookmanager;
-		$hookmanager->initHooks(array('souhaitdao'));
-		$parameters = array('id' => $this->id, 'getnomurl' => $result);
+		$hookmanager->initHooks(array($this->element.'dao'));
+		$parameters = array('id'=>$this->id, 'getnomurl' => &$result);
 		$reshook = $hookmanager->executeHooks('getNomUrl', $parameters, $this, $action); // Note that $action and $object may have been modified by some hooks
 		if ($reshook > 0) {
 			$result = $hookmanager->resPrint;
@@ -917,6 +785,36 @@ class Souhait extends CommonObject
 
 		return $result;
 	}
+
+	/**
+	 *	Return a thumb for kanban views
+	 *
+	 *	@param      string	    $option                 Where point the link (0=> main card, 1,2 => shipment, 'nolink'=>No link)
+	 *  @return		string								HTML Code for Kanban thumb.
+	 */
+	/*
+	public function getKanbanView($option = '')
+	{
+		$return = '<div class="box-flex-item box-flex-grow-zero">';
+		$return .= '<div class="info-box info-box-sm">';
+		$return .= '<span class="info-box-icon bg-infobox-action">';
+		$return .= img_picto('', $this->picto);
+		$return .= '</span>';
+		$return .= '<div class="info-box-content">';
+		$return .= '<span class="info-box-ref">'.(method_exists($this, 'getNomUrl') ? $this->getNomUrl() : $this->ref).'</span>';
+		if (property_exists($this, 'label')) {
+			$return .= '<br><span class="info-box-label opacitymedium">'.$this->label.'</span>';
+		}
+		if (method_exists($this, 'getLibStatut')) {
+			$return .= '<br><div class="info-box-status margintoponly">'.$this->getLibStatut(5).'</div>';
+		}
+		$return .= '</div>';
+		$return .= '</div>';
+		$return .= '</div>';
+
+		return $return;
+	}
+	*/
 
 	/**
 	 *  Return the label of the status
@@ -953,16 +851,16 @@ class Souhait extends CommonObject
 		// phpcs:enable
 		if (empty($this->labelStatus) || empty($this->labelStatusShort)) {
 			global $langs;
-			//$langs->load("viescolaire@viescolaire");
-			$this->labelStatus[self::STATUS_DRAFT] = "En attente d'affectation";
-			$this->labelStatus[self::STATUS_VALIDATED] = "Affecté";
+			//$langs->load("organisation@organisation");
+			$this->labelStatus[self::STATUS_DRAFT] = $langs->transnoentitiesnoconv('Draft');
+			$this->labelStatus[self::STATUS_VALIDATED] = $langs->transnoentitiesnoconv('Enabled');
 			$this->labelStatus[self::STATUS_CANCELED] = $langs->transnoentitiesnoconv('Disabled');
-			$this->labelStatusShort[self::STATUS_DRAFT] = $langs->transnoentitiesnoconv("En attente d'affectation");
-			$this->labelStatusShort[self::STATUS_VALIDATED] = $langs->transnoentitiesnoconv("Affecté");
+			$this->labelStatusShort[self::STATUS_DRAFT] = $langs->transnoentitiesnoconv('Draft');
+			$this->labelStatusShort[self::STATUS_VALIDATED] = $langs->transnoentitiesnoconv('Enabled');
 			$this->labelStatusShort[self::STATUS_CANCELED] = $langs->transnoentitiesnoconv('Disabled');
 		}
 
-		$statusType = 'status' . $status;
+		$statusType = 'status'.$status;
 		//if ($status == self::STATUS_VALIDATED) $statusType = 'status1';
 		if ($status == self::STATUS_CANCELED) {
 			$statusType = 'status6';
@@ -979,37 +877,29 @@ class Souhait extends CommonObject
 	 */
 	public function info($id)
 	{
-		$sql = "SELECT rowid, date_creation as datec, tms as datem,";
+		$sql = "SELECT rowid,";
+		$sql .= " date_creation as datec, tms as datem,";
 		$sql .= " fk_user_creat, fk_user_modif";
-		$sql .= " FROM " . MAIN_DB_PREFIX . $this->table_element . " as t";
-		$sql .= " WHERE t.rowid = " . ((int) $id);
+		$sql .= " FROM ".MAIN_DB_PREFIX.$this->table_element." as t";
+		$sql .= " WHERE t.rowid = ".((int) $id);
 
 		$result = $this->db->query($sql);
 		if ($result) {
 			if ($this->db->num_rows($result)) {
 				$obj = $this->db->fetch_object($result);
+
 				$this->id = $obj->rowid;
-				if (!empty($obj->fk_user_author)) {
-					$cuser = new User($this->db);
-					$cuser->fetch($obj->fk_user_author);
-					$this->user_creation = $cuser;
-				}
 
+				$this->user_creation_id = $obj->fk_user_creat;
+				$this->user_modification_id = $obj->fk_user_modif;
 				if (!empty($obj->fk_user_valid)) {
-					$vuser = new User($this->db);
-					$vuser->fetch($obj->fk_user_valid);
-					$this->user_validation = $vuser;
+					$this->user_validation_id = $obj->fk_user_valid;
 				}
-
-				if (!empty($obj->fk_user_cloture)) {
-					$cluser = new User($this->db);
-					$cluser->fetch($obj->fk_user_cloture);
-					$this->user_cloture = $cluser;
-				}
-
 				$this->date_creation     = $this->db->jdate($obj->datec);
-				$this->date_modification = $this->db->jdate($obj->datem);
-				$this->date_validation   = $this->db->jdate($obj->datev);
+				$this->date_modification = empty($obj->datem) ? '' : $this->db->jdate($obj->datem);
+				if (!empty($obj->datev)) {
+					$this->date_validation   = empty($obj->datev) ? '' : $this->db->jdate($obj->datev);
+				}
 			}
 
 			$this->db->free($result);
@@ -1042,8 +932,8 @@ class Souhait extends CommonObject
 	{
 		$this->lines = array();
 
-		$objectline = new SouhaitLine($this->db);
-		$result = $objectline->fetchAll('ASC', 'position', 0, 0, array('customsql' => 'fk_souhait = ' . ((int) $this->id)));
+		$objectline = new PosteLine($this->db);
+		$result = $objectline->fetchAll('ASC', 'position', 0, 0, array('customsql'=>'fk_poste = '.((int) $this->id)));
 
 		if (is_numeric($result)) {
 			$this->error = $objectline->error;
@@ -1063,29 +953,29 @@ class Souhait extends CommonObject
 	public function getNextNumRef()
 	{
 		global $langs, $conf;
-		$langs->load("viescolaire@viescolaire");
+		$langs->load("organisation@organisation");
 
-		if (empty($conf->global->VIESCOLAIRE_SOUHAIT_ADDON)) {
-			$conf->global->VIESCOLAIRE_SOUHAIT_ADDON = 'mod_souhait_standard';
+		if (empty($conf->global->ORGANISATION_POSTE_ADDON)) {
+			$conf->global->ORGANISATION_POSTE_ADDON = 'mod_poste_standard';
 		}
 
-		if (!empty($conf->global->VIESCOLAIRE_SOUHAIT_ADDON)) {
+		if (!empty($conf->global->ORGANISATION_POSTE_ADDON)) {
 			$mybool = false;
 
-			$file = $conf->global->VIESCOLAIRE_SOUHAIT_ADDON . ".php";
-			$classname = $conf->global->VIESCOLAIRE_SOUHAIT_ADDON;
+			$file = $conf->global->ORGANISATION_POSTE_ADDON.".php";
+			$classname = $conf->global->ORGANISATION_POSTE_ADDON;
 
 			// Include file with class
 			$dirmodels = array_merge(array('/'), (array) $conf->modules_parts['models']);
 			foreach ($dirmodels as $reldir) {
-				$dir = dol_buildpath($reldir . "core/modules/viescolaire/");
+				$dir = dol_buildpath($reldir."core/modules/organisation/");
 
 				// Load file with numbering class (if found)
-				$mybool |= @include_once $dir . $file;
+				$mybool |= @include_once $dir.$file;
 			}
 
 			if ($mybool === false) {
-				dol_print_error('', "Failed to include file " . $file);
+				dol_print_error('', "Failed to include file ".$file);
 				return '';
 			}
 
@@ -1101,7 +991,7 @@ class Souhait extends CommonObject
 					return "";
 				}
 			} else {
-				print $langs->trans("Error") . " " . $langs->trans("ClassNotFound") . ' ' . $classname;
+				print $langs->trans("Error")." ".$langs->trans("ClassNotFound").' '.$classname;
 				return "";
 			}
 		} else {
@@ -1126,21 +1016,21 @@ class Souhait extends CommonObject
 		global $conf, $langs;
 
 		$result = 0;
-		$includedocgeneration = 0;
+		$includedocgeneration = 1;
 
-		$langs->load("viescolaire@viescolaire");
+		$langs->load("organisation@organisation");
 
 		if (!dol_strlen($modele)) {
-			$modele = 'standard_souhait';
+			$modele = 'standard_poste';
 
 			if (!empty($this->model_pdf)) {
 				$modele = $this->model_pdf;
-			} elseif (!empty($conf->global->SOUHAIT_ADDON_PDF)) {
-				$modele = $conf->global->SOUHAIT_ADDON_PDF;
+			} elseif (!empty($conf->global->POSTE_ADDON_PDF)) {
+				$modele = $conf->global->POSTE_ADDON_PDF;
 			}
 		}
 
-		$modelpath = "core/modules/viescolaire/doc/";
+		$modelpath = "core/modules/organisation/doc/";
 
 		if ($includedocgeneration && !empty($modele)) {
 			$result = $this->commonGenerateDocument($modelpath, $modele, $outputlangs, $hidedetails, $hidedesc, $hideref, $moreparams);
@@ -1181,15 +1071,15 @@ class Souhait extends CommonObject
 }
 
 
-require_once DOL_DOCUMENT_ROOT . '/core/class/commonobjectline.class.php';
+require_once DOL_DOCUMENT_ROOT.'/core/class/commonobjectline.class.php';
 
 /**
- * Class SouhaitLine. You can also remove this and generate a CRUD class for lines objects.
+ * Class PosteLine. You can also remove this and generate a CRUD class for lines objects.
  */
-class SouhaitLine extends CommonObjectLine
+class TypePosteLine extends CommonObjectLine
 {
-	// To complete with content of an object SouhaitLine
-	// We should have a field rowid, fk_souhait and position
+	// To complete with content of an object PosteLine
+	// We should have a field rowid, fk_poste and position
 
 	/**
 	 * @var int  Does object support extrafields ? 0=No, 1=Yes

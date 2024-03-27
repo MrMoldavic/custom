@@ -114,7 +114,7 @@ class Appetence extends CommonObject
 	 */
 	public $fields=array(
 		'rowid' => array('type'=>'integer', 'label'=>'TechnicalID', 'enabled'=>'1', 'position'=>1, 'notnull'=>1, 'visible'=>0, 'noteditable'=>'1', 'index'=>1, 'css'=>'left', 'comment'=>"Id"),
-		'fk_agent' => array('type'=>'integer:Agent:custom/management/class/agent.class.php:1', 'label'=>'Agent', 'enabled'=>'1', 'position'=>1, 'notnull'=>1, 'visible'=>1, 'index'=>1, 'searchall'=>1, 'showoncombobox'=>'1', 'validate'=>'1', 'css'=>'maxwidth250'),
+		'fk_agent' => array('type'=>'integer:Agent:custom/management/class/agent.class.php:1', 'label'=>'Agent', 'enabled'=>'1', 'position'=>1, 'notnull'=>1, 'visible'=>1,'noteditable'=>1, 'index'=>1, 'searchall'=>1, 'showoncombobox'=>'1', 'validate'=>'1', 'css'=>'maxwidth250'),
 		'fk_type_poste' => array('type'=>'sellist:organisation_c_type_poste:poste', 'label'=>'Type de poste', 'enabled'=>'1', 'position'=>2, 'notnull'=>1, 'visible'=>1, 'index'=>1, 'searchall'=>1, 'showoncombobox'=>'1', 'validate'=>'1'),
 		'fk_type_appetence' => array('type'=>'sellist:management_c_type_appetence:type', 'label'=>'Type d\'appetence', 'enabled'=>'1', 'position'=>3, 'notnull'=>1, 'visible'=>1, 'index'=>1, 'searchall'=>1, 'showoncombobox'=>'1', 'validate'=>'1'),
 
@@ -243,7 +243,7 @@ class Appetence extends CommonObject
 		{
 			$this->status = self::STATUS_VALIDATED;
 		}
-		
+
 		$resultcreate = $this->createCommon($user, $notrigger);
 
 		//$resultvalidate = $this->validate($user, $notrigger);

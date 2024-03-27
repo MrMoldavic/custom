@@ -64,6 +64,8 @@ class Evenement extends CommonObject
 	public $picto = 'fa-calendar';
 
 
+
+
 	const STATUS_DRAFT = 1;
 	const STATUS_VALIDATED = 2;
 	const STATUS_CANCELED = 3;
@@ -116,15 +118,11 @@ class Evenement extends CommonObject
 		'nom_evenement' => array('type'=>'varchar(255)', 'label'=>'nom evenement', 'enabled'=>'1', 'position'=>1, 'notnull'=>-1, 'visible'=>2, 'showoncombobox'=>'1', 'css'=>'maxwidth300'),
 		'libelle' => array('type'=>'varchar(255)', 'label'=>'Libelle', 'enabled'=>'1', 'position'=>35, 'notnull'=>-1, 'visible'=>1, 'css'=>'maxwidth300'),
 		'fk_type_evenement' => array('type'=>'sellist:organisation_c_type_evenement:type', 'label'=>'Type d\'événement', 'enabled'=>'1', 'position'=>20, 'notnull'=>1, 'visible'=>1),
-		'fk_etat_evenement' => array('type'=>'sellist:organisation_c_etat_evenement:etat', 'label'=>'Etat de l\'evenement', 'enabled'=>'1', 'position'=>30, 'notnull'=>1, 'visible'=>1, 'css'=>'maxwidth300'),
-		//'date_evenement' => array('type'=>'date', 'label'=>'Date de l\'événement', 'enabled'=>'1', 'position'=>40, 'notnull'=>0, 'visible'=>1,),
 		'debut' => array('type'=>'datetime', 'label'=>'Début', 'enabled'=>'1', 'position'=>40, 'notnull'=>1, 'visible'=>1,),
-		//'minute_debut' => array('type'=>'varchar(255)','arrayofkeyval'=>array('00'=>'00', '15'=>'15', '30'=>'30', '45'=>'45'), 'label'=>'Minutes de début', 'enabled'=>'1', 'position'=>40, 'notnull'=>1, 'visible'=>1, 'css'=>'maxwidth300'),
-		'fin' => array('type'=>'datetime', 'label'=>'Fin', 'enabled'=>'1', 'position'=>41, 'notnull'=>1, 'visible'=>1, 'notnull'=>-1,),
-		//'minute_fin' => array('type'=>'varchar(255)','arrayofkeyval'=>array('00'=>'00', '15'=>'15', '30'=>'30', '45'=>'45'), 'label'=>'Minutes de fin', 'enabled'=>'1', 'position'=>40, 'notnull'=>1, 'visible'=>1, 'css'=>'maxwidth300'),
-		'fk_antenne' => array('type'=>'integer:Etablissement:custom/scolarite/class/etablissement.class.php:1', 'label'=>'Antenne','enabled'=>'1', 'position'=>510, 'notnull'=>1, 'visible'=>1,'css'=>'maxwidth300'),
-		'lieu' => array('type'=>'varchar(255)', 'label'=>'Lieu de l\'événement', 'enabled'=>'1', 'position'=>520, 'notnull'=>-1, 'visible'=>1, 'css'=>'maxwidth300'),
-		'contexte' => array('type'=>'varchar(255)', 'label'=>'Contexte', 'enabled'=>'1', 'position'=>530, 'notnull'=>-1, 'visible'=>1, 'css'=>'maxwidth300'),
+		'fin' => array('type'=>'datetime', 'label'=>'Fin', 'enabled'=>'1', 'position'=>41, 'visible'=>1, 'notnull'=>-1,),
+		'fk_antenne' => array('type'=>'integer:Etablissement:custom/scolarite/class/etablissement.class.php:1', 'label'=>'Antenne','enabled'=>'1', 'position'=>36, 'notnull'=>1, 'visible'=>1,'css'=>'maxwidth300'),
+		'lieu' => array('type'=>'varchar(255)', 'label'=>'Lieu de l\'événement', 'enabled'=>'1', 'position'=>37, 'notnull'=>-1, 'visible'=>1, 'css'=>'maxwidth300'),
+		'contexte' => array('type'=>'text', 'label'=>'Contexte', 'enabled'=>'1', 'position'=>530, 'notnull'=>-1, 'visible'=>1, 'css'=>'maxwidth300'),
 		'note_public' => array('type'=>'html', 'label'=>'NotePublic', 'enabled'=>'1', 'position'=>61, 'notnull'=>0, 'visible'=>0, 'cssview'=>'wordbreak', 'validate'=>'1',),
 		'note_private' => array('type'=>'html', 'label'=>'NotePrivate', 'enabled'=>'1', 'position'=>62, 'notnull'=>0, 'visible'=>0, 'cssview'=>'wordbreak', 'validate'=>'1',),
 		'date_creation' => array('type'=>'datetime', 'label'=>'DateCreation', 'enabled'=>'1', 'position'=>500, 'notnull'=>1, 'visible'=>-2,),
@@ -134,9 +132,9 @@ class Evenement extends CommonObject
 		'last_main_doc' => array('type'=>'varchar(255)', 'label'=>'LastMainDoc', 'enabled'=>'1', 'position'=>600, 'notnull'=>0, 'visible'=>0,),
 		'import_key' => array('type'=>'varchar(14)', 'label'=>'ImportId', 'enabled'=>'1', 'position'=>1000, 'notnull'=>-1, 'visible'=>-2,),
 		'model_pdf' => array('type'=>'varchar(255)', 'label'=>'Model pdf', 'enabled'=>'1', 'position'=>1010, 'notnull'=>-1, 'visible'=>0,),
-		'status' => array('type'=>'integer', 'label'=>'Status', 'enabled'=>'1', 'position'=>2000, 'notnull'=>1, 'visible'=>-2, 'index'=>1, 'arrayofkeyval'=>array('0'=>'Brouillon', '1'=>'Valid&eacute;', '9'=>'Annul&eacute;'), 'validate'=>'1',),
+		'status' => array('type'=>'sellist:organisation_c_etat_evenement:etat', 'label'=>'Etat de l\'evenement', 'visible'=>1, 'position'=>30, 'notnull'=>1, 'index'=>1,'enabled'=>'1',),
 	);
-	
+
 	public $rowid;
 	public $ref;
 	public $label;
@@ -155,6 +153,7 @@ class Evenement extends CommonObject
 	public $import_key;
 	public $model_pdf;
 	public $status;
+	public $tempsTotal = 0;
 	// END MODULEBUILDER PROPERTIES
 
 
@@ -247,17 +246,16 @@ class Evenement extends CommonObject
 	public function create(User $user, $notrigger = false)
 	{
 		$error = 0;
-
-		if(!$this->fk_type_evenement || !$this->fk_etat_evenement || !$this->fk_antenne)
+		if(!$this->fk_type_evenement || !$this->fk_antenne || !intval($this->fk_antenne) || !$this->fk_type_evenement)
 		{
-			setEventMessage('Des informations sont manquantes.', 'errors'); 
-			$error++;
+			setEventMessage('Des informations sont manquantes.', 'errors');
+			$error = 1;
 		}
 
-		if(($this->fin < $this->debut) && $this->fin != "")
+		if(($this->fin < $this->debut) && $this->fin != '')
 		{
-			setEventMessage('La fin de l\'événement ne peut pas être avant le début.', 'errors'); 
-			$error++;
+			setEventMessage('La fin de l\'événement ne peut pas être avant le début.', 'errors');
+			$error = 1;
 		}
 
 		if($error == 0)
@@ -265,25 +263,23 @@ class Evenement extends CommonObject
 			$type = "SELECT t.type FROM ".MAIN_DB_PREFIX."organisation_c_type_evenement as t WHERE t.rowid =".$this->fk_type_evenement;
 			$resqlType = $this->db->query($type);
 			$objectType = $this->db->fetch_object($resqlType);
-	
+
 			$this->nom_evenement .= $objectType->type.'-'.date("d/m/Y", $this->debut).'-';
-	
+
 			$etablissement = "SELECT e.diminutif FROM ".MAIN_DB_PREFIX."etablissement as e WHERE e.rowid =".$this->fk_antenne;
 			$resqlEtablissement = $this->db->query($etablissement);
 			$objectEtablissement = $this->db->fetch_object($resqlEtablissement);
-	
-			$this->status = $this->fk_etat_evenement;
-	
+
 			$this->nom_evenement .= $objectEtablissement->diminutif;
-	
+
 			if(!empty($this->libelle)) $this->nom_evenement .= $this->libelle;
-		
+
 			$resultcreate = $this->createCommon($user, $notrigger);
-		
+
 			$this->validate($user, $notrigger);
 			return $resultcreate;
 		}
-		
+
 	}
 
 	/**
@@ -505,43 +501,35 @@ class Evenement extends CommonObject
 	 */
 	public function update(User $user, $notrigger = false)
 	{
-		$error = 0;
-		if(!$this->fk_type_evenement || !$this->fk_etat_evenement || !$this->fk_antenne)
+		if(!$this->fk_type_evenement || !$this->fk_antenne)
 		{
-			setEventMessage('Des informations sont manquantes.', 'errors'); 
-			$error++;
+			setEventMessage('Des informations sont manquantes.', 'errors');
+			return -1;
 		}
 
 		if(($this->fin < $this->debut) && $this->fin != "")
 		{
-			setEventMessage('La fin de l\'événement ne peut pas être avant le début.', 'errors'); 
-			$error++;
+			setEventMessage('La fin de l\'événement ne peut pas être avant le début.', 'errors');
+			return -1;
 		}
 
-		if($error == 0)
-		{
-			$this->nom_evenement = "";
-			$type = "SELECT t.type FROM ".MAIN_DB_PREFIX."organisation_c_type_evenement as t WHERE t.rowid =".$this->fk_type_evenement;
-			$resqlType = $this->db->query($type);
-			$objectType = $this->db->fetch_object($resqlType);
-	
-			$this->nom_evenement .= $objectType->type.'-'.date("d/m/Y", $this->debut).'-';
-	
-			$etablissement = "SELECT e.diminutif FROM ".MAIN_DB_PREFIX."etablissement as e WHERE e.rowid =".$this->fk_antenne;
-			$resqlEtablissement = $this->db->query($etablissement);
-			$objectEtablissement = $this->db->fetch_object($resqlEtablissement);
-	
-			$this->nom_evenement .= $objectEtablissement->diminutif;
+		$this->nom_evenement = "";
+		$type = "SELECT t.type FROM ".MAIN_DB_PREFIX."organisation_c_type_evenement as t WHERE t.rowid =".$this->fk_type_evenement;
+		$resqlType = $this->db->query($type);
+		$objectType = $this->db->fetch_object($resqlType);
 
-			$this->status = $this->fk_etat_evenement;
-			//var_dump($this->fk_etat_evenement);
-			
-			if(!empty($this->libelle)) $this->nom_evenement .= '-'.$this->libelle;
-	
-			return $this->updateCommon($user, $notrigger);
-		}
+		$this->nom_evenement .= $objectType->type.'-'.date("d/m/Y", $this->debut).'-';
 
-	
+		$etablissementClass = new Etablissement($this->db);
+		$etablissementClass->fetch($this->fk_antenne);
+
+		$this->nom_evenement .= $etablissementClass->diminutif;
+
+		if(!empty($this->libelle)) $this->nom_evenement .= '-'.$this->libelle;
+
+		return $this->updateCommon($user, $notrigger);
+
+
 	}
 
 	/**
@@ -1111,37 +1099,276 @@ class Evenement extends CommonObject
 		return $result;
 	}
 
-	/**
-	 * Action executed by scheduler
-	 * CAN BE A CRON TASK. In such a case, parameters come from the schedule job setup field 'Parameters'
-	 * Use public function doScheduledJob($param1, $param2, ...) to get parameters
-	 *
-	 * @return	int			0 if OK, <>0 if KO (this function is used also by cron so only 0 is OK)
-	 */
-	public function doScheduledJob()
+	public function printProgrammationLines(object $line, $conduiteMode = false)
 	{
-		global $conf, $langs;
+		$out = '';
 
-		//$conf->global->SYSLOG_FILE = 'DOL_DATA_ROOT/dolibarr_mydedicatedlofile.log';
+		$interpretationClass = new Interpretation($this->db);
+		$interpretationClass->fetch((int) $line->fk_interpretation);
+		$this->tempsTotal += (int)$interpretationClass->temps;
 
-		$error = 0;
-		$this->output = '';
-		$this->error = '';
+		$morceauClass = new Morceau($this->db);
+		$morceauClass->fetch((int) $interpretationClass->fk_morceau);
 
-		dol_syslog(__METHOD__, LOG_DEBUG);
+		$propositionClass = new Proposition($this->db);
+		$propositionClass->fetch('','',' AND fk_groupe='.$interpretationClass->fk_groupe.' AND fk_evenement='.$this->id);
 
-		$now = dol_now();
+		if(!$conduiteMode)
+		{
+			$out .= '<tr>';
+			$out .= '<td style="padding:0.8em">'.$morceauClass->titre.'</td>';
+			$out .= '<td style="padding:0.8em">'.$interpretationClass->temps.'min</td>';
 
-		$this->db->begin();
+			if($propositionClass->status != Proposition::STATUS_DRAFT)
+			{
+				$out .= "<form method='POST' action=" . $_SERVER['PHP_SELF'] . '?id=' . $this->id . '>';
+				$out .= '<input type="text" name="action" value="changePositionProgrammation" hidden>';
+				$out .= '<input type="text" name="token" value="'.newToken().'" hidden>';
+				$out .= '<input type="number" name="idProgrammation" value="'.$line->id.'" hidden>';
+				$out .= '<input type="number" name="idProposition" value="'.$propositionClass->id.'" hidden>';
+				$out .= '<td style="padding:0.8em;"><input type="number" name="positionProgrammation" value="'.$line->position.'"></td>';
+				$out .= '<td style="padding:0.8em"><button type="submit" style="margin-left: 1em"/>'.img_picto('rotate','fa-rotate-right').'</button>';
+				$out .= '</form>';
+				$out .= '  <a href="'.$_SERVER['PHP_SELF'].'?action=deleteInterpretation&token='.newToken().'&id='.$this->id.'&fk_programmation='.$line->id.'">'.img_picto('trash','fa-trash').'</a>';
+				$out .= '</td>';
+			}
 
-		// ...
+			$out .= '</tr>';
+		} else {
+			$out = array((int) $interpretationClass->temps, $morceauClass->titre);
+		}
 
-		$this->db->commit();
+		return $out;
+	}
 
-		return $error;
+	/**
+	 *	Crée la conduite et l'exporte au format Excel
+	 *
+	 *	@param  int		$eventId       Id of event
+	 *	@return	void
+	 */
+	public function createConduite(int $eventId)
+	{
+		$outDoc = '<table style="border: 1px solid black; border-collapse: collapse; width: 100%">
+					<thead>
+						<tr>
+						<th scope="col" style="border: 1px solid black; border-collapse: collapse; padding : 0.5em">Groupe/Musiciens</th>
+						<th scope="col" style="border: 1px solid black; border-collapse: collapse: padding : 0.5em">Type de formation</th>
+						<th scope="col" style="border: 1px solid black; border-collapse: collapse; padding : 0.5em">Membres</th>
+						<th scope="col" style="border: 1px solid black; border-collapse: collapse; padding : 0.5em">Morceaux</th>
+						<th scope="col" style="border: 1px solid black; border-collapse: collapse; padding : 0.5em">Checkpoint temps (en min)</th>
+						</tr>
+					</thead>';
+
+		$totalTime = 0;
+		$propositionClass = new Proposition($this->db);
+		$propositions = $propositionClass->fetchAll('ASC','position',0,0,array('customsql'=>'fk_evenement='.$eventId.' AND status !='.Proposition::STATUS_CANCELED));
+
+		$loop = 0;
+		foreach ($propositions as $value) {
+
+			if($loop != 0)
+			{
+				$outDoc .= '<tr style="background-color: darkgray;  text-align: center">';
+
+				$outDoc .= '<td style="border: 1px solid black; border-collapse: collapse;">Changement de plateau (+5min)</td>';
+				$outDoc .= '<td style="border: 1px solid black; border-collapse: collapse"></td>';
+				$outDoc .= '<td style="border: 1px solid black; border-collapse: collapse"></td>';
+				$outDoc .= '<td style="border: 1px solid black; border-collapse: collapse"></td>';
+
+				$totalTime += 5;
+				$outDoc .= "<td style='border: 1px solid black; border-collapse: collapse;'>{$totalTime}min</td>";
+
+				$outDoc .= '</tr>';
+			}
+
+			$outDoc .= '<tr>';
+			// fetch du groupe
+			$groupeClass = new Groupe($this->db);
+			$groupeClass->fetch($value->fk_groupe);
+
+			$outDoc .= "<td style='border: 1px solid black; border-collapse: collapse; text-align: center'>$groupeClass->nom_groupe</td>";
+			$outDoc .= '<td style="border: 1px solid black; border-collapse: collapse">'.($value->description ? : 'Aucune information').'</td>';
+			$outDoc .= "<td style='border: 1px solid black; border-collapse: collapse'><br>{$groupeClass->printEngagements()}</td>";
+
+			// fetch des programmations à ce concert où se trouve les propositions
+			$programmationClass = new Programmation($this->db);
+			$programmations = $programmationClass->fetchAll('', '', 0, '', array('fk_proposition' => $value->id, 'fk_evenement' => $this->id));
+
+			$morceaux = '<ul>';
+
+			if (count($programmations) > 0) {
+				foreach ($programmations as $programmation) {
+					[$interpretationTime, $morceauTitle] = $this->printProgrammationLines((object) $programmation, true);
+					$morceaux .= "<li>{$morceauTitle} ({$interpretationTime}min)</li>";
+					$totalTime += (int)$interpretationTime;
+				}
+			} else $morceaux .= '<li>Attention, aucun morceau programmé pour ce groupe.</li>';
+
+			$morceaux .= '</ul>';
+
+			$outDoc .= "<td style='border: 1px solid black; border-collapse: collapse'>{$morceaux}</td>";
+			$outDoc .= "<td style='border: 1px solid black; border-collapse: collapse; text-align: center'>{$totalTime}min</td>";
+
+			$outDoc .= '</tr>';
+
+			$loop++;
+		}
+
+		$outDoc .= '<tr style="text-align: center">';
+
+		$outDoc .= '<td style="border: 1px solid black; border-collapse: collapse;">Fin du concert</td>';
+		$outDoc .= '<td style="border: 1px solid black; border-collapse: collapse">Fin du concert</td>';
+		$outDoc .= '<td style="border: 1px solid black; border-collapse: collapse">Fin du concert</td>';
+		$outDoc .= '<td style="border: 1px solid black; border-collapse: collapse">Fin du concert</td>';
+
+		$totalTime += 5;
+		$outDoc .= "<td style='border: 1px solid black; border-collapse: collapse;'>Durée totale: {$totalTime}min</td>";
+
+		$outDoc .= '</tr>';
+
+		// File Name & Content Header For Download
+		header('Content-Type: Application/html');
+		header('Content-Disposition: attachment; filename=Conduite.html');
+
+		echo $outDoc;
+		exit;
+	}
+
+	// Affiche le formulaire de positions sur la page de création de conduite d'un événement
+	public function printPositionUpdateForm($id, $propostion): string
+	{
+		$out = '';
+
+		if($propostion->status != Proposition::STATUS_DRAFT)
+		{
+			$out .= '<td '.($propostion->status == Proposition::STATUS_PROGRAMMED ? 'style="background-color: #E9ffd7;"' : '').'>';
+			$out .= '<form method="POST" action="' . $_SERVER['PHP_SELF'] . '?id=' . $id . '">';
+			$out .= '<input type="hidden" name="token" value="' . newToken() . '">';
+			$out .= '<input type="hidden" name="action" value="changePositionProposition">';
+			$out .= '<input type="hidden" name="IdProposition" value="' . $propostion->id . '">';
+			$out .= '<input type="number" name="positionProposition" min="1" value="' . $propostion->position . '" style="background-color: lightgray; width: 3em">';
+			$out .= '<button type="submit" style="margin-left: 1em"/>'.img_picto('rotate','fa-rotate-right').'</button>';
+			$out .= '</form>';
+			$out .= '</td>';
+
+		} else $out .= '<td style="background-color: #EBEBE4;"></td>';
+
+		return $out;
+	}
+
+
+	public function printTableAutorisations(): string
+	{
+		$out = '';
+
+		$propositionClass = new Proposition($this->db);
+		$propositions = $propositionClass->fetchAll('ASC','position',0,0,array('customsql'=>"fk_evenement=$this->id AND (status=".Proposition::STATUS_VALIDATED.' OR status='.Proposition::STATUS_PROGRAMMED.')'));
+
+		if(count($propositions) > 0){
+			foreach ($propositions as $proposition)
+			{
+				$groupeClass = new Groupe($this->db);
+				$engagementClass = new Engagement($this->db);
+
+				$groupeClass->fetch($proposition->fk_groupe);
+				$out .= '<tr>';
+				$out .= "<td colspan='6' style='background-color: lightgray'><a href='groupe_card.php?id=".$groupeClass->id."'><strong>$groupeClass->nom_groupe</strong></a></td>";
+				$out .= '</tr>';
+
+				$engagements = $engagementClass->fetchAll('','',0,0,array('customsql'=>'fk_groupe='.$groupeClass->id.' AND fk_eleve IS NOT NULL'));
+				foreach ($engagements as $engagement)
+				{
+					$eleveClass = new Eleve($this->db);
+					$eleveClass->fetch($engagement->fk_eleve);
+
+					$outMailParent = 'Parents inconnus ou aucun mail trouvé';
+
+					if($eleveClass->fk_famille)
+					{
+						$parentClass = new Parents($this->db);
+						$parents = $parentClass->fetchAll('','',0,0,array('customsql'=>"fk_famille=$eleveClass->fk_famille AND mail != ''"));
+
+						if(count($parents) > 0)
+						{
+							$outMailParent = '<ul>';
+							foreach ($parents as $parent) {
+								$outMailParent .= "<li>$parent->mail</li>";
+							}
+							$outMailParent .= '</ul>';
+						}
+					}
+
+
+					$autorisationClass = new Autorisation($this->db);
+					$autorisationClass->fetch('',''," AND fk_evenement=$this->id AND fk_engagement=$engagement->id");
+
+					$out .= '<form method="POST" action="'.$_SERVER['PHP_SELF'].'?id='.$this->id.'">';
+					$out .= '<tr>';
+					$out .= '<td style="padding-left: 3%;'.($autorisationClass->id && $autorisationClass->status == Autorisation::STATUS_VALIDATED ? 'background-color: #E9ffd7"' : '').'" >';
+					$out .= "<input type='number' name='engagement_id' value='".$engagement->id."' hidden/>";
+					$out .= "<input type='number' name='evenement_id' value='".$this->id."' hidden/>";
+					$out .= "<input type='text' name='token' value='".newToken()."' hidden/>";
+					$out .= "<input type='text' name='action' value=".($autorisationClass->id ? 'editAutorisation' : 'addAutorisation'). ' hidden/>';
+					if($autorisationClass->id)
+					{
+						$out .= "<input type='number' name='autorisation_id' value=".$autorisationClass->id.' hidden/>';
+					}
+					$out .= "<a href='".dol_buildpath('/viescolaire/eleve_card.php', 1) . '?id=' . $eleveClass->id."'>$eleveClass->prenom $eleveClass->nom</a>";
+					$out .= '</td>';
+					$out .= '<td '.($autorisationClass->id && $autorisationClass->status == Autorisation::STATUS_VALIDATED  ? 'style="background-color: #E9ffd7"' : '').'>'.$outMailParent.'</td>';
+					$out .= '<td '.($autorisationClass->id && $autorisationClass->status == Autorisation::STATUS_VALIDATED  ? 'style="background-color: #E9ffd7"' : '').'><input type="checkbox" name="autorisation" '.($autorisationClass->id && $autorisationClass->status == Autorisation::STATUS_VALIDATED  && $autorisationClass->status == Autorisation::STATUS_VALIDATED ? 'checked' : '').'></td>';
+					$out .= '<td '.($autorisationClass->id && $autorisationClass->status == Autorisation::STATUS_VALIDATED  ? 'style="background-color: #E9ffd7"' : '').'><input type="text" name="details" value="'.($autorisationClass->id ? dol_escape_htmltag($autorisationClass->details_autorisation, 1) : '').'"></td>';
+					$out .= '<td '.($autorisationClass->id && $autorisationClass->status == Autorisation::STATUS_VALIDATED  ? 'style="background-color: #E9ffd7"' : '').'><input type="text" name="public" value="'.($autorisationClass->id ? dol_escape_htmltag($autorisationClass->public_autorisation, 1) : '').'"></td>';
+					$out .= '<td '.($autorisationClass->id && $autorisationClass->status == Autorisation::STATUS_VALIDATED  ? 'style="background-color: #E9ffd7"' : '').'><input type="submit" class="button button-save " value="Valider"></td>';
+					$out .= '</tr>';
+					$out .= '</form>';
+				}
+
+			}
+
+		} else $out .= '<tr><td colspan="6">Aucune proposition trouvée pour cet événement</td></tr>';
+
+		return $out;
+	}
+
+	// Retoure un tableau contenant les agent convoqués sur l'évènement et leurs postes associés
+	public function printPostesTable()
+	{
+		$out = '<table class="tagtable nobottomiftotal liste">';
+		$out .= '<tbody>';
+		$out .= '<tr>';
+		$out .= '<td style="padding: 0.5em">Agent</td>';
+		$out .= '<td style="padding: 0.5em">Poste</td>';
+		$out .= '</tr>';
+
+
+		$posteClass = new Poste($this->db);
+		$postes = $posteClass->fetchAll('','',0,0,array('customsql'=>"fk_evenement=$this->id AND status=".Poste::STATUS_VALIDATED.' AND fk_agent IS NOT NULL'));
+
+		if(count($postes) > 0)
+		{
+			$agentClass = new Agent($this->db);
+			$typePoste = new TypePoste($this->db);
+
+			foreach ($postes as $poste)
+			{
+				$agentClass->fetch($poste->fk_agent);
+				$typePoste->fetch($poste->fk_type_poste);
+				$out .= '<tr>';
+				$out .= "<td>$agentClass->prenom $agentClass->nom</td>";
+				$out .= "<td>$typePoste->poste</td>";
+				$out .= '</tr>';
+			}
+		} else $out .= '<tr><td colspan="2">Aucune convocation connue pour cet événement!</td></tr>';
+
+
+		$out .= '</tbody>';
+		$out .= '</table>';
+
+		return $out;
 	}
 }
-
 
 require_once DOL_DOCUMENT_ROOT.'/core/class/commonobjectline.class.php';
 

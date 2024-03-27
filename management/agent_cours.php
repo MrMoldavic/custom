@@ -89,6 +89,8 @@ $backtopage = GETPOST('backtopage', 'alpha');
 
 // Initialize technical objects
 $object = new Agent($db);
+
+
 $extrafields = new ExtraFields($db);
 $diroutputmassaction = $conf->management->dir_output.'/temp/massgeneration/'.$user->id;
 $hookmanager->initHooks(array('agentnote', 'globalcard')); // Note that conf->hooks_modules contains array
@@ -104,7 +106,7 @@ if ($id > 0 || !empty($ref)) {
 
 // There is several ways to check permission.
 // Set $enablepermissioncheck to 1 to enable a minimum low level of checks
-$enablepermissioncheck = 0;
+$enablepermissioncheck = 1;
 if ($enablepermissioncheck) {
 	$permissiontoread = $user->rights->management->agent->read;
 	$permissiontoadd = $user->rights->management->agent->write;
@@ -121,7 +123,7 @@ if ($enablepermissioncheck) {
 //$isdraft = (($object->status == $object::STATUS_DRAFT) ? 1 : 0);
 //restrictedArea($user, $object->element, $object->id, $object->table_element, '', 'fk_soc', 'rowid', $isdraft);
 if (empty($conf->management->enabled)) accessforbidden();
-if (!$permissiontoread) accessforbidden();
+if (!$object->id) accessforbidden();
 
 
 /*

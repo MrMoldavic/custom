@@ -22,9 +22,10 @@
  *		\brief      Page to create/edit/view groupe
  */
 
-// ini_set('display_errors', '1');
-// ini_set('display_startup_errors', '1');
-// error_reporting(E_ALL);
+/*ini_set('display_errors', '1');
+ini_set('display_startup_errors', '1');
+error_reporting(E_ALL);*/
+
 //if (! defined('NOREQUIREDB'))              define('NOREQUIREDB', '1');				// Do not create database handler $db
 //if (! defined('NOREQUIREUSER'))            define('NOREQUIREUSER', '1');				// Do not load object $user
 //if (! defined('NOREQUIRESOC'))             define('NOREQUIRESOC', '1');				// Do not load object $mysoc
@@ -81,7 +82,19 @@ if (!$res) {
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formcompany.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formfile.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formprojet.class.php';
+
 dol_include_once('/organisation/class/groupe.class.php');
+dol_include_once('/organisation/class/evenement.class.php');
+dol_include_once('/organisation/class/proposition.class.php');
+dol_include_once('/organisation/class/programmation.class.php');
+dol_include_once('/organisation/class/interpretation.class.php');
+dol_include_once('/organisation/class/morceau.class.php');
+dol_include_once('/viescolaire/class/affectation.class.php');
+dol_include_once('/viescolaire/class/eleve.class.php');
+dol_include_once('/management/class/agent.class.php');
+dol_include_once('/organisation/class/instrument.class.php');
+dol_include_once('/organisation/class/liaisoninstrument.class.php');
+dol_include_once('/organisation/class/engagement.class.php');
 dol_include_once('/organisation/lib/organisation_groupe.lib.php');
 
 // Load translation files required by the page
@@ -99,26 +112,13 @@ $instru = GETPOST('Instru','alpha');
 
 $engagement = GETPOST('engagement','alpha');
 
-
 $confirm = GETPOST('confirm', 'alpha');
 $cancel = GETPOST('cancel', 'aZ09');
 $contextpage = GETPOST('contextpage', 'aZ') ? GETPOST('contextpage', 'aZ') : str_replace('_', '', basename(dirname(__FILE__)).basename(__FILE__, '.php')); // To manage different context of search
 $backtopage = GETPOST('backtopage', 'alpha');
 $backtopageforcancel = GETPOST('backtopageforcancel', 'alpha');
 $dol_openinpopup = GETPOST('dol_openinpopup', 'aZ09');
-
-
-
-
-
-if($action == 'desactivation')
-{
-	$object = new Groupe($db);
-	$sql = "UPDATE " . MAIN_DB_PREFIX . "organisation_groupe SET status = " . $object::STATUS_CANCELED . " WHERE rowid=" . $id;
-	$resql = $db->query($sql);
-
-	setEventMessage('Groupe mis en retraite avec succès!');
-}
+$idEngagement = GETPOST('idEngagement','int');
 
 // Initialize technical objects
 $object = new Groupe($db);
@@ -149,13 +149,13 @@ include DOL_DOCUMENT_ROOT.'/core/actions_fetchobject.inc.php'; // Must be includ
 
 // There is several ways to check permission.
 // Set $enablepermissioncheck to 1 to enable a minimum low level of checks
-$enablepermissioncheck = 0;
+$enablepermissioncheck = 1;
 if ($enablepermissioncheck) {
-	$permissiontoread = $user->rights->organisation->groupe->read;
-	$permissiontoadd = $user->rights->organisation->groupe->write; // Used by the include of actions_addupdatedelete.inc.php and actions_lineupdown.inc.php
-	$permissiontodelete = $user->rights->organisation->groupe->delete || ($permissiontoadd && isset($object->status) && $object->status == $object::STATUS_DRAFT);
-	$permissionnote = $user->rights->organisation->groupe->write; // Used by the include of actions_setnotes.inc.php
-	$permissiondellink = $user->rights->organisation->groupe->write; // Used by the include of actions_dellink.inc.php
+	$permissiontoread = $user->rights->organisation->organisation->read;
+	$permissiontoadd = $user->rights->organisation->organisation->write; // Used by the include of actions_addupdatedelete.inc.php and actions_lineupdown.inc.php
+	$permissiontodelete = $user->rights->organisation->organisation->delete || ($permissiontoadd && isset($object->status) && $object->status == $object::STATUS_DRAFT);
+	$permissionnote = $user->rights->organisation->organisation->write; // Used by the include of actions_setnotes.inc.php
+	$permissiondellink = $user->rights->organisation->organisation->write; // Used by the include of actions_dellink.inc.php
 } else {
 	$permissiontoread = 1;
 	$permissiontoadd = 1; // Used by the include of actions_addupdatedelete.inc.php and actions_lineupdown.inc.php
@@ -174,86 +174,9 @@ $upload_dir = $conf->organisation->multidir_output[isset($object->entity) ? $obj
 if (empty($conf->organisation->enabled)) accessforbidden();
 if (!$permissiontoread) accessforbidden();
 
+// include des actions, pour ne pas flooder le fichier
+include DOL_DOCUMENT_ROOT.'/custom/organisation/core/actions/actions_groupe_organisation.inc.php';
 
-
-if ($action == 'deleteEngagement') {
-	if(GETPOST('statut', 'aZ09') == "professeur")
-	{
-		$sql = "DELETE FROM " . MAIN_DB_PREFIX . "organisation_engagement WHERE fk_agent=".GETPOST('user', 'aZ09');
-		$resql = $db->query($sql);
-	}
-	else
-	{
-		$sql = "DELETE FROM " . MAIN_DB_PREFIX . "organisation_engagement WHERE fk_eleve=".GETPOST('user', 'aZ09');
-		$resql = $db->query($sql);
-	}
-
-	setEventMessage('Engagement supprimé avec succès');
-}
-
-
-
-
-if($action == 'importAll')
-{
-	// $sql = "DELETE FROM " . MAIN_DB_PREFIX . "organisation_engagement WHERE fk_groupe=".$object->id;
-	// $resql = $db->query($sql);
-	$count = 0;
-	$affectation = "SELECT s.fk_souhait FROM ".MAIN_DB_PREFIX."affectation as s WHERE s.fk_creneau=".$creneau." AND date_fin IS NULL";
-	$resqlAffectation = $db->query($affectation);
-	foreach($resqlAffectation as $val)
-	{
-	
-		$eleve = "SELECT e.nom,e.prenom,e.rowid FROM ".MAIN_DB_PREFIX."eleve as e WHERE e.rowid=".("(SELECT s.fk_eleve FROM ".MAIN_DB_PREFIX."souhait as s WHERE s.rowid =".$val['fk_souhait'].")");
-		$resqlEleve = $db->query($eleve);
-		foreach($resqlEleve as $res)
-		{
-			$existingEngagement = "SELECT * FROM ".MAIN_DB_PREFIX."organisation_engagement WHERE fk_eleve = ".$res['rowid'].' AND fk_groupe='.$object->id;
-			$resqlExistingEngagement = $db->query($existingEngagement);
-			if($resqlExistingEngagement->num_rows != 1)
-			{
-				$dateAjout = "'".date('Y-m-d H:i:s')."'";
-				$add = "INSERT INTO ".MAIN_DB_PREFIX."organisation_engagement(`fk_groupe`,`fk_eleve`, `fk_agent`, `responsabilite`, `date_fin_engagement`, `description`, `note_public`, `note_private`, `date_creation`, `tms`, `fk_user_creat`, `fk_user_modif`, `last_main_doc`, `import_key`, `model_pdf`, `status`) VALUES 
-				(".$object->id.",".$res['rowid'].",NULL,NULL,NULL,NULL,NULL,NULL,NULL,".$dateAjout.",".$user->id.",NULL,NULL,NULL,NULL,4)";
-				$resqlAdd = $db->query($add);
-				$count++;
-			}
-
-		}
-	}
-	if($count == 0)
-	{
-		setEventMessage('Tout les élèves sont déjà présents');
-	}
-	else
-	{
-		setEventMessage('Import réalisé avec succès');
-	}
-	
-}
-
-
-if($action == 'addInstru')
-{
-	$existingInstru = "SELECT fk_instrument,rowid FROM ".MAIN_DB_PREFIX."organisation_liaisoninstrument WHERE fk_engagement = ".$engagement;
-	$resqlExistingInstru = $db->query($existingInstru);
-
-	$dateCreation = date('Y-m-d H:i:s');
-
-	if($resqlExistingInstru->num_rows != 0)
-	{
-		$sql = "UPDATE ".MAIN_DB_PREFIX."organisation_liaisoninstrument SET fk_engagement=".$engagement.", fk_instrument=".$instru;
-		$resql = $db->query($sql);
-	}
-	else
-	{
-		$add = "INSERT INTO ".MAIN_DB_PREFIX."organisation_liaisoninstrument(`fk_engagement`,`fk_participation`, `fk_instrument`, `description`, `note_public`, `note_private`, `date_creation`, `tms`, `fk_user_creat`, `fk_user_modif`, `last_main_doc`, `import_key`, `model_pdf`, `status`) VALUES 
-		(".$engagement.",NULL,".$instru.",NULL,NULL,NULL,NULL,NULL,".$user->id.",NULL,NULL,NULL,NULL,4)";
-		$resqlAdd = $db->query($add);
-	}
-
-	setEventMessage('Instrument lié avec succès');
-}
 
 /*
  * Actions
@@ -272,7 +195,7 @@ if (empty($reshook)) {
 
 	if (empty($backtopage) || ($cancel && empty($id))) {
 		if (empty($backtopage) || ($cancel && strpos($backtopage, '__ID__'))) {
-			if (empty($id) && (($action != 'add' && $action != 'create') || $cancel)) {
+			if (empty($id) && (($action != 'addvar' && $action != 'create') || $cancel)) {
 				$backtopage = $backurlforlist;
 			} else {
 				$backtopage = dol_buildpath('/organisation/groupe_card.php', 1).'?id='.((!empty($id) && $id > 0) ? $id : '__ID__');
@@ -316,9 +239,6 @@ if (GETPOST('res', 'aZ09') == "success") {
 	setEventMessage('Engagement créé avec succès');
 }
 
-
-
-
 /*
  * View
  *
@@ -332,21 +252,6 @@ $formproject = new FormProjets($db);
 $title = $langs->trans("Groupe");
 $help_url = '';
 llxHeader('', $title, $help_url);
-
-// Example : Adding jquery code
-// print '<script type="text/javascript">
-// jQuery(document).ready(function() {
-// 	function init_myfunc()
-// 	{
-// 		jQuery("#myid").removeAttr(\'disabled\');
-// 		jQuery("#myid").attr(\'disabled\',\'disabled\');
-// 	}
-// 	init_myfunc();
-// 	jQuery("#mybutton").click(function() {
-// 		init_myfunc();
-// 	});
-// });
-// </script>';
 
 
 // Part to create
@@ -370,9 +275,6 @@ if ($action == 'create') {
 
 	print dol_get_fiche_head(array(), '');
 
-	// Set some default values
-	//if (! GETPOSTISSET('fieldname')) $_POST['fieldname'] = 'myvalue';
-
 	print '<table class="border centpercent tableforfieldcreate">'."\n";
 
 	// Common attributes
@@ -388,8 +290,6 @@ if ($action == 'create') {
 	print $form->buttonsSaveCancel("Create");
 
 	print '</form>';
-
-	//dol_set_focus('input[name="ref"]');
 }
 
 // Part to edit record
@@ -439,41 +339,23 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 	if ($action == 'delete') {
 		$formconfirm = $form->formconfirm($_SERVER["PHP_SELF"].'?id='.$object->id, $langs->trans('DeleteGroupe'), $langs->trans('ConfirmDeleteObject'), 'confirm_delete', '', 0, 1);
 	}
-	// Confirmation to delete line
-	if ($action == 'deleteline') {
-		$formconfirm = $form->formconfirm($_SERVER["PHP_SELF"].'?id='.$object->id.'&lineid='.$lineid, $langs->trans('DeleteLine'), $langs->trans('ConfirmDeleteLine'), 'confirm_deleteline', '', 0, 1);
+
+	// Confirmation to delete
+	if ($action == 'deleteEngagement') {
+		$formconfirm = $form->formconfirm($_SERVER['PHP_SELF'] . '?id=' . $object->id.'&idEngagement='.GETPOST('idEngagement','int'), 'Supprimer un engagement', "Voulez-vous supprimer cet engagement du groupe? Il peut être rajouté par la suite si besoin", 'confirm_deleteEngagement', '', 0, 1);
 	}
 
-	// Clone confirmation
-	if ($action == 'clone') {
-		// Create an array for form
-		$formquestion = array();
-		$formconfirm = $form->formconfirm($_SERVER["PHP_SELF"].'?id='.$object->id, $langs->trans('ToClone'), $langs->trans('ConfirmCloneAsk', $object->ref), 'confirm_clone', $formquestion, 'yes', 1);
+	// Confirmation to delete
+	if ($action == 'deleteLiaison') {
+		$formconfirm = $form->formconfirm($_SERVER['PHP_SELF'] . '?id=' . $object->id . '&idLiaisonInstru=' . GETPOST('idLiaisonInstru', 'int'), 'Supprimer un instrument', 'Voulez-vous supprimer cet instrument de l\'agent/élève? Il peut être rajouté par la suite si besoin', 'confirm_deleteInstru', '', 0, 1);
 	}
 
-	// Confirmation of action xxxx (You can use it for xxx = 'close', xxx = 'reopen', ...)
-	if ($action == 'xxx') {
-		$text = $langs->trans('ConfirmActionGroupe', $object->ref);
-		/*if (! empty($conf->notification->enabled))
-		{
-			require_once DOL_DOCUMENT_ROOT . '/core/class/notify.class.php';
-			$notify = new Notify($db);
-			$text .= '<br>';
-			$text .= $notify->confirmMessage('GROUPE_CLOSE', $object->socid, $object);
-		}*/
+	// Confirmation to delete
+	if ($action == 'endEngagement') {
+		$engagementClass = new Engagement($db);
+		$engagementClass->fetch(GETPOST('idEngagement', 'int'));
 
-		$formquestion = array();
-		/*
-		$forcecombo=0;
-		if ($conf->browser->name == 'ie') $forcecombo = 1;	// There is a bug in IE10 that make combo inside popup crazy
-		$formquestion = array(
-			// 'text' => $langs->trans("ConfirmClone"),
-			// array('type' => 'checkbox', 'name' => 'clone_content', 'label' => $langs->trans("CloneMainAttributes"), 'value' => 1),
-			// array('type' => 'checkbox', 'name' => 'update_prices', 'label' => $langs->trans("PuttingPricesUpToDate"), 'value' => 1),
-			// array('type' => 'other',    'name' => 'idwarehouse',   'label' => $langs->trans("SelectWarehouseForStockDecrease"), 'value' => $formproduct->selectWarehouses(GETPOST('idwarehouse')?GETPOST('idwarehouse'):'ifone', 'idwarehouse', '', 1, 0, 0, '', 0, $forcecombo))
-		);
-		*/
-		$formconfirm = $form->formconfirm($_SERVER["PHP_SELF"].'?id='.$object->id, $langs->trans('XXX'), $text, 'confirm_xxx', $formquestion, 0, 1, 220);
+		$formconfirm = $form->formconfirm($_SERVER['PHP_SELF'] . '?id=' . $object->id . '&idEngagement=' . $engagementClass->id, ($engagementClass->date_fin_engagement ? 'Ré-ouvrir' : 'Terminer')." un engagement", 'Voulez-vous '.($engagementClass->date_fin_engagement ? 'ré-ouvrir' : 'Terminer').' cet engagement?', 'confirm_endEngagement', '', 0, 1);
 	}
 
 	// Call Hook formConfirm
@@ -488,46 +370,11 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 	// Print form confirm
 	print $formconfirm;
 
-
 	// Object card
 	// ------------------------------------------------------------
 	$linkback = '<a href="'.dol_buildpath('/organisation/groupe_list.php', 1).'?restore_lastsearch_values=1'.(!empty($socid) ? '&socid='.$socid : '').'">'.$langs->trans("BackToList").'</a>';
 
 	$morehtmlref = '<div class="refidno">';
-	/*
-	 // Ref customer
-	 $morehtmlref.=$form->editfieldkey("RefCustomer", 'ref_client', $object->ref_client, $object, 0, 'string', '', 0, 1);
-	 $morehtmlref.=$form->editfieldval("RefCustomer", 'ref_client', $object->ref_client, $object, 0, 'string', '', null, null, '', 1);
-	 // Thirdparty
-	 $morehtmlref.='<br>'.$langs->trans('ThirdParty') . ' : ' . (is_object($object->thirdparty) ? $object->thirdparty->getNomUrl(1) : '');
-	 // Project
-	 if (! empty($conf->project->enabled)) {
-	 $langs->load("projects");
-	 $morehtmlref .= '<br>'.$langs->trans('Project') . ' ';
-	 if ($permissiontoadd) {
-	 //if ($action != 'classify') $morehtmlref.='<a class="editfielda" href="' . $_SERVER['PHP_SELF'] . '?action=classify&token='.newToken().'&id=' . $object->id . '">' . img_edit($langs->transnoentitiesnoconv('SetProject')) . '</a> ';
-	 $morehtmlref .= ' : ';
-	 if ($action == 'classify') {
-	 //$morehtmlref .= $form->form_project($_SERVER['PHP_SELF'] . '?id=' . $object->id, $object->socid, $object->fk_project, 'projectid', 0, 0, 1, 1);
-	 $morehtmlref .= '<form method="post" action="'.$_SERVER['PHP_SELF'].'?id='.$object->id.'">';
-	 $morehtmlref .= '<input type="hidden" name="action" value="classin">';
-	 $morehtmlref .= '<input type="hidden" name="token" value="'.newToken().'">';
-	 $morehtmlref .= $formproject->select_projects($object->socid, $object->fk_project, 'projectid', $maxlength, 0, 1, 0, 1, 0, 0, '', 1);
-	 $morehtmlref .= '<input type="submit" class="button valignmiddle" value="'.$langs->trans("Modify").'">';
-	 $morehtmlref .= '</form>';
-	 } else {
-	 $morehtmlref.=$form->form_project($_SERVER['PHP_SELF'] . '?id=' . $object->id, $object->socid, $object->fk_project, 'none', 0, 0, 0, 1);
-	 }
-	 } else {
-	 if (! empty($object->fk_project)) {
-	 $proj = new Project($db);
-	 $proj->fetch($object->fk_project);
-	 $morehtmlref .= ': '.$proj->getNomUrl();
-	 } else {
-	 $morehtmlref .= '';
-	 }
-	 }
-	 }*/
 	$morehtmlref .= '</div>';
 
 
@@ -549,152 +396,32 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 	include DOL_DOCUMENT_ROOT.'/core/tpl/extrafields_view.tpl.php';
 
 	print '</table>';
-	
+
+	// Fonction qui affiche les morceaux liés à cet artiste
+	print $object->printPassageConcertGroupe();
+
 	print '</div>';
-	
+
 	print '</div>';
 
 	print '<div class="clearboth"></div>';
-	
-	print '<h3>Liste des engagments: </h3>';
 
+	print load_fiche_titre("Liste des engagements", '', 'fa-sign');
 
-	$engagements = "SELECT * FROM ".MAIN_DB_PREFIX."organisation_engagement WHERE fk_groupe = ".$object->id;
-	$resqlEngagement = $db->query($engagements);
+	// Appel de la fonction qui affiche le tableau des engagements
+	$engagementClass = new Engagement($db);
+	print $engagementClass->printListeEngagement($object->id);
 
-	if($resqlEngagement->num_rows > 0)
+	print '<span style="margin: 0.5em" class="badge  badge-status9 badge-status"><a href="'.DOL_URL_ROOT.'/custom/organisation/engagement_card.php?action=create&fk_groupe='.$object->id.'">+ Ajouter un membre</a></span><br>';
+	if($object->fk_creneau)
 	{
-		print '<table class="tagtable liste">';
-		print '<tbody>';
-		print '<tr>';
-		print '<td style="padding:0.5em">Engagé</td>';
-		print '<td style="padding:0.5em">Type</td>';
-		print '<td style="padding:0.5em">Responsabilité</td>';
-		print '<td style="padding:0.5em">Instrument lié</td>';
-		print '<td style="padding:0.5em">Début d\'engagement</td>';
-		print '<td style="padding:0.5em">Fin d\'engagement</td>';
-		print '<td style="padding:0.5em" colspan="2">Actions</td>';
-		print '</tr>';
-	
-		foreach($resqlEngagement as $value)
-		{
-			if($value['fk_eleve'])
-			{
-				$eleve = "SELECT * FROM ".MAIN_DB_PREFIX."eleve WHERE rowid = ".$value['fk_eleve'];
-				$resqlEleve = $db->query($eleve);
-				$objAgentEleve = $db->fetch_object($resqlEleve);
-				$statut = "eleve";
-			}
-			else
-			{
-				$agent = "SELECT * FROM ".MAIN_DB_PREFIX."management_agent WHERE rowid = ".$value['fk_agent'];
-				$resqlAgent = $db->query($agent);
-				$objAgentEleve = $db->fetch_object($resqlAgent);
-				$statut = "professeur";
-			}
-	
-			$instrument = "SELECT instrument, rowid FROM ".MAIN_DB_PREFIX."organisation_instrument";
-			$resqlInstrument = $db->query($instrument);
-	
-			$existingInstru = "SELECT fk_instrument FROM ".MAIN_DB_PREFIX."organisation_liaisoninstrument WHERE fk_engagement = ".$value['rowid'];
-			$resqlExistingInstru = $db->query($existingInstru);
-			$objExistingInstru = $db->fetch_object($resqlExistingInstru);
-	
-			print '<tr style="background-color: #E9ffd7">';
-			print '<td><a href="' . DOL_URL_ROOT . '/custom'.($value['fk_agent'] != NULL ? '/management/agent_card.php' : '/viescolaire/eleve_card.php' ).'?id=' . ($value['fk_agent'] != NULL ? $value['fk_agent'] : $value['fk_eleve'] ) . '" target="_blank">'.$objAgentEleve->prenom.' '.$objAgentEleve->nom.'</a></td>';
-			print '<td><span class="badge  badge-status'.($value['fk_agent'] != NULL ? '4' : '1').' badge-status">'.($value['fk_agent'] != NULL ? 'Agent' : 'Eleve').'</span></td>';
-			print '<td><span class="badge  badge-status'.($value['responsabilite'] == 1 ? '4' : '1').' badge-status">'.($value['responsabilite'] == 1 ? 'Oui' : 'Non').'</span></td>';
-	
-			print '<form method="POST" action="'.$_SERVER['PHP_SELF'].'?id='.$object->id.'&action=addInstru">';
-			print '<input type="text" name="engagement" value="'.$value['rowid'].'" hidden>';
-			print '<td> <select name="Instru" id="">';
-			print '<option value="0">Aucun</option>'; 
-	
-			foreach($resqlInstrument as $val)
-			{
-				print '<option value="'.$val['rowid'].'" '.($objExistingInstru->fk_instrument == $val['rowid'] ? 'selected' : '').'>'.$val['instrument'].'</option>';
-			}
-			
-			print '</select>';
-			print '<button type="submit">Valider</button>';
-			print '</form>';
-			print '</td>';
-
-			print '<td>'.date('d/m/Y',strtotime($value['tms'])).'</td>';
-			print '<td>'.(!empty($value['date_fin_engagement']) ? date('d/m/Y',strtotime($value['date_fin_engagement'])) : 'Indéfinie').'</td>';
-			print '<td style="padding:1em"><a href="/custom/organisation/engagement_card.php?id='.$value['rowid'].'&action=edit&token='.newToken().'">'.'✏️'.'</a></td>';
-			print '<td style="padding:1em"><a href="'.DOL_URL_ROOT.'/custom/organisation/groupe_card.php?id='.$object->id.'&user='.(isset($value['fk_eleve']) ? $value['fk_eleve'] : $value['fk_agent']).'&action=deleteEngagement&statut='.$statut.'">'.'❌'.'</a></td>';
-			print '</tr>';
-		}
-	
-		print '</tbody>';
-		print '</table>';
+		print '<span style="margin: 0.5em" class="badge  badge-status9 badge-status"><a href="'.DOL_URL_ROOT.'/custom/organisation/groupe_card.php?id='.$object->id.'&creneau='.$object->fk_creneau.'&action=importAll">+ Importer tout les élèves</a></span>';
 	}
-	
-	
-	print '<span style="margin: 0.5em" class="badge  badge-status9 badge-status"><a href="'.DOL_URL_ROOT.'/custom/organisation/engagement_card.php?action=create&fk_groupe='.$object->id.'">+ Ajouter un membre</a></span><br>';	
-	print '<span style="margin: 0.5em" class="badge  badge-status9 badge-status"><a href="'.DOL_URL_ROOT.'/custom/organisation/groupe_card.php?id='.$object->id.'&creneau='.$object->fk_creneau.'&action=importAll">+ Importer tout les élèves</a></span>';	
-
 
 	print dol_get_fiche_end();
 
-	
-
-
-	/*
-	 * Lines
-	 */
-
-	if (!empty($object->table_element_line)) {
-		// Show object lines
-		$result = $object->getLinesArray();
-
-		print '	<form name="addproduct" id="addproduct" action="'.$_SERVER["PHP_SELF"].'?id='.$object->id.(($action != 'editline') ? '' : '#line_'.GETPOST('lineid', 'int')).'" method="POST">
-		<input type="hidden" name="token" value="' . newToken().'">
-		<input type="hidden" name="action" value="' . (($action != 'editline') ? 'addline' : 'updateline').'">
-		<input type="hidden" name="mode" value="">
-		<input type="hidden" name="page_y" value="">
-		<input type="hidden" name="id" value="' . $object->id.'">
-		';
-
-		if (!empty($conf->use_javascript_ajax) && $object->status == 0) {
-			include DOL_DOCUMENT_ROOT.'/core/tpl/ajaxrow.tpl.php';
-		}
-
-		print '<div class="div-table-responsive-no-min">';
-		if (!empty($object->lines) || ($object->status == $object::STATUS_DRAFT && $permissiontoadd && $action != 'selectlines' && $action != 'editline')) {
-			print '<table id="tablelines" class="noborder noshadow" width="100%">';
-		}
-
-		if (!empty($object->lines)) {
-			$object->printObjectLines($action, $mysoc, null, GETPOST('lineid', 'int'), 1);
-		}
-
-		// Form to add new line
-		if ($object->status == 0 && $permissiontoadd && $action != 'selectlines') {
-			if ($action != 'editline') {
-				// Add products/services form
-
-				$parameters = array();
-				$reshook = $hookmanager->executeHooks('formAddObjectLine', $parameters, $object, $action); // Note that $action and $object may have been modified by hook
-				if ($reshook < 0) setEventMessages($hookmanager->error, $hookmanager->errors, 'errors');
-				if (empty($reshook))
-					$object->formAddObjectLine(1, $mysoc, $soc);
-			}
-		}
-
-		if (!empty($object->lines) || ($object->status == $object::STATUS_DRAFT && $permissiontoadd && $action != 'selectlines' && $action != 'editline')) {
-			print '</table>';
-		}
-		print '</div>';
-
-		print "</form>\n";
-	}
-
-
 	print '<hr>';
 	// Buttons for actions
-
 	if ($action != 'presend' && $action != 'editline') {
 		print '<div class="tabsAction">'."\n";
 		$parameters = array();
@@ -704,33 +431,28 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 		}
 
 		if (empty($reshook)) {
-
-			if($object->status != $object::STATUS_CANCELED)
-			{
-				print dolGetButtonAction($langs->trans('Modifier'), '', 'default', $_SERVER["PHP_SELF"].'?id='.$object->id.'&action=edit&token='.newToken(), '', $permissiontoadd);
-
-				if ($object->status == $object::STATUS_DRAFT) {
-					print dolGetButtonAction($langs->trans('Groupe actif'), '', 'default', $_SERVER['PHP_SELF'].'?id='.$object->id.'&action=confirm_validate&confirm=yes&token='.newToken(), '', $permissiontoadd);
-				}
-	
-				if ($object->status == $object::STATUS_VALIDATED) {
-					print dolGetButtonAction($langs->trans('Groupe en attente'), '', 'default', $_SERVER["PHP_SELF"].'?id='.$object->id.'&action=confirm_setdraft&confirm=yes&token='.newToken(), '', $permissiontoadd);
-				}
-	
-				print dolGetButtonAction($langs->trans('Proposer à un concert'), '', 'default', DOL_URL_ROOT.'/custom/organisation/proposition_card.php?fk_groupe='.$object->id.'&action=create&token='.newToken() , '', $permissiontoadd);
-	
-			}
-
-			
 			if($permissiontoadd){
-				if ($object->status != $object::STATUS_CANCELED) {
+				if ($object->status == $object::STATUS_DRAFT) {
+					print dolGetButtonAction($langs->trans('Groupe actif'), '', 'default', $_SERVER['PHP_SELF'] . '?id=' . $object->id . '&action=confirm_validate&confirm=yes&token=' . newToken(), '', $permissiontoadd);
 					print dolGetButtonAction($langs->trans('Groupe à la retraite'), '', 'default', $_SERVER['PHP_SELF'].'?id='.$object->id.'&action=desactivation&token='.newToken(), '', $permissiontoadd);
-				} else {
+				}
+
+				if ($object->status == $object::STATUS_VALIDATED) {
+					print dolGetButtonAction($langs->trans('Groupe en attente'), '', 'default', $_SERVER['PHP_SELF'] . '?id=' . $object->id . '&action=confirm_setdraft&confirm=yes&token=' . newToken(), '', $permissiontoadd);
+					print dolGetButtonAction($langs->trans('Proposer à un concert'), '', 'default', DOL_URL_ROOT . '/custom/organisation/proposition_card.php?fk_groupe=' . $object->id . '&action=create&token=' . newToken(), '', $permissiontoadd);
+				}
+
+				if ($object->status == $object::STATUS_CANCELED) {
 					print dolGetButtonAction($langs->trans('Groupe en attente'), '', 'default', $_SERVER["PHP_SELF"].'?id='.$object->id.'&action=confirm_setdraft&confirm=yes&token='.newToken(), '', $permissiontoadd);
 				}
+
+				if($object->status == $object::STATUS_DRAFT)
+				{
+					print dolGetButtonAction($langs->trans('Modifier'), '', 'default', $_SERVER['PHP_SELF'] . '?id=' . $object->id . '&action=edit&token=' . newToken(), '', $permissiontoadd);
+				}
+
 				print dolGetButtonAction($langs->trans('Supprimer le groupe'), '', 'delete', $_SERVER['PHP_SELF'].'?id='.$object->id.'&action=delete&token='.newToken(), '', $permissiontodelete || ($object->status == $object::STATUS_DRAFT && $permissiontoadd));
 			}
-			
 		}
 		print '</div>'."\n";
 	}

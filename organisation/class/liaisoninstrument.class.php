@@ -65,7 +65,7 @@ class LiaisonInstrument extends CommonObject
 
 
 	const STATUS_DRAFT = 0;
-	const STATUS_VALIDATED = 1;
+	const STATUS_VALIDATED = 4;
 	const STATUS_CANCELED = 9;
 
 
@@ -205,12 +205,6 @@ class LiaisonInstrument extends CommonObject
 			$this->fields['entity']['enabled'] = 0;
 		}
 
-		// Example to show how to set values of fields definition dynamically
-		/*if ($user->rights->organisation->liaisoninstrument->read) {
-			$this->fields['myfield']['visible'] = 1;
-			$this->fields['myfield']['noteditable'] = 0;
-		}*/
-
 		// Unset fields that are disabled
 		foreach ($this->fields as $key => $val) {
 			if (isset($val['enabled']) && empty($val['enabled'])) {
@@ -239,112 +233,9 @@ class LiaisonInstrument extends CommonObject
 	 */
 	public function create(User $user, $notrigger = false)
 	{
-		var_dump($this->fk_engagement);
-		// $resultcreate = $this->createCommon($user, $notrigger);
+		$resultcreate = $this->createCommon($user, $notrigger);
 
-		// //$resultvalidate = $this->validate($user, $notrigger);
-
-		// return $resultcreate;
-	}
-
-	/**
-	 * Clone an object into another one
-	 *
-	 * @param  	User 	$user      	User that creates
-	 * @param  	int 	$fromid     Id of object to clone
-	 * @return 	mixed 				New object created, <0 if KO
-	 */
-	public function createFromClone(User $user, $fromid)
-	{
-		global $langs, $extrafields;
-		$error = 0;
-
-		dol_syslog(__METHOD__, LOG_DEBUG);
-
-		$object = new self($this->db);
-
-		$this->db->begin();
-
-		// Load source object
-		$result = $object->fetchCommon($fromid);
-		if ($result > 0 && !empty($object->table_element_line)) {
-			$object->fetchLines();
-		}
-
-		// get lines so they will be clone
-		//foreach($this->lines as $line)
-		//	$line->fetch_optionals();
-
-		// Reset some properties
-		unset($object->id);
-		unset($object->fk_user_creat);
-		unset($object->import_key);
-
-		// Clear fields
-		if (property_exists($object, 'ref')) {
-			$object->ref = empty($this->fields['ref']['default']) ? "Copy_Of_".$object->ref : $this->fields['ref']['default'];
-		}
-		if (property_exists($object, 'label')) {
-			$object->label = empty($this->fields['label']['default']) ? $langs->trans("CopyOf")." ".$object->label : $this->fields['label']['default'];
-		}
-		if (property_exists($object, 'status')) {
-			$object->status = self::STATUS_DRAFT;
-		}
-		if (property_exists($object, 'date_creation')) {
-			$object->date_creation = dol_now();
-		}
-		if (property_exists($object, 'date_modification')) {
-			$object->date_modification = null;
-		}
-		// ...
-		// Clear extrafields that are unique
-		if (is_array($object->array_options) && count($object->array_options) > 0) {
-			$extrafields->fetch_name_optionals_label($this->table_element);
-			foreach ($object->array_options as $key => $option) {
-				$shortkey = preg_replace('/options_/', '', $key);
-				if (!empty($extrafields->attributes[$this->table_element]['unique'][$shortkey])) {
-					//var_dump($key);
-					//var_dump($clonedObj->array_options[$key]); exit;
-					unset($object->array_options[$key]);
-				}
-			}
-		}
-
-		// Create clone
-		$object->context['createfromclone'] = 'createfromclone';
-		$result = $object->createCommon($user);
-		if ($result < 0) {
-			$error++;
-			$this->error = $object->error;
-			$this->errors = $object->errors;
-		}
-
-		if (!$error) {
-			// copy internal contacts
-			if ($this->copy_linked_contact($object, 'internal') < 0) {
-				$error++;
-			}
-		}
-
-		if (!$error) {
-			// copy external contacts if same company
-			if (!empty($object->socid) && property_exists($this, 'fk_soc') && $this->fk_soc == $object->socid) {
-				if ($this->copy_linked_contact($object, 'external') < 0) {
-					$error++;
-				}
-			}
-		}
-
-		unset($object->context['createfromclone']);
-
-		// End
-		if (!$error) {
-			$this->db->commit();
-			return $object;
-		} else {
-			$this->db->rollback();
-			return -1;
-		}
+		return $resultcreate;
 	}
 
 	/**
@@ -354,9 +245,9 @@ class LiaisonInstrument extends CommonObject
 	 * @param string $ref  Ref
 	 * @return int         <0 if KO, 0 if not found, >0 if OK
 	 */
-	public function fetch($id, $ref = null)
+	public function fetch($id, $ref = null,$moresql = '')
 	{
-		$result = $this->fetchCommon($id, $ref);
+		$result = $this->fetchCommon($id, $ref, $moresql);
 		if ($result > 0 && !empty($this->table_element_line)) {
 			$this->fetchLines();
 		}
@@ -522,14 +413,6 @@ class LiaisonInstrument extends CommonObject
 			return 0;
 		}
 
-		/*if (! ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && !empty($user->rights->organisation->liaisoninstrument->write))
-		 || (!empty($conf->global->MAIN_USE_ADVANCED_PERMS) && !empty($user->rights->organisation->liaisoninstrument->liaisoninstrument_advance->validate))))
-		 {
-		 $this->error='NotEnoughPermissions';
-		 dol_syslog(get_class($this)."::valid ".$this->error, LOG_ERR);
-		 return -1;
-		 }*/
-
 		$now = dol_now();
 
 		$this->db->begin();
@@ -640,13 +523,6 @@ class LiaisonInstrument extends CommonObject
 			return 0;
 		}
 
-		/*if (! ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && !empty($user->rights->organisation->write))
-		 || (!empty($conf->global->MAIN_USE_ADVANCED_PERMS) && !empty($user->rights->organisation->organisation_advance->validate))))
-		 {
-		 $this->error='Permission denied';
-		 return -1;
-		 }*/
-
 		return $this->setStatusCommon($user, self::STATUS_DRAFT, $notrigger, 'LIAISONINSTRUMENT_UNVALIDATE');
 	}
 
@@ -664,13 +540,6 @@ class LiaisonInstrument extends CommonObject
 			return 0;
 		}
 
-		/*if (! ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && !empty($user->rights->organisation->write))
-		 || (!empty($conf->global->MAIN_USE_ADVANCED_PERMS) && !empty($user->rights->organisation->organisation_advance->validate))))
-		 {
-		 $this->error='Permission denied';
-		 return -1;
-		 }*/
-
 		return $this->setStatusCommon($user, self::STATUS_CANCELED, $notrigger, 'LIAISONINSTRUMENT_CANCEL');
 	}
 
@@ -687,13 +556,6 @@ class LiaisonInstrument extends CommonObject
 		if ($this->status == self::STATUS_VALIDATED) {
 			return 0;
 		}
-
-		/*if (! ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && !empty($user->rights->organisation->write))
-		 || (!empty($conf->global->MAIN_USE_ADVANCED_PERMS) && !empty($user->rights->organisation->organisation_advance->validate))))
-		 {
-		 $this->error='Permission denied';
-		 return -1;
-		 }*/
 
 		return $this->setStatusCommon($user, self::STATUS_VALIDATED, $notrigger, 'LIAISONINSTRUMENT_REOPEN');
 	}
@@ -812,36 +674,6 @@ class LiaisonInstrument extends CommonObject
 
 		return $result;
 	}
-
-	/**
-	 *	Return a thumb for kanban views
-	 *
-	 *	@param      string	    $option                 Where point the link (0=> main card, 1,2 => shipment, 'nolink'=>No link)
-	 *  @return		string								HTML Code for Kanban thumb.
-	 */
-	/*
-	public function getKanbanView($option = '')
-	{
-		$return = '<div class="box-flex-item box-flex-grow-zero">';
-		$return .= '<div class="info-box info-box-sm">';
-		$return .= '<span class="info-box-icon bg-infobox-action">';
-		$return .= img_picto('', $this->picto);
-		$return .= '</span>';
-		$return .= '<div class="info-box-content">';
-		$return .= '<span class="info-box-ref">'.(method_exists($this, 'getNomUrl') ? $this->getNomUrl() : $this->ref).'</span>';
-		if (property_exists($this, 'label')) {
-			$return .= '<br><span class="info-box-label opacitymedium">'.$this->label.'</span>';
-		}
-		if (method_exists($this, 'getLibStatut')) {
-			$return .= '<br><div class="info-box-status margintoponly">'.$this->getLibStatut(5).'</div>';
-		}
-		$return .= '</div>';
-		$return .= '</div>';
-		$return .= '</div>';
-
-		return $return;
-	}
-	*/
 
 	/**
 	 *  Return the label of the status
@@ -1066,34 +898,26 @@ class LiaisonInstrument extends CommonObject
 		return $result;
 	}
 
-	/**
-	 * Action executed by scheduler
-	 * CAN BE A CRON TASK. In such a case, parameters come from the schedule job setup field 'Parameters'
-	 * Use public function doScheduledJob($param1, $param2, ...) to get parameters
-	 *
-	 * @return	int			0 if OK, <>0 if KO (this function is used also by cron so only 0 is OK)
-	 */
-	public function doScheduledJob()
+	public function printLiaisonInstrument(int $engagementId, $viewMode = false)
 	{
-		global $conf, $langs;
+		$out = '';
 
-		//$conf->global->SYSLOG_FILE = 'DOL_DATA_ROOT/dolibarr_mydedicatedlofile.log';
+		$liaisons = $this->fetchAll('','',0,0,array('fk_engagement'=>$engagementId));
 
-		$error = 0;
-		$this->output = '';
-		$this->error = '';
+		if(count($liaisons) > 0)
+		{
+			$out .= '<ul>';
+			foreach ($liaisons as $liaison)
+			{
+				$instrumentClass = new Instrument($this->db);
+				$instrumentClass->fetch($liaison->fk_instrument);
 
-		dol_syslog(__METHOD__, LOG_DEBUG);
+				$out .= "<li>$instrumentClass->instrument ".($viewMode ? "<a style='margin-left: 1em' href=".$_SERVER['PHP_SELF'].'?id='.GETPOST('id','int').'&idLiaisonInstru='.$liaison->id.'&action=deleteLiaison'."><i class='fa fa-trash'></i></a>" : '').'</li>';
+			}
+			$out .= '</ul>';
+		} elseif($viewMode) $out .= '<br>Aucun instrument lié à cet élève/agent.<br><br>';
 
-		$now = dol_now();
-
-		$this->db->begin();
-
-		// ...
-
-		$this->db->commit();
-
-		return $error;
+		return $out;
 	}
 }
 

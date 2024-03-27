@@ -65,7 +65,7 @@ class Artiste extends CommonObject
 
 
 	const STATUS_DRAFT = 0;
-	const STATUS_VALIDATED = 1;
+	const STATUS_VALIDATED = 4;
 	const STATUS_CANCELED = 9;
 
 
@@ -113,7 +113,7 @@ class Artiste extends CommonObject
 	 */
 	public $fields=array(
 		'rowid' => array('type'=>'integer', 'label'=>'TechnicalID', 'enabled'=>'1', 'position'=>1, 'notnull'=>1, 'visible'=>0, 'noteditable'=>'1', 'index'=>1, 'css'=>'left',),
-		'artiste' => array('type'=>'varchar(255)', 'label'=>'Nom de l\'artiste', 'enabled'=>'1', 'position'=>20, 'notnull'=>1, 'visible'=>1, 'index'=>1, 'searchall'=>1, 'showoncombobox'=>'1', 'validate'=>'1',),
+		'artiste' => array('type'=>'varchar(255)', 'label'=>'Nom de l\'artiste', 'enabled'=>'1', 'position'=>20, 'notnull'=>1, 'visible'=>1, 'index'=>1, 'searchall'=>1,'showoncombobox'=>'true', 'validate'=>'1'),
 		'note_public' => array('type'=>'html', 'label'=>'NotePublic', 'enabled'=>'1', 'position'=>61, 'notnull'=>0, 'visible'=>0, 'cssview'=>'wordbreak', 'validate'=>'1',),
 		'note_private' => array('type'=>'html', 'label'=>'NotePrivate', 'enabled'=>'1', 'position'=>62, 'notnull'=>0, 'visible'=>0, 'cssview'=>'wordbreak', 'validate'=>'1',),
 		'date_creation' => array('type'=>'datetime', 'label'=>'DateCreation', 'enabled'=>'1', 'position'=>500, 'notnull'=>1, 'visible'=>-2,),
@@ -123,16 +123,10 @@ class Artiste extends CommonObject
 		'last_main_doc' => array('type'=>'varchar(255)', 'label'=>'LastMainDoc', 'enabled'=>'1', 'position'=>600, 'notnull'=>0, 'visible'=>0,),
 		'import_key' => array('type'=>'varchar(14)', 'label'=>'ImportId', 'enabled'=>'1', 'position'=>1000, 'notnull'=>-1, 'visible'=>-2,),
 		'model_pdf' => array('type'=>'varchar(255)', 'label'=>'Model pdf', 'enabled'=>'1', 'position'=>1010, 'notnull'=>-1, 'visible'=>0,),
-		'status' => array('type'=>'integer', 'label'=>'Status', 'enabled'=>'1', 'position'=>2000, 'notnull'=>1, 'visible'=>2, 'index'=>1, 'arrayofkeyval'=>array('0'=>'Brouillon', '1'=>'Valid&eacute;', '9'=>'Annul&eacute;'), 'validate'=>'1',),
+		'status' => array('type'=>'integer', 'label'=>'Status', 'enabled'=>'1', 'position'=>2000, 'notnull'=>1, 'visible'=>2, 'index'=>1, 'arrayofkeyval'=>array('0'=>'Brouillon', '4'=>'Valid&eacute;', '9'=>'Annul&eacute;'), 'validate'=>'1',),
 	);
+
 	public $rowid;
-	public $ref;
-	public $label;
-	public $amount;
-	public $qty;
-	public $fk_soc;
-	public $fk_project;
-	public $description;
 	public $note_public;
 	public $note_private;
 	public $date_creation;
@@ -143,6 +137,8 @@ class Artiste extends CommonObject
 	public $import_key;
 	public $model_pdf;
 	public $status;
+
+	public string $artiste;
 	// END MODULEBUILDER PROPERTIES
 
 
@@ -234,111 +230,17 @@ class Artiste extends CommonObject
 	 */
 	public function create(User $user, $notrigger = false)
 	{
-		$resultcreate = $this->createCommon($user, $notrigger);
+		// Recherche si l'artiste éxiste déjà
+		$existingArtiste = $this->fetchAll('','',0,0,array('artiste'=>'%'.$this->artiste.'%'),'LIKE');
 
-		//$resultvalidate = $this->validate($user, $notrigger);
-
-		return $resultcreate;
-	}
-
-	/**
-	 * Clone an object into another one
-	 *
-	 * @param  	User 	$user      	User that creates
-	 * @param  	int 	$fromid     Id of object to clone
-	 * @return 	mixed 				New object created, <0 if KO
-	 */
-	public function createFromClone(User $user, $fromid)
-	{
-		global $langs, $extrafields;
-		$error = 0;
-
-		dol_syslog(__METHOD__, LOG_DEBUG);
-
-		$object = new self($this->db);
-
-		$this->db->begin();
-
-		// Load source object
-		$result = $object->fetchCommon($fromid);
-		if ($result > 0 && !empty($object->table_element_line)) {
-			$object->fetchLines();
-		}
-
-		// get lines so they will be clone
-		//foreach($this->lines as $line)
-		//	$line->fetch_optionals();
-
-		// Reset some properties
-		unset($object->id);
-		unset($object->fk_user_creat);
-		unset($object->import_key);
-
-		// Clear fields
-		if (property_exists($object, 'ref')) {
-			$object->ref = empty($this->fields['ref']['default']) ? "Copy_Of_".$object->ref : $this->fields['ref']['default'];
-		}
-		if (property_exists($object, 'label')) {
-			$object->label = empty($this->fields['label']['default']) ? $langs->trans("CopyOf")." ".$object->label : $this->fields['label']['default'];
-		}
-		if (property_exists($object, 'status')) {
-			$object->status = self::STATUS_DRAFT;
-		}
-		if (property_exists($object, 'date_creation')) {
-			$object->date_creation = dol_now();
-		}
-		if (property_exists($object, 'date_modification')) {
-			$object->date_modification = null;
-		}
-		// ...
-		// Clear extrafields that are unique
-		if (is_array($object->array_options) && count($object->array_options) > 0) {
-			$extrafields->fetch_name_optionals_label($this->table_element);
-			foreach ($object->array_options as $key => $option) {
-				$shortkey = preg_replace('/options_/', '', $key);
-				if (!empty($extrafields->attributes[$this->table_element]['unique'][$shortkey])) {
-					//var_dump($key);
-					//var_dump($clonedObj->array_options[$key]); exit;
-					unset($object->array_options[$key]);
-				}
-			}
-		}
-
-		// Create clone
-		$object->context['createfromclone'] = 'createfromclone';
-		$result = $object->createCommon($user);
-		if ($result < 0) {
-			$error++;
-			$this->error = $object->error;
-			$this->errors = $object->errors;
-		}
-
-		if (!$error) {
-			// copy internal contacts
-			if ($this->copy_linked_contact($object, 'internal') < 0) {
-				$error++;
-			}
-		}
-
-		if (!$error) {
-			// copy external contacts if same company
-			if (!empty($object->socid) && property_exists($this, 'fk_soc') && $this->fk_soc == $object->socid) {
-				if ($this->copy_linked_contact($object, 'external') < 0) {
-					$error++;
-				}
-			}
-		}
-
-		unset($object->context['createfromclone']);
-
-		// End
-		if (!$error) {
-			$this->db->commit();
-			return $object;
-		} else {
-			$this->db->rollback();
+		if(count($existingArtiste) > 0)
+		{
+			setEventMessage('Cet artiste existe déjà.', 'errors');
 			return -1;
 		}
+
+		$this->status = self::STATUS_VALIDATED;
+		return $this->createCommon($user, $notrigger);
 	}
 
 	/**
@@ -348,28 +250,14 @@ class Artiste extends CommonObject
 	 * @param string $ref  Ref
 	 * @return int         <0 if KO, 0 if not found, >0 if OK
 	 */
-	public function fetch($id, $ref = null)
+	public function fetch($id, $ref = null,$moresql = null)
 	{
-		$result = $this->fetchCommon($id, $ref);
+		$result = $this->fetchCommon($id, $ref, $moresql);
 		if ($result > 0 && !empty($this->table_element_line)) {
 			$this->fetchLines();
 		}
 		return $result;
 	}
-
-	/**
-	 * Load object lines in memory from the database
-	 *
-	 * @return int         <0 if KO, 0 if not found, >0 if OK
-	 */
-	public function fetchLines()
-	{
-		$this->lines = array();
-
-		$result = $this->fetchLinesCommon();
-		return $result;
-	}
-
 
 	/**
 	 * Load list of objects in memory from the database.
@@ -460,6 +348,15 @@ class Artiste extends CommonObject
 	 */
 	public function update(User $user, $notrigger = false)
 	{
+		// Recherche si l'artiste éxiste déjà
+		$existingArtiste = $this->fetch('',''," AND rowid !=$this->id AND artiste LIKE '%$this->artiste%'");
+
+		if($existingArtiste > 0)
+		{
+			setEventMessage('Cet artiste existe déjà.', 'errors');
+			return -1;
+		}
+
 		return $this->updateCommon($user, $notrigger);
 	}
 
@@ -472,28 +369,18 @@ class Artiste extends CommonObject
 	 */
 	public function delete(User $user, $notrigger = false)
 	{
-		return $this->deleteCommon($user, $notrigger);
-		//return $this->deleteCommon($user, $notrigger, 1);
-	}
+		$morceauClass = new Morceau($this->db);
+		$morceaux = $morceauClass->fetchAll('','','','',array('fk_artiste'=>$this->id));
 
-	/**
-	 *  Delete a line of object in database
-	 *
-	 *	@param  User	$user       User that delete
-	 *  @param	int		$idline		Id of line to delete
-	 *  @param 	bool 	$notrigger  false=launch triggers after, true=disable triggers
-	 *  @return int         		>0 if OK, <0 if KO
-	 */
-	public function deleteLine(User $user, $idline, $notrigger = false)
-	{
-		if ($this->status < 0) {
-			$this->error = 'ErrorDeleteLineNotAllowedByObjectStatus';
-			return -2;
+
+		if(count($morceaux) > 0)
+		{
+			setEventMessage('Cet artiste possède des morceaux existants, suppression impossible.', 'errors');
+			return -1;
 		}
 
-		return $this->deleteLineCommon($user, $idline, $notrigger);
+		return $this->deleteCommon($user, $notrigger);
 	}
-
 
 	/**
 	 *	Validate object
@@ -516,14 +403,6 @@ class Artiste extends CommonObject
 			return 0;
 		}
 
-		/*if (! ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->organisation->artiste->write))
-		 || (! empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->organisation->artiste->artiste_advance->validate))))
-		 {
-		 $this->error='NotEnoughPermissions';
-		 dol_syslog(get_class($this)."::valid ".$this->error, LOG_ERR);
-		 return -1;
-		 }*/
-
 		$now = dol_now();
 
 		$this->db->begin();
@@ -539,8 +418,7 @@ class Artiste extends CommonObject
 		if (!empty($num)) {
 			// Validate
 			$sql = "UPDATE ".MAIN_DB_PREFIX.$this->table_element;
-			$sql .= " SET ref = '".$this->db->escape($num)."',";
-			$sql .= " status = ".self::STATUS_VALIDATED;
+			$sql .= " SET status = ".self::STATUS_VALIDATED;
 			if (!empty($this->fields['date_validation'])) {
 				$sql .= ", date_validation = '".$this->db->idate($now)."'";
 			}
@@ -634,13 +512,6 @@ class Artiste extends CommonObject
 			return 0;
 		}
 
-		/*if (! ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->organisation->write))
-		 || (! empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->organisation->organisation_advance->validate))))
-		 {
-		 $this->error='Permission denied';
-		 return -1;
-		 }*/
-
 		return $this->setStatusCommon($user, self::STATUS_DRAFT, $notrigger, 'ARTISTE_UNVALIDATE');
 	}
 
@@ -658,13 +529,6 @@ class Artiste extends CommonObject
 			return 0;
 		}
 
-		/*if (! ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->organisation->write))
-		 || (! empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->organisation->organisation_advance->validate))))
-		 {
-		 $this->error='Permission denied';
-		 return -1;
-		 }*/
-
 		return $this->setStatusCommon($user, self::STATUS_CANCELED, $notrigger, 'ARTISTE_CANCEL');
 	}
 
@@ -681,13 +545,6 @@ class Artiste extends CommonObject
 		if ($this->status != self::STATUS_CANCELED) {
 			return 0;
 		}
-
-		/*if (! ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->organisation->write))
-		 || (! empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->organisation->organisation_advance->validate))))
-		 {
-		 $this->error='Permission denied';
-		 return -1;
-		 }*/
 
 		return $this->setStatusCommon($user, self::STATUS_VALIDATED, $notrigger, 'ARTISTE_REOPEN');
 	}
@@ -844,13 +701,13 @@ class Artiste extends CommonObject
 			global $langs;
 			//$langs->load("organisation@organisation");
 			$this->labelStatus[self::STATUS_DRAFT] = $langs->transnoentitiesnoconv('Brouillon');
-			$this->labelStatus[self::STATUS_VALIDATED] = $langs->transnoentitiesnoconv('Actif');
-			$this->labelStatus[self::STATUS_CANCELED] = $langs->transnoentitiesnoconv('Désactivée');
+			$this->labelStatus[self::STATUS_VALIDATED] = $langs->transnoentitiesnoconv('Artiste actif');
+			$this->labelStatus[self::STATUS_CANCELED] = $langs->transnoentitiesnoconv('Artiste désactivée');
 			$this->labelStatusShort[self::STATUS_DRAFT] = $langs->transnoentitiesnoconv('Brouillon');
-			$this->labelStatusShort[self::STATUS_VALIDATED] = $langs->transnoentitiesnoconv('Actif');
-			$this->labelStatusShort[self::STATUS_CANCELED] = $langs->transnoentitiesnoconv('Désactivée');
+			$this->labelStatusShort[self::STATUS_VALIDATED] = $langs->transnoentitiesnoconv('Artiste actif');
+			$this->labelStatusShort[self::STATUS_CANCELED] = $langs->transnoentitiesnoconv('Artiste désactivée');
 		}
-		
+
 		$statusType = 'status'.$status;
 		//if ($status == self::STATUS_VALIDATED) $statusType = 'status1';
 		if ($status == self::STATUS_CANCELED) {
@@ -1031,33 +888,40 @@ class Artiste extends CommonObject
 	}
 
 	/**
-	 * Action executed by scheduler
-	 * CAN BE A CRON TASK. In such a case, parameters come from the schedule job setup field 'Parameters'
-	 * Use public function doScheduledJob($param1, $param2, ...) to get parameters
-	 *
-	 * @return	int			0 if OK, <>0 if KO (this function is used also by cron so only 0 is OK)
+	 *  Affiche un tableau listant les morceaux d'un artiste
+	 *  @return     string      tableau
 	 */
-	public function doScheduledJob()
+	public function printArtistTitles()
 	{
-		global $conf, $langs;
+		$out = '';
+		// fetch des morceaux existants
+		$morceauClass = new Morceau($this->db);
+		$morceaux = $morceauClass->fetchAll('','',0,0,array('fk_artiste'=>$this->id));
+		$out .= load_fiche_titre("Liste des morceaux de l'artiste", '', 'fa-music');
 
-		//$conf->global->SYSLOG_FILE = 'DOL_DATA_ROOT/dolibarr_mydedicatedlofile.log';
+		// Si des morceaux existent, affichage d'un tableau
+		if(count($morceaux) > 0)
+		{
+			$out .= '<table class="tagtable nobottomiftotal liste">';
+			$out .= '<tbody>';
+			$out .= '<tr>';
+			$out .= '<td style="padding: 0.5em">Artiste</td>';
+			$out .= '<td style="padding: 0.5em">Titre</td>';
+			$out .= '</tr>';
 
-		$error = 0;
-		$this->output = '';
-		$this->error = '';
+			foreach($morceaux as $value)
+			{
+				$out .= '<tr>';
+				$out .= '<td>'.$this->artiste.'</td>';
+				$out .= '<td style="padding: 0.5em"> <a href="' . DOL_URL_ROOT . '/custom/organisation/morceau_card.php?id=' . $value->id. '">' .$value->titre.'</a></td>';
+				$out .= '</tr>';
+			}
 
-		dol_syslog(__METHOD__, LOG_DEBUG);
+			$out .= '</tbody>';
+			$out .= '</table>';
+		} else $out .= 'Aucun morceau connu pour cet artiste.';
 
-		$now = dol_now();
-
-		$this->db->begin();
-
-		// ...
-
-		$this->db->commit();
-
-		return $error;
+		return $out;
 	}
 }
 

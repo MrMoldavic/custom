@@ -126,13 +126,13 @@ include DOL_DOCUMENT_ROOT.'/core/actions_fetchobject.inc.php'; // Must be includ
 
 // There is several ways to check permission.
 // Set $enablepermissioncheck to 1 to enable a minimum low level of checks
-$enablepermissioncheck = 0;
+$enablepermissioncheck = 1;
 if ($enablepermissioncheck) {
-	$permissiontoread = $user->rights->organisation->typeinstrument->read;
-	$permissiontoadd = $user->rights->organisation->typeinstrument->write; // Used by the include of actions_addupdatedelete.inc.php and actions_lineupdown.inc.php
-	$permissiontodelete = $user->rights->organisation->typeinstrument->delete || ($permissiontoadd && isset($object->status) && $object->status == $object::STATUS_DRAFT);
-	$permissionnote = $user->rights->organisation->typeinstrument->write; // Used by the include of actions_setnotes.inc.php
-	$permissiondellink = $user->rights->organisation->typeinstrument->write; // Used by the include of actions_dellink.inc.php
+	$permissiontoread = $user->rights->organisation->organisation->read;
+	$permissiontoadd = $user->rights->organisation->organisation->write; // Used by the include of actions_addupdatedelete.inc.php and actions_lineupdown.inc.php
+	$permissiontodelete = $user->rights->organisation->organisation->delete || ($permissiontoadd && isset($object->status) && $object->status == $object::STATUS_DRAFT);
+	$permissionnote = $user->rights->organisation->organisation->write; // Used by the include of actions_setnotes.inc.php
+	$permissiondellink = $user->rights->organisation->organisation->write; // Used by the include of actions_dellink.inc.php
 } else {
 	$permissiontoread = 1;
 	$permissiontoadd = 1; // Used by the include of actions_addupdatedelete.inc.php and actions_lineupdown.inc.php
@@ -441,7 +441,7 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 	include DOL_DOCUMENT_ROOT.'/core/tpl/extrafields_view.tpl.php';
 
 	print '</table>';
-	
+
 	print '<h3>Liste des instruments de la catégorie</h3>';
 	print '<table class="tagtable liste">';
 	print '<tbody>';
@@ -453,9 +453,9 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 	$cours = "SELECT instrument,rowid FROM ".MAIN_DB_PREFIX."organisation_instrument WHERE fk_type_instrument = ".$object->id;
 	$resql = $db->query($cours);
 
-	
+
 	foreach($resql as $val)
-	{		
+	{
 		print '<tr class="oddeven">';
 		print '<td>'.$val['instrument'].'</td>';
 		print '</tr>';
@@ -546,7 +546,7 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 
 		if (empty($reshook)) {
 			// Send
-			
+
 			// Back to draft
 			if ($object->status == $object::STATUS_VALIDATED) {
 				print dolGetButtonAction($langs->trans('Mettre en brouillon'), '', 'default', $_SERVER["PHP_SELF"].'?id='.$object->id.'&action=confirm_setdraft&confirm=yes&token='.newToken(), '', $permissiontoadd);

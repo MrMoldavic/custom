@@ -21,7 +21,6 @@
  * \ingroup     organisation
  * \brief       This file is a CRUD class file for Engagement (Create/Read/Update/Delete)
  */
-
 // Put here all includes required by your class file
 require_once DOL_DOCUMENT_ROOT.'/core/class/commonobject.class.php';
 //require_once DOL_DOCUMENT_ROOT . '/societe/class/societe.class.php';
@@ -130,7 +129,7 @@ class Engagement extends CommonObject
 		'model_pdf' => array('type'=>'varchar(255)', 'label'=>'Model pdf', 'enabled'=>'1', 'position'=>1010, 'notnull'=>-1, 'visible'=>0,),
 		'status' => array('type'=>'integer', 'label'=>'Status', 'enabled'=>'1', 'position'=>2000, 'notnull'=>1, 'visible'=>2, 'index'=>1, 'arrayofkeyval'=>array('0'=>'Brouillon', '1'=>'Valid&eacute;', '9'=>'Annul&eacute;'), 'validate'=>'1',),
 	);
-  
+
 	public $rowid;
 	public $ref;
 	public $label;
@@ -206,12 +205,6 @@ class Engagement extends CommonObject
 			$this->fields['entity']['enabled'] = 0;
 		}
 
-		// Example to show how to set values of fields definition dynamically
-		/*if ($user->rights->organisation->engagement->read) {
-			$this->fields['myfield']['visible'] = 1;
-			$this->fields['myfield']['noteditable'] = 0;
-		}*/
-
 		// Unset fields that are disabled
 		foreach ($this->fields as $key => $val) {
 			if (isset($val['enabled']) && empty($val['enabled'])) {
@@ -240,122 +233,21 @@ class Engagement extends CommonObject
 	 */
 	public function create(User $user, $notrigger = false)
 	{
-		$engagmement = "SELECT rowid FROM ".MAIN_DB_PREFIX."organisation_engagement WHERE ".($this->fk_agent != "" ? 'fk_agent' : "fk_eleve")."=".($this->fk_agent != "" ? $this->fk_agent : $this->fk_eleve);
-		$resqlEngagement = $this->db->query($engagmement);
+		// Recherche d'un engagement existant pour chaque élève
+		$existingEngagement = $this->fetch('',''," AND fk_groupe=$this->fk_groupe AND ".($this->fk_agent != '' ? 'fk_agent' : 'fk_eleve').'='.($this->fk_agent != '' ? $this->fk_agent : $this->fk_eleve));
 
-		var_dump($engagmement);
-
-		if($this->fk_eleve && $this->fk_agent || !$this->fk_eleve && !$this->fk_agent) return setEventMessage('Veuillez choisir entre Agent et Eleve.', 'errors');	
+		if($this->fk_eleve && $this->fk_agent || !$this->fk_eleve && !$this->fk_agent) return setEventMessage('Veuillez choisir entre Agent et Eleve.', 'errors');
 
 		if($this->responsabilite && $this->fk_eleve) return setEventMessage('Un eleve ne peut pas être responsable.', 'errors');
 
-		if($resqlEngagement->num_rows > 0) return setEventMessage('Cet Agent/Eleve est déjà présent dans le groupe.', 'errors');
+		if($existingEngagement) return 0;
 
 		if(!$this->tms) $this->tms = time();
-		
-		$resultcreate = $this->createCommon($user, $notrigger);	
-		return $resultcreate;
 
-	}
+		$this->status = Engagement::STATUS_VALIDATED;
 
-	/**
-	 * Clone an object into another one
-	 *
-	 * @param  	User 	$user      	User that creates
-	 * @param  	int 	$fromid     Id of object to clone
-	 * @return 	mixed 				New object created, <0 if KO
-	 */
-	public function createFromClone(User $user, $fromid)
-	{
-		global $langs, $extrafields;
-		$error = 0;
+		return $this->createCommon($user, $notrigger);
 
-		dol_syslog(__METHOD__, LOG_DEBUG);
-
-		$object = new self($this->db);
-
-		$this->db->begin();
-
-		// Load source object
-		$result = $object->fetchCommon($fromid);
-		if ($result > 0 && !empty($object->table_element_line)) {
-			$object->fetchLines();
-		}
-
-		// get lines so they will be clone
-		//foreach($this->lines as $line)
-		//	$line->fetch_optionals();
-
-		// Reset some properties
-		unset($object->id);
-		unset($object->fk_user_creat);
-		unset($object->import_key);
-
-		// Clear fields
-		if (property_exists($object, 'ref')) {
-			$object->ref = empty($this->fields['ref']['default']) ? "Copy_Of_".$object->ref : $this->fields['ref']['default'];
-		}
-		if (property_exists($object, 'label')) {
-			$object->label = empty($this->fields['label']['default']) ? $langs->trans("CopyOf")." ".$object->label : $this->fields['label']['default'];
-		}
-		if (property_exists($object, 'status')) {
-			$object->status = self::STATUS_DRAFT;
-		}
-		if (property_exists($object, 'date_creation')) {
-			$object->date_creation = dol_now();
-		}
-		if (property_exists($object, 'date_modification')) {
-			$object->date_modification = null;
-		}
-		// ...
-		// Clear extrafields that are unique
-		if (is_array($object->array_options) && count($object->array_options) > 0) {
-			$extrafields->fetch_name_optionals_label($this->table_element);
-			foreach ($object->array_options as $key => $option) {
-				$shortkey = preg_replace('/options_/', '', $key);
-				if (!empty($extrafields->attributes[$this->table_element]['unique'][$shortkey])) {
-					//var_dump($key);
-					//var_dump($clonedObj->array_options[$key]); exit;
-					unset($object->array_options[$key]);
-				}
-			}
-		}
-
-		// Create clone
-		$object->context['createfromclone'] = 'createfromclone';
-		$result = $object->createCommon($user);
-		if ($result < 0) {
-			$error++;
-			$this->error = $object->error;
-			$this->errors = $object->errors;
-		}
-
-		if (!$error) {
-			// copy internal contacts
-			if ($this->copy_linked_contact($object, 'internal') < 0) {
-				$error++;
-			}
-		}
-
-		if (!$error) {
-			// copy external contacts if same company
-			if (!empty($object->socid) && property_exists($this, 'fk_soc') && $this->fk_soc == $object->socid) {
-				if ($this->copy_linked_contact($object, 'external') < 0) {
-					$error++;
-				}
-			}
-		}
-
-		unset($object->context['createfromclone']);
-
-		// End
-		if (!$error) {
-			$this->db->commit();
-			return $object;
-		} else {
-			$this->db->rollback();
-			return -1;
-		}
 	}
 
 	/**
@@ -365,9 +257,9 @@ class Engagement extends CommonObject
 	 * @param string $ref  Ref
 	 * @return int         <0 if KO, 0 if not found, >0 if OK
 	 */
-	public function fetch($id, $ref = null)
+	public function fetch($id, $ref = null,$moresql = null)
 	{
-		$result = $this->fetchCommon($id, $ref);
+		$result = $this->fetchCommon($id, $ref, $moresql);
 		if ($result > 0 && !empty($this->table_element_line)) {
 			$this->fetchLines();
 		}
@@ -477,14 +369,14 @@ class Engagement extends CommonObject
 	 */
 	public function update(User $user, $notrigger = false)
 	{
-		if($this->fk_eleve && $this->fk_agent) return setEventMessage('Veuillez choisir entre Agent et Eleve.', 'errors'); 
+		if($this->fk_eleve && $this->fk_agent) return setEventMessage('Veuillez choisir entre Agent et Eleve.', 'errors');
 
 		if($this->responsabilite && $this->fk_eleve) return setEventMessage('Un eleve ne peut pas être responsable.', 'errors');
 
 		if(!$this->tms) $this->tms = time();
 
 		return $this->updateCommon($user, $notrigger);
-				
+
 	}
 
 	/**
@@ -539,14 +431,6 @@ class Engagement extends CommonObject
 			dol_syslog(get_class($this)."::validate action abandonned: already validated", LOG_WARNING);
 			return 0;
 		}
-
-		/*if (! ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->organisation->engagement->write))
-		 || (! empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->organisation->engagement->engagement_advance->validate))))
-		 {
-		 $this->error='NotEnoughPermissions';
-		 dol_syslog(get_class($this)."::valid ".$this->error, LOG_ERR);
-		 return -1;
-		 }*/
 
 		$now = dol_now();
 
@@ -658,13 +542,6 @@ class Engagement extends CommonObject
 			return 0;
 		}
 
-		/*if (! ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->organisation->write))
-		 || (! empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->organisation->organisation_advance->validate))))
-		 {
-		 $this->error='Permission denied';
-		 return -1;
-		 }*/
-
 		return $this->setStatusCommon($user, self::STATUS_DRAFT, $notrigger, 'ENGAGEMENT_UNVALIDATE');
 	}
 
@@ -682,13 +559,6 @@ class Engagement extends CommonObject
 			return 0;
 		}
 
-		/*if (! ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->organisation->write))
-		 || (! empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->organisation->organisation_advance->validate))))
-		 {
-		 $this->error='Permission denied';
-		 return -1;
-		 }*/
-
 		return $this->setStatusCommon($user, self::STATUS_CANCELED, $notrigger, 'ENGAGEMENT_CANCEL');
 	}
 
@@ -705,13 +575,6 @@ class Engagement extends CommonObject
 		if ($this->status != self::STATUS_CANCELED) {
 			return 0;
 		}
-
-		/*if (! ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->organisation->write))
-		 || (! empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->organisation->organisation_advance->validate))))
-		 {
-		 $this->error='Permission denied';
-		 return -1;
-		 }*/
 
 		return $this->setStatusCommon($user, self::STATUS_VALIDATED, $notrigger, 'ENGAGEMENT_REOPEN');
 	}
@@ -1055,34 +918,94 @@ class Engagement extends CommonObject
 	}
 
 	/**
-	 * Action executed by scheduler
-	 * CAN BE A CRON TASK. In such a case, parameters come from the schedule job setup field 'Parameters'
-	 * Use public function doScheduledJob($param1, $param2, ...) to get parameters
+	 * Return tableau des engagements dans un groupe
 	 *
-	 * @return	int			0 if OK, <>0 if KO (this function is used also by cron so only 0 is OK)
+	 * @return	string
 	 */
-	public function doScheduledJob()
+	public function printListeEngagement(int $idGroupe)
 	{
-		global $conf, $langs;
+		$out = '';
+		// Récupération des engagements
+		$engagements = $this->fetchAll('','',0,0,array('fk_groupe'=>$idGroupe));
 
-		//$conf->global->SYSLOG_FILE = 'DOL_DATA_ROOT/dolibarr_mydedicatedlofile.log';
+		// Si des engagements existent
+		if (count($engagements) > 0) {
+			$out .= '<table class="tagtable nobottomiftotal liste">';
+			$out .= '<tbody>';
+			$out .= '<tr>';
+			$out .= '<td style="padding:0.5em">Engagé</td>';
+			$out .= '<td style="padding:0.5em">Type</td>';
+			$out .= '<td style="padding:0.5em">Responsabilité</td>';
+			$out .= '<td style="padding:0.5em">Instrument lié</td>';
+			$out .= '<td style="padding:0.5em">Début d\'engagement</td>';
+			$out .= '<td style="padding:0.5em">Fin d\'engagement</td>';
+			$out .= '<td style="padding:0.5em" colspan="3">Actions</td>';
+			$out .= '</tr>';
 
-		$error = 0;
-		$this->output = '';
-		$this->error = '';
+			foreach ($engagements as $engagement) {
+				if ($engagement->fk_eleve) {
+					// Fetch de l'élève
+					$eleveClass = new Eleve($this->db);
+					$eleveClass->fetch($engagement->fk_eleve);
 
-		dol_syslog(__METHOD__, LOG_DEBUG);
+					$statut = 'eleve';
+				} else {
+					// Fetch de l'agent
+					$agentClass = new Agent($this->db);
+					$agentClass->fetch($engagement->fk_agent);
 
-		$now = dol_now();
+					$statut = 'professeur';
+				}
 
-		$this->db->begin();
+				// Fetch des instruments
+				$instrumentClass = new Instrument($this->db);
+				$instruments = $instrumentClass->fetchAll('','',0,0,array());
 
-		// ...
+				// Fetch des liaison d'instrument qui pourraient exister
+				$liaisonInstrumentClass = new LiaisonInstrument($this->db);
+				$liaisonInstrumentClass->fetch('',''," AND fk_engagement=$engagement->id");
 
-		$this->db->commit();
+				$out .= '<tr style="background-color: #E9ffd7">';
+				$out .= '<td><a href="' . DOL_URL_ROOT . '/custom' . ($engagement->fk_agent != NULL ? '/management/agent_card.php' : '/viescolaire/eleve_card.php') . '?id=' . ($engagement->fk_agent != NULL ? $engagement->fk_agent : $engagement->fk_eleve) . '" target="_blank">' . ($statut == 'professeur' ? "$agentClass->prenom $agentClass->nom" : "$eleveClass->prenom $eleveClass->nom"). '</a></td>';
+				$out .= '<td><span class="badge  badge-status' . ($engagement->fk_agent != NULL ? '4' : '1') . ' badge-status">' . ($engagement->fk_agent != NULL ? 'Agent' : 'Eleve') . '</span></td>';
+				$out .= '<td><span class="badge  badge-status' . ($engagement->responsabilite == 1 ? '4' : '1') . ' badge-status">' . ($engagement->responsabilite == 1 ? 'Oui' : 'Non') . '</span></td>';
 
-		return $error;
+					// Print du formulaire de liaison d'instrument
+
+					$out .= '<td>';
+					$out .= $liaisonInstrumentClass->printLiaisonInstrument((int) $engagement->id, true);
+					$out .= '<form method="POST" action="' . $_SERVER['PHP_SELF'] . '?id=' . $idGroupe . '&action=addInstru">';
+					$out .= '<input type="text" name="engagement" value="' . $engagement->id . '" hidden>';
+					$out .= '<input type="text" name="token" value="' . newToken() . '" hidden>';
+					$out .= '<select name="Instru" id="">';
+					$out .= '<option value="0">Ajouter</option>';
+
+					foreach ($instruments as $instrument) {
+						$out .= '<option value="' . $instrument->id . '"' . '>' . $instrument->instrument . '</option>';
+					}
+					$out .= '</select>';
+					$out .= '<button type="submit">Valider</button>';
+					$out .= '</form>';
+					$out .= '</td>';
+
+				$out .= '<td>' . date('d/m/Y', $engagement->tms) . '</td>';
+				$out .= '<td><span class="badge  badge-status'.($engagement->date_fin_engagement ? '8' : '5').' badge-status">' . (!empty($engagement->date_fin_engagement) ? date('d/m/Y', $engagement->date_fin_engagement) : 'Indéfinie') . '</span></td>';
+				$out .= '<td style="padding:1em"><a href="' . DOL_URL_ROOT . '/custom/organisation/groupe_card.php?id=' . $idGroupe . '&action=endEngagement&idEngagement='.$engagement->id.'&token=' . newToken() . '">' . '🏁️' . '</a></td>';
+				$out .= '<td style="padding:1em"><a href="/custom/organisation/engagement_card.php?id=' . $engagement->id . '&action=edit&token=' . newToken() . '">' . '✏️' . '</a></td>';
+				$out .= '<td style="padding:1em"><a href="' . DOL_URL_ROOT . '/custom/organisation/groupe_card.php?id=' . $idGroupe . '&idEngagement=' . $engagement->id . '&action=deleteEngagement">' . '❌' . '</a></td>';
+				$out .= '</tr>';
+				unset($statut);
+			}
+
+			$out .= '</tbody>';
+			$out .= '</table>';
+		} else $out .= '<p>Aucun engagement connu à ce jour</p>';
+
+		return $out;
 	}
+
+
+
 }
 
 

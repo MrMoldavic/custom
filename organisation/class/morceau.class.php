@@ -68,7 +68,6 @@ class Morceau extends CommonObject
 	const STATUS_VALIDATED = 4;
 	const STATUS_CANCELED = 9;
 
-
 	/**
 	 *  'type' field format:
 	 *  	'integer', 'integer:ObjectClass:PathToClass[:AddCreateButtonOrNot[:Filter[:Sortfield]]]',
@@ -114,14 +113,14 @@ class Morceau extends CommonObject
 	public $fields=array(
 		'rowid' => array('type'=>'integer', 'label'=>'TechnicalID', 'enabled'=>'1', 'position'=>1, 'notnull'=>1, 'visible'=>0, 'noteditable'=>'1', 'index'=>1, 'css'=>'left', 'comment'=>"Id"),
 		'titre' => array('type'=>'varchar(255)', 'label'=>'Titre du morceau', 'enabled'=>'1', 'position'=>20, 'notnull'=>1, 'visible'=>1, 'index'=>1, 'searchall'=>1, 'showoncombobox'=>'1', 'validate'=>'1',),
-		'fk_artiste' => array('type'=>'sellist:organisation_artiste:artiste', 'label'=>'Artiste', 'enabled'=>'1', 'position'=>30, 'notnull'=>1, 'visible'=>1, 'foreignkey'=>'organisation_artiste.artiste', 'searchall'=>1, 'css'=>'maxwidth300', 'validate'=>'1',),
-		'url' => array('type'=>'varchar(255)', 'label'=>'Url Youtube', 'enabled'=>'1', 'position'=>30, 'notnull'=>1, 'visible'=>1, 'searchall'=>1, 'validate'=>'1',),
+		'fk_artiste' => array('type'=>'sellist:organisation_artiste:artiste', 'label'=>'Artiste', 'enabled'=>'1', 'position'=>30, 'notnull'=>1, 'visible'=>1, 'foreignkey'=>'organisation_artiste.rowid', 'searchall'=>1, 'css'=>'maxwidth300', 'validate'=>'1'),
+		'url' => array('type'=>'varchar(255)', 'label'=>'Url Youtube', 'enabled'=>'1', 'position'=>30, 'visible'=>1, 'searchall'=>1),
 		'description' => array('type'=>'text', 'label'=>'Description', 'enabled'=>'1', 'position'=>60, 'notnull'=>0, 'visible'=>3, 'validate'=>'1', 'help'=>"Durée, métrique, spécificitées...",),
 		'note_public' => array('type'=>'html', 'label'=>'NotePublic', 'enabled'=>'1', 'position'=>61, 'notnull'=>0, 'visible'=>0, 'cssview'=>'wordbreak', 'validate'=>'1',),
 		'note_private' => array('type'=>'html', 'label'=>'NotePrivate', 'enabled'=>'1', 'position'=>62, 'notnull'=>0, 'visible'=>0, 'cssview'=>'wordbreak', 'validate'=>'1',),
 		'date_creation' => array('type'=>'datetime', 'label'=>'DateCreation', 'enabled'=>'1', 'position'=>500, 'notnull'=>1, 'visible'=>-2,),
 		'tms' => array('type'=>'timestamp', 'label'=>'DateModification', 'enabled'=>'1', 'position'=>501, 'notnull'=>0, 'visible'=>-2,),
-		'fk_user_creat' => array('type'=>'integer:User:user/class/user.class.php', 'label'=>'UserAuthor', 'picto'=>'user', 'enabled'=>'1', 'position'=>510, 'notnull'=>1, 'visible'=>-2, 'foreignkey'=>'user.rowid',),
+		'fk_user_creat' => array('type'=>'integer:User:user/class/user.class.php', 'label'=>'UserAuthor', 'picto'=>'user', 'enabled'=>'1', 'position'=>510, 'notnull'=>1, 'visible'=>-2, 'foreignkey'=>'user.rowid'),
 		'fk_user_modif' => array('type'=>'integer:User:user/class/user.class.php', 'label'=>'UserModif', 'picto'=>'user', 'enabled'=>'1', 'position'=>511, 'notnull'=>-1, 'visible'=>-2,),
 		'last_main_doc' => array('type'=>'varchar(255)', 'label'=>'LastMainDoc', 'enabled'=>'1', 'position'=>600, 'notnull'=>0, 'visible'=>0,),
 		'import_key' => array('type'=>'varchar(14)', 'label'=>'ImportId', 'enabled'=>'1', 'position'=>1000, 'notnull'=>-1, 'visible'=>-2,),
@@ -146,6 +145,9 @@ class Morceau extends CommonObject
 	public $import_key;
 	public $model_pdf;
 	public $status;
+
+	public string $titre;
+	public int $fk_artiste;
 	// END MODULEBUILDER PROPERTIES
 
 
@@ -203,12 +205,6 @@ class Morceau extends CommonObject
 			$this->fields['entity']['enabled'] = 0;
 		}
 
-		// Example to show how to set values of fields definition dynamically
-		/*if ($user->rights->organisation->morceau->read) {
-			$this->fields['myfield']['visible'] = 1;
-			$this->fields['myfield']['noteditable'] = 0;
-		}*/
-
 		// Unset fields that are disabled
 		foreach ($this->fields as $key => $val) {
 			if (isset($val['enabled']) && empty($val['enabled'])) {
@@ -237,117 +233,22 @@ class Morceau extends CommonObject
 	 */
 	public function create(User $user, $notrigger = false)
 	{
-		$artiste = "SELECT artiste, rowid FROM ".MAIN_DB_PREFIX."organisation_artiste WHERE rowid=".$this->fk_artiste;
-		$resqlArtiste = $this->db->query($artiste);
-		$objArtiste= $this->db->fetch_object($resqlArtiste);
+		// Recherche si le morceau éxiste déjà
+		$existingMorceau = $this->fetchAll('','',0,0,array('titre'=>'%'.$this->titre.'%'));
 
-		$this->titre = $this->titre .' - '.$objArtiste->artiste;
-
-		$resultcreate = $this->createCommon($user, $notrigger);
-
-		//$resultvalidate = $this->validate($user, $notrigger);
-
-		return $resultcreate;
-	}
-
-	/**
-	 * Clone an object into another one
-	 *
-	 * @param  	User 	$user      	User that creates
-	 * @param  	int 	$fromid     Id of object to clone
-	 * @return 	mixed 				New object created, <0 if KO
-	 */
-	public function createFromClone(User $user, $fromid)
-	{
-		global $langs, $extrafields;
-		$error = 0;
-
-		dol_syslog(__METHOD__, LOG_DEBUG);
-
-		$object = new self($this->db);
-
-		$this->db->begin();
-
-		// Load source object
-		$result = $object->fetchCommon($fromid);
-		if ($result > 0 && !empty($object->table_element_line)) {
-			$object->fetchLines();
-		}
-
-		// get lines so they will be clone
-		//foreach($this->lines as $line)
-		//	$line->fetch_optionals();
-
-		// Reset some properties
-		unset($object->id);
-		unset($object->fk_user_creat);
-		unset($object->import_key);
-
-		// Clear fields
-		if (property_exists($object, 'ref')) {
-			$object->ref = empty($this->fields['ref']['default']) ? "Copy_Of_".$object->ref : $this->fields['ref']['default'];
-		}
-		if (property_exists($object, 'label')) {
-			$object->label = empty($this->fields['label']['default']) ? $langs->trans("CopyOf")." ".$object->label : $this->fields['label']['default'];
-		}
-		if (property_exists($object, 'status')) {
-			$object->status = self::STATUS_DRAFT;
-		}
-		if (property_exists($object, 'date_creation')) {
-			$object->date_creation = dol_now();
-		}
-		if (property_exists($object, 'date_modification')) {
-			$object->date_modification = null;
-		}
-		// ...
-		// Clear extrafields that are unique
-		if (is_array($object->array_options) && count($object->array_options) > 0) {
-			$extrafields->fetch_name_optionals_label($this->table_element);
-			foreach ($object->array_options as $key => $option) {
-				$shortkey = preg_replace('/options_/', '', $key);
-				if (!empty($extrafields->attributes[$this->table_element]['unique'][$shortkey])) {
-					//var_dump($key);
-					//var_dump($clonedObj->array_options[$key]); exit;
-					unset($object->array_options[$key]);
-				}
-			}
-		}
-
-		// Create clone
-		$object->context['createfromclone'] = 'createfromclone';
-		$result = $object->createCommon($user);
-		if ($result < 0) {
-			$error++;
-			$this->error = $object->error;
-			$this->errors = $object->errors;
-		}
-
-		if (!$error) {
-			// copy internal contacts
-			if ($this->copy_linked_contact($object, 'internal') < 0) {
-				$error++;
-			}
-		}
-
-		if (!$error) {
-			// copy external contacts if same company
-			if (!empty($object->socid) && property_exists($this, 'fk_soc') && $this->fk_soc == $object->socid) {
-				if ($this->copy_linked_contact($object, 'external') < 0) {
-					$error++;
-				}
-			}
-		}
-
-		unset($object->context['createfromclone']);
-
-		// End
-		if (!$error) {
-			$this->db->commit();
-			return $object;
-		} else {
-			$this->db->rollback();
+		if(count($existingMorceau) > 0)
+		{
+			setEventMessage('Ce morceau existe déjà.', 'errors');
 			return -1;
 		}
+
+		$artisteClass = new Artiste($this->db);
+		$artisteClass->fetch($this->fk_artiste);
+
+		//$this->titre = $this->titre .' - '.$artisteClass->artiste;
+		$this->status = Self::STATUS_VALIDATED;
+
+		return $this->createCommon($user, $notrigger);
 	}
 
 	/**
@@ -357,28 +258,14 @@ class Morceau extends CommonObject
 	 * @param string $ref  Ref
 	 * @return int         <0 if KO, 0 if not found, >0 if OK
 	 */
-	public function fetch($id, $ref = null)
+	public function fetch($id, $ref = null,$moresql = null)
 	{
-		$result = $this->fetchCommon($id, $ref);
+		$result = $this->fetchCommon($id, $ref, $moresql);
 		if ($result > 0 && !empty($this->table_element_line)) {
 			$this->fetchLines();
 		}
 		return $result;
 	}
-
-	/**
-	 * Load object lines in memory from the database
-	 *
-	 * @return int         <0 if KO, 0 if not found, >0 if OK
-	 */
-	public function fetchLines()
-	{
-		$this->lines = array();
-
-		$result = $this->fetchLinesCommon();
-		return $result;
-	}
-
 
 	/**
 	 * Load list of objects in memory from the database.
@@ -391,7 +278,7 @@ class Morceau extends CommonObject
 	 * @param  string      $filtermode   Filter mode (AND or OR)
 	 * @return array|int                 int <0 if KO, array of pages if OK
 	 */
-	public function fetchAll($sortorder = '', $sortfield = '', $limit = 0, $offset = 0, array $filter = array(), $filtermode = 'AND')
+	public function fetchAll($sortorder = '', $sortfield = '', $limit = 0, $offset = 0, array $filter = array(), $filtermode = 'AND', $innerJoin = null)
 	{
 		global $conf;
 
@@ -402,6 +289,10 @@ class Morceau extends CommonObject
 		$sql = "SELECT ";
 		$sql .= $this->getFieldList('t');
 		$sql .= " FROM ".MAIN_DB_PREFIX.$this->table_element." as t";
+		if($innerJoin)
+		{
+			$sql .= $innerJoin;
+		}
 		if (isset($this->ismultientitymanaged) && $this->ismultientitymanaged == 1) {
 			$sql .= " WHERE t.entity IN (".getEntity($this->element).")";
 		} else {
@@ -469,11 +360,19 @@ class Morceau extends CommonObject
 	 */
 	public function update(User $user, $notrigger = false)
 	{
-		$artiste = "SELECT artiste, rowid FROM ".MAIN_DB_PREFIX."organisation_artiste WHERE rowid=".$this->fk_artiste;
-		$resqlArtiste = $this->db->query($artiste);
-		$objArtiste= $this->db->fetch_object($resqlArtiste);
+		// Recherche si le morceau éxiste déjà (Même artiste, titre similaire et ID qui n'est pas lui même)
+		$existingMorceau = $this->fetch('',''," AND rowid !=$this->id AND titre LIKE '%$this->titre%' AND fk_artiste=$this->fk_artiste");
 
-		$this->titre = $this->titre .' - '.$objArtiste->artiste;
+		if($existingMorceau > 0)
+		{
+			setEventMessage('Ce morceau existe déjà.', 'errors');
+			return -1;
+		}
+
+		$artisteClass = new Artiste($this->db);
+		$artisteClass->fetch($this->fk_artiste);
+
+		//$this->titre = $this->titre .' - '.$artisteClass->artiste;
 
 		return $this->updateCommon($user, $notrigger);
 	}
@@ -488,7 +387,6 @@ class Morceau extends CommonObject
 	public function delete(User $user, $notrigger = false)
 	{
 		return $this->deleteCommon($user, $notrigger);
-		//return $this->deleteCommon($user, $notrigger, 1);
 	}
 
 	/**
@@ -531,14 +429,6 @@ class Morceau extends CommonObject
 			return 0;
 		}
 
-		/*if (! ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->organisation->morceau->write))
-		 || (! empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->organisation->morceau->morceau_advance->validate))))
-		 {
-		 $this->error='NotEnoughPermissions';
-		 dol_syslog(get_class($this)."::valid ".$this->error, LOG_ERR);
-		 return -1;
-		 }*/
-
 		$now = dol_now();
 
 		$this->db->begin();
@@ -554,8 +444,7 @@ class Morceau extends CommonObject
 		if (!empty($num)) {
 			// Validate
 			$sql = "UPDATE ".MAIN_DB_PREFIX.$this->table_element;
-			$sql .= " SET ref = '".$this->db->escape($num)."',";
-			$sql .= " status = ".self::STATUS_VALIDATED;
+			$sql .= " SET status = ".self::STATUS_VALIDATED;
 			if (!empty($this->fields['date_validation'])) {
 				$sql .= ", date_validation = '".$this->db->idate($now)."'";
 			}
@@ -649,13 +538,6 @@ class Morceau extends CommonObject
 			return 0;
 		}
 
-		/*if (! ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->organisation->write))
-		 || (! empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->organisation->organisation_advance->validate))))
-		 {
-		 $this->error='Permission denied';
-		 return -1;
-		 }*/
-
 		return $this->setStatusCommon($user, self::STATUS_DRAFT, $notrigger, 'MORCEAU_UNVALIDATE');
 	}
 
@@ -673,13 +555,6 @@ class Morceau extends CommonObject
 			return 0;
 		}
 
-		/*if (! ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->organisation->write))
-		 || (! empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->organisation->organisation_advance->validate))))
-		 {
-		 $this->error='Permission denied';
-		 return -1;
-		 }*/
-
 		return $this->setStatusCommon($user, self::STATUS_CANCELED, $notrigger, 'MORCEAU_CANCEL');
 	}
 
@@ -696,13 +571,6 @@ class Morceau extends CommonObject
 		if ($this->status != self::STATUS_CANCELED) {
 			return 0;
 		}
-
-		/*if (! ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->organisation->write))
-		 || (! empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->organisation->organisation_advance->validate))))
-		 {
-		 $this->error='Permission denied';
-		 return -1;
-		 }*/
 
 		return $this->setStatusCommon($user, self::STATUS_VALIDATED, $notrigger, 'MORCEAU_REOPEN');
 	}
@@ -831,11 +699,11 @@ class Morceau extends CommonObject
 			global $langs;
 			//$langs->load("organisation@organisation");
 			$this->labelStatus[self::STATUS_DRAFT] = $langs->transnoentitiesnoconv('Brouillon');
-			$this->labelStatus[self::STATUS_VALIDATED] = $langs->transnoentitiesnoconv('Validée');
-			$this->labelStatus[self::STATUS_CANCELED] = $langs->transnoentitiesnoconv('Abandonnée');
+			$this->labelStatus[self::STATUS_VALIDATED] = $langs->transnoentitiesnoconv('Morceau actif');
+			$this->labelStatus[self::STATUS_CANCELED] = $langs->transnoentitiesnoconv('Morceau abandonnée');
 			$this->labelStatusShort[self::STATUS_DRAFT] = $langs->transnoentitiesnoconv('Brouillon');
-			$this->labelStatusShort[self::STATUS_VALIDATED] = $langs->transnoentitiesnoconv('Validée');
-			$this->labelStatusShort[self::STATUS_CANCELED] = $langs->transnoentitiesnoconv('Abandonnée');
+			$this->labelStatusShort[self::STATUS_VALIDATED] = $langs->transnoentitiesnoconv('Morceau actif');
+			$this->labelStatusShort[self::STATUS_CANCELED] = $langs->transnoentitiesnoconv('Morceau abandonnée');
 		}
 
 		$statusType = 'status'.$status;
@@ -1045,6 +913,55 @@ class Morceau extends CommonObject
 		$this->db->commit();
 
 		return $error;
+	}
+
+
+	public function printPassageConcert()
+	{
+		$out = '';
+		// fetch des morceaux existants
+
+		$programmationClass = new Programmation($this->db);
+		//$interpretations = $interpretationClass->fetchAll('','',0,0,array('t.fk_morceau'=>$this->id),'AND',' INNER JOIN '.MAIN_DB_PREFIX.'organisation_morceau as m ON t.fk_morceau=m.rowid INNER JOIN '.MAIN_DB_PREFIX.'organisation_programmation as p ON p.fk_interpretation=t.rowid');
+
+		$interpretations = $programmationClass->fetchAll('DESC','p.fk_evenement',0,0,array('customsql'=>'i.fk_morceau='.$this->id),'AND',' INNER JOIN '.MAIN_DB_PREFIX.'organisation_interpretation as i ON i.rowid=t.fk_interpretation INNER JOIN '.MAIN_DB_PREFIX.'organisation_programmation as p ON p.fk_interpretation=i.rowid');
+		$out .= load_fiche_titre('Liste des passages de ce morceau en concert', '', 'fa-music');
+
+		// Si des morceaux existent, affichage d'un tableau
+		if(count($interpretations) > 0)
+		{
+			$out .= '<table class="tagtable nobottomiftotal liste">';
+			$out .= '<tbody>';
+			$out .= '<tr>';
+			$out .= '<td style="padding: 0.5em">Groupe</td>';
+			$out .= '<td style="padding: 0.5em">Concert</td>';
+			$out .= '</tr>';
+
+			foreach($interpretations as $value)
+			{
+				$evenementClass = new Evenement($this->db);
+				$evenementClass->fetch($value->fk_evenement);
+
+				// TODO : peut-être faire un inner join avec ces deux requêtes
+				$interpretationClass = new Interpretation($this->db);
+				$interpretationClass->fetch($value->fk_interpretation);
+
+				$groupeClass = new Groupe($this->db);
+				$groupeClass->fetch($interpretationClass->fk_groupe);
+
+
+
+				$out .= '<tr>';
+				$out .= '<td  style="padding: 0.5em"><a href="' . DOL_URL_ROOT . '/custom/organisation/groupe_card.php?id=' . $groupeClass->id. '">'.$groupeClass->nom_groupe.'</td>';
+				$out .= '<td style="padding: 0.5em"> <a href="' . DOL_URL_ROOT . '/custom/organisation/evenement_organisation.php?id=' . $value->fk_evenement. '">' .$evenementClass->nom_evenement.'</a></td>';
+				$out .= '</tr>';
+			}
+
+			$out .= '</tbody>';
+			$out .= '</table>';
+		} else $out .= 'Aucune programmation connue pour ce titre.';
+
+		return $out;
 	}
 }
 

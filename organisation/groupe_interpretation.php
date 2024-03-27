@@ -22,9 +22,9 @@
  *  \brief      Tab for notes on Groupe
  */
 
-//  ini_set('display_errors', '1');
-// ini_set('display_startup_errors', '1');
-// error_reporting(E_ALL);
+/*ini_set('display_errors', '1');
+ini_set('display_startup_errors', '1');
+error_reporting(E_ALL);*/
 
 //if (! defined('NOREQUIREDB'))              define('NOREQUIREDB', '1');				// Do not create database handler $db
 //if (! defined('NOREQUIREUSER'))            define('NOREQUIREUSER', '1');				// Do not load object $user
@@ -79,38 +79,27 @@ if (!$res) {
 }
 
 dol_include_once('/organisation/class/groupe.class.php');
+dol_include_once('/organisation/class/morceau.class.php');
+dol_include_once('/organisation/class/artiste.class.php');
+dol_include_once('/organisation/class/interpretation.class.php');
+dol_include_once('/management/class/agent.class.php');
+
 dol_include_once('/organisation/lib/organisation_groupe.lib.php');
-require_once DOL_DOCUMENT_ROOT . '/custom/organisation/class/interpretation.class.php';
+dol_include_once('/organisation/class/programmation.class.php');
 
 // Load translation files required by the page
 $langs->loadLangs(array("organisation@organisation", "companies"));
 
 // Get parameters
 $id = GETPOST('id', 'int');
-$interpretation  = GETPOST('interpretation', 'int');
+$interpretation  = GETPOST('fk_interpretation', 'int');
 $ref        = GETPOST('ref', 'alpha');
 $action = GETPOST('action', 'aZ09');
 $cancel     = GETPOST('cancel', 'aZ09');
 $backtopage = GETPOST('backtopage', 'alpha');
 
-
-if ($action == 'deleteInterpretation') {
-	
-	$sql = "DELETE FROM " . MAIN_DB_PREFIX . "organisation_interpretation WHERE rowid=" . $interpretation;
-	$resql = $db->query($sql);
-
-	setEventMessage('Interprétation supprimée avec succès');
-}
-
-
-
-
-
-
-
-
-
-
+// Include des actions
+include DOL_DOCUMENT_ROOT.'/custom/organisation/core/actions/actions_groupe-interpretation_organisation.inc.php';
 
 // Initialize technical objects
 $object = new Groupe($db);
@@ -140,11 +129,6 @@ if ($enablepermissioncheck) {
 	$permissionnote = 1;
 }
 
-// Security check (enable the most restrictive one)
-//if ($user->socid > 0) accessforbidden();
-//if ($user->socid > 0) $socid = $user->socid;
-//$isdraft = (($object->status == $object::STATUS_DRAFT) ? 1 : 0);
-//restrictedArea($user, $object->element, $object->id, $object->table_element, '', 'fk_soc', 'rowid', $isdraft);
 if (empty($conf->organisation->enabled)) accessforbidden();
 if (!$permissiontoread) accessforbidden();
 
@@ -168,8 +152,6 @@ if (empty($reshook)) {
  */
 
 $form = new Form($db);
-
-//$help_url='EN:Customers_Orders|FR:Commandes_Clients|ES:Pedidos de clientes';
 $help_url = '';
 $title = $langs->trans('Groupe').' - '.$langs->trans("Interpretations");
 llxHeader('', $title, $help_url);
@@ -181,49 +163,31 @@ if ($id > 0 || !empty($ref)) {
 
 	print dol_get_fiche_head($head, 'Interpretations', $langs->trans("Groupe"), -1, $object->picto);
 
+	$formconfirm = '';
+
+	// Confirmation to delete
+	if ($action == 'deleteInterpretation') {
+		$formconfirm = $form->formconfirm($_SERVER['PHP_SELF'] . '?id=' . $object->id.'&fk_interpretation='.$interpretation, 'Supprimer une interprétation', "Voulez-vous vraiment supprimer cette interprétation? Ceci est irréversible.", 'confirm_delete_interpretation', '', 0, 1);
+	}
+
+	// Call Hook formConfirm
+	$parameters = array('formConfirm' => $formconfirm, 'lineid' => $lineid);
+	$reshook = $hookmanager->executeHooks('formConfirm', $parameters, $object, $action); // Note that $action and $object may have been modified by hook
+	if (empty($reshook)) {
+		$formconfirm .= $hookmanager->resPrint;
+	} elseif ($reshook > 0) {
+		$formconfirm = $hookmanager->resPrint;
+	}
+
+	// Print form confirm
+	print $formconfirm;
+
 	// Object card
 	// ------------------------------------------------------------
 	$linkback = '<a href="'.dol_buildpath('/organisation/groupe_list.php', 1).'?restore_lastsearch_values=1'.(!empty($socid) ? '&socid='.$socid : '').'">'.$langs->trans("BackToList").'</a>';
 
 	$morehtmlref = '<div class="refidno">';
-	/*
-	 // Ref customer
-	 $morehtmlref.=$form->editfieldkey("RefCustomer", 'ref_client', $object->ref_client, $object, 0, 'string', '', 0, 1);
-	 $morehtmlref.=$form->editfieldval("RefCustomer", 'ref_client', $object->ref_client, $object, 0, 'string', '', null, null, '', 1);
-	 // Thirdparty
-	 $morehtmlref.='<br>'.$langs->trans('ThirdParty') . ' : ' . (is_object($object->thirdparty) ? $object->thirdparty->getNomUrl(1) : '');
-	 // Project
-	 if (! empty($conf->project->enabled))
-	 {
-	 $langs->load("projects");
-	 $morehtmlref.='<br>'.$langs->trans('Project') . ' ';
-	 if ($permissiontoadd)
-	 {
-	 if ($action != 'classify')
-	 //$morehtmlref.='<a class="editfielda" href="' . $_SERVER['PHP_SELF'] . '?action=classify&token='.newToken().'&id=' . $object->id . '">' . img_edit($langs->transnoentitiesnoconv('SetProject')) . '</a> : ';
-	 $morehtmlref.=' : ';
-	 if ($action == 'classify') {
-	 //$morehtmlref.=$form->form_project($_SERVER['PHP_SELF'] . '?id=' . $object->id, $object->socid, $object->fk_project, 'projectid', 0, 0, 1, 1);
-	 $morehtmlref.='<form method="post" action="'.$_SERVER['PHP_SELF'].'?id='.$object->id.'">';
-	 $morehtmlref.='<input type="hidden" name="action" value="classin">';
-	 $morehtmlref.='<input type="hidden" name="token" value="'.newToken().'">';
-	 $morehtmlref.=$formproject->select_projects($object->socid, $object->fk_project, 'projectid', $maxlength, 0, 1, 0, 1, 0, 0, '', 1);
-	 $morehtmlref.='<input type="submit" class="button valignmiddle" value="'.$langs->trans("Modify").'">';
-	 $morehtmlref.='</form>';
-	 } else {
-	 $morehtmlref.=$form->form_project($_SERVER['PHP_SELF'] . '?id=' . $object->id, $object->socid, $object->fk_project, 'none', 0, 0, 0, 1);
-	 }
-	 } else {
-	 if (! empty($object->fk_project)) {
-	 $proj = new Project($db);
-	 $proj->fetch($object->fk_project);
-	 $morehtmlref .= ': '.$proj->getNomUrl();
-	 } else {
-	 $morehtmlref .= '';
-	 }
-	 }s
-	 }*/
-	 $morehtmlref .= '</div>';
+	$morehtmlref .= '</div>';
 
 
 	dol_banner_tab($object, 'ref', $linkback, 1, 'ref', 'nom_groupe', $morehtmlref);
@@ -232,66 +196,13 @@ if ($id > 0 || !empty($ref)) {
 	print '<div class="fichecenter">';
 	print '<div class="underbanner clearboth"></div>';
 
-	$interpretations = "SELECT rowid,fk_morceau,temps,date_debut_interpretation,date_fin_interpretation,description,fk_user_creat,status FROM ".MAIN_DB_PREFIX."organisation_interpretation WHERE fk_groupe =".$object->id;
-	$resqlInterpretations = $db->query($interpretations);
-
-
-	if($resqlInterpretations->num_rows > 0)
-	{
-		print '<table class="border tableforfield">';
-		print '<tbody>';
-		print '<tr>';
-		print '<td style="padding:1em">Titre</td>';
-		print '<td style="padding:1em">Durée</td>';
-		print '<td style="padding:1em">Début d\'interprétation</td>';
-		print '<td style="padding:1em">Fin d\'interprétation</td>';
-		print '<td style="padding:1em">description</td>';
-		print '<td style="padding:1em">Etat</td>';
-		print '<td style="padding:1em">Proposé par</td>';
-		print '<td style="padding:1em" colspan="3">Actions</td>';
-		print '</tr>';
-	
-		foreach($resqlInterpretations as $value)
-		{
-			$morceau = "SELECT fk_artiste,titre,rowid FROM ".MAIN_DB_PREFIX."organisation_morceau WHERE rowid = ".$value['fk_morceau'];
-			$resqlMorceau = $db->query($morceau);
-			$objMorceau = $db->fetch_object($resqlMorceau);
-	
-			$artiste = "SELECT artiste,rowid FROM ".MAIN_DB_PREFIX."organisation_artiste WHERE rowid = ".$objMorceau->fk_artiste;
-			$resqlArtiste = $db->query($artiste);
-			$objArtiste = $db->fetch_object($resqlArtiste);
-
-			$user = "SELECT lastname, firstname, rowid FROM ".MAIN_DB_PREFIX."user WHERE rowid =".$value['fk_user_creat'];
-			$resqlUser = $db->query($user);
-			$objUser = $db->fetch_object($resqlUser);
-	
-			$inter = new Interpretation($db);
-
-			print '<tr>';
-			print '<td style="padding:1em">'.$objMorceau->titre.'</td>';
-			print '<td style="padding:1em">'.($value['temps'] != "" ? ($value['temps'].'min') : '').'</td>';
-			print '<td style="padding:1em">'.date('d/m/Y',strtotime($value['date_debut_interpretation'])).'</td>';
-			print '<td style="padding:1em">'.(!empty($value['date_fin_interpretation']) ? $value['date_fin_interpretation'] : "Indéfinie")  .'</td>';
-			print '<td style="padding:1em">'.$value['description'].'</td>';
-			print '<td style="padding:1em"><span class="badge  badge-status'.$value['status'].' badge-status">'.$inter->LibStatut($value['status']).'</td>';
-			print '<td style="padding:1em">'.$objUser->firstname.' '.$objUser->lastname.'</td>';
-			print '<td style="padding:1em"><a href="/custom/organisation/interpretation_card.php?id='.$value['rowid'].'&action=edit&token='.newToken().'">'.'✏️'.'</a></td>';
-			print '<td style="padding:1em"><a href="/custom/organisation/programmation_card.php?action=create&token='.newToken().'&fk_interpretation='.$value['rowid'].'">'.'📆'.'</a></td>';
-			print '<td style="padding:1em"><a href="'.$_SERVER['PHP_SELF'].'?id='.$object->id.'&action=deleteInterpretation&interpretation='.$value['rowid'].'">'.'❌'.'</a></td>';
-			print '</tr>';
-		}
-		print '</tbody>';
-		print '</table>';
-	}
-
+	$interpretationClass = new Interpretation($db);
+	print $interpretationClass->printTableInterpretation((int) $object->id);
 	print '</div>';
-
-	
 
 	print dol_get_fiche_end();
 
 	print dolGetButtonAction($langs->trans('Ajouter une interprétation'), '', 'default', DOL_URL_ROOT.'/custom/organisation/interpretation_card.php?action=create&fk_groupe='.$object->id , '', $permissiontoadd);
-
 }
 
 // End of page

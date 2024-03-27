@@ -16,6 +16,9 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
+/*ini_set('display_errors', '1');
+ini_set('display_startup_errors', '1');
+error_reporting(E_ALL);*/
 /**
  *  \file       evenement_note.php
  *  \ingroup    organisation
@@ -74,6 +77,10 @@ if (!$res) {
 }
 
 dol_include_once('/organisation/class/evenement.class.php');
+dol_include_once('/organisation/class/poste.class.php');
+dol_include_once('/management/class/appetence.class.php');
+dol_include_once('/management/class/agent.class.php');
+dol_include_once('/viescolaire/class/dictionary.class.php');
 dol_include_once('/organisation/lib/organisation_evenement.lib.php');
 
 // Load translation files required by the page
@@ -89,7 +96,7 @@ $backtopage = GETPOST('backtopage', 'alpha');
 $iteration = GETPOST('iteration', 'int');
 $typePoste = GETPOST('typePoste', 'int');
 $affectationPostes = GETPOST('affectationPostes','alpha');
-$lineId = GETPOST('ligneId', 'alpha');
+$ligneId = GETPOST('ligneId', 'alpha');
 $validationPostes = GETPOST('validationPostes', 'alpha');
 
 
@@ -110,79 +117,20 @@ if ($id > 0 || !empty($ref)) {
 
 // There is several ways to check permission.
 // Set $enablepermissioncheck to 1 to enable a minimum low level of checks
-$enablepermissioncheck = 0;
+$enablepermissioncheck = 1;
 if ($enablepermissioncheck) {
-	$permissiontoread = $user->rights->organisation->evenement->read;
-	$permissiontoadd = $user->rights->organisation->evenement->write;
-	$permissionnote = $user->rights->organisation->evenement->write; // Used by the include of actions_setnotes.inc.php
+	$permissiontoread = $user->rights->organisation->organisation->read;
+	$permissiontoadd = $user->rights->organisation->organisation->write;
+	$permissionnote = $user->rights->organisation->organisation->write; // Used by the include of actions_setnotes.inc.php
 } else {
 	$permissiontoread = 1;
 	$permissiontoadd = 1;
 	$permissionnote = 1;
 }
-
-// Security check (enable the most restrictive one)
-//if ($user->socid > 0) accessforbidden();
-//if ($user->socid > 0) $socid = $user->socid;
-//$isdraft = (($object->status == $object::STATUS_DRAFT) ? 1 : 0);
-//restrictedArea($user, $object->element, $object->id, $object->table_element, '', 'fk_soc', 'rowid', $isdraft);
 if (empty($conf->organisation->enabled)) accessforbidden();
-if (!$permissiontoread) accessforbidden();
+if (!$permissiontoadd) accessforbidden();
 
-
-
-if(isset($_POST['typePoste']) && !$affectationPostes)
-{
-
-	for($i=0; $i<$iteration; $i++)
-	{
-		$poste = "INSERT INTO ".MAIN_DB_PREFIX."organisation_poste(`fk_evenement`,`fk_type_poste`, `fk_agent`, `fk_etat_convocation`, `presence`, `description`, `note_public`, `note_private`, `date_creation`, `tms`, `fk_user_creat`, `fk_user_modif`, `last_main_doc`, `import_key`, `model_pdf`, `status`) VALUES 
-		(".$object->id.",".$typePoste .",NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,".$user->id.",NULL,NULL,NULL,NULL,4)";
-		$resqlPoste = $db->query($poste);
-	}
-
-	setEventMessage('Poste créé avec succès');
-}
-
-if($affectationPostes)
-{
-	$count = count($lineId);
-
-	for($i = 0; $i < $count; $i++)
-	{
-
-		if($affectationPostes[$i] != "0")
-		{
-			$sqlAgentExistant = "SELECT * FROM ".MAIN_DB_PREFIX."organisation_poste WHERE fk_agent =".$affectationPostes[$i]." AND fk_evenement=".$object->id;
-			$resqlPosteExistant = $db->query($sqlAgentExistant);
-
-			if($resqlPosteExistant->num_rows != 0)
-			{
-				setEventMessage('Cet utilisateur à déjà un rôle prévu à cet événement','errors');
-			}
-			else
-			{
-				$sql = "UPDATE ".MAIN_DB_PREFIX."organisation_poste SET fk_agent=".$affectationPostes[$i]." WHERE rowid=".$lineId[$i];
-				$resql = $db->query($sql);
-
-				setEventMessage('Affectation(s) créée(s) avec succès');
-			}
-			
-		}
-	}
-
-	;
-}
-
-
-if ($action == 'deletePoste') {
-
-	$sql = "DELETE FROM " . MAIN_DB_PREFIX . "organisation_poste WHERE rowid=".GETPOST('idPoste', 'int');
-	$resql = $db->query($sql);
-
-	setEventMessage('Engagement supprimé avec succès');
-}
-
+include DOL_DOCUMENT_ROOT.'/custom/organisation/core/actions/actions_evenement-poste_organisation.inc.php';
 
 /*
  * Actions
@@ -203,8 +151,6 @@ if (empty($reshook)) {
  */
 
 $form = new Form($db);
-
-//$help_url='EN:Customers_Orders|FR:Commandes_Clients|ES:Pedidos de clientes';
 $help_url = '';
 $title = $langs->trans('Evenement').' - '.$langs->trans("Postes");
 llxHeader('', $title, $help_url);
@@ -221,89 +167,46 @@ if ($id > 0 || !empty($ref)) {
 	$linkback = '<a href="'.dol_buildpath('/organisation/evenement_list.php', 1).'?restore_lastsearch_values=1'.(!empty($socid) ? '&socid='.$socid : '').'">'.$langs->trans("BackToList").'</a>';
 
 	$morehtmlref = '<div class="refidno">';
-	/*
-	 // Ref customer
-	 $morehtmlref.=$form->editfieldkey("RefCustomer", 'ref_client', $object->ref_client, $object, 0, 'string', '', 0, 1);
-	 $morehtmlref.=$form->editfieldval("RefCustomer", 'ref_client', $object->ref_client, $object, 0, 'string', '', null, null, '', 1);
-	 // Thirdparty
-	 $morehtmlref.='<br>'.$langs->trans('ThirdParty') . ' : ' . (is_object($object->thirdparty) ? $object->thirdparty->getNomUrl(1) : '');
-	 // Project
-	 if (! empty($conf->project->enabled))
-	 {
-	 $langs->load("projects");
-	 $morehtmlref.='<br>'.$langs->trans('Project') . ' ';
-	 if ($permissiontoadd)
-	 {
-	 if ($action != 'classify')
-	 //$morehtmlref.='<a class="editfielda" href="' . $_SERVER['PHP_SELF'] . '?action=classify&token='.newToken().'&id=' . $object->id . '">' . img_edit($langs->transnoentitiesnoconv('SetProject')) . '</a> : ';
-	 $morehtmlref.=' : ';
-	 if ($action == 'classify') {
-	 //$morehtmlref.=$form->form_project($_SERVER['PHP_SELF'] . '?id=' . $object->id, $object->socid, $object->fk_project, 'projectid', 0, 0, 1, 1);
-	 $morehtmlref.='<form method="post" action="'.$_SERVER['PHP_SELF'].'?id='.$object->id.'">';
-	 $morehtmlref.='<input type="hidden" name="action" value="classin">';
-	 $morehtmlref.='<input type="hidden" name="token" value="'.newToken().'">';
-	 $morehtmlref.=$formproject->select_projects($object->socid, $object->fk_project, 'projectid', $maxlength, 0, 1, 0, 1, 0, 0, '', 1);
-	 $morehtmlref.='<input type="submit" class="button valignmiddle" value="'.$langs->trans("Modify").'">';
-	 $morehtmlref.='</form>';
-	 } else {
-	 $morehtmlref.=$form->form_project($_SERVER['PHP_SELF'] . '?id=' . $object->id, $object->socid, $object->fk_project, 'none', 0, 0, 0, 1);
-	 }
-	 } else {
-	 if (! empty($object->fk_project)) {
-	 $proj = new Project($db);
-	 $proj->fetch($object->fk_project);
-	 $morehtmlref .= ': '.$proj->getNomUrl();
-	 } else {
-	 $morehtmlref .= '';
-	 }
-	 }
-	 }*/
-	 $morehtmlref .= '</div>';
-
+	$morehtmlref .= '</div>';
 
 	dol_banner_tab($object, 'ref', $linkback, 1, 'ref', 'nom_evenement', $morehtmlref);
 
-	
 	print '<div class="fichecenter">';
 	print '<div class="underbanner clearboth"></div>';
 
-	print '<h2>Postes nécessaires pour l\'événement: </h2>';
+	print  load_fiche_titre('Postes nécessaires pour l\'événement', '', 'fa-briefcase');
 
-	$sqlPoste = "SELECT poste, rowid FROM ".MAIN_DB_PREFIX."organisation_c_type_poste";
-	$resqlPoste = $db->query($sqlPoste);	
+	// On va chercher les types de postes
+	$dictionaryClass = new Dictionary($db);
+	$typePostes = $dictionaryClass->fetchByDictionary('organisation_c_type_poste', array('poste','rowid'));
 
-	foreach($resqlPoste as $value)
+	foreach($typePostes as $value)
 	{
-		$sql = "SELECT * FROM ".MAIN_DB_PREFIX."organisation_poste WHERE fk_evenement=".$object->id." AND fk_type_poste=".$value['rowid'];
-		$resql = $db->query($sql);	
+		// Pour chaque poste, on va chercher des postes éxistants
+		$posteClass = new Poste($db);
+		$existingPostes = $posteClass->fetchAll('','',0,0,array('fk_evenement'=>$object->id,'fk_type_poste'=>$value->rowid));
 
-		print '<div class="poste-accordion'.(($typePoste == $value['rowid']) ? '-opened' : '').'">';
-		print '<h3>'. $value['poste'].($resql->num_rows != 0 ? (' <span class="badge  badge-status4 badge-status"> (x'.$resql->num_rows.')</span>') : '').'</h3>';
-	
+		print '<div class="poste-accordion'.(($typePoste == $value->rowid) ? '-opened' : '').'">';
+		print '<h3>'. $value->poste.(count($existingPostes) != 0 ? (' <span class="badge  badge-status4 badge-status"> (x'.count($existingPostes).')</span>') : '').'</h3>';
+
 		print '<div>';
-		
-		print '<form method="POST" action="'.$_SERVER['PHP_SELF'].'?id='.$object->id.'&typePoste='.$value['rowid'].'">';
-		print '<input style="margin:1em" type="text" name="typePoste" value="'.$value['rowid'].'" hidden >';
+		print '<form method="POST" action="'.$_SERVER['PHP_SELF'].'?id='.$object->id.'&typePoste='.$value->rowid.'">';
+		print '<input style="margin:1em" type="text" name="typePoste" value="'.$value->rowid.'" hidden >';
+		print '<input style="margin:1em" type="text" name="token" value="'.newToken().'" hidden >';
+		print '<input type="text" name="action" value="addPostes" hidden>';
 		print 'Nombre de postes à ajouter : <input type="number" name="iteration" min="1" max="5" value="1">';
 		print '<button type="submit">'.'➕'.'</button>';
 		print '</form>';
 		print '<hr>';
 
-
-		if($resql->num_rows == 0)
-		{
-			print '<p>Aucune convocation prévue pour ce rôle</p>';
-		}
+		if(count($existingPostes) == 0) print '<p>Aucune convocation prévue pour ce rôle</p>';
 		else
 		{
-			$sqlPostes = "SELECT * FROM ".MAIN_DB_PREFIX."organisation_poste WHERE fk_evenement=".$object->id." AND fk_type_poste=".$value['rowid'];
-			$resqlPostes = $db->query($sqlPostes);	
-			
-			print '<form method="POST" action="'.$_SERVER['PHP_SELF'].'?id='.$object->id.'&affectationPoste&typePoste='.$value['rowid'].'">';
-			print '<input style="margin:1em" type="text" name="typePoste[]" value="'.$value['rowid'].'" hidden >';
-
-
-			print '<table class="border tableforfield">';
+			print '<form method="POST" action="'.$_SERVER['PHP_SELF'].'?id='.$object->id.'&affectationPoste&typePoste='.$value->rowid.'">';
+			print '<input type="text" name="typePoste[]" value="'.$value->rowid.'" hidden >';
+			print '<input type="text" name="token" value="'.newToken().'" hidden >';
+			print '<input type="text" name="action" value="affectationPoste" hidden >';
+			print '<table class="tagtable nobottomiftotal liste">';
 			print '<tbody>';
 			print '<tr>';
 			print '<td style="padding:0.5em" >Poste</td>';
@@ -311,50 +214,46 @@ if ($id > 0 || !empty($ref)) {
 			print '<td style="padding:0.5em" >Supprimer</td>';
 			print '</tr>';
 
-			$sqlAppetences = "SELECT fk_agent, fk_type_appetence, rowid FROM ".MAIN_DB_PREFIX."management_appetence WHERE fk_type_poste=".$value['rowid'];
-			$resqlAppetence = $db->query($sqlAppetences);	
-			
-			for($i=1; $i <= $resql->num_rows; $i++)
-			{
-				$objLigne = $db->fetch_object($resql);
-				$objPoste = $db->fetch_object($resqlPostes);
+			// Va chercher les appétences existantes (volontés de chaque agents)
+			$appetenceClass = new Appetence($db);
+			$appetences = $appetenceClass->fetchAll('','',0,0,array('fk_type_poste'=>$value->rowid));
 
+			$count = 1;
+			foreach ($existingPostes as $existingPoste)
+			{
 				print '<tr>';
-				print '<td style="padding:0.5em; ">'.$value['poste'].' n°: '.$i.'</td>';
+				print '<td style="padding:0.5em; ">'.$value->poste.' n°: '.$count.'</td>';
 				print '<td style="padding:0.5em; ">';
-				print '<input type="text" name="ligneId[]" value="'.$objLigne->rowid.'" hidden>';
+				print '<input type="text" name="ligneId[]" value="'.$existingPoste->id.'" hidden>';
+				print '<input type="text" name="token" value="'.newToken().'" hidden>';
 				print '<select name="affectationPostes[]">';
 				print '<option value="0">Aucun</option>';
-				
-				foreach($resqlAppetence as $val)
+
+				// Boucle sur chaque appetence de la catégorie
+				foreach($appetences as $appetence)
 				{
-					$objAppetence = $db->fetch_object($resqlAppetence);
-
-					$sqlAgent = "SELECT prenom, nom, rowid FROM ".MAIN_DB_PREFIX."management_agent WHERE rowid=".$val['fk_agent'];
-					$resqlAgent= $db->query($sqlAgent);
-					$objAgent = $db->fetch_object($resqlAgent);
-
-					$sqlAppetencesFinal = "SELECT type FROM ".MAIN_DB_PREFIX."management_c_type_appetence WHERE rowid="."(SELECT fk_type_appetence FROM ".MAIN_DB_PREFIX."management_appetence WHERE fk_agent=".$val['fk_agent']." AND fk_type_poste=".$value['rowid'].")";
-					$resqlAppetencesFinal= $db->query($sqlAppetencesFinal);
-					$objAppetencesFinal = $db->fetch_object($resqlAppetencesFinal);
-
-					print '<option value="'.$objAgent->rowid.'" '.($objPoste->fk_agent == $objAgent->rowid ? 'selected' : '').'>'.$objAgent->prenom.' '.$objAgent->nom.' - '.$objAppetencesFinal->type.'</option>';
+					// On va chercher l'agent correspondant
+					$agentClass = new Agent($db);
+					$agentClass->fetch($appetence->fk_agent);
+					// On va chercher le type d'appetence
+					$dictionaryClass = new Dictionary($db);
+					$posteType = $dictionaryClass->fetchByDictionary('management_c_type_appetence', array('type','rowid'),$appetence->fk_type_appetence,'rowid');
+					// Affichage de l'option avec pré-selection si on est sur l'agent
+					print '<option value='.$agentClass->id.' '.($agentClass->id == $existingPoste->fk_agent ? 'selected' : '').'>'.$agentClass->prenom.' '.$agentClass->nom.' - '.$posteType->type.'</option>';
 				}
-				
 				print '</select>';
 				print '</td>';
-		
-				print '<td style="padding:0.5em; "><a href="'.DOL_URL_ROOT.'/custom/organisation/evenement_poste.php?id='.$object->id.'&action=deletePoste&idPoste='.$objLigne->rowid.'&typePoste='.$value['rowid'].'">'.'❌'.'</a></td>';
+
+				print '<td style="padding:0.5em; "><a href="'.DOL_URL_ROOT.'/custom/organisation/evenement_poste.php?id='.$object->id.'&action=deletePoste&idPoste='.$existingPoste->id.'&typePoste='.$value->rowid.'">'.'❌'.'</a></td>';
 				print '</tr>';
+				$count++;
 			}
+
 			print '</tbody>';
 			print '</table>';
 			print '<button type="submit" style="margin:1em">Valider la sélection</button>';
 			print '</form>';
 		}
-
-
-
 		print '</div>';
 		print '</div>';
 	}
@@ -362,6 +261,7 @@ if ($id > 0 || !empty($ref)) {
 	print dolGetButtonAction($langs->trans('Terminer les postes'), '', 'default', DOL_URL_ROOT.'/custom/organisation/evenement_poste.php?id='.$object->id.'&action=create&validationPostes=1' , '', $permissiontoadd);
 
 
+	// TODO Mettre ça dans une fonction
 	if($validationPostes)
 	{
 		$sqlPoste2 = "SELECT poste, rowid FROM ".MAIN_DB_PREFIX."organisation_c_type_poste";
@@ -371,9 +271,9 @@ if ($id > 0 || !empty($ref)) {
 		{
 			print '<h3>'.$value['poste'].': </h3>';
 
-			$sql2 = "SELECT * FROM ".MAIN_DB_PREFIX."organisation_poste WHERE fk_evenement=".$object->id." AND fk_type_poste=".$value['rowid'];
-			$resql2 = $db->query($sql2);	
-			
+			$sql2 = "SELECT * FROM ".MAIN_DB_PREFIX."organisation_poste WHERE fk_evenement=".$object->id." AND fk_type_poste=".$value->rowid;
+			$resql2 = $db->query($sql2);
+
 			if($resql2)
 			{
 				foreach($resql2 as $res)
@@ -381,7 +281,7 @@ if ($id > 0 || !empty($ref)) {
 					$printPoste = "";
 					$sqlAgent2 = "SELECT discord,prenom, nom, rowid FROM ".MAIN_DB_PREFIX."management_agent WHERE rowid=".$res['fk_agent'];
 					$resqlAgent2 = $db->query($sqlAgent2);
-					
+
 					if($resqlAgent2 != "")
 					{
 						$objAgent2 = $db->fetch_object($resqlAgent2);
@@ -394,11 +294,11 @@ if ($id > 0 || !empty($ref)) {
 							$printPoste .= $objAgent2->prenom." ".$objAgent2->nom.", ";
 						}
 					}
-					
+
 					print '<p>'.$printPoste.'</p>';
 				}
 			}
-			
+
 		}
 	}
 

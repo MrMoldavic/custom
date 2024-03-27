@@ -123,7 +123,7 @@ class Inscription extends CommonObject
 	 */
 	public $fields=array(
 		'rowid' => array('type'=>'integer', 'label'=>'TechnicalID', 'enabled'=>'1', 'position'=>10, 'notnull'=>1, 'visible'=>0,),
-		'description' => array('type'=>'text', 'label'=>'Description', 'enabled'=>'1', 'position'=>100, 'notnull'=>0, 'visible'=>-1,),
+		'description' => array('type'=>'text', 'label'=>'Description', 'enabled'=>'1', 'position'=>200, 'notnull'=>0, 'visible'=>-1,),
 		'note_public' => array('type'=>'text', 'label'=>'NotePrivate', 'enabled'=>'1', 'position'=>20, 'notnull'=>0, 'visible'=>0, 'cssview'=>'wordbreak',),
 		'note_private' => array('type'=>'text', 'label'=>'NotePublic', 'enabled'=>'1', 'position'=>25, 'notnull'=>0, 'visible'=>0, 'cssview'=>'wordbreak',),
 		'date_creation' => array('type'=>'datetime', 'label'=>'Datecreation', 'enabled'=>'1', 'position'=>30, 'notnull'=>1, 'visible'=>0,),
@@ -133,10 +133,11 @@ class Inscription extends CommonObject
 		'last_main_doc' => array('type'=>'varchar(255)', 'label'=>'Lastmaindoc', 'enabled'=>'1', 'position'=>50, 'notnull'=>0, 'visible'=>0,),
 		'import_key' => array('type'=>'varchar(14)', 'label'=>'ImportId', 'enabled'=>'1', 'position'=>900, 'notnull'=>0, 'visible'=>-2,),
 		'model_pdf' => array('type'=>'varchar(255)', 'label'=>'Modelpdf', 'enabled'=>'1', 'position'=>60, 'notnull'=>0, 'visible'=>0,),
-		'status' => array('type'=>'integer','help'=>'Laissez vide pour "En cours d\'inscription" (status de base)', 'label'=>'Status', 'enabled'=>'1', 'position'=>500, 'notnull'=>1, 'visible'=>1,'arrayofkeyval'=>array(self::STATUS_DRAFT=>'En cours d\'inscription',self::STATUS_VALIDATED=>'Inscription validée',self::STATUS_REMOTIVER=>'Ancien à remotiver',self::STATUS_CANCELED=>'Inscription annulée',self::STATUS_NON_REINSCRIT=>'Non réinscrit')),
-		'fk_eleve' => array('type'=>'integer', 'label'=>'Élève concerné','noteditable'=>1, 'position'=>2, 'notnull'=>1, 'visible'=>1, 'css'=>'maxwidth500 widthcentpercentminusxx',),
-		'fk_annee_scolaire' => array('type'=>'sellist:c_annee_scolaire:annee', 'label'=>'Année scolaire', 'enabled'=>'1', 'position'=>2, 'notnull'=>1, 'visible'=>-1, 'css'=>'maxwidth500 widthcentpercentminusxx',),
+		'status' => array('type'=>'integer','help'=>'Laissez vide pour "En cours d\'inscription" (status de base)', 'label'=>'Status', 'enabled'=>'1', 'position'=>100, 'notnull'=>1, 'visible'=>1,'arrayofkeyval'=>array(self::STATUS_DRAFT=>'En cours d\'inscription',self::STATUS_VALIDATED=>'Inscription validée',self::STATUS_REMOTIVER=>'Ancien à remotiver',self::STATUS_CANCELED=>'Inscription annulée',self::STATUS_NON_REINSCRIT=>'Non réinscrit')),
+		'fk_eleve' => array('type'=>'integer:Eleve:custom/viescolaire/class/eleve.class.php', 'label'=>'Élève concerné','noteditable'=>1, 'position'=>2, 'notnull'=>1, 'visible'=>1, 'css'=>'maxwidth500 widthcentpercentminusxx','validate'=>1),
+		'fk_annee_scolaire' => array('type'=>'sellist:c_annee_scolaire:annee', 'label'=>'Année scolaire', 'enabled'=>'1', 'position'=>2, 'notnull'=>1, 'visible'=>-1, 'css'=>'maxwidth200','validate'=>1),
 	);
+
 	public $rowid;
 	public $description;
 	public $note_public;

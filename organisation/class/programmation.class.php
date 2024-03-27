@@ -118,7 +118,7 @@ class Programmation extends CommonObject
 	 */
 	public $fields=array(
 		'rowid' => array('type'=>'integer', 'label'=>'TechnicalID', 'enabled'=>'1', 'position'=>1, 'notnull'=>1, 'visible'=>0, 'noteditable'=>'1', 'index'=>1, 'css'=>'left', 'comment'=>"Id"),
-		'fk_interpretation' => array('type'=>'integer:Interpretation:custom/organisation/class/interpretation.class.php:1', 'label'=>'Interprétation', 'enabled'=>'1', 'position'=>1, 'notnull'=>1, 'visible'=>1, 'index'=>1,'noteditable'=>0, 'searchall'=>1, 'showoncombobox'=>'1', 'validate'=>'1', 'css'=>'maxwidth250'),
+		'fk_interpretation' => array('type'=>'integer:Interpretation:custom/organisation/class/interpretation.class.php:1', 'label'=>'Interprétation', 'enabled'=>'1', 'position'=>1, 'notnull'=>1, 'visible'=>2, 'index'=>1,'noteditable'=>1, 'searchall'=>1, 'showoncombobox'=>'1', 'validate'=>'1', 'css'=>'maxwidth250'),
 		'fk_proposition' => array('type'=>'integer:Proposition:custom/organisation/class/proposition.class.php:1', 'label'=>'Proposition', 'enabled'=>'1', 'position'=>2, 'notnull'=>1, 'visible'=>2, 'index'=>1, 'searchall'=>1, 'showoncombobox'=>'1', 'validate'=>'1', 'css'=>'maxwidth250'),
 		'fk_evenement' => array('type'=>'integer:Evenement:custom/organisation/class/evenement.class.php:1', 'label'=>'Evenement', 'enabled'=>'1', 'position'=>3, 'notnull'=>1, 'visible'=>1, 'index'=>1, 'searchall'=>1, 'showoncombobox'=>'1', 'validate'=>'1', 'css'=>'maxwidth250'),
 		'description' => array('type'=>'text', 'label'=>'Description', 'enabled'=>'1', 'position'=>60, 'notnull'=>0, 'visible'=>3, 'validate'=>'1',),
@@ -135,6 +135,9 @@ class Programmation extends CommonObject
 		'model_pdf' => array('type'=>'varchar(255)', 'label'=>'Model pdf', 'enabled'=>'1', 'position'=>1010, 'notnull'=>-1, 'visible'=>0,),
 		'status' => array('type'=>'integer', 'label'=>'Status', 'enabled'=>'1', 'position'=>2000, 'notnull'=>0, 'visible'=>0, 'index'=>1, 'arrayofkeyval'=>array('0'=>'Brouillon', '1'=>'Valid&eacute;', '9'=>'Annul&eacute;'), 'validate'=>'1',),
 	);
+
+	public $fk_evenement;
+	public $fk_interpretation;
 
 	public $rowid;
 	public $ref;
@@ -217,6 +220,11 @@ class Programmation extends CommonObject
 			$this->fields['myfield']['noteditable'] = 0;
 		}*/
 
+		if(GETPOST('fk_interpretation'))
+		{
+			$this->fields['fk_interpretation']['noteditable'] = 1;
+		}
+
 		// Unset fields that are disabled
 		foreach ($this->fields as $key => $val) {
 			if (isset($val['enabled']) && empty($val['enabled'])) {
@@ -245,30 +253,38 @@ class Programmation extends CommonObject
 	 */
 	public function create(User $user, $notrigger = false)
 	{
-		$interpretation = "SELECT fk_groupe, rowid FROM ".MAIN_DB_PREFIX."organisation_interpretation WHERE rowid=".$this->fk_interpretation;
-		$resqlInterpretation = $this->db->query($interpretation);
-		$objInterpretation = $this->db->fetch_object($resqlInterpretation);
-			
-		$proposition = "SELECT * FROM ".MAIN_DB_PREFIX."organisation_proposition WHERE fk_groupe=".$objInterpretation->fk_groupe.' AND fk_evenement='.$this->fk_evenement;
-		$resqlProposition = $this->db->query($proposition);
-		$objProposition = $this->db->fetch_object($resqlProposition);
+		// Récupération de l'interprétation
+		$interpretationClass = new Interpretation($this->db);
+		$interpretationClass->fetch(GETPOST('fk_interpretation','int'));
 
-		$existingProgrammation = "SELECT * FROM ".MAIN_DB_PREFIX."organisation_programmation WHERE fk_proposition=".$objProposition->rowid.' AND fk_evenement='.$this->fk_evenement." AND fk_interpretation=".$objInterpretation->rowid;
-		$resqlProgrammation = $this->db->query($existingProgrammation);
-	
-	
-		if($resqlProgrammation->num_rows > 0)
+		// Récupération de la proposition liée à ce groupe et à cet événement
+		$propositionClass = new Proposition($this->db);
+		$propositionClass->fetch('','',' AND fk_groupe='.$interpretationClass->fk_groupe.' AND fk_evenement='.(int)$this->fk_evenement);
+
+		if(!$propositionClass->id)
 		{
-			setEventMessage('Une programmation pour ce morceau à cet événement éxiste déjà.', 'errors'); 
+			setEventMessage('Veuillez d\'abord proposer le groupe à ce concert.', 'errors');
+			return -1;
 		}
-		else
+		// Recherche si cette interprétation à déjà été proposée à ce concert
+		$programmations = $this->fetchAll('','',0,0,array('fk_proposition'=>$propositionClass->id,'fk_evenement'=>$this->fk_evenement,'fk_interpretation'=>$interpretationClass->id));
+
+		if(count($programmations) > 0)
 		{
-			$this->fk_proposition = $objProposition->rowid;
-			$this->status = self::STATUS_VALIDATED;
-			$resultcreate = $this->createCommon($user, $notrigger);
-			return $resultcreate;
+			setEventMessage('Une programmation pour ce morceau à cet événement éxiste déjà.', 'errors');
+			return -1;
 		}
-		
+
+		$programmations = $this->fetchAll('','',0,0,array('fk_proposition'=>$propositionClass->id,'fk_evenement'=>$this->fk_evenement));
+
+		if(count($programmations) > 0) $this->position = count($programmations)+1;
+		else $this->position = 1;
+
+		$this->fk_proposition = $propositionClass->id;
+		$this->status = self::STATUS_VALIDATED;
+		$resultcreate = $this->createCommon($user, $notrigger);
+		return $resultcreate;
+
 	}
 
 	/**
@@ -378,9 +394,9 @@ class Programmation extends CommonObject
 	 * @param string $ref  Ref
 	 * @return int         <0 if KO, 0 if not found, >0 if OK
 	 */
-	public function fetch($id, $ref = null)
+	public function fetch($id, $ref = null, $moresql = null)
 	{
-		$result = $this->fetchCommon($id, $ref);
+		$result = $this->fetchCommon($id, $ref, $moresql);
 		if ($result > 0 && !empty($this->table_element_line)) {
 			$this->fetchLines();
 		}
@@ -412,7 +428,7 @@ class Programmation extends CommonObject
 	 * @param  string      $filtermode   Filter mode (AND or OR)
 	 * @return array|int                 int <0 if KO, array of pages if OK
 	 */
-	public function fetchAll($sortorder = '', $sortfield = '', $limit = 0, $offset = 0, array $filter = array(), $filtermode = 'AND')
+	public function fetchAll($sortorder = '', $sortfield = '', $limit = 0, $offset = 0, array $filter = array(), $filtermode = 'AND', $innerJoin = null)
 	{
 		global $conf;
 
@@ -423,6 +439,10 @@ class Programmation extends CommonObject
 		$sql = "SELECT ";
 		$sql .= $this->getFieldList('t');
 		$sql .= " FROM ".$this->db->prefix().$this->table_element." as t";
+		if($innerJoin)
+		{
+			$sql .= $innerJoin;
+		}
 		if (isset($this->ismultientitymanaged) && $this->ismultientitymanaged == 1) {
 			$sql .= " WHERE t.entity IN (".getEntity($this->element).")";
 		} else {

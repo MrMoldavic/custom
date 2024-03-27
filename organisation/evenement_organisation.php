@@ -23,9 +23,9 @@
  */
 
 
-// ini_set('display_errors', '1');
-// ini_set('display_startup_errors', '1');
-// error_reporting(E_ALL);
+/* ini_set('display_errors', '1');
+ ini_set('display_startup_errors', '1');
+ error_reporting(E_ALL);*/
 
 //if (! defined('NOREQUIREDB'))              define('NOREQUIREDB', '1');				// Do not create database handler $db
 //if (! defined('NOREQUIREUSER'))            define('NOREQUIREUSER', '1');				// Do not load object $user
@@ -80,6 +80,17 @@ if (!$res) {
 }
 
 dol_include_once('/organisation/class/evenement.class.php');
+dol_include_once('/management/class/agent.class.php');
+dol_include_once('/viescolaire/class/eleve.class.php');
+dol_include_once('/organisation/class/engagement.class.php');
+dol_include_once('/organisation/class/morceau.class.php');
+dol_include_once('/organisation/class/artiste.class.php');
+dol_include_once('/organisation/class/interpretation.class.php');
+dol_include_once('/organisation/class/proposition.class.php');
+dol_include_once('/organisation/class/programmation.class.php');
+dol_include_once('/organisation/class/groupe.class.php');
+dol_include_once('/organisation/class/liaisoninstrument.class.php');
+dol_include_once('/organisation/class/instrument.class.php');
 dol_include_once('/organisation/lib/organisation_evenement.lib.php');
 
 // Load translation files required by the page
@@ -91,8 +102,9 @@ $ref        = GETPOST('ref', 'alpha');
 $action = GETPOST('action', 'aZ09');
 $cancel     = GETPOST('cancel', 'aZ09');
 $backtopage = GETPOST('backtopage', 'alpha');
-$selectedRow = GETPOST('fk_proposition', 'alpha');
+$selectedProposition = GETPOST('fk_proposition', 'alpha');
 $selectedInterpretation = GETPOST('fk_interpretation', 'alpha');
+$programmationId = GETPOST('fk_programmation','int');
 
 // Initialize technical objects
 $object = new Evenement($db);
@@ -108,27 +120,21 @@ if ($id > 0 || !empty($ref)) {
 	$upload_dir = $conf->organisation->multidir_output[!empty($object->entity) ? $object->entity : $conf->entity]."/".$object->id;
 }
 
-
 // There is several ways to check permission.
 // Set $enablepermissioncheck to 1 to enable a minimum low level of checks
-$enablepermissioncheck = 0;
+$enablepermissioncheck = 1;
 if ($enablepermissioncheck) {
-	$permissiontoread = $user->rights->organisation->evenement->read;
-	$permissiontoadd = $user->rights->organisation->evenement->write;
-	$permissionnote = $user->rights->organisation->evenement->write; // Used by the include of actions_setnotes.inc.php
+	$permissiontoread = $user->rights->organisation->organisation->read;
+	$permissiontoadd = $user->rights->organisation->organisation->write;
+	$permissionnote = $user->rights->organisation->organisation->write; // Used by the include of actions_setnotes.inc.php
 } else {
 	$permissiontoread = 1;
 	$permissiontoadd = 1;
 	$permissionnote = 1;
 }
 
-// Security check (enable the most restrictive one)
-//if ($user->socid > 0) accessforbidden();
-//if ($user->socid > 0) $socid = $user->socid;
-//$isdraft = (($object->status == $object::STATUS_DRAFT) ? 1 : 0);
-//restrictedArea($user, $object->element, $object->id, $object->table_element, '', 'fk_soc', 'rowid', $isdraft);
 if (empty($conf->organisation->enabled)) accessforbidden();
-if (!$permissiontoread) accessforbidden();
+if (!$permissiontoadd) accessforbidden();
 
 
 /*
@@ -144,56 +150,8 @@ if (empty($reshook)) {
 	include DOL_DOCUMENT_ROOT.'/core/actions_setnotes.inc.php'; // Must be include, not include_once
 }
 
-
-
-if($action == "confirm_delete")
-{
-	$sql = "DELETE FROM " . MAIN_DB_PREFIX . "organisation_proposition WHERE rowid=".$selectedRow;
-	$resql = $db->query($sql);
-
-	setEventMessage('Groupe supprimé de la conduite avec succès');
-	$action = "create";
-
-}
-
-if($action == "confirm_deleteInterpretation")
-{
-	$sql = "DELETE FROM " . MAIN_DB_PREFIX . "organisation_programmation WHERE fk_interpretation=".$selectedInterpretation.' AND fk_proposition='.$selectedRow.' AND fk_evenement='.$id;
-	$resql = $db->query($sql);
-
-	setEventMessage('Interpretation supprimée de la conduite avec succès');
-	$action = "create";
-}
-
-if($action == "changePosition")
-{	
-
-	$sql = "SELECT rowid FROM " . MAIN_DB_PREFIX . "organisation_proposition WHERE position=" . GETPOST('position','alpha');
-	$resql = $db->query($sql);
-
-	if($resql)
-	{
-		$sqlAllAbove = "SELECT position,rowid FROM " . MAIN_DB_PREFIX . "organisation_proposition WHERE position>=" . GETPOST('position','alpha');
-		$resqlAllAbove = $db->query($sqlAllAbove);
-
-		foreach($resqlAllAbove as $value)
-		{
-			if($value['position'] < (GETPOST('position','alpha')+1))
-			{
-				$sqlPositionPlusOne = "UPDATE " . MAIN_DB_PREFIX . "organisation_proposition SET position = " . ($value['position']+1) . " WHERE rowid=" . $value['rowid'];
-				$resqlPositionPlusOne = $db->query($sqlPositionPlusOne);
-			}
-			
-		}
-	}
-
-	$sql = "UPDATE " . MAIN_DB_PREFIX . "organisation_proposition SET position = " . GETPOST('position','alpha') . " WHERE rowid=" . GETPOST('IdProposition','alpha');
-	$resql = $db->query($sql);
-
-	setEventMessage('Positions mises à jour avec succès');
-	$action = "create";
-}
-
+// include des actions, pour ne pas flooder le fichier
+include DOL_DOCUMENT_ROOT.'/custom/organisation/core/actions/actions_evenement_organisation.inc.php';
 
 /*
  * View
@@ -214,11 +172,15 @@ if ($id > 0 || !empty($ref)) {
 
 	$formconfirm = '';
 	if ($action == 'delete') {
-		$formconfirm = $form->formconfirm($_SERVER["PHP_SELF"].'?id='.$object->id.'&fk_proposition='.$selectedRow, $langs->trans('DeleteProgrammation'), "Êtes-vous sûr de vouloir suppimer ce groupe de la conduite?", 'confirm_delete', '', 0, 1);
+		$formconfirm = $form->formconfirm($_SERVER["PHP_SELF"].'?id='.$object->id.'&fk_proposition='.$selectedProposition, $langs->trans('DeleteProgrammation'), "Êtes-vous sûr de vouloir suppimer ce groupe de la conduite?", 'confirm_delete', '', 0, 1);
 	}
 
 	if ($action == 'deleteInterpretation') {
-		$formconfirm = $form->formconfirm($_SERVER["PHP_SELF"].'?id='.$object->id.'&fk_interpretation='.$selectedInterpretation.'&fk_proposition='.$selectedRow, $langs->trans('DeleteProgrammation'), "Êtes-vous sûr de vouloir suppimer cette interpretation de la conduite?", 'confirm_deleteInterpretation', '', 0, 1);
+		$formconfirm = $form->formconfirm($_SERVER["PHP_SELF"].'?id='.$object->id.'&fk_programmation='.$programmationId, 'Suppression d\'un morceau de la conduite', "Êtes-vous sûr de vouloir supprimer ce morceau de la conduite?", 'confirm_deleteProgrammation', '', 0, 1);
+	}
+
+	if ($action == 'exportConduite') {
+		$formconfirm = $form->formconfirm($_SERVER['PHP_SELF'] . '?id=' . $object->id, $langs->trans('Exporter la conduite'), 'Êtes-vous sûr de vouloir exporter la conduite? ', 'confirm_export_conduite', '', 0, 1);
 	}
 
 	// Call Hook formConfirm
@@ -234,12 +196,10 @@ if ($id > 0 || !empty($ref)) {
 	print $formconfirm;
 
 	// Object card
-	// ------------------------------------------------------------
 	$linkback = '<a href="'.dol_buildpath('/organisation/evenement_list.php', 1).'?restore_lastsearch_values=1'.(!empty($socid) ? '&socid='.$socid : '').'">'.$langs->trans("BackToList").'</a>';
 
-	$morehtmlref = '<div class="refidno">';
+	$morehtmlref = '<div class="refid">';
 	$morehtmlref .= '</div>';
-
 
 	dol_banner_tab($object, 'ref', $linkback, 1, 'ref', 'nom_evenement', $morehtmlref);
 
@@ -247,11 +207,9 @@ if ($id > 0 || !empty($ref)) {
 	print '<div class="fichecenter">';
 	print '<div class="underbanner clearboth"></div>';
 
+	$propositionClass = new Proposition($db);
+	$propositions = $propositionClass->fetchAll('ASC','position',0,0,array('customsql'=>"fk_evenement=$object->id AND (status=".Proposition::STATUS_VALIDATED.' OR status='.Proposition::STATUS_PROGRAMMED.')'));
 
-	$propisition = "SELECT rowid,fk_groupe,description,date_proposition,fk_user_creat,position FROM ".MAIN_DB_PREFIX."organisation_proposition WHERE fk_evenement =".$object->id." ORDER BY position ASC";
-	$resqlPropisition = $db->query($propisition);
-
-	
 	print '<table class="tagtable nobottomiftotal liste">';
 	print '<tbody>';
 	print '<tr>';
@@ -260,120 +218,156 @@ if ($id > 0 || !empty($ref)) {
 	print '<td style="padding:2em">Position</td>';
 	print '<td style="padding:2em">Actions</td>';
 	print '</tr>';
-			print '<tr id="goebbels">';
-			print '</tr>';
+
 	$positions = [];
-	$tempsTotal = 0;
-	foreach($resqlPropisition as $value)
+	$loop = 0;
+	foreach($propositions as $value)
 	{
-
-		$groupe = "SELECT nom_groupe,rowid FROM ".MAIN_DB_PREFIX."organisation_groupe WHERE rowid = ".$value['fk_groupe'];
-		$resqlGroupe = $db->query($groupe);
-		$objGroupe = $db->fetch_object($resqlGroupe);
-
-		$userCreat = "SELECT lastname, firstname, rowid FROM ".MAIN_DB_PREFIX."user WHERE rowid = ".$value['fk_user_creat'];
-		$resqlUserCreat = $db->query($userCreat);
-		$objuser = $db->fetch_object($resqlUserCreat);
-
-		$programmation = "SELECT fk_interpretation, rowid FROM ".MAIN_DB_PREFIX."organisation_programmation WHERE fk_proposition = ".$value['rowid'].' AND fk_evenement = '.$object->id;
-		$resqlProgrammation = $db->query($programmation);
-
-		print '<tr>';
-		print '<td><span class="badge  badge-status4 badge-status" style="color:white;">'.$objGroupe->nom_groupe.'</span> ( proposé par '.$objuser->firstname.' '.$objuser->lastname.' )'.'</td>';
-		print '<td style="padding:1em">';
-		if($resqlProgrammation->num_rows > 0)
+		if($loop != 0)
 		{
-			print '<table class="border tableforfield" style="background-color:#f0eded">';
-			print '<tbody>';
 			print '<tr>';
-			print '<td style="padding:0.8em">Titre et artiste</td>';
-			print '<td style="padding:0.8em">Durée</td>';
-			print '<td style="padding:0.8em">Position</td>';
-			print '<td style="padding:0.8em">Actions</td>';
+			print '<td colspan="4" style="background-color:grey; color:white">Changement plateau (+5min)</td>';
 			print '</tr>';
-
-			
-			foreach($resqlProgrammation as $val)
-			{
-				$interpretation = "SELECT fk_morceau,temps,rowid FROM ".MAIN_DB_PREFIX."organisation_interpretation WHERE rowid = ".$val['fk_interpretation'];
-				$resqlInterpretation = $db->query($interpretation);
-				$objInterpretation = $db->fetch_object($resqlInterpretation);
-
-				$tempsTotal += intval($objInterpretation->temps);
-				$morceau = "SELECT titre,fk_artiste,rowid FROM ".MAIN_DB_PREFIX."organisation_morceau WHERE rowid = ".$objInterpretation->fk_morceau;
-				$resqlMorceau = $db->query($morceau);
-				$objMorceau = $db->fetch_object($resqlMorceau);
-
-				$artiste = "SELECT artiste,rowid FROM ".MAIN_DB_PREFIX."organisation_artiste WHERE rowid = ".$objMorceau->fk_artiste;
-				$resqlArtiste = $db->query($artiste);
-				$objArtiste = $db->fetch_object($resqlArtiste);
-
-				print '<tr>';
-				print '<td style="padding:0.8em">'.$objMorceau->titre.'</td>';
-				print '<td style="padding:0.8em">'.$objInterpretation->temps.'min</td>';
-				print '<td style="padding:0.8em"><input type="number" name="position"></td>';
-				print '<td style="padding:0.8em"><a href="'.$_SERVER['PHP_SELF'].'?action=deleteInterpretation&token='.newToken().'&id='.$object->id.'&fk_interpretation='.$objInterpretation->rowid.'&fk_proposition='.$value['rowid'].'">'.✖.'</a></td>';
-				print '</tr>';
-			}
-			print '</tbody>';
-			print '</table>';
+			$object->tempsTotal += 5;
 		}
 
-		print '<a href="/custom/organisation/groupe_interpretation.php?id='.$value['fk_groupe'].'">'.'➕'.'</a>';
-	
+		// fetch du groupe
+		$groupeClass = new Groupe($db);
+		$groupeClass->fetch($value->fk_groupe);
+		// fetch des programmations à ce concert où se trouve les propositions
+		$programmationClass = new Programmation($db);
+		$programmations = $programmationClass->fetchAll('ASC','position',0,'',array('fk_proposition'=>$value->id,'fk_evenement'=>$object->id));
+
+		print '<tr>';
+		print '<td '.($value->status == Proposition::STATUS_PROGRAMMED ? 'style="background-color: #E9ffd7;"' : '').'><a href="groupe_card.php?id='.$groupeClass->id.'"><span class="badge  badge-status4 badge-status" style="color:white;">'.$groupeClass->nom_groupe.'</span></a><br><br>';
+
+		print $groupeClass->printEngagements();
+
 		print '</td>';
-		
-		print '<form method="POST" action="' . $_SERVER["PHP_SELF"] . '?id=' . $id . '">';
-		print '<input type="hidden" name="token" value="'.newToken().'">';
-		print '<input type="hidden" name="action" value="changePosition">';
-		print '<td><input type="hidden" name="IdProposition" value="'.$value['rowid'].'">';
-		print '<input type="number" name="position" value="'.$value['position'].'">';
+		print '<td style="padding:1em '.($value->status == Proposition::STATUS_PROGRAMMED ? ';background-color: #E9ffd7' : '').'">';
+		if($value->status != Proposition::STATUS_CANCELED) {
+			if (count($programmations) > 0) {
+				print '<table class="table table-striped table-dark" style="background-color: lightgray">';
+				print '<tbody>';
+				print '<tr>';
+				print '<td style="padding:0.8em">Titre et artiste</td>';
+				print '<td style="padding:0.8em">Durée</td>';
+				print '<td style="padding:0.8em">Position</td>';
+				print '<td style="padding:0.8em"></td>';
+				print '</tr>';
 
-		print $form->buttonsSaveCancel("Mettre à jour la position")."</td>";
-		print '</form>';
-		print '<td><a href="'.$_SERVER['PHP_SELF'].'?action=delete&token='.newToken().'&id='.$object->id.'&fk_proposition='.$value['rowid'].'">'.✖.'</a></td>';
-		$tempsTotal += 3;
-		print '<tr>';
-		print '<td colspan="4" style="background-color:grey; color:white">Changement plateau (+5min)</td>';
-		print '<tr>';
+				foreach ($programmations as $programmation) {
+					// Appel de la fonction qui affiche les lines de programmation
+					print $object->printProgrammationLines((object)$programmation);
+				}
+
+				print '</tbody>';
+				print '</table>';
+			} else print 'Aucune programmation connue pour ce groupe!<br>';
+
+			print '<a href="/custom/organisation/groupe_interpretation.php?id='.$value->fk_groupe.'&evenementid='.$object->id.'">'.img_picto('rotate','fa-plus').'</a>';
+		}
+		print '</td>';
+
+		// print du formulaire de changement de position
+		print $object->printPositionUpdateForm($id, $value);
+
+		print '<td '.($value->status == Proposition::STATUS_PROGRAMMED ? 'style="background-color: #E9ffd7;"' : '').'>';
+		if($value->status != Proposition::STATUS_PROGRAMMED)
+		{
+			print dolGetButtonAction('Mettre en attente', '', 'delete', $_SERVER['PHP_SELF'] . '?id=' . $object->id . '&action=handleProposition&token=' . newToken().'&propositionId='.$value->id.'&typeAction=desactivateProposition', '', $permissiontoadd).'<br><br>';
+			print dolGetButtonAction('Reprogrammer le passage', '', 'delete',  'proposition_card.php?id=' . $value->id . '&action=edit&token=' . newToken().'&backtopage='.$_SERVER['PHP_SELF'].'?id='.$object->id.'&backtopageforcancel='.$_SERVER['PHP_SELF'].'?id='.$object->id.'&reprogrammation=true', '', $permissiontoadd).'<br><br>';
+		}
+
+		print dolGetButtonAction(($value->status == Proposition::STATUS_PROGRAMMED ? 'Invalider le passage' : 'Valider le passage'), '', 'delete', $_SERVER['PHP_SELF'] . '?id=' . $object->id . '&action=handle_validation_proposition&token=' . newToken().'&fk_proposition='.$value->id.'&subAction='.($value->status == Proposition::STATUS_PROGRAMMED ? 'deprogramProposition' : 'programProposition'), '', $permissiontoadd);
+
+		print '</td>';
+		print '</tr>';
+		$loop++;
 	}
-	
-	print '<tr>';
-	print '<h3>Durée du concert: '.($tempsTotal != "" ? $tempsTotal : "0").'min</h3>';
 
-	print '</tr>';
-	print '<tr id="poutine">';
-	print '</tr>';
+	print "<h3 style='text-align: center'>Durée du concert: {$object->tempsTotal}min</h3>";
 	print '</tbody>';
 	print '</table>';
+	print '</div>';
+
+	print dolGetButtonAction($langs->trans('Mettre à jour les positions'), '', 'default', $_SERVER['PHP_SELF'] . '?id=' . $object->id . '&action=updateAllPositions&token=' . newToken(), '', $permissiontoadd);
+	print dolGetButtonAction($langs->trans('Exporter la conduite'), '', 'default', $_SERVER['PHP_SELF'] . '?id=' . $object->id . '&action=exportConduite&token=' . newToken(), '', $permissiontoadd);
+	print dolGetButtonAction($langs->trans('Programmer un groupe'), '', 'default', 'proposition_card.php?fk_evenement=' . $object->id . '&action=create&token=' . newToken().'&backtopage='.$_SERVER['PHP_SELF'].'?id='.$object->id, '', $permissiontoadd);
+
+	print '<hr>';
+	print load_fiche_titre("Liste des propositions en attente", '', 'fa-hourglass-start');
+
+	print '<table class="tagtable nobottomiftotal liste">';
+	print '<tbody>';
+	print '<tr>';
+	print '<td style="padding:2em; width: 20%">Groupes Proposés</td>';
+	print '<td style="padding:2em; width: 40%">Morceaux proposés</td>';
+	print '<td style="padding:2em; width: 30%">Actions</td>';
+	print '</tr>';
+
+	$waitingPropositions = $propositionClass->fetchAll('ASC','position',0,0,array('fk_evenement'=>$object->id,'status'=>Proposition::STATUS_DRAFT));
 
 
-
-	print "<script>$(document).ready(function(){
-		". (true ? '$(\'[name="materiel[]"]\').find("option").removeAttr("disabled"),$(\'[name="materiel[]"]\').each(function(e){var t=$(this).next(".select2-container").find(".select2-selection__rendered").text();t.trim()||(t=0),console.log(t),$(\'[name="materiel[]"]\').not($(this)).find(\'option:contains("\'+t+\'")\').attr("disabled","disabled"),$.ajax({url:"http://test-dolibarr.tousalamusique.com/custom/kit/ajax/materiel_status.php?id="+$(this).find(\'option:contains("\'+t+\'")\').attr("value"),context:this,beforeSend:function(){$(this).next(".select2-container").nextAll("span").remove(),$(this).next(".select2-container").after(\'<span id="loader" class="lds-dual-ring"></span>\')},success:function(e){var t=e;$(this).next(".select2-container").nextAll("span").remove(),$(this).next(".select2-container").after(t)}})});' : '')."
-		
-		$(document).on(\"click\", \".mat-sort-up,.mat-sort-down\", function () {
-			var row = $(this).parents(\"tr:first\");
-			console.log(row.prev());
-			console.log(row.next().attr(\"id\"));
-			if ($(this).is(\".mat-sort-up\")) {
-				console.log('zeub');
-				if (row.prev().attr(\"id\") != $(\"#goebbels\").attr(\"id\")){
-					console.log('ok');
-					row.insertBefore(row.prev());
-				}
-			} else {
-				console.log('merdde(')
-				if (row.next().attr(\"id\") != $(\"#poutine\").attr(\"id\")){
-					console.log('ok');
-					row.insertAfter(row.next());
-				}
+	$positions = [];
+	$loop = 0;
+	if(count($waitingPropositions) > 0)
+	{
+		foreach($waitingPropositions as $value)
+		{
+			if($loop != 0)
+			{
+				print '<tr>';
+				print '<td colspan="4" style="background-color:grey; color:white">Changement plateau (+5min)</td>';
+				print '</tr>';
+				$object->tempsTotal += 5;
 			}
-		});
-	});</script>";
 
+			// fetch du groupe
+			$groupeClass = new Groupe($db);
+			$groupeClass->fetch($value->fk_groupe);
+			// fetch des programmations à ce concert où se trouve les propositions
+			$programmationClass = new Programmation($db);
+			$programmations = $programmationClass->fetchAll('','',0,'',array('fk_proposition'=>$value->id,'fk_evenement'=>$object->id));
 
+			print '<tr>';
+			print '<td '.($value->status == Proposition::STATUS_DRAFT ? 'style="background-color: #EBEBE4;"' : '').'><a href="groupe_card.php?id='.$groupeClass->id.'"><span class="badge  badge-status4 badge-status" style="color:white;">'.$groupeClass->nom_groupe.'</span></a><br><br>';
+			print $groupeClass->printEngagements();
+			print '</td>';
+			print '<td style="padding:1em '.($value->status == Proposition::STATUS_DRAFT ? ';background-color: #EBEBE4' : '').'">';
+			if (count($programmations) > 0) {
+				print '<table class="tagtable nobottomiftotal liste" style="background-color: lightgray">';
+				print '<tbody>';
+				print '<tr>';
+				print '<td style="padding:0.8em">Titre et artiste</td>';
+				print '<td style="padding:0.8em">Durée</td>';
+				print '</tr>';
 
+				foreach ($programmations as $programmation) {
+					// Appel de la fonction qui affiche les lines de programmation
+					print $object->printProgrammationLines((object)$programmation);
+				}
+
+				print '</tbody>';
+				print '</table>';
+			} else print 'Aucune programmation connue pour ce groupe!<br>';
+
+			print '</td>';
+
+			print '<td '.($value->status == Proposition::STATUS_DRAFT ? 'style="background-color: #EBEBE4;"' : '').'>';
+			print dolGetButtonAction('Inclure à la conduite','', 'default', $_SERVER['PHP_SELF'] . '?id=' . $object->id . '&action=handleProposition&token=' . newToken().'&propositionId='.$value->id.'&typeAction=activateProposition', '', $permissiontoadd).'<br><br>';
+			print dolGetButtonAction('Reprogrammer le passage à une autre date', '', 'default',  'proposition_card.php?id=' . $value->id . '&action=edit&token=' . newToken().'&backtopage='.$_SERVER['PHP_SELF'].'?id='.$object->id.'&backtopageforcancel='.$_SERVER['PHP_SELF'].'?id='.$object->id.'&reprogrammation=true', '', $permissiontoadd);
+
+			print '</td>';
+			print '</tr>';
+			$loop++;
+		}
+	} else {
+		print '<tr><td colspan="3">Toutes les passages ont étés traités!</td></tr>';
+	}
+
+	print '</tbody>';
+	print '</table>';
 	print '</div>';
 
 	print dol_get_fiche_end();
