@@ -216,86 +216,94 @@ if ($id > 0 || !empty($ref)) {
 	print '<td style="padding:2em">Groupes Proposés</td>';
 	print '<td style="padding:2em">Morceaux proposés</td>';
 	print '<td style="padding:2em">Position</td>';
-	print '<td style="padding:2em">Actions</td>';
+	print '<td style="padding:2em"></td>';
 	print '</tr>';
 
 	$positions = [];
 	$loop = 0;
-	foreach($propositions as $value)
+	if(count($propositions) > 0)
 	{
-		if($loop != 0)
+		foreach($propositions as $value)
 		{
-			print '<tr>';
-			print '<td colspan="4" style="background-color:grey; color:white">Changement plateau (+5min)</td>';
-			print '</tr>';
-			$object->tempsTotal += 5;
-		}
-
-		// fetch du groupe
-		$groupeClass = new Groupe($db);
-		$groupeClass->fetch($value->fk_groupe);
-		// fetch des programmations à ce concert où se trouve les propositions
-		$programmationClass = new Programmation($db);
-		$programmations = $programmationClass->fetchAll('ASC','position',0,'',array('fk_proposition'=>$value->id,'fk_evenement'=>$object->id));
-
-		print '<tr>';
-		print '<td '.($value->status == Proposition::STATUS_PROGRAMMED ? 'style="background-color: #E9ffd7;"' : '').'><a href="groupe_card.php?id='.$groupeClass->id.'"><span class="badge  badge-status4 badge-status" style="color:white;">'.$groupeClass->nom_groupe.'</span></a><br><br>';
-
-		print $groupeClass->printEngagements();
-
-		print '</td>';
-		print '<td style="padding:1em '.($value->status == Proposition::STATUS_PROGRAMMED ? ';background-color: #E9ffd7' : '').'">';
-		if($value->status != Proposition::STATUS_CANCELED) {
-			if (count($programmations) > 0) {
-				print '<table class="table table-striped table-dark" style="background-color: lightgray">';
-				print '<tbody>';
+			if($loop != 0)
+			{
 				print '<tr>';
-				print '<td style="padding:0.8em">Titre et artiste</td>';
-				print '<td style="padding:0.8em">Durée</td>';
-				print '<td style="padding:0.8em">Position</td>';
-				print '<td style="padding:0.8em"></td>';
+				print '<td colspan="4" style="background-color:grey; color:white">Changement plateau (+5min)</td>';
 				print '</tr>';
+				$object->tempsTotal += 5;
+			}
 
-				foreach ($programmations as $programmation) {
-					// Appel de la fonction qui affiche les lines de programmation
-					print $object->printProgrammationLines((object)$programmation);
-				}
+			// fetch du groupe
+			$groupeClass = new Groupe($db);
+			$groupeClass->fetch($value->fk_groupe);
+			// fetch des programmations à ce concert où se trouve les propositions
+			$programmationClass = new Programmation($db);
+			$programmations = $programmationClass->fetchAll('ASC','position',0,'',array('fk_proposition'=>$value->id,'fk_evenement'=>$object->id));
 
-				print '</tbody>';
-				print '</table>';
-			} else print 'Aucune programmation connue pour ce groupe!<br>';
+			print '<tr>';
+			print '<td '.($value->status == Proposition::STATUS_PROGRAMMED ? 'style="background-color: #E9ffd7;"' : '').'><a href="groupe_card.php?id='.$groupeClass->id.'"><span class="badge  badge-status4 badge-status" style="color:white;">'.$groupeClass->nom_groupe.'</span></a><br><br>';
 
-			print '<a href="/custom/organisation/groupe_interpretation.php?id='.$value->fk_groupe.'&evenementid='.$object->id.'">'.img_picto('rotate','fa-plus').'</a>';
+			print $groupeClass->printEngagements();
+
+			print '</td>';
+			print '<td style="padding:1em '.($value->status == Proposition::STATUS_PROGRAMMED ? ';background-color: #E9ffd7' : '').'">';
+			if($value->status != Proposition::STATUS_CANCELED) {
+				if (count($programmations) > 0) {
+					print '<table class="table table-striped table-dark" style="background-color: lightgray">';
+					print '<tbody>';
+					print '<tr>';
+					print '<td style="padding:0.8em">Titre et artiste</td>';
+					print '<td style="padding:0.8em">Durée</td>';
+					print '<td style="padding:0.8em">Position</td>';
+					print '<td style="padding:0.8em"></td>';
+					print '</tr>';
+
+					foreach ($programmations as $programmation) {
+						// Appel de la fonction qui affiche les lines de programmation
+						print $object->printProgrammationLines((object)$programmation);
+					}
+
+					print '</tbody>';
+					print '</table>';
+				} else print 'Aucune programmation connue pour ce groupe!<br>';
+
+				print '<a href="/custom/organisation/groupe_interpretation.php?id='.$value->fk_groupe.'&evenementid='.$object->id.'">'.img_picto('rotate','fa-plus').'</a>';
+			}
+			print '</td>';
+
+			// print du formulaire de changement de position
+			print $object->printPositionUpdateForm($id, $value);
+
+			print '<td '.($value->status == Proposition::STATUS_PROGRAMMED ? 'style="background-color: #E9ffd7;"' : '').'>';
+			if($value->status != Proposition::STATUS_PROGRAMMED)
+			{
+				print dolGetButtonAction('Mettre en attente', '', 'delete', $_SERVER['PHP_SELF'] . '?id=' . $object->id . '&action=handleProposition&token=' . newToken().'&propositionId='.$value->id.'&typeAction=desactivateProposition', '', $permissiontoadd).'<br><br>';
+				print dolGetButtonAction('Reprogrammer le passage', '', 'delete',  'proposition_card.php?id=' . $value->id . '&action=edit&token=' . newToken().'&backtopage='.$_SERVER['PHP_SELF'].'?id='.$object->id.'&backtopageforcancel='.$_SERVER['PHP_SELF'].'?id='.$object->id.'&reprogrammation=true', '', $permissiontoadd).'<br><br>';
+			}
+
+			print dolGetButtonAction(($value->status == Proposition::STATUS_PROGRAMMED ? 'Invalider le passage' : 'Valider le passage'), '', 'delete', $_SERVER['PHP_SELF'] . '?id=' . $object->id . '&action=handle_validation_proposition&token=' . newToken().'&fk_proposition='.$value->id.'&subAction='.($value->status == Proposition::STATUS_PROGRAMMED ? 'deprogramProposition' : 'programProposition'), '', $permissiontoadd);
+
+			print '</td>';
+			print '</tr>';
+			$loop++;
 		}
-		print '</td>';
+	} else print '<tr><td colspan="4" class="center"><h3>Aucun groupe présent dans la conduite!</h3></td></tr>';
 
-		// print du formulaire de changement de position
-		print $object->printPositionUpdateForm($id, $value);
-
-		print '<td '.($value->status == Proposition::STATUS_PROGRAMMED ? 'style="background-color: #E9ffd7;"' : '').'>';
-		if($value->status != Proposition::STATUS_PROGRAMMED)
-		{
-			print dolGetButtonAction('Mettre en attente', '', 'delete', $_SERVER['PHP_SELF'] . '?id=' . $object->id . '&action=handleProposition&token=' . newToken().'&propositionId='.$value->id.'&typeAction=desactivateProposition', '', $permissiontoadd).'<br><br>';
-			print dolGetButtonAction('Reprogrammer le passage', '', 'delete',  'proposition_card.php?id=' . $value->id . '&action=edit&token=' . newToken().'&backtopage='.$_SERVER['PHP_SELF'].'?id='.$object->id.'&backtopageforcancel='.$_SERVER['PHP_SELF'].'?id='.$object->id.'&reprogrammation=true', '', $permissiontoadd).'<br><br>';
-		}
-
-		print dolGetButtonAction(($value->status == Proposition::STATUS_PROGRAMMED ? 'Invalider le passage' : 'Valider le passage'), '', 'delete', $_SERVER['PHP_SELF'] . '?id=' . $object->id . '&action=handle_validation_proposition&token=' . newToken().'&fk_proposition='.$value->id.'&subAction='.($value->status == Proposition::STATUS_PROGRAMMED ? 'deprogramProposition' : 'programProposition'), '', $permissiontoadd);
-
-		print '</td>';
-		print '</tr>';
-		$loop++;
-	}
 
 	print "<h3 style='text-align: center'>Durée du concert: {$object->tempsTotal}min</h3>";
 	print '</tbody>';
 	print '</table>';
 	print '</div>';
 
-	print dolGetButtonAction($langs->trans('Mettre à jour les positions'), '', 'default', $_SERVER['PHP_SELF'] . '?id=' . $object->id . '&action=updateAllPositions&token=' . newToken(), '', $permissiontoadd);
-	print dolGetButtonAction($langs->trans('Exporter la conduite'), '', 'default', $_SERVER['PHP_SELF'] . '?id=' . $object->id . '&action=exportConduite&token=' . newToken(), '', $permissiontoadd);
-	print dolGetButtonAction($langs->trans('Programmer un groupe'), '', 'default', 'proposition_card.php?fk_evenement=' . $object->id . '&action=create&token=' . newToken().'&backtopage='.$_SERVER['PHP_SELF'].'?id='.$object->id, '', $permissiontoadd);
+	if($programmations)
+	{
+		print dolGetButtonAction($langs->trans('Mettre à jour les positions'), '', 'default', $_SERVER['PHP_SELF'] . '?id=' . $object->id . '&action=updateAllPositions&token=' . newToken(), '', $permissiontoadd);
+		print dolGetButtonAction($langs->trans('Exporter la conduite'), '', 'default', $_SERVER['PHP_SELF'] . '?id=' . $object->id . '&action=exportConduite&token=' . newToken(), '', $permissiontoadd);
+		print dolGetButtonAction($langs->trans('Programmer un groupe'), '', 'default', 'proposition_card.php?fk_evenement=' . $object->id . '&action=create&token=' . newToken().'&backtopage='.$_SERVER['PHP_SELF'].'?id='.$object->id, '', $permissiontoadd);
+		print '<hr>';
+	}
 
-	print '<hr>';
+
 	print load_fiche_titre("Liste des propositions en attente", '', 'fa-hourglass-start');
 
 	print '<table class="tagtable nobottomiftotal liste">';
@@ -310,18 +318,10 @@ if ($id > 0 || !empty($ref)) {
 
 
 	$positions = [];
-	$loop = 0;
 	if(count($waitingPropositions) > 0)
 	{
 		foreach($waitingPropositions as $value)
 		{
-			if($loop != 0)
-			{
-				print '<tr>';
-				print '<td colspan="4" style="background-color:grey; color:white">Changement plateau (+5min)</td>';
-				print '</tr>';
-				$object->tempsTotal += 5;
-			}
 
 			// fetch du groupe
 			$groupeClass = new Groupe($db);
@@ -360,7 +360,6 @@ if ($id > 0 || !empty($ref)) {
 
 			print '</td>';
 			print '</tr>';
-			$loop++;
 		}
 	} else {
 		print '<tr><td colspan="3">Toutes les passages ont étés traités!</td></tr>';
