@@ -245,7 +245,7 @@ class Morceau extends CommonObject
 		$artisteClass = new Artiste($this->db);
 		$artisteClass->fetch($this->fk_artiste);
 
-		//$this->titre = $this->titre .' - '.$artisteClass->artiste;
+		$this->titre ="$this->titre - $artisteClass->artiste";
 		$this->status = Self::STATUS_VALIDATED;
 
 		return $this->createCommon($user, $notrigger);
@@ -372,7 +372,7 @@ class Morceau extends CommonObject
 		$artisteClass = new Artiste($this->db);
 		$artisteClass->fetch($this->fk_artiste);
 
-		//$this->titre = $this->titre .' - '.$artisteClass->artiste;
+		$this->titre ="$this->titre - $artisteClass->artiste";
 
 		return $this->updateCommon($user, $notrigger);
 	}
