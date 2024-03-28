@@ -1018,7 +1018,7 @@ class Interpretation extends CommonObject
 				$agentClass->fetch($interpretation->fk_user_creat);
 
 				$out .= '<tr>';
-				$out .= '<td style="padding:1em"><a href="morceau_card.php?id='.$morceauClass->id.'" >' . $morceauClass->titre . '</a></td>';
+				$out .= '<td style="padding:1em"><a href="morceau_card.php?id='.$morceauClass->id.'" >' . $morceauClass->getNomUrl() . '</a></td>';
 				$out .= '<td style="padding:1em">' . ($interpretation->temps ? ($interpretation->temps . 'min') : '') . '</td>';
 				$out .= '<td style="padding:1em"><span class="badge  badge-status4 badge-status">' . date('d/m/Y', $interpretation->date_debut_interpretation) . '</span></td>';
 				$out .= '<td style="padding:1em">' . (!empty($interpretation->date_fin_interpretation) ? '<span class="badge  badge-status8 badge-status">' . date('d/m/Y', $interpretation->date_fin_interpretation) : 'Indéfinie').'</span>' . '</td>';

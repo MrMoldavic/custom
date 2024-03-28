@@ -211,11 +211,10 @@ class Proposition extends CommonObject
 			$this->fields['entity']['enabled'] = 0;
 		}
 
-		if(GETPOST('fk_evenement'))
+		if(GETPOST('fk_evenement') && !GETPOST('fk_groupe'))
 		{
 			$this->fields['fk_evenement']['noteditable'] = 1;
 		}
-
 		if(GETPOST('fk_groupe') || GETPOST('action') == 'edit')
 		{
 			$this->fields['fk_groupe']['noteditable'] = 1;

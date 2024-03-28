@@ -63,7 +63,7 @@ function evenementPrepareHead($object)
 
 	$head[$h][0] = dol_buildpath('/organisation/evenement_autorisations.php', 1) . '?id=' . $object->id;
 	$head[$h][1] = $langs->trans('Autorisations');
-	$head[$h][2] = 'Autorisations ';
+	$head[$h][2] = 'Autorisations';
 	$h++;
 
 	if ($showtabofpagenote) {

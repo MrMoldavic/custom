@@ -22,6 +22,10 @@
  * \brief       This file is a CRUD class file for Morceau (Create/Read/Update/Delete)
  */
 
+/*ini_set('display_errors', '1');
+ini_set('display_startup_errors', '1');
+error_reporting(E_ALL);*/
+
 // Put here all includes required by your class file
 require_once DOL_DOCUMENT_ROOT.'/core/class/commonobject.class.php';
 //require_once DOL_DOCUMENT_ROOT . '/societe/class/societe.class.php';
@@ -112,7 +116,8 @@ class Morceau extends CommonObject
 	 */
 	public $fields=array(
 		'rowid' => array('type'=>'integer', 'label'=>'TechnicalID', 'enabled'=>'1', 'position'=>1, 'notnull'=>1, 'visible'=>0, 'noteditable'=>'1', 'index'=>1, 'css'=>'left', 'comment'=>"Id"),
-		'titre' => array('type'=>'varchar(255)', 'label'=>'Titre du morceau', 'enabled'=>'1', 'position'=>20, 'notnull'=>1, 'visible'=>1, 'index'=>1, 'searchall'=>1, 'showoncombobox'=>'1', 'validate'=>'1',),
+		'titre' => array('type'=>'varchar(255)', 'label'=>'Titre du morceau', 'enabled'=>'1', 'position'=>20, 'notnull'=>1, 'visible'=>1, 'index'=>1, 'validate'=>'1',),
+		'titre_complet' => array('type'=>'varchar(255)', 'label'=>'Titre complet', 'enabled'=>'1', 'position'=>21, 'notnull'=>0, 'visible'=>1, 'index'=>1, 'searchall'=>1, 'showoncombobox'=>'1', 'validate'=>'1',),
 		'fk_artiste' => array('type'=>'sellist:organisation_artiste:artiste', 'label'=>'Artiste', 'enabled'=>'1', 'position'=>30, 'notnull'=>1, 'visible'=>1, 'foreignkey'=>'organisation_artiste.rowid', 'searchall'=>1, 'css'=>'maxwidth300', 'validate'=>'1'),
 		'url' => array('type'=>'varchar(255)', 'label'=>'Url Youtube', 'enabled'=>'1', 'position'=>30, 'visible'=>1, 'searchall'=>1),
 		'description' => array('type'=>'text', 'label'=>'Description', 'enabled'=>'1', 'position'=>60, 'notnull'=>0, 'visible'=>3, 'validate'=>'1', 'help'=>"Durée, métrique, spécificitées...",),
@@ -245,7 +250,7 @@ class Morceau extends CommonObject
 		$artisteClass = new Artiste($this->db);
 		$artisteClass->fetch($this->fk_artiste);
 
-		$this->titre ="$this->titre - $artisteClass->artiste";
+		$this->titre_complet = "$this->titre - $artisteClass->artiste";
 		$this->status = Self::STATUS_VALIDATED;
 
 		return $this->createCommon($user, $notrigger);
@@ -372,7 +377,8 @@ class Morceau extends CommonObject
 		$artisteClass = new Artiste($this->db);
 		$artisteClass->fetch($this->fk_artiste);
 
-		$this->titre ="$this->titre - $artisteClass->artiste";
+		$this->titre = str_replace(" - $artisteClass->artiste", '', $this->titre);
+		$this->titre_complet = "$this->titre - $artisteClass->artiste";
 
 		return $this->updateCommon($user, $notrigger);
 	}
@@ -643,7 +649,9 @@ class Morceau extends CommonObject
 
 
 		if ($withpicto != 2) {
-			$result .= $this->titre;
+			$artisteClass = new Artiste($this->db);
+			$artisteClass->fetch($this->fk_artiste);
+			$result .= "$this->titre - $artisteClass->artiste";
 		}
 
 		$result .= $linkend;
@@ -963,6 +971,7 @@ class Morceau extends CommonObject
 
 		return $out;
 	}
+
 }
 
 

@@ -264,10 +264,10 @@ if ($action == 'create') {
 
 
 	// Set some default values
-	if (GETPOSTISSET('fk_groupe'))
+	/*if (GETPOSTISSET('fk_groupe'))
 	{
 		$_POST['fk_groupe'] = '';
-	}
+	}*/
 
 	if(GETPOST('fk_groupe','int')) print '<input type="hidden" name="fk_groupe" value="'.GETPOST('fk_groupe','int').'">';
 

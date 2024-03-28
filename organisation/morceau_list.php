@@ -22,6 +22,10 @@
  *		\brief      List page for morceau
  */
 
+/*ini_set('display_errors', '1');
+ini_set('display_startup_errors', '1');
+error_reporting(E_ALL);*/
+
 //if (! defined('NOREQUIREDB'))              define('NOREQUIREDB', '1');				// Do not create database handler $db
 //if (! defined('NOREQUIREUSER'))            define('NOREQUIREUSER', '1');				// Do not load object $user
 //if (! defined('NOREQUIRESOC'))             define('NOREQUIRESOC', '1');				// Do not load object $mysoc
@@ -83,7 +87,7 @@ require_once DOL_DOCUMENT_ROOT.'/core/lib/company.lib.php';
 require_once __DIR__.'/class/morceau.class.php';
 
 // for other modules
-//dol_include_once('/othermodule/class/otherobject.class.php');
+dol_include_once('/organisation/class/artiste.class.php');
 
 // Load translation files required by the page
 $langs->loadLangs(array("organisation@organisation", "other"));
@@ -743,16 +747,17 @@ while ($i < $imaxinloop) {
 				}
 				print '>';
 				if ($key == 'status') {
+					//$object->update($user);
 					print $object->getLibStatut(5);
-				} 
-				
+				}
+
 				elseif ($key == 'rowid') {
 					print $object->showOutputField($val, $key, $object->id, '');
-				} 
+				}
 				elseif ($key == 'titre') {
 					print $object->getNomUrl();
-				} 
-				
+				}
+
 				else {
 					print $object->showOutputField($val, $key, $object->$key, '');
 				}
