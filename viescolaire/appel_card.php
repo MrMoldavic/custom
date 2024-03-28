@@ -553,8 +553,6 @@ if (($action == 'create' or $action == 'modifAppel' or $action == 'returnFromErr
         ORDER BY c.rowid DESC, c.fk_instrument_enseigne ASC';
 	$resqlAffectation = $db->query($sql);
 
-	var_dump($sql);
-
 	if($resqlAffectation->num_rows == 0)
 	{
 		setEventMessage("Aucun cours à cette heure, changez d'horaire.",'errors');
