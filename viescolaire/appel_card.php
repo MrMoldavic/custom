@@ -1,7 +1,7 @@
 <?php
-ini_set('display_errors', '1');
+/*ini_set('display_errors', '1');
  ini_set('display_startup_errors', '1');
- error_reporting(E_ALL);
+ error_reporting(E_ALL);*/
 /* Copyright (C) 2017 Laurent Destailleur  <eldy@users.sourceforge.net>
  * Copyright (C) ---Put here your own copyright and developer email---
  *
@@ -111,6 +111,8 @@ $creneauid = GETPOST('creneauid', 'int');
 $getHeureActuelle = (GETPOST('heureActuelle', 'alpha') ? : intval(strftime('%k')));
 
 strlen($getHeureActuelle) > 2 ? $heureActuelle = substr($getHeureActuelle, 0, 2) : $heureActuelle = $getHeureActuelle;
+
+
 
 
 $allCreaneaux = GETPOST('allCreaneaux', 'alpha') ? GETPOST('allCreaneaux', 'alpha') : false;
@@ -543,14 +545,15 @@ if (($action == 'create' or $action == 'modifAppel' or $action == 'returnFromErr
 	$sql = 'SELECT c.rowid, c.nom_creneau, c.fk_dispositif, c.heure_debut
         FROM ' . MAIN_DB_PREFIX . 'creneau as c
         INNER JOIN ' . MAIN_DB_PREFIX . 'dispositif as d ON c.fk_dispositif = d.rowid
-        INNER JOIN ' . MAIN_DB_PREFIX . 'c_heure as h ON c.heure_debut = h.rowid
         WHERE d.fk_etablissement = ' . GETPOST('etablissementid', 'int') . '
             AND c.jour = ' . $JourSemaine . '
-            AND (h.heure ' . ($allCreaneaux ? '<=23' : '=' . $heureActuelle) .
-		' ' . ($minuteActuelle > 49 ? ' OR h.heure=' . ($heureActuelle+1) : '') . ')
+            AND (c.heure_debut ' . ($allCreaneaux ? '<=23' : '=' . $heureActuelle*3600) .
+		' ' . ($minuteActuelle > 49 ? ' OR c.heure_debut=' . ($heureActuelle+1)*3600 : '') .')
             AND c.status = ' . 4 . '
-        ORDER BY h.rowid DESC, c.fk_instrument_enseigne ASC';
+        ORDER BY c.rowid DESC, c.fk_instrument_enseigne ASC';
 	$resqlAffectation = $db->query($sql);
+
+	var_dump($sql);
 
 	if($resqlAffectation->num_rows == 0)
 	{
@@ -701,7 +704,7 @@ if (($action == 'create' or $action == 'modifAppel' or $action == 'returnFromErr
 		}
 		print '<input type="hidden" name="creneauid" value="' . $val['rowid'] . '">';
 		print '<input type="hidden" name="etablissementid" value="' . GETPOST('etablissementid', 'id') . '">';
-		print '<input type="hidden" name="heureActuelle" value="' . $heureActuelle . '">';
+		print '<input type="hidden" name="heureActuelle" value="' . ($heureActuelle*3600) . '">';
 
 
 
