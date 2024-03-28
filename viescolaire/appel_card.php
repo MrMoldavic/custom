@@ -702,7 +702,7 @@ if (($action == 'create' or $action == 'modifAppel' or $action == 'returnFromErr
 		}
 		print '<input type="hidden" name="creneauid" value="' . $val['rowid'] . '">';
 		print '<input type="hidden" name="etablissementid" value="' . GETPOST('etablissementid', 'id') . '">';
-		print '<input type="hidden" name="heureActuelle" value="' . ($heureActuelle*3600) . '">';
+		print '<input type="hidden" name="heureActuelle" value="' . $heureActuelle . '">';
 
 
 
