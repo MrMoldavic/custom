@@ -314,7 +314,10 @@ if($creneauErrors == 'true')
 {
 	$sql .= " AND fk_prof_1 IS NULL OR fk_salle IS NULL OR fk_salle=''";
 }
-
+if(GETPOST('search_myfield'))
+{
+	$sql .= " AND nom_creneau LIKE '%".GETPOST('search_myfield')."%'";
+}
 
 foreach ($search as $key => $val) {
 	if (array_key_exists($key, $object->fields)) {
@@ -624,7 +627,9 @@ if ($search_all) {
 }
 
 $moreforfilter = '';
-
+$moreforfilter.='<div class="divsearchfield">';
+$moreforfilter.= $langs->trans('Recherche spécifique') . ': <input type="text" name="search_myfield" value="'.dol_escape_htmltag($search_myfield).'">';
+$moreforfilter.= '</div>';
 
 $parameters = array();
 $reshook = $hookmanager->executeHooks('printFieldPreListTitle', $parameters, $object); // Note that $action and $object may have been modified by hook
@@ -916,7 +921,7 @@ while ($i < $imaxinloop) {
 						$objSalle = $db->fetch_object($resqlSalle);
 					}
 
-					$infos_creneau .= $objJour->jour.' | '.$objheure->heure.'h'.$object->minutes_debut.'-'.$objheureFin->heure.'h'.$object->minutes_fin.' | ';
+					$infos_creneau .= $objJour->jour.' | '.($object->heure_debut/3600).'h'.$object->minutes_debut.'-'.($object->heure_fin/3600).'h'.$object->minutes_fin.' | ';
 					$infos_creneau .= $object->fk_salle ? $objSalle->salle : "<span class='badge badge-danger'>Salle inconnue</span>";
 					print $infos_creneau;
 
