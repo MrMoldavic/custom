@@ -17,14 +17,14 @@
  */
 
 /**
- *   	\file       interpretation_card.php
- *		\ingroup    organisation
- *		\brief      Page to create/edit/view interpretation
+ *   	\file       assignation_card.php
+ *		\ingroup    viescolaire
+ *		\brief      Page to create/edit/view assignation
  */
 
-/*ini_set('display_errors', '1');
+ini_set('display_errors', '1');
 ini_set('display_startup_errors', '1');
-error_reporting(E_ALL);*/
+error_reporting(E_ALL);
 
 //if (! defined('NOREQUIREDB'))              define('NOREQUIREDB', '1');				// Do not create database handler $db
 //if (! defined('NOREQUIREUSER'))            define('NOREQUIREUSER', '1');				// Do not load object $user
@@ -32,7 +32,6 @@ error_reporting(E_ALL);*/
 //if (! defined('NOREQUIRETRAN'))            define('NOREQUIRETRAN', '1');				// Do not load object $langs
 //if (! defined('NOSCANGETFORINJECTION'))    define('NOSCANGETFORINJECTION', '1');		// Do not check injection attack on GET parameters
 //if (! defined('NOSCANPOSTFORINJECTION'))   define('NOSCANPOSTFORINJECTION', '1');		// Do not check injection attack on POST parameters
-//if (! defined('NOCSRFCHECK'))              define('NOCSRFCHECK', '1');				// Do not check CSRF attack (test on referer + on token).
 //if (! defined('NOTOKENRENEWAL'))           define('NOTOKENRENEWAL', '1');				// Do not roll the Anti CSRF token (used if MAIN_SECURITY_CSRF_WITH_TOKEN is on)
 //if (! defined('NOSTYLECHECK'))             define('NOSTYLECHECK', '1');				// Do not check style html tag into posted data
 //if (! defined('NOREQUIREMENU'))            define('NOREQUIREMENU', '1');				// If there is no need to load and show top and left menu
@@ -42,8 +41,7 @@ error_reporting(E_ALL);*/
 //if (! defined('NOIPCHECK'))                define('NOIPCHECK', '1');					// Do not check IP defined into conf $dolibarr_main_restrict_ip
 //if (! defined("MAIN_LANG_DEFAULT"))        define('MAIN_LANG_DEFAULT', 'auto');					// Force lang to a particular value
 //if (! defined("MAIN_AUTHENTICATION_MODE")) define('MAIN_AUTHENTICATION_MODE', 'aloginmodule');	// Force authentication handler
-//if (! defined("NOREDIRECTBYMAINTOLOGIN"))  define('NOREDIRECTBYMAINTOLOGIN', 1);		// The main.inc.php does not make a redirect if not logged, instead show simple error message
-//if (! defined("FORCECSP"))                 define('FORCECSP', 'none');				// Disable all Content Security Policies
+//if (! defined("MAIN_SECURITY_FORCECSP"))   define('MAIN_SECURITY_FORCECSP', 'none');	// Disable all Content Security Policies
 //if (! defined('CSRFCHECK_WITH_TOKEN'))     define('CSRFCHECK_WITH_TOKEN', '1');		// Force use of CSRF protection with tokens even for GET
 //if (! defined('NOBROWSERNOTIF'))     		 define('NOBROWSERNOTIF', '1');				// Disable browser notification
 //if (! defined('NOSESSION'))     		     define('NOSESSION', '1');				    // Disable session
@@ -82,13 +80,13 @@ if (!$res) {
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formcompany.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formfile.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formprojet.class.php';
-dol_include_once('/organisation/class/interpretation.class.php');
-dol_include_once('/organisation/class/groupe.class.php');
-dol_include_once('/management/class/agent.class.php');
-dol_include_once('/organisation/lib/organisation_interpretation.lib.php');
+dol_include_once('/viescolaire/class/assignation.class.php');
+dol_include_once('/scolarite/class/annee.class.php');
+
+dol_include_once('/viescolaire/class/dictionary.class.php');
 
 // Load translation files required by the page
-$langs->loadLangs(array("organisation@organisation", "other"));
+$langs->loadLangs(array("viescolaire@viescolaire", "other"));
 
 // Get parameters
 $id = GETPOST('id', 'int');
@@ -103,14 +101,11 @@ $backtopage = GETPOST('backtopage', 'alpha');
 $backtopageforcancel = GETPOST('backtopageforcancel', 'alpha');
 $dol_openinpopup = GETPOST('dol_openinpopup', 'aZ09');
 
-$fk_morceau = GETPOST('fk_morceau', 'int');
-$date_debut_interpretation = GETPOST('date_debut_interpretation', 'alpha');
-
 // Initialize technical objects
-$object = new Interpretation($db);
+$object = new Assignation($db);
 $extrafields = new ExtraFields($db);
-$diroutputmassaction = $conf->organisation->dir_output.'/temp/massgeneration/'.$user->id;
-$hookmanager->initHooks(array('interpretationcard', 'globalcard')); // Note that conf->hooks_modules contains array
+$diroutputmassaction = $conf->viescolaire->dir_output.'/temp/massgeneration/'.$user->id;
+$hookmanager->initHooks(array('assignationcard', 'globalcard')); // Note that conf->hooks_modules contains array
 
 // Fetch optionals attributes and labels
 $extrafields->fetch_name_optionals_label($object->table_element);
@@ -135,13 +130,13 @@ include DOL_DOCUMENT_ROOT.'/core/actions_fetchobject.inc.php'; // Must be includ
 
 // There is several ways to check permission.
 // Set $enablepermissioncheck to 1 to enable a minimum low level of checks
-$enablepermissioncheck = 1;
+$enablepermissioncheck = 0;
 if ($enablepermissioncheck) {
-	$permissiontoread = $user->rights->organisation->programmation->writeProgrammation;;
-	$permissiontoadd = $user->rights->organisation->programmation->writeProgrammation; // Used by the include of actions_addupdatedelete.inc.php and actions_lineupdown.inc.php
-	$permissiontodelete = $user->rights->management->agent->delete || ($permissiontoadd && isset($object->status) && $object->status == $object::STATUS_DRAFT);
-	$permissionnote = $user->rights->management->agent->write; // Used by the include of actions_setnotes.inc.php
-	$permissiondellink = $user->rights->management->agent->write; // Used by the include of actions_dellink.inc.php
+	$permissiontoread = $user->hasRight('viescolaire', 'inscription', 'read');
+	$permissiontoadd = $user->hasRight('viescolaire', 'inscription', 'write'); // Used by the include of actions_addupdatedelete.inc.php and actions_lineupdown.inc.php
+	$permissiontodelete = $user->hasRight('viescolaire', 'inscription', 'delete') || ($permissiontoadd && isset($object->status) && $object->status == $object::STATUS_DRAFT);
+	$permissionnote = $user->hasRight('viescolaire', 'inscription', 'write'); // Used by the include of actions_setnotes.inc.php
+	$permissiondellink = $user->hasRight('viescolaire', 'inscription', 'write'); // Used by the include of actions_dellink.inc.php
 } else {
 	$permissiontoread = 1;
 	$permissiontoadd = 1; // Used by the include of actions_addupdatedelete.inc.php and actions_lineupdown.inc.php
@@ -150,28 +145,18 @@ if ($enablepermissioncheck) {
 	$permissiondellink = 1;
 }
 
-$upload_dir = $conf->organisation->multidir_output[isset($object->entity) ? $object->entity : 1].'/interpretation';
+$upload_dir = $conf->viescolaire->multidir_output[isset($object->entity) ? $object->entity : 1].'/assignation';
 
-// Security check (enable the most restrictive one)
-//if ($user->socid > 0) accessforbidden();
-//if ($user->socid > 0) $socid = $user->socid;
-//$isdraft = (isset($object->status) && ($object->status == $object::STATUS_DRAFT) ? 1 : 0);
-//restrictedArea($user, $object->element, $object->id, $object->table_element, '', 'fk_soc', 'rowid', $isdraft);
-if (empty($conf->organisation->enabled)) accessforbidden();
-if (!$permissiontoread) accessforbidden();
-
+if (!isModEnabled("viescolaire")) {
+	accessforbidden();
+}
+if (!$permissiontoread) {
+	accessforbidden();
+}
 
 /*
  * Actions
  */
-
-if($action == 'verifyBeforeAction')
-{
-	$interpretations = $object->fetchAll('','',0,0,array('customsql'=>'fk_morceau='.GETPOST('fk_morceau','int').' AND date_fin_interpretation IS NULL'));
-
-	if(count($interpretations) > 0) $action = 'checkBeforeAdd';
-	else $action = 'add';
-}
 
 $parameters = array();
 $reshook = $hookmanager->executeHooks('doActions', $parameters, $object, $action); // Note that $action and $object may have been modified by some hooks
@@ -182,17 +167,19 @@ if ($reshook < 0) {
 if (empty($reshook)) {
 	$error = 0;
 
+	//$backurlforlist = dol_buildpath('/viescolaire/assignation_list.php', 1);
+
 	if (empty($backtopage) || ($cancel && empty($id))) {
 		if (empty($backtopage) || ($cancel && strpos($backtopage, '__ID__'))) {
 			if (empty($id) && (($action != 'add' && $action != 'create') || $cancel)) {
 				$backtopage = $backurlforlist;
 			} else {
-				$backtopage = dol_buildpath('/organisation/groupe_interpretation.php', 1).'?id='.GETPOST('fk_groupe','int');
+				$backtopage = dol_buildpath('/viescolaire/assignation_card.php', 1).'?id='.((!empty($id) && $id > 0) ? $id : '__ID__');
 			}
 		}
 	}
 
-	$triggermodname = 'ORGANISATION_INTERPRETATION_MODIFY'; // Name of trigger action code to execute when we modify record
+	$triggermodname = 'VIESCOLAIRE_ASSIGNATION_MODIFY'; // Name of trigger action code to execute when we modify record
 
 	// Actions cancel, add, update, update_extras, confirm_validate, confirm_delete, confirm_deleteline, confirm_clone, confirm_close, confirm_setdraft, confirm_reopen
 	include DOL_DOCUMENT_ROOT.'/core/actions_addupdatedelete.inc.php';
@@ -217,11 +204,18 @@ if (empty($reshook)) {
 	}
 
 	// Actions to send emails
-	$triggersendname = 'ORGANISATION_INTERPRETATION_SENTBYMAIL';
-	$autocopy = 'MAIN_MAIL_AUTOCOPY_INTERPRETATION_TO';
-	$trackid = 'interpretation'.$object->id;
+	$triggersendname = 'VIESCOLAIRE_ASSIGNATION_SENTBYMAIL';
+	$autocopy = 'MAIN_MAIL_AUTOCOPY_ASSIGNATION_TO';
+	$trackid = 'assignation'.$object->id;
 	include DOL_DOCUMENT_ROOT.'/core/actions_sendmails.inc.php';
 }
+
+
+if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'create'))) {
+	header("Location: ".DOL_URL_ROOT."/custom/scolarite/creneau_card.php?id=" . $object->fk_creneau_id);
+	exit;
+}
+
 
 /*
  * View
@@ -233,53 +227,22 @@ $form = new Form($db);
 $formfile = new FormFile($db);
 $formproject = new FormProjets($db);
 
-$title = $langs->trans("Interpretation");
+$title = $langs->trans("Assignation");
 $help_url = '';
 llxHeader('', $title, $help_url);
 
+
 // Part to create
-if ($action == 'create' || $action == 'checkBeforeAdd') {
+if ($action == 'create') {
 	if (empty($permissiontoadd)) {
-		accessforbidden($langs->trans('NotEnoughPermissions'), 0, 1);
-		exit;
+		accessforbidden('NotEnoughPermissions', 0, 1);
 	}
 
-	$formconfirm = '';
-
-	if ($action == 'checkBeforeAdd') {
-
-		$groupeClass = new Groupe($db);
-		$count = 0;
-		$groupeNames = '';
-
-		foreach ($interpretations as $interpretation)
-		{
-			$groupeClass->fetch($interpretation->fk_groupe);
-			$groupeNames .= ($count != 0 ? ', ' : '')."<b>$groupeClass->nom_groupe</b>";
-			$count++;
-		}
-
-		$formconfirm = $form->formconfirm($_SERVER['PHP_SELF'].'?fk_morceau='.GETPOST('fk_morceau','int').'&fk_groupe='.GETPOST('fk_groupe','int').'&temps='.GETPOST('temps','int').'&status='.GETPOST('status','int'), 'Valider la création?', 'Il semble que '.($count > 1 ? 'les groupes' : 'le groupe')." {$groupeNames} interprète".($count > 1 ? 'nt' : ''). ' déjà ce morceau.<br><br> Voulez-vous tout de même créer une nouvelle interprétation?', 'add', '', 0, 1);
-
-		// Call Hook formConfirm
-		$parameters = array('formConfirm' => $formconfirm, 'lineid' => $lineid);
-		$reshook = $hookmanager->executeHooks('formConfirm', $parameters, $object, $action); // Note that $action and $object may have been modified by hook
-		if (empty($reshook)) {
-			$formconfirm .= $hookmanager->resPrint;
-		} elseif ($reshook > 0) {
-			$formconfirm = $hookmanager->resPrint;
-		}
-
-		// Print form confirm
-		print $formconfirm;
-
-	}
-
-	print load_fiche_titre($langs->trans("NewObject", $langs->transnoentitiesnoconv("Interpretation")), '', 'object_'.$object->picto);
+	print load_fiche_titre($langs->trans("NewObject", $langs->transnoentitiesnoconv("Assignation")), '', 'object_'.$object->picto);
 
 	print '<form method="POST" action="'.$_SERVER["PHP_SELF"].'">';
 	print '<input type="hidden" name="token" value="'.newToken().'">';
-	print '<input type="hidden" name="action" value="verifyBeforeAction">';
+	print '<input type="hidden" name="action" value="add">';
 	if ($backtopage) {
 		print '<input type="hidden" name="backtopage" value="'.$backtopage.'">';
 	}
@@ -290,20 +253,19 @@ if ($action == 'create' || $action == 'checkBeforeAdd') {
 	print dol_get_fiche_head(array(), '');
 
 	// Set some default values
-	if (! GETPOSTISSET('date_debut_interpretation'))
-	{
-		$_POST['date_debut_interpretationday'] = date('d');
-		$_POST['date_debut_interpretationmonth'] = date('m');
-		$_POST['date_debut_interpretationyear'] = date('Y');
-	}
 
+	$anneeScolaireClass = new Annee($db);
+	$anneeScolaireClass->fetch('','',' AND active=1 AND annee_actuelle=1');
+
+
+	if (!GETPOSTISSET('fk_annee_scolaire')) $_POST['fk_annee_scolaire_id'] = $anneeScolaireClass->id;
 	print '<table class="border centpercent tableforfieldcreate">'."\n";
 
 	// Common attributes
-	print '<input type="int" name="fk_groupe" value="'.GETPOST('fk_groupe','int').'" hidden/>';
+	print '<input name="fk_eleve_id" value="'.$fk_eleve_id.'" hidden>';
 	include DOL_DOCUMENT_ROOT.'/core/tpl/commonfields_add.tpl.php';
 
-	// Other attributes
+	// Other attributess
 	include DOL_DOCUMENT_ROOT.'/core/tpl/extrafields_add.tpl.php';
 
 	print '</table>'."\n";
@@ -317,7 +279,7 @@ if ($action == 'create' || $action == 'checkBeforeAdd') {
 
 // Part to edit record
 if (($id || $ref) && $action == 'edit') {
-	print load_fiche_titre($langs->trans("Interpretation"), '', 'object_'.$object->picto);
+	print load_fiche_titre($langs->trans("Assignation"), '', 'object_'.$object->picto);
 
 	print '<form method="POST" action="'.$_SERVER["PHP_SELF"].'">';
 	print '<input type="hidden" name="token" value="'.newToken().'">';
@@ -331,11 +293,6 @@ if (($id || $ref) && $action == 'edit') {
 	}
 
 	print dol_get_fiche_head();
-
-	if($object->fk_groupe)
-	{
-		$object->fields['fk_groupe']['noteditable'] = 1;
-	}
 
 	print '<table class="border centpercent tableforfieldedit">'."\n";
 

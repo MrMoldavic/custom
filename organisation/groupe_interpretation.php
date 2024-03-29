@@ -22,9 +22,9 @@
  *  \brief      Tab for notes on Groupe
  */
 
-/*ini_set('display_errors', '1');
+ini_set('display_errors', '1');
 ini_set('display_startup_errors', '1');
-error_reporting(E_ALL);*/
+error_reporting(E_ALL);
 
 //if (! defined('NOREQUIREDB'))              define('NOREQUIREDB', '1');				// Do not create database handler $db
 //if (! defined('NOREQUIREUSER'))            define('NOREQUIREUSER', '1');				// Do not load object $user
@@ -118,10 +118,10 @@ if ($id > 0 || !empty($ref)) {
 
 // There is several ways to check permission.
 // Set $enablepermissioncheck to 1 to enable a minimum low level of checks
-$enablepermissioncheck = 0;
+$enablepermissioncheck = 1;
 if ($enablepermissioncheck) {
-	$permissiontoread = $user->rights->organisation->groupe->read;
-	$permissiontoadd = $user->rights->organisation->groupe->write;
+	$permissiontoread = $user->rights->organisation->programmation->writeProgrammation;
+	$permissiontoadd = $user->rights->organisation->programmation->writeProgrammation;
 	$permissionnote = $user->rights->organisation->groupe->write; // Used by the include of actions_setnotes.inc.php
 } else {
 	$permissiontoread = 1;

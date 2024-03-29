@@ -55,22 +55,19 @@ class Dictionary extends CommonObject
 	 * @param string $column string column requested for direct fetch
 	 * @return int <0 if KO, >0 if OK
 	 */
-	public function fetchByDictionary(string $table, array $parameters, int $id = 0, string $column = '', string $andWhere = "")
+	public function fetchByDictionary(string $table, array $parameters, int $id = 0, string $column = '', string $andWhere = '')
 	{
-		$sql = "SELECT ";
-		for($i=0;$i<count($parameters);$i++)
-		{
-			$sql .= $this->db->sanitize($this->db->escape($parameters[$i])).', ';
+		$sql = 'SELECT ';
+		for ($i = 0; $i < count($parameters); $i++) {
+			$sql .= $this->db->sanitize($this->db->escape($parameters[$i])) . ', ';
 		}
 		$sql = substr($sql, 0, -2);
-		$sql .= " FROM ".MAIN_DB_PREFIX.$this->db->sanitize($this->db->escape($table));
+		$sql .= ' FROM ' . MAIN_DB_PREFIX . $this->db->sanitize($this->db->escape($table));
 
-		if($id)
-		{
-			$sql .= " WHERE ".$this->db->sanitize($this->db->escape($column))." = ".$this->db->sanitize($this->db->escape($id));
+		if ($id) {
+			$sql .= ' WHERE ' . $this->db->sanitize($this->db->escape($column)) . ' = ' . $this->db->sanitize($this->db->escape($id));
 		}
-		if($andWhere)
-		{
+		if ($andWhere) {
 			$sql .= $andWhere;
 		}
 
@@ -80,19 +77,16 @@ class Dictionary extends CommonObject
 		if ($resql) {
 			$num = $this->db->num_rows($resql);
 			$i = 0;
-			if($num == 1)
-			{
+			if ($num == 1) {
 				$records = $this->db->fetch_object($resql);
-			}
-			else
-			{
+			} else {
 				while ($i < ($limit ? min($limit, $num) : $num)) {
 
 					$obj = $this->db->fetch_object($resql);
 					//$record = new self($this->db);
 					//$record->setVarsFromFetchObj($obj);
 
-					$records[$obj->id ? : $obj->rowid] = $obj;
+					$records[$obj->id ?: $obj->rowid] = $obj;
 
 					$i++;
 				}
@@ -100,8 +94,8 @@ class Dictionary extends CommonObject
 			$this->db->free($resql);
 			return $records;
 		} else {
-			$this->errors[] = 'Error '.$this->db->lasterror();
-			dol_syslog(__METHOD__.' '.join(',', $this->errors), LOG_ERR);
+			$this->errors[] = 'Error ' . $this->db->lasterror();
+			dol_syslog(__METHOD__ . ' ' . join(',', $this->errors), LOG_ERR);
 
 			return -1;
 		}

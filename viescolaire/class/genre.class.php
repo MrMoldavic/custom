@@ -1,6 +1,6 @@
 <?php
 /* Copyright (C) 2017  Laurent Destailleur <eldy@users.sourceforge.net>
- * Copyright (C) 2023 Baptiste Diodati <baptiste.diodati@gmail.com>
+ * Copyright (C) ---Put here your own copyright and developer email---
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,38 +17,37 @@
  */
 
 /**
- * \file        class/interpretation.class.php
- * \ingroup     organisation
- * \brief       This file is a CRUD class file for Interpretation (Create/Read/Update/Delete)
+ * \file        class/etablissement.class.php
+ * \ingroup     scolarite
+ * \brief       This file is a CRUD class file for Etablissement (Create/Read/Update/Delete)
  */
 /*ini_set('display_errors', '1');
 ini_set('display_startup_errors', '1');
 error_reporting(E_ALL);*/
-
 // Put here all includes required by your class file
 require_once DOL_DOCUMENT_ROOT.'/core/class/commonobject.class.php';
 //require_once DOL_DOCUMENT_ROOT . '/societe/class/societe.class.php';
 //require_once DOL_DOCUMENT_ROOT . '/product/class/product.class.php';
 
 /**
- * Class for Interpretation
+ * Class for Etablissement
  */
-class Interpretation extends CommonObject
+class Genre extends CommonObject
 {
 	/**
 	 * @var string ID of module.
 	 */
-	public $module = 'organisation';
+	public $module = 'scolarite';
 
 	/**
 	 * @var string ID to identify managed object.
 	 */
-	public $element = 'interpretation';
+	public $element = 'antenne';
 
 	/**
 	 * @var string Name of table without prefix where object is stored. This is also the key used for extrafields management.
 	 */
-	public $table_element = 'organisation_interpretation';
+	public $table_element = 'c_genre';
 
 	/**
 	 * @var int  Does this object support multicompany module ?
@@ -62,34 +61,22 @@ class Interpretation extends CommonObject
 	public $isextrafieldmanaged = 1;
 
 	/**
-	 * @var string String with name of icon for interpretation. Must be a 'fa-xxx' fontawesome code (or 'fa-xxx_fa_color_size') or 'interpretation@organisation' if picto is file 'img/object_interpretation.png'.
+	 * @var string String with name of icon for etablissement. Must be the part after the 'object_' into object_etablissement.png
 	 */
-	public $picto = 'fa-file';
+	public $picto = 'etablissement@scolarite';
 
 
-	const STATUS_DRAFT = 5;
+	const STATUS_DRAFT = 0;
 	const STATUS_VALIDATED = 4;
-	const STATUS_ABANDONNED = 9;
-	const STATUS_RESERVED = 2;
-	const STATUS_INWORK = 1;
+	const STATUS_CANCELED = 9;
 
 
 	/**
-	 *  'type' field format:
-	 *  	'integer', 'integer:ObjectClass:PathToClass[:AddCreateButtonOrNot[:Filter[:Sortfield]]]',
-	 *  	'select' (list of values are in 'options'),
-	 *  	'sellist:TableName:LabelFieldName[:KeyFieldName[:KeyFieldParent[:Filter[:Sortfield]]]]',
-	 *  	'chkbxlst:...',
-	 *  	'varchar(x)',
-	 *  	'text', 'text:none', 'html',
-	 *   	'double(24,8)', 'real', 'price',
-	 *  	'date', 'datetime', 'timestamp', 'duration',
-	 *  	'boolean', 'checkbox', 'radio', 'array',
-	 *  	'mail', 'phone', 'url', 'password', 'ip'
-	 *		Note: Filter can be a string like "(t.ref:like:'SO-%') or (t.date_creation:<:'20160101') or (t.nature:is:NULL)"
+	 *  'type' field format ('integer', 'integer:ObjectClass:PathToClass[:AddCreateButtonOrNot[:Filter[:Sortfield]]]', 'sellist:TableName:LabelFieldName[:KeyFieldName[:KeyFieldParent[:Filter[:Sortfield]]]]', 'varchar(x)', 'double(24,8)', 'real', 'price', 'text', 'text:none', 'html', 'date', 'datetime', 'timestamp', 'duration', 'mail', 'phone', 'url', 'password')
+	 *         Note: Filter can be a string like "(t.ref:like:'SO-%') or (t.date_creation:<:'20160101') or (t.nature:is:NULL)"
 	 *  'label' the translation key.
 	 *  'picto' is code of a picto to show before value in forms
-	 *  'enabled' is a condition when the field must be managed (Example: 1 or '$conf->global->MY_SETUP_PARAM' or '!empty($conf->multicurrency->enabled)' ...)
+	 *  'enabled' is a condition when the field must be managed (Example: 1 or '$conf->global->MY_SETUP_PARAM)
 	 *  'position' is the sort order of field.
 	 *  'notnull' is set to 1 if not null in database. Set to -1 if we must set data to null if empty ('' or 0).
 	 *  'visible' says if field is visible in list (Examples: 0=Not visible, 1=Visible on list and create/update/view forms, 2=Visible on list only, 3=Visible on create/update/view form only (not list), 4=Visible on list and update/view form only (not create). 5=Visible on list and view only (not create/not update). Using a negative value means field is not shown by default on list but can be selected for viewing)
@@ -117,41 +104,14 @@ class Interpretation extends CommonObject
 	 * @var array  Array with all fields and their property. Do not use it as a static var. It may be modified by constructor.
 	 */
 	public $fields=array(
-		'rowid' => array('type'=>'integer', 'label'=>'Identifiant', 'enabled'=>'1', 'position'=>1, 'notnull'=>1, 'visible'=>0, 'noteditable'=>'1', 'index'=>1, 'css'=>'left', 'comment'=>"Id", 'showoncombobox'=>'1',),
-		'fk_morceau' => array('type'=>'integer:Morceau:custom/organisation/class/morceau.class.php:1', 'label'=>'Titre concerné', 'enabled'=>'1', 'position'=>20, 'notnull'=>1, 'visible'=>1, 'index'=>1,'css'=>'maxwidth300', 'searchall'=>1, 'validate'=>'1'),
-		'fk_groupe' => array('type'=>'integer:Groupe:custom/organisation/class/groupe.class.php:1','label'=>'Groupe concerné', 'enabled'=>'1', 'position'=>30, 'notnull'=>1, 'visible'=>1, 'searchall'=>1, 'css'=>'maxwidth300', 'validate'=>'1',),
-		'temps' => array('type'=>'integer', 'label'=>'Temps (en minutes) de l\'interpretation', 'enabled'=>'1', 'position'=>35, 'notnull'=>1, 'visible'=>1,'validate'=>'1', 'help'=>"Arrondir au dessus si nécessaire (morceau de 3min45=>4min)",),
-		'date_debut_interpretation' => array('type'=>'date', 'label'=>'Date de début d\'interprétation', 'enabled'=>'1', 'position'=>40, 'visible'=>2),
-		'date_fin_interpretation' => array('type'=>'date', 'label'=>'Date de fin d\'interprétation', 'enabled'=>'1', 'position'=>45, 'notnull'=>0, 'visible'=>5, 'css'=>'maxwidth75imp', 'validate'=>'1',),
-		'note_public' => array('type'=>'html', 'label'=>'Infos supplémentaires', 'enabled'=>'1', 'position'=>61, 'notnull'=>0, 'visible'=>1, 'cssview'=>'wordbreak', 'validate'=>'1',),
-		'note_private' => array('type'=>'html', 'label'=>'NotePrivate', 'enabled'=>'1', 'position'=>62, 'notnull'=>0, 'visible'=>0, 'cssview'=>'wordbreak', 'validate'=>'1',),
-		'date_creation' => array('type'=>'datetime', 'label'=>'DateCreation', 'enabled'=>'1', 'position'=>500, 'notnull'=>1, 'visible'=>-2,),
-		'tms' => array('type'=>'timestamp', 'label'=>'DateModification', 'enabled'=>'1', 'position'=>501, 'notnull'=>0, 'visible'=>-2,),
-		'fk_user_creat' => array('type'=>'integer:User:user/class/user.class.php', 'label'=>'UserAuthor', 'picto'=>'user', 'enabled'=>'1', 'position'=>510, 'notnull'=>1, 'visible'=>-2, 'foreignkey'=>'user.rowid',),
-		'fk_user_modif' => array('type'=>'integer:User:user/class/user.class.php', 'label'=>'UserModif', 'picto'=>'user', 'enabled'=>'1', 'position'=>511, 'notnull'=>-1, 'visible'=>-2,),
-		'last_main_doc' => array('type'=>'varchar(255)', 'label'=>'LastMainDoc', 'enabled'=>'1', 'position'=>600, 'notnull'=>0, 'visible'=>0,),
-		'import_key' => array('type'=>'varchar(14)', 'label'=>'ImportId', 'enabled'=>'1', 'position'=>1000, 'notnull'=>-1, 'visible'=>-2,),
-		'model_pdf' => array('type'=>'varchar(255)', 'label'=>'Model pdf', 'enabled'=>'1', 'position'=>1010, 'notnull'=>-1, 'visible'=>0,),
-		'status' => array('type'=>'integer', 'label'=>'Etat de l\'interprétation', 'enabled'=>'1', 'position'=>2000, 'notnull'=>1, 'visible'=>4, 'index'=>1, 'arrayofkeyval'=>array(Interpretation::STATUS_RESERVED=>'Réservée', Interpretation::STATUS_INWORK=>'En travail',Interpretation::STATUS_VALIDATED=>'Prête',Interpretation::STATUS_ABANDONNED=>'Abandonnée'), 'validate'=>'1',),
+		'rowid' => array('type'=>'integer', 'label'=>'TechnicalID', 'enabled'=>'1', 'position'=>1, 'notnull'=>1, 'visible'=>0, 'noteditable'=>'1', 'index'=>1, 'css'=>'left', 'comment'=>"Id"),
+		'genre' => array('type'=>'varchar(255)', 'label'=>'Genre', 'enabled'=>'1', 'position'=>2, 'notnull'=>1, 'visible'=>1, 'index'=>1, 'searchall'=>1,'showoncombobox'=>'1',),
+		'active' => array('type'=>'integer', 'label'=>'Adresse', 'enabled'=>'1', 'position'=>4, 'notnull'=>1, 'visible'=>1, 'validate'=>'1',),
 	);
 
 	public $rowid;
-	public $fk_morceau;
-	public $fk_groupe;
-	public $temps;
-	public $date_debut_interpretation;
-	public $date_fin_interpretation;
-
-	public $note_public;
-	public $note_private;
-	public $date_creation;
-	public $tms;
-	public $fk_user_creat;
-	public $fk_user_modif;
-	public $last_main_doc;
-	public $import_key;
-	public $model_pdf;
-	public $status;
+	public $genre;
+	public $active;
 	// END MODULEBUILDER PROPERTIES
 
 
@@ -160,17 +120,17 @@ class Interpretation extends CommonObject
 	// /**
 	//  * @var string    Name of subtable line
 	//  */
-	// public $table_element_line = 'organisation_interpretationline';
+	// public $table_element_line = 'scolarite_etablissementline';
 
 	// /**
 	//  * @var string    Field with ID of parent key if this object has a parent
 	//  */
-	// public $fk_element = 'fk_interpretation';
+	// public $fk_element = 'fk_etablissement';
 
 	// /**
 	//  * @var string    Name of subtable class that manage subtable lines
 	//  */
-	// public $class_element_line = 'Interpretationline';
+	// public $class_element_line = 'Etablissementline';
 
 	// /**
 	//  * @var array	List of child tables. To test if we can delete object.
@@ -182,10 +142,10 @@ class Interpretation extends CommonObject
 	//  *               If name matches '@ClassNAme:FilePathClass;ParentFkFieldName' it will
 	//  *               call method deleteByParentField(parentId, ParentFkFieldName) to fetch and delete child object
 	//  */
-	// protected $childtablesoncascade = array('organisation_interpretationdet');
+	// protected $childtablesoncascade = array('scolarite_etablissementdet');
 
 	// /**
-	//  * @var InterpretationLine[]     Array of subtable lines
+	//  * @var EtablissementLine[]     Array of subtable lines
 	//  */
 	// public $lines = array();
 
@@ -202,7 +162,7 @@ class Interpretation extends CommonObject
 
 		$this->db = $db;
 
-		if (empty($conf->global->MAIN_SHOW_TECHNICAL_ID) && isset($this->fields['rowid']) && !empty($this->fields['ref'])) {
+		if (empty($conf->global->MAIN_SHOW_TECHNICAL_ID) && isset($this->fields['rowid'])) {
 			$this->fields['rowid']['visible'] = 0;
 		}
 		if (empty($conf->multicompany->enabled) && isset($this->fields['entity'])) {
@@ -215,12 +175,6 @@ class Interpretation extends CommonObject
 				unset($this->fields[$key]);
 			}
 		}
-
-		if(GETPOST('fk_groupe','int'))
-		{
-			$this->fields['fk_groupe']['noteditable'] = 1;
-		}
-
 
 		// Translate some data of arrayofkeyval
 		if (is_object($langs)) {
@@ -243,32 +197,127 @@ class Interpretation extends CommonObject
 	 */
 	public function create(User $user, $notrigger = false)
 	{
-		$existingInterpretation = $this->fetchAll('','','','',array('fk_groupe'=>GETPOST('fk_groupe','int'),'fk_morceau'=>GETPOST('fk_morceau','int')));
+		return $this->createCommon($user, $notrigger);
+	}
 
-		if(count($existingInterpretation) > 0)
-		{
-			setEventMessage('Une interprétation de ce morceau par ce groupe éxiste déjà. Veuillez modifier le morceau choisi ou ','errors');
+	public function returnActualyear()
+	{
+		$sql = 'SELECT ';
+		$sql .= 'rowid, nom_annee, annee_actuelle ';
+		$sql .= 'FROM ' . MAIN_DB_PREFIX . 'c_annee_scolaire ';
+		$sql .= 'WHERE annee_actuelle = 1';
+
+		$resql = $this->db->query($sql);
+		if ($resql) {
+			$record = $this->db->fetch_object($resql);
+			$this->db->free($resql);
+
+			return $record;
+		} else {
+			$this->errors[] = 'Error ' . $this->db->lasterror();
+			dol_syslog(__METHOD__ . ' ' . join(',', $this->errors), LOG_ERR);
+
 			return -1;
 		}
+	}
 
-		$agentClass = new Agent($this->db);
-		$agentClass->fetch('','',' AND fk_user='.$user->id);
+	/**
+	 * Clone an object into another one
+	 *
+	 * @param  	User 	$user      	User that creates
+	 * @param  	int 	$fromid     Id of object to clone
+	 * @return 	mixed 				New object created, <0 if KO
+	 */
+	public function createFromClone(User $user, $fromid)
+	{
+		global $langs, $extrafields;
+		$error = 0;
 
-		$this->fk_user_creat = $agentClass->id;
+		dol_syslog(__METHOD__, LOG_DEBUG);
 
-		if($this->status == self::STATUS_ABANDONNED)
-		{
-			$this->date_fin_interpretation = date('Y-m-d');
+		$object = new self($this->db);
+
+		$this->db->begin();
+
+		// Load source object
+		$result = $object->fetchCommon($fromid);
+		if ($result > 0 && !empty($object->table_element_line)) {
+			$object->fetchLines();
 		}
 
-		if(!GETPOST('date_debut_interpretation','alpha'))
-		{
-			$this->date_debut_interpretation = date('Y-m-d');
+		// get lines so they will be clone
+		//foreach($this->lines as $line)
+		//	$line->fetch_optionals();
+
+		// Reset some properties
+		unset($object->id);
+		unset($object->fk_user_creat);
+		unset($object->import_key);
+
+		// Clear fields
+		if (property_exists($object, 'ref')) {
+			$object->ref = empty($this->fields['ref']['default']) ? "Copy_Of_".$object->ref : $this->fields['ref']['default'];
+		}
+		if (property_exists($object, 'label')) {
+			$object->label = empty($this->fields['label']['default']) ? $langs->trans("CopyOf")." ".$object->label : $this->fields['label']['default'];
+		}
+		if (property_exists($object, 'status')) {
+			$object->status = self::STATUS_DRAFT;
+		}
+		if (property_exists($object, 'date_creation')) {
+			$object->date_creation = dol_now();
+		}
+		if (property_exists($object, 'date_modification')) {
+			$object->date_modification = null;
+		}
+		// ...
+		// Clear extrafields that are unique
+		if (is_array($object->array_options) && count($object->array_options) > 0) {
+			$extrafields->fetch_name_optionals_label($this->table_element);
+			foreach ($object->array_options as $key => $option) {
+				$shortkey = preg_replace('/options_/', '', $key);
+				if (!empty($extrafields->attributes[$this->table_element]['unique'][$shortkey])) {
+					//var_dump($key); var_dump($clonedObj->array_options[$key]); exit;
+					unset($object->array_options[$key]);
+				}
+			}
 		}
 
-		$this->status = Interpretation::STATUS_INWORK;
+		// Create clone
+		$object->context['createfromclone'] = 'createfromclone';
+		$result = $object->createCommon($user);
+		if ($result < 0) {
+			$error++;
+			$this->error = $object->error;
+			$this->errors = $object->errors;
+		}
 
-		return $this->createCommon($user, $notrigger);
+		if (!$error) {
+			// copy internal contacts
+			if ($this->copy_linked_contact($object, 'internal') < 0) {
+				$error++;
+			}
+		}
+
+		if (!$error) {
+			// copy external contacts if same company
+			if (!empty($object->socid) && property_exists($this, 'fk_soc') && $this->fk_soc == $object->socid) {
+				if ($this->copy_linked_contact($object, 'external') < 0) {
+					$error++;
+				}
+			}
+		}
+
+		unset($object->context['createfromclone']);
+
+		// End
+		if (!$error) {
+			$this->db->commit();
+			return $object;
+		} else {
+			$this->db->rollback();
+			return -1;
+		}
 	}
 
 	/**
@@ -278,14 +327,84 @@ class Interpretation extends CommonObject
 	 * @param string $ref  Ref
 	 * @return int         <0 if KO, 0 if not found, >0 if OK
 	 */
-	public function fetch($id, $ref = null)
+	public function fetch($id, $ref = null, $moresql = null)
 	{
-		$result = $this->fetchCommon($id, $ref);
+		$result = $this->fetchCommon($id, $ref, $moresql);
 		if ($result > 0 && !empty($this->table_element_line)) {
 			$this->fetchLines();
 		}
 		return $result;
 	}
+
+
+
+	/**
+	 * Delete object in database
+	 *
+	 * @param array $parameters array of column to fetch
+	 * @param int $id id of item requested for direct fetch
+	 * @param string $column string column requested for direct fetch
+	 * @return int <0 if KO, >0 if OK
+	 */
+	public function fetchBy(array $parameters, int $id = 0, string $column = '')
+	{
+		$sql = "SELECT ";
+		for($i=0;$i<count($parameters);$i++)
+		{
+			$sql .= $this->db->sanitize($this->db->escape($parameters[$i])).', ';
+		}
+		$sql = substr($sql, 0, -2);
+		$sql .= " FROM ".MAIN_DB_PREFIX.$this->table_element;
+
+		if($id)
+		{
+			$sql .= " WHERE ".$this->db->sanitize($this->db->escape($column))." = ".$this->db->sanitize($this->db->escape($id));
+		}
+		$resql = $this->db->query($sql);
+
+		if ($resql) {
+			$num = $this->db->num_rows($resql);
+			$i = 0;
+			if($num == 1)
+			{
+				$records = $this->db->fetch_object($resql);
+			}
+			else
+			{
+				while ($i < ($limit ? min($limit, $num) : $num)) {
+
+					$obj = $this->db->fetch_object($resql);
+					$records[$obj->rowid] = $obj;
+
+					$i++;
+				}
+			}
+
+			$this->db->free($resql);
+			return $records;
+		} else {
+			$this->errors[] = 'Error '.$this->db->lasterror();
+			dol_syslog(__METHOD__.' '.join(',', $this->errors), LOG_ERR);
+
+			return -1;
+		}
+	}
+
+	/*public function fetchOneField(int $id,string $field)
+	{
+		$sql = "SELECT ".$this->db->sanitize($this->db->escape($field)).',rowid';
+		$sql .= " FROM ".MAIN_DB_PREFIX.$this->table_element;
+		$sql .= " WHERE rowid=".$id;
+
+		$resql = $this->db->query($sql);
+		if($resql) $result = $this->db->fetch_object($resql);
+
+		return $result;
+
+	}*/
+
+
+
 
 	/**
 	 * Load object lines in memory from the database
@@ -312,7 +431,7 @@ class Interpretation extends CommonObject
 	 * @param  string      $filtermode   Filter mode (AND or OR)
 	 * @return array|int                 int <0 if KO, array of pages if OK
 	 */
-	public function fetchAll($sortorder = '', $sortfield = '', $limit = 0, $offset = 0, array $filter = array(), $filtermode = 'AND', $innerJoin = null)
+	public function fetchAll($sortorder = '', $sortfield = '', $limit = 0, $offset = 0, array $filter = array(), $filtermode = 'AND')
 	{
 		global $conf;
 
@@ -323,12 +442,8 @@ class Interpretation extends CommonObject
 		$sql = "SELECT ";
 		$sql .= $this->getFieldList('t');
 		$sql .= " FROM ".MAIN_DB_PREFIX.$this->table_element." as t";
-		if($innerJoin)
-		{
-			$sql .= $innerJoin;
-		}
 		if (isset($this->ismultientitymanaged) && $this->ismultientitymanaged == 1) {
-			$sql .= " WHERE t.entity IN (".getEntity($this->element).")";
+			$sql .= " WHERE t.entity IN (".getEntity($this->table_element).")";
 		} else {
 			$sql .= " WHERE 1 = 1";
 		}
@@ -394,28 +509,6 @@ class Interpretation extends CommonObject
 	 */
 	public function update(User $user, $notrigger = false)
 	{
-		if(!GETPOST('status','int'))
-		{
-			setEventMessage('Veuillez choisir un état valide.','errors');
-			GETPOST('fk_groupe','int');
-			return -1;
-		}
-
-		if($this->status == self::STATUS_ABANDONNED && !$this->date_fin_interpretation)
-		{
-			$this->date_fin_interpretation = date('Y-m-d');
-		}
-
-		if($this->status != self::STATUS_ABANDONNED && $this->date_fin_interpretation)
-		{
-			$this->date_fin_interpretation = null;
-		}
-
-		$agentClass = new Agent($this->db);
-		$agentClass->fetch('','',' AND fk_user='.$user->id);
-
-		$this->fk_user_creat = $agentClass->id;
-
 		return $this->updateCommon($user, $notrigger);
 	}
 
@@ -429,6 +522,7 @@ class Interpretation extends CommonObject
 	public function delete(User $user, $notrigger = false)
 	{
 		return $this->deleteCommon($user, $notrigger);
+		//return $this->deleteCommon($user, $notrigger, 1);
 	}
 
 	/**
@@ -470,6 +564,7 @@ class Interpretation extends CommonObject
 			dol_syslog(get_class($this)."::validate action abandonned: already validated", LOG_WARNING);
 			return 0;
 		}
+
 		$now = dol_now();
 
 		$this->db->begin();
@@ -505,7 +600,7 @@ class Interpretation extends CommonObject
 
 			if (!$error && !$notrigger) {
 				// Call trigger
-				$result = $this->call_trigger('INTERPRETATION_VALIDATE', $user);
+				$result = $this->call_trigger('ETABLISSEMENT_VALIDATE', $user);
 				if ($result < 0) {
 					$error++;
 				}
@@ -519,8 +614,8 @@ class Interpretation extends CommonObject
 			// Rename directory if dir was a temporary ref
 			if (preg_match('/^[\(]?PROV/i', $this->ref)) {
 				// Now we rename also files into index
-				$sql = 'UPDATE '.MAIN_DB_PREFIX."ecm_files set filename = CONCAT('".$this->db->escape($this->newref)."', SUBSTR(filename, ".(strlen($this->ref) + 1).")), filepath = 'interpretation/".$this->db->escape($this->newref)."'";
-				$sql .= " WHERE filename LIKE '".$this->db->escape($this->ref)."%' AND filepath = 'interpretation/".$this->db->escape($this->ref)."' and entity = ".$conf->entity;
+				$sql = 'UPDATE '.MAIN_DB_PREFIX."ecm_files set filename = CONCAT('".$this->db->escape($this->newref)."', SUBSTR(filename, ".(strlen($this->ref) + 1).")), filepath = 'etablissement/".$this->db->escape($this->newref)."'";
+				$sql .= " WHERE filename LIKE '".$this->db->escape($this->ref)."%' AND filepath = 'etablissement/".$this->db->escape($this->ref)."' and entity = ".$conf->entity;
 				$resql = $this->db->query($sql);
 				if (!$resql) {
 					$error++; $this->error = $this->db->lasterror();
@@ -529,15 +624,15 @@ class Interpretation extends CommonObject
 				// We rename directory ($this->ref = old ref, $num = new ref) in order not to lose the attachments
 				$oldref = dol_sanitizeFileName($this->ref);
 				$newref = dol_sanitizeFileName($num);
-				$dirsource = $conf->organisation->dir_output.'/interpretation/'.$oldref;
-				$dirdest = $conf->organisation->dir_output.'/interpretation/'.$newref;
+				$dirsource = $conf->scolarite->dir_output.'/etablissement/'.$oldref;
+				$dirdest = $conf->scolarite->dir_output.'/etablissement/'.$newref;
 				if (!$error && file_exists($dirsource)) {
 					dol_syslog(get_class($this)."::validate() rename dir ".$dirsource." into ".$dirdest);
 
 					if (@rename($dirsource, $dirdest)) {
 						dol_syslog("Rename ok");
 						// Rename docs starting with $oldref with $newref
-						$listoffiles = dol_dir_list($conf->organisation->dir_output.'/interpretation/'.$newref, 'files', 1, '^'.preg_quote($oldref, '/'));
+						$listoffiles = dol_dir_list($conf->scolarite->dir_output.'/etablissement/'.$newref, 'files', 1, '^'.preg_quote($oldref, '/'));
 						foreach ($listoffiles as $fileentry) {
 							$dirsource = $fileentry['name'];
 							$dirdest = preg_replace('/^'.preg_quote($oldref, '/').'/', $newref, $dirsource);
@@ -579,7 +674,9 @@ class Interpretation extends CommonObject
 		if ($this->status <= self::STATUS_DRAFT) {
 			return 0;
 		}
-		return $this->setStatusCommon($user, self::STATUS_DRAFT, $notrigger, 'INTERPRETATION_UNVALIDATE');
+
+
+		return $this->setStatusCommon($user, self::STATUS_DRAFT, $notrigger, 'ETABLISSEMENT_UNVALIDATE');
 	}
 
 	/**
@@ -595,7 +692,8 @@ class Interpretation extends CommonObject
 		if ($this->status != self::STATUS_VALIDATED) {
 			return 0;
 		}
-		return $this->setStatusCommon($user, self::STATUS_CANCELED, $notrigger, 'INTERPRETATION_CANCEL');
+
+		return $this->setStatusCommon($user, self::STATUS_CANCELED, $notrigger, 'ETABLISSEMENT_CANCEL');
 	}
 
 	/**
@@ -612,7 +710,7 @@ class Interpretation extends CommonObject
 			return 0;
 		}
 
-		return $this->setStatusCommon($user, self::STATUS_VALIDATED, $notrigger, 'INTERPRETATION_REOPEN');
+		return $this->setStatusCommon($user, self::STATUS_VALIDATED, $notrigger, 'ETABLISSEMENT_REOPEN');
 	}
 
 	/**
@@ -635,14 +733,14 @@ class Interpretation extends CommonObject
 
 		$result = '';
 
-		$label = img_picto('', $this->picto).' <u>'.$langs->trans("Interpretation").'</u>';
+		// $label = img_picto('', $this->picto).' <u>'.$langs->trans("Etablissement").'</u>';
 		if (isset($this->status)) {
 			$label .= ' '.$this->getLibStatut(5);
 		}
-		$label .= '<br>';
-		$label .= '<b>'.$langs->trans('Ref').':</b> '.$this->ref;
+		// $label .= '<br>';
+		// $label .= '<b>'.$langs->trans('Ref').':</b> '.$this->nom;
 
-		$url = dol_buildpath('/organisation/interpretation_card.php', 1).'?id='.$this->id;
+		$url = dol_buildpath('/scolarite/etablissement_card.php', 1).'?id='.$this->id;
 
 		if ($option != 'nolink') {
 			// Add param to save lastsearch_values or not
@@ -658,7 +756,7 @@ class Interpretation extends CommonObject
 		$linkclose = '';
 		if (empty($notooltip)) {
 			if (!empty($conf->global->MAIN_OPTIMIZEFORTEXTBROWSER)) {
-				$label = $langs->trans("ShowInterpretation");
+				$label = $langs->trans("ShowEtablissement");
 				$linkclose .= ' alt="'.dol_escape_htmltag($label, 1).'"';
 			}
 			$linkclose .= ' title="'.dol_escape_htmltag($label, 1).'"';
@@ -711,15 +809,15 @@ class Interpretation extends CommonObject
 		}
 
 		if ($withpicto != 2) {
-			$result .= $this->ref;
+			$result .= $this->nom_antenne;
 		}
 
 		$result .= $linkend;
 		//if ($withpicto != 2) $result.=(($addlabel && $this->label) ? $sep . dol_trunc($this->label, ($addlabel > 1 ? $addlabel : 0)) : '');
 
 		global $action, $hookmanager;
-		$hookmanager->initHooks(array('interpretationdao'));
-		$parameters = array('id'=>$this->id, 'getnomurl' => &$result);
+		$hookmanager->initHooks(array('etablissementdao'));
+		$parameters = array('id'=>$this->id, 'getnomurl'=>$result);
 		$reshook = $hookmanager->executeHooks('getNomUrl', $parameters, $this, $action); // Note that $action and $object may have been modified by some hooks
 		if ($reshook > 0) {
 			$result = $hookmanager->resPrint;
@@ -765,23 +863,18 @@ class Interpretation extends CommonObject
 		// phpcs:enable
 		if (empty($this->labelStatus) || empty($this->labelStatusShort)) {
 			global $langs;
-			//$langs->load("organisation@organisation");
-			$this->labelStatus[self::STATUS_DRAFT] = $langs->transnoentitiesnoconv('Brouillon');
-			$this->labelStatus[self::STATUS_VALIDATED] = $langs->transnoentitiesnoconv('Prête');
-			$this->labelStatus[self::STATUS_ABANDONNED] = $langs->transnoentitiesnoconv('Abandonnée');
-			$this->labelStatus[self::STATUS_RESERVED] = $langs->transnoentitiesnoconv('Réservée');
-			$this->labelStatus[self::STATUS_INWORK] = $langs->transnoentitiesnoconv('En travail');
-
-			$this->labelStatusShort[self::STATUS_DRAFT] = $langs->transnoentitiesnoconv('Brouillon');
-			$this->labelStatusShort[self::STATUS_VALIDATED] = $langs->transnoentitiesnoconv('Prête');
-			$this->labelStatusShort[self::STATUS_ABANDONNED] = $langs->transnoentitiesnoconv('Abandonnée');
-			$this->labelStatusShort[self::STATUS_RESERVED] = $langs->transnoentitiesnoconv('Réservée');
-			$this->labelStatusShort[self::STATUS_INWORK] = $langs->transnoentitiesnoconv('En travail');
+			//$langs->load("scolarite@scolarite");
+			$this->labelStatus[self::STATUS_DRAFT] = $langs->transnoentitiesnoconv('Draft');
+			$this->labelStatus[self::STATUS_VALIDATED] = $langs->transnoentitiesnoconv('Enabled');
+			$this->labelStatus[self::STATUS_CANCELED] = $langs->transnoentitiesnoconv('Disabled');
+			$this->labelStatusShort[self::STATUS_DRAFT] = $langs->transnoentitiesnoconv('Draft');
+			$this->labelStatusShort[self::STATUS_VALIDATED] = $langs->transnoentitiesnoconv('Enabled');
+			$this->labelStatusShort[self::STATUS_CANCELED] = $langs->transnoentitiesnoconv('Disabled');
 		}
 
 		$statusType = 'status'.$status;
 		//if ($status == self::STATUS_VALIDATED) $statusType = 'status1';
-		if ($status == self::STATUS_ABANDONNED) {
+		if ($status == self::STATUS_CANCELED) {
 			$statusType = 'status6';
 		}
 
@@ -796,8 +889,7 @@ class Interpretation extends CommonObject
 	 */
 	public function info($id)
 	{
-		$sql = "SELECT rowid,";
-		$sql .= " date_creation as datec, tms as datem,";
+		$sql = "SELECT rowid, date_creation as datec, tms as datem,";
 		$sql .= " fk_user_creat, fk_user_modif";
 		$sql .= " FROM ".MAIN_DB_PREFIX.$this->table_element." as t";
 		$sql .= " WHERE t.rowid = ".((int) $id);
@@ -806,19 +898,28 @@ class Interpretation extends CommonObject
 		if ($result) {
 			if ($this->db->num_rows($result)) {
 				$obj = $this->db->fetch_object($result);
-
 				$this->id = $obj->rowid;
+				if (!empty($obj->fk_user_author)) {
+					$cuser = new User($this->db);
+					$cuser->fetch($obj->fk_user_author);
+					$this->user_creation = $cuser;
+				}
 
-				$this->user_creation_id = $obj->fk_user_creat;
-				$this->user_modification_id = $obj->fk_user_modif;
 				if (!empty($obj->fk_user_valid)) {
-					$this->user_validation_id = $obj->fk_user_valid;
+					$vuser = new User($this->db);
+					$vuser->fetch($obj->fk_user_valid);
+					$this->user_validation = $vuser;
 				}
+
+				if (!empty($obj->fk_user_cloture)) {
+					$cluser = new User($this->db);
+					$cluser->fetch($obj->fk_user_cloture);
+					$this->user_cloture = $cluser;
+				}
+
 				$this->date_creation     = $this->db->jdate($obj->datec);
-				$this->date_modification = empty($obj->datem) ? '' : $this->db->jdate($obj->datem);
-				if (!empty($obj->datev)) {
-					$this->date_validation   = empty($obj->datev) ? '' : $this->db->jdate($obj->datev);
-				}
+				$this->date_modification = $this->db->jdate($obj->datem);
+				$this->date_validation   = $this->db->jdate($obj->datev);
 			}
 
 			$this->db->free($result);
@@ -851,8 +952,8 @@ class Interpretation extends CommonObject
 	{
 		$this->lines = array();
 
-		$objectline = new InterpretationLine($this->db);
-		$result = $objectline->fetchAll('ASC', 'position', 0, 0, array('customsql'=>'fk_interpretation = '.((int) $this->id)));
+		$objectline = new EtablissementLine($this->db);
+		$result = $objectline->fetchAll('ASC', 'position', 0, 0, array('customsql'=>'fk_etablissement = '.((int) $this->id)));
 
 		if (is_numeric($result)) {
 			$this->error = $objectline->error;
@@ -872,22 +973,22 @@ class Interpretation extends CommonObject
 	public function getNextNumRef()
 	{
 		global $langs, $conf;
-		$langs->load("organisation@organisation");
+		$langs->load("scolarite@scolarite");
 
-		if (empty($conf->global->ORGANISATION_INTERPRETATION_ADDON)) {
-			$conf->global->ORGANISATION_INTERPRETATION_ADDON = 'mod_interpretation_standard';
+		if (empty($conf->global->SCOLARITE_ETABLISSEMENT_ADDON)) {
+			$conf->global->SCOLARITE_ETABLISSEMENT_ADDON = 'mod_etablissement_standard';
 		}
 
-		if (!empty($conf->global->ORGANISATION_INTERPRETATION_ADDON)) {
+		if (!empty($conf->global->SCOLARITE_ETABLISSEMENT_ADDON)) {
 			$mybool = false;
 
-			$file = $conf->global->ORGANISATION_INTERPRETATION_ADDON.".php";
-			$classname = $conf->global->ORGANISATION_INTERPRETATION_ADDON;
+			$file = $conf->global->SCOLARITE_ETABLISSEMENT_ADDON.".php";
+			$classname = $conf->global->SCOLARITE_ETABLISSEMENT_ADDON;
 
 			// Include file with class
 			$dirmodels = array_merge(array('/'), (array) $conf->modules_parts['models']);
 			foreach ($dirmodels as $reldir) {
-				$dir = dol_buildpath($reldir."core/modules/organisation/");
+				$dir = dol_buildpath($reldir."core/modules/scolarite/");
 
 				// Load file with numbering class (if found)
 				$mybool |= @include_once $dir.$file;
@@ -935,21 +1036,21 @@ class Interpretation extends CommonObject
 		global $conf, $langs;
 
 		$result = 0;
-		$includedocgeneration = 1;
+		$includedocgeneration = 0;
 
-		$langs->load("organisation@organisation");
+		$langs->load("scolarite@scolarite");
 
 		if (!dol_strlen($modele)) {
-			$modele = 'standard_interpretation';
+			$modele = 'standard_etablissement';
 
 			if (!empty($this->model_pdf)) {
 				$modele = $this->model_pdf;
-			} elseif (!empty($conf->global->INTERPRETATION_ADDON_PDF)) {
-				$modele = $conf->global->INTERPRETATION_ADDON_PDF;
+			} elseif (!empty($conf->global->ETABLISSEMENT_ADDON_PDF)) {
+				$modele = $conf->global->ETABLISSEMENT_ADDON_PDF;
 			}
 		}
 
-		$modelpath = "core/modules/organisation/doc/";
+		$modelpath = "core/modules/scolarite/doc/";
 
 		if ($includedocgeneration && !empty($modele)) {
 			$result = $this->commonGenerateDocument($modelpath, $modele, $outputlangs, $hidedetails, $hidedesc, $hideref, $moreparams);
@@ -958,120 +1059,54 @@ class Interpretation extends CommonObject
 		return $result;
 	}
 
-	/**
-	 * Action executed by scheduler
-	 * CAN BE A CRON TASK. In such a case, parameters come from the schedule job setup field 'Parameters'
-	 * Use public function doScheduledJob($param1, $param2, ...) to get parameters
-	 *
-	 * @return	int			0 if OK, <>0 if KO (this function is used also by cron so only 0 is OK)
-	 */
-	public function doScheduledJob()
+	// Permet de changer l'établissement par défaut dans les listes
+	public final function checkSetCookieEtablissement($etab)
 	{
-		global $conf, $langs;
-
-		//$conf->global->SYSLOG_FILE = 'DOL_DATA_ROOT/dolibarr_mydedicatedlofile.log';
-
-		$error = 0;
-		$this->output = '';
-		$this->error = '';
-
-		dol_syslog(__METHOD__, LOG_DEBUG);
-
-		$now = dol_now();
-
-		$this->db->begin();
-
-		// ...
-
-		$this->db->commit();
-
-		return $error;
+		if($_SESSION['etablissementid'] != intval($etab))
+		{
+			$_SESSION['etablissementid'] = intval($etab);
+			setEventMessage('Etablissement enregistré avec succès!');
+		}
 	}
 
-
-	/**
-	 * Affiche le tableau des interprétations d'un groupe
-	 *
-	 * @return	string		tableau
-	 */
-	public function printTableInterpretation(int $idGroupe)
+	// Affiche un formulaire qui permet de modifier l'établissement choisi de base
+	public final function printFormChangeAntenne(): string
 	{
-		$out = '';
-		// Récupération de toutes les interprétations
-		$interpretations = $this->fetchAll('', '', 0, 0, array('fk_groupe'=>$idGroupe));
+		$form = new Form($this->db);
+		$out = "";
 
-		$out .= load_fiche_titre("Liste des interprétations", '', 'fa-music');
-		// Si au moins une existe
-		if (count($interpretations) > 0) {
-			$out .= '<table class="tagtable nobottomiftotal liste">';
-			$out .= '<tbody>';
-			$out .= '<tr>';
-			$out .= '<td style="padding:1em">Titre</td>';
-			$out .= '<td style="padding:1em">Durée</td>';
-			$out .= '<td style="padding:1em">Début d\'interprétation</td>';
-			$out .= '<td style="padding:1em">Fin d\'interprétation</td>';
-			$out .= '<td style="padding:1em">Etat</td>';
-			$out .= '<td style="padding:1em">Proposé par</td>';
-			$out .= '<td style="padding:1em" colspan="3"></td>';
-			$out .= '</tr>';
+		$antenneList = $this->fetchAll('', '', 0, 0, [], 'AND');
+		$antennes = ['Tous'];
 
-			foreach ($interpretations as $interpretation) {
-				// On fetch le morceau
-				$morceauClass = new Morceau($this->db);
-				$morceauClass->fetch($interpretation->fk_morceau);
-				// On fetch l'artiste
-				$artisteClass = new Artiste($this->db);
-				$artisteClass->fetch($morceauClass->fk_artiste);
-				// On fetch l'agent qui à proposé le morceau
-				$agentClass = new Agent($this->db);
-				$agentClass->fetch($interpretation->fk_user_creat);
-
-				$out .= '<tr>';
-				$out .= '<td style="padding:1em"><a href="morceau_card.php?id='.$morceauClass->id.'" >' . $morceauClass->getNomUrl() . '</a></td>';
-				$out .= '<td style="padding:1em">' . ($interpretation->temps ? ($interpretation->temps . 'min') : '') . '</td>';
-				$out .= '<td style="padding:1em"><span class="badge  badge-status4 badge-status">' . date('d/m/Y', $interpretation->date_debut_interpretation) . '</span></td>';
-				$out .= '<td style="padding:1em">' . (!empty($interpretation->date_fin_interpretation) ? '<span class="badge  badge-status8 badge-status">' . date('d/m/Y', $interpretation->date_fin_interpretation) : 'Indéfinie').'</span>' . '</td>';
-				$out .= '<td style="padding:1em"><span class="badge  badge-status' . $interpretation->status . ' badge-status">' . $this->LibStatut($interpretation->status) . '</td>';
-				$out .= '<td style="padding:1em">' . $agentClass->prenom . ' ' . $agentClass->nom . '</td>';
-				$out .= '<td style="padding:1em"><a href="/custom/organisation/interpretation_card.php?id=' . $interpretation->id . '&action=edit&token=' . newToken() . '&fk_groupe='.$idGroupe.'">' . '✏️' . '</a></td>';
-				if($interpretation->status == self::STATUS_VALIDATED || $interpretation->status == self::STATUS_INWORK)
-				{
-					$out .= '<td style="padding:1em"><a href="/custom/organisation/programmation_card.php?action=create&token=' . newToken() . '&fk_interpretation=' . $interpretation->id . '&evenementid=' . GETPOST('evenementid','int'). '">' . '📆' . '</a></td>';
-				}
-				$out .= '<td style="padding:1em"><a href="' . $_SERVER['PHP_SELF'] . '?id=' . $idGroupe . '&action=deleteInterpretation&fk_interpretation=' . $interpretation->id . '">' . '❌' . '</a></td>';
-				$out .= '</tr>';
-			}
-			$out .= '</tbody>';
-			$out .= '</table>';
+		foreach ($antenneList as $val) {
+			$antennes[$val->id] = $val->nom_antenne;
 		}
+		$out .= '<hr>';
+		$out .= '<form action="' . $_SERVER['PHP_SELF'] . '" method="POST">';
+		$out .= '<input type="hidden" tyname="sortfield" value="' . $sortfield . '">';
+		$out .= '<input type="hidden" name="sortorder" value="' . $sortorder . '">';
+		$out .= '<input type="hidden" name="action" value="changeEtablissement">';
+		$out .= '<input type="hidden" name="token" value="' . newToken() . '">';
+		$out .= '<table class="border centpercent">';
+		$out .= '<tr>';
+		$out .= '</td></tr>';
+		$out .= '<tr><td class="fieldrequired titlefieldcreate">Selectionnez votre établissement: </td><td>';
+		$out .= $form->selectarray('etablissementid', $antennes, $_SESSION['etablissementid']);
+		$out .= ' <a href="' . DOL_URL_ROOT . '/custom/scolarite/etablissement_card.php?action=create">';
+		$out .= '<span class="fa fa-plus-circle valignmiddle paddingleft" title="Ajouter un etablissement"></span>';
+		$out .= '</a>';
+		$out .= '</td>';
+		$out .= '</tr>';
+		$out .= '<td></td>';
+		$out .= '<td>';
+		$out .= '<input type="submit" class="button" value="Valider">';
+		$out .= '</td>';
+		$out .= '</table>';
+		$out .= '</form>';
+		$out .= '<hr>';
 
 		return $out;
+
 	}
-}
 
-
-require_once DOL_DOCUMENT_ROOT.'/core/class/commonobjectline.class.php';
-
-/**
- * Class InterpretationLine. You can also remove this and generate a CRUD class for lines objects.
- */
-class InterpretationLine extends CommonObjectLine
-{
-	// To complete with content of an object InterpretationLine
-	// We should have a field rowid, fk_interpretation and position
-
-	/**
-	 * @var int  Does object support extrafields ? 0=No, 1=Yes
-	 */
-	public $isextrafieldmanaged = 0;
-
-	/**
-	 * Constructor
-	 *
-	 * @param DoliDb $db Database handler
-	 */
-	public function __construct(DoliDB $db)
-	{
-		$this->db = $db;
-	}
 }

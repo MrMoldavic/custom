@@ -152,7 +152,10 @@ include DOL_DOCUMENT_ROOT.'/core/actions_fetchobject.inc.php'; // Must be includ
 $enablepermissioncheck = 1;
 if ($enablepermissioncheck) {
 	$permissiontoread = $user->rights->organisation->organisation->read;
-	$permissiontoadd = $user->rights->organisation->organisation->write; // Used by the include of actions_addupdatedelete.inc.php and actions_lineupdown.inc.php
+	$permissiontoadd = $user->rights->organisation->organisation->write;
+	$permissiontoaddProposition = $user->rights->organisation->programmation->writeProgrammation;
+
+	// Used by the include of actions_addupdatedelete.inc.php and actions_lineupdown.inc.php
 	$permissiontodelete = $user->rights->organisation->organisation->delete || ($permissiontoadd && isset($object->status) && $object->status == $object::STATUS_DRAFT);
 	$permissionnote = $user->rights->organisation->organisation->write; // Used by the include of actions_setnotes.inc.php
 	$permissiondellink = $user->rights->organisation->organisation->write; // Used by the include of actions_dellink.inc.php
@@ -431,28 +434,27 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 		}
 
 		if (empty($reshook)) {
-			if($permissiontoadd){
-				if ($object->status == $object::STATUS_DRAFT) {
-					print dolGetButtonAction($langs->trans('Groupe actif'), '', 'default', $_SERVER['PHP_SELF'] . '?id=' . $object->id . '&action=confirm_validate&confirm=yes&token=' . newToken(), '', $permissiontoadd);
-					print dolGetButtonAction($langs->trans('Groupe à la retraite'), '', 'default', $_SERVER['PHP_SELF'].'?id='.$object->id.'&action=desactivation&token='.newToken(), '', $permissiontoadd);
-				}
+			if ($object->status == $object::STATUS_DRAFT) {
 
-				if ($object->status == $object::STATUS_VALIDATED) {
-					print dolGetButtonAction($langs->trans('Groupe en attente'), '', 'default', $_SERVER['PHP_SELF'] . '?id=' . $object->id . '&action=confirm_setdraft&confirm=yes&token=' . newToken(), '', $permissiontoadd);
-					print dolGetButtonAction($langs->trans('Proposer à un concert'), '', 'default', DOL_URL_ROOT . '/custom/organisation/proposition_card.php?fk_groupe=' . $object->id . '&action=create&token=' . newToken(), '', $permissiontoadd);
-				}
-
-				if ($object->status == $object::STATUS_CANCELED) {
-					print dolGetButtonAction($langs->trans('Groupe en attente'), '', 'default', $_SERVER["PHP_SELF"].'?id='.$object->id.'&action=confirm_setdraft&confirm=yes&token='.newToken(), '', $permissiontoadd);
-				}
-
-				if($object->status == $object::STATUS_DRAFT)
-				{
-					print dolGetButtonAction($langs->trans('Modifier'), '', 'default', $_SERVER['PHP_SELF'] . '?id=' . $object->id . '&action=edit&token=' . newToken(), '', $permissiontoadd);
-				}
-
-				print dolGetButtonAction($langs->trans('Supprimer le groupe'), '', 'delete', $_SERVER['PHP_SELF'].'?id='.$object->id.'&action=delete&token='.newToken(), '', $permissiontodelete || ($object->status == $object::STATUS_DRAFT && $permissiontoadd));
+				print dolGetButtonAction($langs->trans('Groupe actif'), '', 'default', $_SERVER['PHP_SELF'] . '?id=' . $object->id . '&action=confirm_validate&confirm=yes&token=' . newToken(), '', $permissiontoaddProposition);
+				print dolGetButtonAction($langs->trans('Groupe à la retraite'), '', 'default', $_SERVER['PHP_SELF'].'?id='.$object->id.'&action=desactivation&token='.newToken(), '', $permissiontoaddProposition);
 			}
+
+			if ($object->status == $object::STATUS_VALIDATED) {
+				print dolGetButtonAction($langs->trans('Groupe en attente'), '', 'default', $_SERVER['PHP_SELF'] . '?id=' . $object->id . '&action=confirm_setdraft&confirm=yes&token=' . newToken(), '', $permissiontoaddProposition);
+				print dolGetButtonAction($langs->trans('Proposer à un concert'), '', 'default', DOL_URL_ROOT . '/custom/organisation/proposition_card.php?fk_groupe=' . $object->id . '&action=create&token=' . newToken(), '', $permissiontoaddProposition);
+			}
+
+			if ($object->status == $object::STATUS_CANCELED) {
+				print dolGetButtonAction($langs->trans('Groupe en attente'), '', 'default', $_SERVER["PHP_SELF"].'?id='.$object->id.'&action=confirm_setdraft&confirm=yes&token='.newToken(), '', $permissiontoaddProposition);
+			}
+
+			if($object->status == $object::STATUS_DRAFT)
+			{
+				print dolGetButtonAction($langs->trans('Modifier'), '', 'default', $_SERVER['PHP_SELF'] . '?id=' . $object->id . '&action=edit&token=' . newToken(), '', $permissiontoaddProposition);
+			}
+
+			print dolGetButtonAction($langs->trans('Supprimer le groupe'), '', 'delete', $_SERVER['PHP_SELF'].'?id='.$object->id.'&action=delete&token='.newToken(), '', $permissiontodelete || ($object->status == $object::STATUS_DRAFT && $permissiontoaddProposition));
 		}
 		print '</div>'."\n";
 	}

@@ -337,7 +337,7 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 		$formconfirm = $form->formconfirm($_SERVER["PHP_SELF"].'?id='.$object->id.'&lineid='.$lineid, $langs->trans('DeleteLine'), $langs->trans('ConfirmDeleteLine'), 'confirm_deleteline', '', 0, 1);
 	}
 	if ($action == 'deleteInscription') {
-		$formconfirm = $form->formconfirm($_SERVER["PHP_SELF"].'?id='.$object->id.'&inscriptionid='.GETPOST('inscriptionid','int'), 'Suppression d\'une inscription', 'Voulez-vous activer supprimer cette inscription? Ceci est irréversible.', 'confirm_delete_inscription', '', 0, 1);
+		$formconfirm = $form->formconfirm($_SERVER["PHP_SELF"].'?id='.$object->id.'&inscriptionid='.GETPOST('inscriptionid','int'), 'Suppression d\'une inscription', 'Voulez-vous supprimer cette inscription? Ceci est irréversible.', 'confirm_delete_inscription', '', 0, 1);
 	}
 	// Clone confirmation
 	if ($action == 'clone') {

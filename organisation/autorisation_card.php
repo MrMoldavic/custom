@@ -323,7 +323,7 @@ if (($id || $ref) && $action == 'edit') {
 if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'create'))) {
 	$head = autorisationPrepareHead($object);
 
-	print dol_get_fiche_head($head, 'card', $langs->trans("Autorisation"), -1, $object->picto);
+	print dol_get_fiche_head($head, 'Autorisations', $langs->trans("Autorisations"), -1, $object->picto);
 
 	$formconfirm = '';
 
