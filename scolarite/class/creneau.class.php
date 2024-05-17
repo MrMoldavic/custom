@@ -1762,7 +1762,7 @@ class Creneau extends CommonObject
 			foreach ($eleves as $eleve)
 			{
 				$appelClass = new Appel($this->db);
-				$existingAppelsEleves = $appelClass->fetchAll('','','','',array('fk_creneau'=>$creneau->id,'fk_eleve'=>$eleve->id,'treated'=>1,'date_creation'=>"{$dateAppel}%"));
+				$existingAppelsEleves = $appelClass->fetchAll('','','','',array('customsql'=>" AND fk_creneau=$creneau->id AND fk_eleve=$eleve->id AND treated=1 AND date_creation LIKE '$dateAppel%'"));
 				// Compte des appels existants pour les élèves
 				$appelsEleves += count($existingAppelsEleves);
 			}
@@ -1776,7 +1776,7 @@ class Creneau extends CommonObject
 			foreach ($assignations as $assignation)
 			{
 				$appelClass = new Appel($this->db);
-				$existingAppelsAssignations = $appelClass->fetchAll('','','','',array('fk_creneau'=>$creneau->id,'fk_user'=>$assignation->fk_agent,'treated'=>1,'date_creation'=>"{$dateAppel}%"));
+				$existingAppelsAssignations = $appelClass->fetchAll('','','','',array('customsql'=>" AND fk_creneau=$creneau->id AND fk_eleve=$eleve->id AND treated=1 AND date_creation LIKE '$dateAppel%'"));
 				// Compte des appels existants pour les professeurs
 				$appelsProfesseurs += count($existingAppelsAssignations);
 			}
