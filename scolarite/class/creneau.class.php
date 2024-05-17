@@ -36,6 +36,7 @@ dol_include_once('/scolarite/class/salle.class.php');
 dol_include_once('/viescolaire/class/dictionary.class.php');
 dol_include_once('/viescolaire/class/appel.class.php');
 dol_include_once('/management/class/agent.class.php');
+dol_include_once('/scolarite/class/etablissement.class.php');
 dol_include_once('/scolarite/class/jour.class.php');
 dol_include_once('/viescolaire/class/validation.class.php');
 //require_once DOL_DOCUMENT_ROOT . '/societe/class/societe.class.php';
