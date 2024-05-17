@@ -22,11 +22,22 @@
  * \brief       This file is a CRUD class file for Creneau (Create/Read/Update/Delete)
  */
 
-/*ini_set('display_errors', '1');
+ini_set('display_errors', '1');
 ini_set('display_startup_errors', '1');
-error_reporting(E_ALL);*/
+error_reporting(E_ALL);
 // Put here all includes required by your class file
 require_once DOL_DOCUMENT_ROOT.'/core/class/commonobject.class.php';
+
+dol_include_once('/scolarite/class/dispositif.class.php');
+dol_include_once('/organisation/class/instrument.class.php');
+dol_include_once('/viescolaire/class/assignation.class.php');
+dol_include_once('/viescolaire/class/affectation.class.php');
+dol_include_once('/scolarite/class/salle.class.php');
+dol_include_once('/viescolaire/class/dictionary.class.php');
+dol_include_once('/viescolaire/class/appel.class.php');
+dol_include_once('/management/class/agent.class.php');
+dol_include_once('/scolarite/class/jour.class.php');
+dol_include_once('/viescolaire/class/validation.class.php');
 //require_once DOL_DOCUMENT_ROOT . '/societe/class/societe.class.php';
 //require_once DOL_DOCUMENT_ROOT . '/product/class/product.class.php';
 
@@ -112,18 +123,15 @@ class Creneau extends CommonObject
 		'fk_type_classe' => array('type'=>'sellist:type_classe:type', 'label'=>'Type de classe', 'enabled'=>'1', 'position'=>2, 'notnull'=>1, 'visible'=>1, 'searchall'=>1, 'css'=>'minwidth300', 'validate'=>'1',),
 		'fk_instrument_enseigne' => array('type'=>'sellist:c_instrument_enseigne:instrument', 'label'=>'Instrument enseigné', 'enabled'=>'1', 'position'=>1, 'notnull'=>0, 'visible'=>1, 'help'=>"Laissez vide si groupe",),
 		'fk_niveau' => array('type'=>'sellist:c_niveaux:niveau', 'label'=>'Niveau du cours/groupe', 'enabled'=>'1', 'position'=>2, 'notnull'=>1, 'visible'=>3, 'help'=>"Niveau des élèves dans le groupe",),
-		///'fk_prof_1' => array('type'=>'integer:Agent:custom/management/class/agent.class.php:1:(t.status!=9)', 'label'=>'Agent n°1', 'enabled'=>'1', 'position'=>5, 'notnull'=>0, 'visible'=>1, 'css'=>'maxwidth200',),
+		//'fk_prof_1' => array('type'=>'integer:Agent:custom/management/class/agent.class.php:1:(t.status!=9)', 'label'=>'Agent n°1', 'enabled'=>'1', 'position'=>5, 'notnull'=>0, 'visible'=>1, 'css'=>'maxwidth200',),
 		//'fk_prof_2' => array('type'=>'integer:Agent:custom/management/class/agent.class.php:1:(t.status!=9)', 'label'=>'Agent n°2', 'enabled'=>'1', 'position'=>6, 'notnull'=>0, 'visible'=>1, 'css'=>'maxwidth200',),
 		//'fk_prof_3' => array('type'=>'integer:Agent:custom/management/class/agent.class.php:1:(t.status!=9)', 'label'=>'Agent n°3', 'enabled'=>'1', 'position'=>7, 'notnull'=>0, 'visible'=>1, 'css'=>'maxwidth200',),
-		//'professeurs' => array('type'=>'varchar(255)', 'label'=>'Agents', 'enabled'=>'1', 'position'=>4, 'notnull'=>0, 'visible'=>2, 'css'=>'minwidth200', 'validate'=>'1',),
+		'professeurs' => array('type'=>'varchar(255)', 'label'=>'Agents', 'enabled'=>'1', 'position'=>4, 'notnull'=>0, 'visible'=>2, 'css'=>'minwidth200', 'validate'=>'1',),
 		'infos_creneau' => array('type'=>'varchar(255)', 'label'=>'Infos créneau', 'enabled'=>'1', 'position'=>3, 'notnull'=>0, 'visible'=>2, 'searchall'=>1, 'css'=>'minwidth300', 'validate'=>'1',),
 		'nombre_places' => array('type'=>'integer', 'label'=>'Nombres de places', 'enabled'=>'1', 'position'=>3, 'notnull'=>1, 'visible'=>1, 'css'=>'maxwidth400', 'validate'=>'1',),
 		'fk_annee_scolaire' => array('type'=>'sellist:c_annee_scolaire:annee', 'label'=>'Année Scolaire', 'enabled'=>'1', 'position'=>7, 'notnull'=>1, 'visible'=>-1,),
 		'heure_debut' => array('type'=>'duration', 'label'=>'Heure de début', 'enabled'=>'1', 'position'=>40, 'notnull'=>1, 'visible'=>1, 'css'=>'minwidth100', 'help'=>"Format : 12:00 / 08:30 ", 'validate'=>'1',),
-		//'minutes_debut' => array('type'=>'varchar(255)', 'label'=>'Minutes de début', 'enabled'=>'1', 'position'=>41, 'notnull'=>1, 'visible'=>3, 'css'=>'minwidth100', 'help'=>"Laissez vide si heure pile", 'arrayofkeyval'=>array('00'=>'00', '15'=>'15', '30'=>'30', '45'=>'45'), 'validate'=>'1',),
 		'heure_fin' => array('type'=>'duration', 'label'=>'Heure de fin', 'enabled'=>'1', 'position'=>42, 'notnull'=>1, 'visible'=>1, 'css'=>'minwidth100', 'help'=>"Format : 12:00 / 08:30 ", 'validate'=>'1',),
-		//'minutes_fin' => array('type'=>'varchar(255)', 'label'=>'Minutes de fin', 'enabled'=>'1', 'position'=>43, 'notnull'=>1, 'visible'=>3, 'css'=>'minwidth100', 'help'=>"Laissez vide si heure pile", 'arrayofkeyval'=>array('00'=>'00', '15'=>'15', '30'=>'30', '45'=>'45'), 'validate'=>'1',),
-		//'sellist:TableName:LabelFieldName[:KeyFieldName[:KeyFieldParent[:Filter[:Sortfield]]]]
 		'jour' => array('type'=>'sellist:c_jour:jour:rowid::(active=1)', 'label'=>'Jour de la semaine', 'enabled'=>'1', 'position'=>39, 'notnull'=>1, 'visible'=>1, 'searchall'=>1, 'css'=>'maxwidth300', 'cssview'=>'wordbreak', 'validate'=>'1',),
 		'fk_salle' => array('type'=>'integer:Salle:custom/scolarite/class/salle.class.php::(t.status=4)', 'label'=>'Salle', 'enabled'=>'1', 'position'=>44, 'notnull'=>0, 'visible'=>3, 'searchall'=>1, 'css'=>'maxwidth200', 'cssview'=>'wordbreak',),
 		'commentaires' => array('type'=>'text', 'label'=>'Commentaires', 'enabled'=>'1', 'position'=>45, 'notnull'=>0, 'visible'=>3, 'isameasure'=>'1', 'css'=>'maxwidth400', 'help'=>"Help text for quantity", 'validate'=>'1',),
@@ -691,7 +699,7 @@ class Creneau extends CommonObject
 	 * @param  string      $filtermode   Filter mode (AND or OR)
 	 * @return array|int                 int <0 if KO, array of pages if OK
 	 */
-	public function fetchAll($sortorder = '', $sortfield = '', $limit = 0, $offset = 0, array $filter = array(), $filtermode = 'AND')
+	public function fetchAll($sortorder = '', $sortfield = '', $limit = 0, $offset = 0, array $filter = array(), $filtermode = 'AND', $innerJoin = null)
 	{
 		global $conf;
 
@@ -702,6 +710,10 @@ class Creneau extends CommonObject
 		$sql = "SELECT ";
 		$sql .= $this->getFieldList('t');
 		$sql .= " FROM ".MAIN_DB_PREFIX.$this->table_element." as t";
+		if($innerJoin)
+		{
+			$sql .= $innerJoin;
+		}
 		if (isset($this->ismultientitymanaged) && $this->ismultientitymanaged == 1) {
 			$sql .= " WHERE t.entity IN (".getEntity($this->table_element).")";
 		} else {
@@ -878,12 +890,12 @@ class Creneau extends CommonObject
 
 			if(!$this->minutes_debut)
 			{
-				$this->nom_creneau .= $object->heure. 'h00-';
+				$this->nom_creneau .= ($this->heure_debut/3600). 'h00';
 				$this->minutes_debut = "00";
 			}
 			else
 			{
-				$this->nom_creneau .= $object->heure. 'h'.$this->minutes_debut;
+				$this->nom_creneau .= ($this->heure_debut/3600). 'h'.$this->minutes_debut;
 			}
 
 			if(!$this->minutes_fin)
@@ -933,7 +945,16 @@ class Creneau extends CommonObject
 
 			$this->professeurs = $professeur;
 
-			return $this->updateCommon($user, $notrigger);
+			//$this->nom_creneau = $this->printFullNameCreneau();
+
+			$resUpdate = $this->updateCommon($user, $notrigger);
+
+			if($resUpdate > 0) {
+				setEventMessage('Créneau mis à jour avec succès!');
+			} else {
+				setEventMessage('Une erreur est survenue.','errors');
+			}
+			return $resUpdate;
 	}
 
 	/**
@@ -1511,36 +1532,6 @@ class Creneau extends CommonObject
 		return $result;
 	}
 
-	/**
-	 * Action executed by scheduler
-	 * CAN BE A CRON TASK. In such a case, parameters come from the schedule job setup field 'Parameters'
-	 * Use public function doScheduledJob($param1, $param2, ...) to get parameters
-	 *
-	 * @return	int			0 if OK, <>0 if KO (this function is used also by cron so only 0 is OK)
-	 */
-	public function doScheduledJob()
-	{
-		global $conf, $langs;
-
-		//$conf->global->SYSLOG_FILE = 'DOL_DATA_ROOT/dolibarr_mydedicatedlofile.log';
-
-		$error = 0;
-		$this->output = '';
-		$this->error = '';
-
-		dol_syslog(__METHOD__, LOG_DEBUG);
-
-		$now = dol_now();
-
-		$this->db->begin();
-
-		// ...
-
-		$this->db->commit();
-
-		return $error;
-	}
-
 	public function getCreneauxFromSouhaits(Int $id, Int $status)
 	{
 		$sql = 'SELECT ';
@@ -1583,31 +1574,221 @@ class Creneau extends CommonObject
 			return -1;
 		}
 	}
-}
 
-
-require_once DOL_DOCUMENT_ROOT.'/core/class/commonobjectline.class.php';
-
-/**
- * Class CreneauLine. You can also remove this and generate a CRUD class for lines objects.
- */
-class CreneauLine extends CommonObjectLine
-{
-	// To complete with content of an object CreneauLine
-	// We should have a field rowid, fk_creneau and position
 
 	/**
-	 * @var int  Does object support extrafields ? 0=No, 1=Yes
-	 */
-	public $isextrafieldmanaged = 0;
-
-	/**
-	 * Constructor
+	 * Return le nom concaténé du créneau
 	 *
-	 * @param DoliDb $db Database handler
+	 * @return string
 	 */
-	public function __construct(DoliDB $db)
+	public function printFullNameCreneau()
 	{
-		$this->db = $db;
+		$dictionaryClass = new Dictionary($this->db);
+
+		$dispositifClass = new Dispositif($this->db);
+		$dispositifClass->fetch($this->fk_dispositif);
+
+		$antenneClass = new Etablissement($this->db);
+		$antenneClass->fetch($dispositifClass->fk_etablissement);
+
+		$out = "$antenneClass->diminutif-";
+
+		if($this->nom_groupe)
+		{
+			$out .= "$this->nom_groupe-";
+		} else {
+			$instrumentClass = new Instrument($this->db);
+			$instrumentClass->fetch($this->fk_instrument_enseigne);
+
+			$out .= ucfirst($instrumentClass->instrument).'-';
+		}
+
+		$resNiveau = $dictionaryClass->fetchByDictionary('c_niveaux', array('niveau'), $this->fk_niveau, 'rowid');
+		$out .= "$resNiveau->niveau-";
+
+		$resJour = $dictionaryClass->fetchByDictionary('c_jour', array('jour'), $this->jour, 'rowid');
+		$out .= "$resJour->jour-";
+
+		$out .= ($this->heure_debut / 3600) . 'h';
+
+		if ($this->fk_salle) {
+			$salleClass = new Salle($this->db);
+			$salleClass->fetch($this->fk_salle);
+
+			$out .= "-$salleClass->salle";
+		}
+
+		if ($this->id) {
+			$assignationClass = new Assignation($this->db);
+			$assignations = $assignationClass->fetchAll('', '', 0, 0, array('fk_creneau' => $this->id,'status'=>Assignation::STATUS_VALIDATED));
+
+			foreach ($assignations as $assignation)
+			{
+				$agentClass = new Agent($this->db);
+				$agentClass->fetch($assignation->fk_agent);
+
+				$out .= "-$agentClass->prenom_agent";
+			}
+
+		}
+
+		return $out;
 	}
+
+
+
+	/**
+	 * Retourne la liste des élèves depuis un créneau donné
+	 *
+	 * @return    string            liste brut (prénom-nom)
+	 */
+	public final function printElevesFromCreneau(int $creneauId)
+	{
+		$eleveClass = new Eleve($this->db);
+		$eleves = $eleveClass->fetchAll('', '', 0, 0, array('a.fk_creneau' => $creneauId, 'a.status' => Affectation::STATUS_VALIDATED), 'AND', ' INNER JOIN ' . MAIN_DB_PREFIX . 'souhait as s ON s.fk_eleve = t.rowid INNER JOIN ' . MAIN_DB_PREFIX . 'affectation as a ON a.fk_souhait=s.rowid');
+
+		$outEleves = '';
+
+		if ($eleves) {
+			foreach ($eleves as $eleve) {
+				$outEleves .= '- <a href=' . DOL_URL_ROOT . '/custom/viescolaire/eleve_card.php?id=' . $eleve->id . ">$eleve->prenom $eleve->nom</a><br>";
+			}
+		} else $outEleves = 'Aucun élève dans ce créneau!';
+
+		return $outEleves;
+	}
+
+
+	/**
+	 *
+	 * @return    string            liste brut (prénom-nom)
+	 */
+	public final function printProfesseursFromCreneau(int $creneauId,string $viewMode = 'view')
+	{
+		// Recherche des professeurs assignés à ce créneau
+		$assignationClass = new Assignation($this->db);
+		$assignations = $assignationClass->fetchAll('', '', 0, 0, array('fk_creneau'=>$creneauId, 'status' => Assignation::STATUS_VALIDATED));
+
+		$outProfs = '';
+
+		if ($assignations) {
+			foreach ($assignations as $assignation) {
+				$agentClass = new Agent($this->db);
+				$agentClass->fetch($assignation->fk_agent);
+
+				$outProfs .= '- <a href=' . DOL_URL_ROOT . '/custom/management/agent_card.php?id=' . $agentClass->id .">$agentClass->prenom $agentClass->nom</a>";
+				if($viewMode === 'edit')
+				{
+					$outProfs .= '<a href=' . $_SERVER['PHP_SELF'] . '?id='.$this->id.'&ida='. $assignation->id .'&action=deleteAgent&token='.newToken().''. '>&nbsp;&nbsp;&nbsp;' . img_picto('', 'delete').'</a>';
+				}
+				$outProfs .= '<br>';
+			}
+		} else $outProfs = 'Aucun professeur dans ce créneau!';
+
+		return $outProfs;
+	}
+
+
+	public function addIntoAssignations()
+	{
+		$error = 0;
+		global $user;
+
+		$creneaux = $this->fetchAll('','',0,0,array('status'=>self::STATUS_VALIDATED));
+
+		foreach ($creneaux as $creneau)
+		{
+			if($creneau->fk_prof_1)
+			{
+				$assignationClass = new Assignation($this->db);
+				$assignationClass->fk_creneau = $creneau->id;
+				$assignationClass->fk_agent = $creneau->fk_prof_1;
+				$assignationClass->status = Assignation::STATUS_VALIDATED;
+				$resultCreate = $assignationClass->create($user);
+
+				if($resultCreate < 0) $error++;
+			}
+
+			if($creneau->fk_prof_2)
+			{
+				$assignationClass = new Assignation($this->db);
+				$assignationClass->fk_creneau = $creneau->id;
+				$assignationClass->fk_agent = $creneau->fk_prof_2;
+				$assignationClass->status = Assignation::STATUS_VALIDATED;
+				$resultCreate = $assignationClass->create($user);
+
+				if($resultCreate < 0) $error++;
+			}
+
+			if($creneau->fk_prof_3)
+			{
+				$assignationClass = new Assignation($this->db);
+				$assignationClass->fk_creneau = $creneau->id;
+				$assignationClass->fk_agent = $creneau->fk_prof_3;
+				$assignationClass->status = Assignation::STATUS_VALIDATED;
+				$resultCreate = $assignationClass->create($user);
+
+				if($resultCreate < 0) $error++;
+			}
+		}
+
+		if($error > 0){
+			setEventMessage('Une erreur est survenue.','errors');
+		} else {
+			setEventMessage('Assignations créées avec succès');
+		}
+
+	}
+
+	public final function returnSqlCountCreneauSommaire($jour, $loop, $etablissementId, $dateAppel)
+	{
+		// Requête qui va chercher tout les créneaux d'une heure donnée
+		$creneauDuJour = $this->fetchAll('','',0,0,array('t.jour'=>$jour,'t.heure_debut'=>$loop*3600,'d.fk_etablissement'=>$etablissementId,'t.status'=>self::STATUS_VALIDATED),'AND',' INNER JOIN '.MAIN_DB_PREFIX.'dispositif as d ON t.fk_dispositif=d.rowid');
+
+		$nbAppelComplete = 0;
+		$countEleves = 0;
+		$countProfesseurs = 0;
+		$appelsEleves = 0;
+		$appelsProfesseurs = 0;
+
+		// Boucle sur tout les créneaux du jours pour extraires les données que l'on veut sur chacuns
+		foreach ($creneauDuJour as $creneau)
+		{
+			$eleveClass = new Eleve($this->db);
+			$eleves = $eleveClass->fetchAll('','',0,0,array('a.fk_creneau'=>$creneau->id,'a.status'=>Affectation::STATUS_VALIDATED),'AND',' INNER JOIN ' .MAIN_DB_PREFIX. 'souhait as s ON s.fk_eleve = t.rowid INNER JOIN '.MAIN_DB_PREFIX.'affectation as a ON a.fk_souhait=s.rowid');
+			// Compte total des élèves (affectations) sur l'horaire communiqué
+			$countEleves += count($eleves);
+
+			// Recherche de l'appel pour chaque élève
+			foreach ($eleves as $eleve)
+			{
+				$appelClass = new Appel($this->db);
+				$existingAppelsEleves = $appelClass->fetchAll('','','','',array('fk_creneau'=>$creneau->id,'fk_eleve'=>$eleve->id,'treated'=>1,'date_creation'=>"{$dateAppel}%"));
+				// Compte des appels existants pour les élèves
+				$appelsEleves += count($existingAppelsEleves);
+			}
+
+			$assignationClass = new Assignation($this->db);
+			$assignations = $assignationClass->fetchAll('','',0,0,array('fk_creneau'=>$creneau->id,'status'=>Assignation::STATUS_VALIDATED));
+			// Compte total des professeurs (assignations) sur l'horaire communiqué
+			$countProfesseurs += count($assignations);
+
+			// Recherche de l'appel pour chaque professeur
+			foreach ($assignations as $assignation)
+			{
+				$appelClass = new Appel($this->db);
+				$existingAppelsAssignations = $appelClass->fetchAll('','','','',array('fk_creneau'=>$creneau->id,'fk_user'=>$assignation->fk_agent,'treated'=>1,'date_creation'=>"{$dateAppel}%"));
+				// Compte des appels existants pour les professeurs
+				$appelsProfesseurs += count($existingAppelsAssignations);
+			}
+		}
+		// Condition pour valider si l'appel est complet ou non
+		if($appelsEleves == $countEleves && $appelsProfesseurs == $countProfesseurs && count($creneauDuJour) != 0 && $appelsProfesseurs != 0 && $appelsEleves != 0)
+		{
+			$nbAppelComplete += 1;
+		}
+
+		return array(count($creneauDuJour), $countEleves, $countProfesseurs, $appelsEleves, $appelsProfesseurs, $nbAppelComplete);
+	}
+
 }

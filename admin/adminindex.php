@@ -64,8 +64,10 @@ dol_include_once('viescolaire/class/souhait.class.php');
 dol_include_once('scolarite/class/dispositif.class.php');
 dol_include_once('scolarite/class/etablissement.class.php');
 dol_include_once('scolarite/class/classe.class.php');
+dol_include_once('scolarite/class/creneau.class.php');
 dol_include_once('viescolaire/class/famille.class.php');
 dol_include_once('viescolaire/class/parents.class.php');
+
 // Load translation files required by the page
 $langs->loadLangs(array('admin@admin'));
 
@@ -85,36 +87,15 @@ if (isset($user->socid) && $user->socid > 0) {
 	$socid = $user->socid;
 }
 
-
-
-
-/*
- * Actions
- */
-
-// None
-
-
-/*
- * View
- */
-
-
+if($action == 'addIntoAssignations')
+{
+	$creneauClass = new Creneau($db);
+	$creneauClass->addIntoAssignations();
+}
 
 if($action == 'confirmExport')
 {
 	$souhait = new Souhait($db);
-	/*$sql = 'SELECT e.nom, e.prenom, e.fk_famille, e.rowid, e.fk_etablissement, e.fk_classe_etablissement, e.genre, e.geographie_prioritaire
-            FROM '.MAIN_DB_PREFIX.'eleve as e
-            INNER JOIN ' .MAIN_DB_PREFIX. 'souhait as s ON e.rowid = s.fk_eleve
-            INNER JOIN ' .MAIN_DB_PREFIX. 'etablissement as t ON e.fk_etablissement = t.rowid
-            INNER JOIN ' .MAIN_DB_PREFIX. 'dispositif as d ON t.rowid = d.fk_etablissement
-            WHERE s.fk_annee_scolaire = '.$anneeFromForm.' AND s.status != '.Souhait::STATUS_CANCELED.'
-            '.($etabFromForm != 0 ? " AND e.fk_etablissement=$etabFromForm ": ''). '
-            GROUP BY e.rowid
-            ORDER BY e.fk_etablissement, e.prenom ASC';
-	$resqlEleve = $db->query($sql);*/
-
 
 	$sql = 'SELECT e.nom, e.prenom, e.fk_famille, e.rowid, e.fk_etablissement, e.fk_classe_etablissement, e.genre, e.geographie_prioritaire
             FROM '.MAIN_DB_PREFIX.'eleve as e
@@ -261,6 +242,7 @@ if($action == 'confirmExport')
 	// File Name & Content Header For Download
 	header("Content-Disposition: attachment; filename=\"$docName\".xls");
 	header('Content-Type: application/vnd.ms-excel');
+	die;
 
 	//To define column name in first row.
 	$column_names = false;
@@ -462,7 +444,7 @@ if ($action == 'export') {
 
 
 	print '<div class="center">';
-	print '<label>Selectionnez l\'établissement concerné : </label>';
+	print '<label>Selectionnez l\'antenne concerné : </label>';
 
 	$etablissement = array(0=> 'Tout les établissements');
 	$sqlEtablissement = 'SELECT e.rowid, e.nom FROM ' .MAIN_DB_PREFIX. 'etablissement as e';
@@ -517,6 +499,16 @@ else
 	print '<a href="'.$_SERVER['PHP_SELF'].'?action=export" class="button validExport">Créer un export</a><br>';
 	print '</div>';
 	print '<hr>';
+
+	print '<div style="display;flex">';
+	print '<div id="loader"></div>';
+	print dolGetButtonAction('Assignations', '', 'delete', $_SERVER['PHP_SELF'].'?id='.$object->id.'&action=addIntoAssignations&token='.newToken(), '');
+	print '</div>';
+	print '<hr>';
+
+
+
+
 
 
 
