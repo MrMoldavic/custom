@@ -1781,6 +1781,7 @@ class Creneau extends CommonObject
 				$appelsProfesseurs += count($existingAppelsAssignations);
 			}
 		}
+
 		// Condition pour valider si l'appel est complet ou non
 		if($appelsEleves == $countEleves && $appelsProfesseurs == $countProfesseurs && count($creneauDuJour) != 0 && $appelsProfesseurs != 0 && $appelsEleves != 0)
 		{
