@@ -1148,6 +1148,61 @@ class Etablissement extends CommonObject
 		}
 	}
 
+	/**
+	 *  Retourne la liste du noms des antennes dans un tableau
+	 *
+	 *  @return     array 			Tableau des antennes
+	 */
+	public final function returnAntenneNameArray()
+	{
+		$antenneList = $this->fetchAll('', '', 0, 0, [], 'AND');
+
+		foreach ($antenneList as $val) {
+			$antennes[$val->id] = $val->nom;
+		}
+
+		return $antennes;
+	}
+
+	/**
+	 *  Retourne le formulaire de gestion des etablissement
+	 *
+	 *  @return     array 			Tableau des antennes
+	 */
+	public final function returnSelectEtablimmentForm($allowAll = true)
+	{
+		$form = new Form($this->db);
+		$etablissementsList = $this->fetchAll('', '', 0, 0, [], 'AND');
+		$etablissements = $allowAll ? [0 => 'Tous'] : [];
+
+		foreach ($etablissementsList as $val) {
+			$etablissements[$val->id] = $val->nom;
+		}
+		$out = '<form action="' . $_SERVER['PHP_SELF'] . '" method="POST">';
+		$out .= '<input type="hidden" tyname="sortfield" value="' . $sortfield . '">';
+		$out .= '<input type="hidden" name="sortorder" value="' . $sortorder . '">';
+		$out .= '<input type="hidden" name="action" value="changeEtablissement">';
+		$out .= '<input type="hidden" name="token" value="' . newToken() . '">';
+		$out .= '<table class="border centpercent">';
+		$out .= '<tr>';
+		$out .= '</td></tr>';
+		$out .= '<tr><td class="fieldrequired titlefieldcreate">Selectionnez votre établissement: </td><td>';
+		$out .= $form->selectarray('etablissementid', $etablissements, $_SESSION['etablissementid']);
+		$out .= ' <a href="' . DOL_URL_ROOT . '/custom/scolarite/etablissement_card.php?action=create">';
+		$out .= '<span class="fa fa-plus-circle valignmiddle paddingleft" title="Ajouter un etablissement"></span>';
+		$out .= '</a>';
+		$out .= '</td>';
+		$out .= '</tr>';
+		$out .= '<td></td>';
+		$out .= '<td>';
+		$out .= '<input type="submit" class="button" value="Valider">';
+		$out .= '</td>';
+		$out .= '</table>';
+		$out .= '</form>';
+
+		return $out;
+	}
+
 }
 
 

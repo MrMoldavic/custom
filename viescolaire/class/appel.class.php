@@ -28,6 +28,9 @@ error_reporting(E_ALL);*/
 
 // Put here all includes required by your class file
 require_once DOL_DOCUMENT_ROOT.'/core/class/commonobject.class.php';
+require_once DOL_DOCUMENT_ROOT.'/custom/scolarite/class/creneau.class.php';
+require_once DOL_DOCUMENT_ROOT.'/custom/viescolaire/class/assignation.class.php';
+require_once DOL_DOCUMENT_ROOT.'/custom/management/class/agent.class.php';
 //require_once DOL_DOCUMENT_ROOT . '/societe/class/societe.class.php';
 //require_once DOL_DOCUMENT_ROOT . '/product/class/product.class.php';
 
@@ -120,6 +123,8 @@ class Appel extends CommonObject
 		'fk_user_creat' => array('type'=>'integer:User:user/class/user.class.php', 'label'=>'UserAuthor', 'enabled'=>'1', 'position'=>510, 'notnull'=>1, 'visible'=>-2, 'foreignkey'=>'user.rowid',),
 		'fk_user_modif' => array('type'=>'integer:User:user/class/user.class.php', 'label'=>'UserModif', 'enabled'=>'1', 'position'=>511, 'notnull'=>-1, 'visible'=>-2,),
 		'status' => array('type'=>'varchar(20)', 'label'=>'Status', 'enabled'=>'1', 'position'=>1000, 'notnull'=>1, 'visible'=>0, 'index'=>1, 'arrayofkeyval'=>array('0'=>'Brouillon', '1'=>'Valid&eacute;', '9'=>'Annul&eacute;'), 'validate'=>'1',),
+		'treated' => array('type'=>'integer', 'label'=>'treated', 'enabled'=>'1', 'position'=>1000, 'notnull'=>1, 'visible'=>0, 'index'=>1, 'validate'=>'1',),
+
 	);
 	public $rowid;
 	public $ref;
@@ -139,6 +144,7 @@ class Appel extends CommonObject
 	public $import_key;
 	public $model_pdf;
 	public $status;
+	public $treated;
 	// END MODULEBUILDER PROPERTIES
 
 
@@ -343,9 +349,9 @@ class Appel extends CommonObject
 	 * @param string $ref  Ref
 	 * @return int         <0 if KO, 0 if not found, >0 if OK
 	 */
-	public function fetch($id, $ref = null)
+	public function fetch($id, $ref = null, $moresql = null)
 	{
-		$result = $this->fetchCommon($id, $ref);
+		$result = $this->fetchCommon($id, $ref, $moresql);
 		if ($result > 0 && !empty($this->table_element_line)) {
 			$this->fetchLines();
 		}
@@ -1173,6 +1179,191 @@ class Appel extends CommonObject
 			print load_fiche_titre("Absences connues aujourd'hui <span class='badge badge-status4 badge-status'>0</span>", '', 'fa-warning');
 			print "Aucune absence connue pour aujourd'hui!";
 		}
+	}
+
+	/**
+	 *  Affiche le formulaire de changement d'heure de l'appel
+	 *
+	 *  @return string      		Formulaire
+	 */
+	public function printChangeHourFormAppel(int $antenneId, string $heureActuelle, string $selectedDay)
+	{
+		$form = new Form($this->db);
+
+		$out = '<form method="POST" action='.$_SERVER['PHP_SELF'].'>';
+		$out .= '<input type="hidden" name="antenneId" value='.$antenneId.'>';
+		$out .= '<input type="hidden" name="token" value='.newToken().'>';
+		$out .= '<input type="hidden" name="action" value="create">';
+		$out .= dol_get_fiche_head(array(), '');
+		$out .= '<table class="border centpercent ">'."\n";
+
+		$out .= '<div class="center">';
+		$out .= '<label>Selectionnez l\'heure désirée : </label>';
+
+		$out .= '<input type="string" name="selectedDay" value='.$selectedDay.' hidden>';
+		$out .= '<input type="time" name="heureActuelle" value="'.$heureActuelle.':00" >';
+		$out .= '</div>';
+		$out .= '</table>'."\n";
+
+		$out .= dol_get_fiche_end();
+
+		$out .= $form->buttonsSaveCancel('Valider','','','','hourButton');
+
+		$out .= '</form>';
+
+		return $out;
+	}
+
+	public function isAppelComplete(int $creneauId, string $dateAppel, array $eleves, array $professeurs)
+	{
+		$isComplete = true;
+
+		$conditions = " AND fk_creneau={$creneauId} AND treated=1 AND date_creation LIKE '{$dateAppel}%' ORDER BY rowid DESC";
+
+		foreach ([$eleves, $professeurs] as $type)
+		{
+			foreach ($type as $personne)
+			{
+				$appelClass = new self($this->db);
+				$appelClass->fetch('', '', " AND fk_{$personne->element_appel}={$personne->id}" . $conditions);
+
+				if (!$appelClass->id) {
+					$isComplete = false;
+				}
+			}
+		}
+
+		return $isComplete;
+	}
+
+
+	/**
+	 *  Insert ou update tout les appels envoyé depuis un formulaire pour les élèves
+	 *
+	 *  @return int
+	 */
+	public function InsertOrUpdateAppelEleves(array $eleves,int $creneauId,string $dateCreation)
+	{
+		global $user;
+		$resFunction = 0;
+		// pour chaque élève, ajout ou update de l'appel
+		foreach ($eleves as $eleve)
+		{
+			$appelClass = new self($this->db);
+			$appelClass->fetch('',''," AND fk_creneau={$creneauId} AND fk_eleve=$eleve->id AND treated=1 AND date_creation LIKE '{$dateCreation}%' ORDER BY rowid DESC");
+
+			// Si un appel éxiste déjà on l'update
+			if($appelClass->id)
+			{
+				$appelClass->status = GETPOST('presence' . $eleve->id , 'alpha');
+				$appelClass->justification = str_replace("'",'`',GETPOST('infos' . $eleve->id, 'alpha'));
+				$resUpdateAppel = $appelClass->update($user);
+
+				if($resUpdateAppel < 0) $resFunction--;
+			} else {
+
+				$appelClass = new self($this->db);
+				$appelClass->fk_creneau = $creneauId;
+				$appelClass->fk_eleve = $eleve->id;
+				$appelClass->justification = str_replace("'",'`',GETPOST('infos' . $eleve->id, 'alpha'));
+				$appelClass->date_creation = $dateCreation;
+				$appelClass->status = GETPOST('presence' . $eleve->id, 'alpha');
+				$appelClass->treated = 1;
+
+
+
+				$resultInsertAppel = $appelClass->create($user);
+
+				if($resultInsertAppel < 0) $resFunction--;
+			}
+		}
+
+		return $resFunction;
+	}
+
+
+	/**
+	 *  Insert ou update tout les appels envoyé depuis un formulaire pour les professeurs
+	 *
+	 *  @return int
+	 */
+	public function InsertOrUpdateAppelProfesseurs(array $professeurs,int $creneauId,string $dateCreation)
+	{
+		global $user;
+		$resFunction = 0;
+
+		// pour chaque élève, ajout ou update de l'appel
+		foreach ($professeurs as $professeur)
+		{
+			$appelClass = new self($this->db);
+			$appelClass->fetch('',''," AND fk_creneau={$creneauId} AND fk_user=$professeur->id AND treated=1 AND date_creation LIKE '{$dateCreation}%' ORDER BY rowid DESC");
+
+			// Si un appel éxiste déjà on l'update
+			if($appelClass->id)
+			{
+				$appelClass->status = GETPOST('prof' . $professeur->id, 'alpha');
+				$appelClass->justification = str_replace("'",'`',GETPOST('infos' . $professeur->id, 'alpha'));
+				$resUpdateAppel = $appelClass->update($user);
+
+				if($resUpdateAppel < 0) $resFunction--;
+			} else {
+
+				$appelClass = new self($this->db);
+				$appelClass->fk_creneau = $creneauId;
+				$appelClass->fk_user = $professeur->id;
+				$appelClass->justification = str_replace("'",'`',GETPOST('infos' . $professeur->id, 'alpha'));
+				$appelClass->date_creation = $dateCreation;
+				$appelClass->status =  GETPOST('prof' . $professeur->id, 'alpha');
+				$appelClass->treated = 1;
+
+				$resultInsertAppel = $appelClass->create($user);
+
+				if($resultInsertAppel < 0) $resFunction--;
+			}
+		}
+
+		return $resFunction;
+	}
+
+	/**
+	 * Vérifie si tous les appels ont bien été envoyés dans le formulaire
+	 *
+	 * @return bool Booléen
+	 */
+	public function checkIfAllAppelSent(int $creneauId)
+	{
+		$eleveClass = new Eleve($this->db);
+		$eleves = $eleveClass->fetchAll('', '', 0, 0,
+			array('a.fk_creneau' => $creneauId, 'a.status' => Affectation::STATUS_VALIDATED), 'AND',
+			' INNER JOIN ' . MAIN_DB_PREFIX . 'souhait as s ON s.fk_eleve = t.rowid INNER JOIN ' . MAIN_DB_PREFIX . 'affectation as a ON a.fk_souhait=s.rowid'
+		);
+
+		$agentClass = new Agent($this->db);
+		$professeurs = $agentClass->fetchAll('', '', 0, 0,
+			array('a.fk_creneau' => $creneauId, 'a.status' => Assignation::STATUS_VALIDATED), 'AND',
+			' INNER JOIN ' . MAIN_DB_PREFIX . 'assignation as a ON a.fk_agent=t.rowid'
+		);
+
+		return $this->checkAppelsSent($eleves, 'presence') && $this->checkAppelsSent($professeurs, 'prof');
+	}
+
+	/**
+	 * Vérifie si tous les appels ont été envoyés pour une liste spécifique (éléves ou professeurs)
+	 *
+	 * @param array  $liste Liste d'éléments à vérifier
+	 * @param string $prefix Préfixe utilisé pour le nom des variables POST
+	 * @return bool Booléen
+	 */
+	private function checkAppelsSent(array $liste, string $prefix)
+	{
+		foreach ($liste as $element) {
+			$variableName = $prefix . $element->id;
+			if (!GETPOST($variableName, 'alpha')) {
+				return false; // Si un appel n'est pas envoyé, retourne false immédiatement
+			}
+		}
+
+		return true; // Tous les appels sont envoyés
 	}
 }
 

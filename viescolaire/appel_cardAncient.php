@@ -574,7 +574,6 @@ if (($action == 'create' or $action == 'modifAppel' or $action == 'returnFromErr
 			$heureAffichage = $objHeure->heure;
 		}
 
-
 		// requête qui va chercher tout les élèves d'un créneau à un horaire donné
 		$sql1 = 'SELECT e.nom, e.prenom,e.rowid FROM ' . MAIN_DB_PREFIX . 'souhait as s INNER JOIN ' . MAIN_DB_PREFIX . 'affectation as a ON a.fk_souhait = s.rowid INNER JOIN ' . MAIN_DB_PREFIX . 'eleve as e ON e.rowid = s.fk_eleve WHERE a.fk_creneau = ' . $val['rowid'] . ' AND a.status = 4';
 		$resql = $db->query($sql1);

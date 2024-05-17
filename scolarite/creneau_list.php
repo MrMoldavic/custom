@@ -22,9 +22,7 @@
  *		\brief      List page for creneau
  */
 
-/* ini_set('display_errors', '1');
-ini_set('display_startup_errors', '1');
-error_reporting(E_ALL);*/
+
 
 
 //if (! defined('NOREQUIREDB'))              define('NOREQUIREDB', '1');				// Do not create database handler $db
@@ -114,6 +112,7 @@ if($action == "changeEtablissement")
 	$etablissementClass->checkSetCookieEtablissement(GETPOST('etablissementid','int'));
 }
 
+
 $id = GETPOST('id', 'int');
 // Load variable for pagination
 $limit = GETPOST('limit', 'int') ? GETPOST('limit', 'int') : $conf->liste_limit;
@@ -135,6 +134,12 @@ $object = new Creneau($db);
 $extrafields = new ExtraFields($db);
 $diroutputmassaction = $conf->scolarite->dir_output.'/temp/massgeneration/'.$user->id;
 $hookmanager->initHooks(array('creneaulist')); // Note that conf->hooks_modules contains array
+
+
+if($action == 'addIntoAssignations')
+{
+	$object->addIntoAssignations();
+}
 
 // Fetch optionals attributes and labels
 $extrafields->fetch_name_optionals_label($object->table_element);
@@ -297,6 +302,10 @@ if ($_SESSION['etablissementid'] != 0) {
 	$sql .= ' INNER JOIN '.MAIN_DB_PREFIX.'dispositif as d ON d.rowid=t.fk_dispositif';
 	$sql .= ' INNER JOIN '.MAIN_DB_PREFIX.'etablissement as a ON d.fk_etablissement=' . $_SESSION['etablissementid'];
 }
+
+if($search['professeurs']) {
+	$sql .= ' INNER JOIN '.MAIN_DB_PREFIX.'assignation as a ON a.fk_creneau=t.rowid';
+}
 if ($object->ismultientitymanaged == 1) {
 	$sql .= " WHERE t.entity IN (".getEntity($object->element).")";
 }
@@ -325,6 +334,27 @@ foreach ($search as $key => $val) {
 			continue;
 		}
 
+		// Condition qui si rencontrée multiplie l'heure par 3600 pour avoir le temps en seconde (comme en bdd)
+		if($key == 'heure_debut')
+		{
+			$search[$key] = $search[$key]*3600;
+		}
+
+		// Condition qui si rencontrée va chercher l'id d'un agent lié à un prénom noté en recherche
+		if($key == 'professeurs')
+		{
+			$agentClass = new Agent($db);
+			$agentClass->fetch('',''," AND prenom LIKE '%$val%'");
+
+			if($agentClass->id) {
+				$assignationClass = new Assignation($db);
+				$assignationClass->fetch('',''," AND fk_agent=$agentClass->id AND status=".Assignation::STATUS_VALIDATED);
+
+				if ($assignationClass->id) $search[$key] = $assignationClass->fk_agent;
+			}
+
+		}
+
 		$mode_search = (($object->isInt($object->fields[$key]) || $object->isFloat($object->fields[$key])) ? 1 : 0);
 		if ((strpos($object->fields[$key]['type'], 'integer:') === 0) || (strpos($object->fields[$key]['type'], 'sellist:') === 0) || !empty($object->fields[$key]['arrayofkeyval'])) {
 			if ($search[$key] == '-1' || ($search[$key] === '0' && (empty($object->fields[$key]['arrayofkeyval']) || !array_key_exists('0', $object->fields[$key]['arrayofkeyval'])))) {
@@ -332,9 +362,12 @@ foreach ($search as $key => $val) {
 			}
 			$mode_search = 2;
 		}
+		// Modification de la recherche en utilisant le Inner join plus haut. si la clé est professeurs, cela nécessite d'aller chercher dans la table assignation
 		if ($search[$key] != '') {
-			$sql .= natural_search('t.'.$key, $search[$key], (($key == 'status') ? 2 : $mode_search));
+			$sql .= natural_search(($key == 'professeurs' ? 'a.fk_agent' : 't.'.$key), $search[$key], (($key == 'status') ? 2 : $mode_search));
+
 		}
+
 	} else {
 		if (preg_match('/(_dtstart|_dtend)$/', $key) && $search[$key] != '') {
 			$columnName = preg_replace('/(_dtstart|_dtend)$/', '', $key);
@@ -558,36 +591,9 @@ if($massaction == 'telephone' || $massaction == 'mail' || $massaction == "eleves
 
 // Ajout du formulaire qui permet de changer son établissement de prédilection
 $etablissementClass = new Etablissement($db);
-$etablissementsList = $etablissementClass->fetchAll('', '', 0, 0, [], 'AND');
-$etablissements = [0 => 'Tous'];
-
-foreach ($etablissementsList as $val) {
-	$etablissements[$val->id] = $val->nom;
-}
-print '<form action="' . $_SERVER['PHP_SELF'] . '" method="POST">';
-print '<input type="hidden" tyname="sortfield" value="' . $sortfield . '">';
-print '<input type="hidden" name="sortorder" value="' . $sortorder . '">';
-print '<input type="hidden" name="action" value="changeEtablissement">';
-print '<input type="hidden" name="token" value="' . newToken() . '">';
-dol_fiche_head('');
-print '<table class="border centpercent">';
-print '<tr>';
-print '</td></tr>';
-// Type de Kit
-print '<tr><td class="fieldrequired titlefieldcreate">Selectionnez votre établissement: </td><td>';
-print $form->selectarray('etablissementid', $etablissements, $_SESSION['etablissementid']);
-print ' <a href="' . DOL_URL_ROOT . '/custom/scolarite/etablissement_card.php?action=create">';
-print '<span class="fa fa-plus-circle valignmiddle paddingleft" title="Ajouter un etablissement"></span>';
-print '</a>';
-print '</td>';
-print '</tr>';
-print '<td></td>';
-print '<td>';
-print '<input type="submit" class="button" value="Valider">';
-print '</td>';
-print '</table>';
-dol_fiche_end();
-print '</form>';
+print dol_fiche_head();
+print $etablissementClass->returnSelectEtablimmentForm();
+print dol_fiche_end();
 
 print '<a href="'.$_SERVER['PHP_SELF'].'?creneauErrors='.($creneauErrors == 'false' ? 'true' : 'false').'">'.($creneauErrors == 'true' ? 'Affichage normal' : 'Afficher les créneaux avec des erreurs').'</a><br>';
 
@@ -628,7 +634,7 @@ if ($search_all) {
 
 $moreforfilter = '';
 $moreforfilter.='<div class="divsearchfield">';
-$moreforfilter.= $langs->trans('Recherche spécifique') . ': <input type="text" name="search_myfield" value="'.dol_escape_htmltag($search_myfield).'">';
+$moreforfilter.= $langs->trans('Recherche par nom de créneau') . ': <input type="text" name="search_myfield" value="'.dol_escape_htmltag($search_myfield).'">';
 $moreforfilter.= '</div>';
 
 $parameters = array();
@@ -674,6 +680,7 @@ foreach ($object->fields as $key => $val) {
 	} elseif (in_array($val['type'], array('double(24,8)', 'double(6,3)', 'integer', 'real', 'price')) && $val['label'] != 'TechnicalID' && empty($val['arrayofkeyval'])) {
 		$cssforfield .= ($cssforfield ? ' ' : '').'right';
 	}
+
 	if (!empty($arrayfields['t.'.$key]['checked'])) {
 		print '<td class="liste_titre'.($cssforfield ? ' '.$cssforfield : '').'">';
 		if (!empty($val['arrayofkeyval']) && is_array($val['arrayofkeyval'])) {
@@ -692,7 +699,7 @@ foreach ($object->fields as $key => $val) {
 			$formadmin = new FormAdmin($db);
 			print $formadmin->select_language($search[$key], 'search_lang', 0, null, 1, 0, 0, 'minwidth150 maxwidth200', 2);
 		} else {
-			print '<input type="text" class="flat maxwidth75" name="search_'.$key.'" value="'.dol_escape_htmltag(isset($search[$key]) ? $search[$key] : '').'">';
+			print '<input type="text" class="flat maxwidth75" name="search_'.$key.'" value="'.dol_escape_htmltag(isset($search[$key]) && $key == 'heure_debut' ? $search[$key]/3600 : ($search[$key] ?  : '')).'">';
 		}
 		print '</td>';
 	}
@@ -869,35 +876,10 @@ while ($i < $imaxinloop) {
 					print '<span class="badge  badge-status'.($objCours->type == 'Cours' ? '4' : '1') .' badge-status">'.$objCours->type.'</span> - '.($objCours->type == "Cours" ? $objInstru->instrument : $object->nom_groupe).' - '.$objNiveau->niveau;
 				} elseif ($key == 'professeurs') {
 
-					$profs = "";
-					if(isset($object->fk_prof_1))
+					if($object->printProfesseursFromCreneau($object->id))
 					{
-						$prof1 = "SELECT prenom, nom, rowid FROM ".MAIN_DB_PREFIX."management_agent WHERE rowid =".$object->fk_prof_1;
-						$resqlProf1 = $db->query($prof1);
-						$objProf1 = $db->fetch_object($resqlProf1);
-
-
-						$profs .= '<a href="' . DOL_URL_ROOT . '/custom/management/agent_card.php?id=' . $objProf1->rowid . '">' .'👨‍🏫'. $objProf1->prenom.' '.$objProf1->nom. '</a>'.'<br>';
+						print $object->printProfesseursFromCreneau($object->id,'view');
 					}
-					if(isset($object->fk_prof_2))
-					{
-						$prof2 = "SELECT nom, prenom, rowid FROM ".MAIN_DB_PREFIX."management_agent WHERE rowid =".$object->fk_prof_2;
-						$resqlProf2 = $db->query($prof2);
-						$objProf2 = $db->fetch_object($resqlProf2);
-
-						$profs .= '<a href="' . DOL_URL_ROOT . '/custom/management/agent_card.php?id=' . $objProf2->rowid . '">' .'👨‍🏫'. $objProf2->prenom.' '.$objProf2->nom. '</a>'.'<br>';
-					}
-					if(isset($object->fk_prof_3))
-					{
-						$prof3 = "SELECT nom, prenom, rowid FROM ".MAIN_DB_PREFIX."management_agent WHERE rowid =".$object->fk_prof_3;
-						$resqlProf3 = $db->query($prof3);
-						$objProf3 = $db->fetch_object($resqlProf3);
-
-						$profs .= '<a href="' . DOL_URL_ROOT . '/custom/management/agent_card.php?id=' . $objProf3->rowid . '">' .'👨‍🏫'. $objProf3->prenom.' '.$objProf3->nom. '</a>'.'<br>';
-					}
-					if($profs == "") $profs = '<span class="badge badge-danger">Prof manquant &#9888</span>';
-
-					print $profs;
 
 				} elseif ($key == 'infos_creneau'){
 					$infos_creneau = "";

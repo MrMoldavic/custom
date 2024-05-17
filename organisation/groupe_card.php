@@ -152,7 +152,7 @@ include DOL_DOCUMENT_ROOT.'/core/actions_fetchobject.inc.php'; // Must be includ
 $enablepermissioncheck = 1;
 if ($enablepermissioncheck) {
 	$permissiontoread = $user->rights->organisation->organisation->read;
-	$permissiontoadd = $user->rights->organisation->organisation->write;
+	$permissiontoadd = $user->rights->organisation->organisation->write || $user->rights->organisation->programmation->writeProgrammation;
 	$permissiontoaddProposition = $user->rights->organisation->programmation->writeProgrammation;
 
 	// Used by the include of actions_addupdatedelete.inc.php and actions_lineupdown.inc.php
@@ -259,7 +259,7 @@ llxHeader('', $title, $help_url);
 
 // Part to create
 if ($action == 'create') {
-	if (empty($permissiontoadd)) {
+	if (empty($permissiontoaddProposition)) {
 		accessforbidden($langs->trans('NotEnoughPermissions'), 0, 1);
 		exit;
 	}

@@ -22,9 +22,9 @@
  * \brief       This file is a CRUD class file for Creneau (Create/Read/Update/Delete)
  */
 
-ini_set('display_errors', '1');
+/*ini_set('display_errors', '1');
 ini_set('display_startup_errors', '1');
-error_reporting(E_ALL);
+error_reporting(E_ALL);*/
 // Put here all includes required by your class file
 require_once DOL_DOCUMENT_ROOT.'/core/class/commonobject.class.php';
 
@@ -1627,7 +1627,7 @@ class Creneau extends CommonObject
 				$agentClass = new Agent($this->db);
 				$agentClass->fetch($assignation->fk_agent);
 
-				$out .= "-$agentClass->prenom_agent";
+				$out .= "-$agentClass->prenom";
 			}
 
 		}
@@ -1706,7 +1706,6 @@ class Creneau extends CommonObject
 			$resultCreate1 = $assignationClass->create($user);
 
 			if($resultCreate1 < 0) $error++;
-
 
 			if($creneau->fk_prof_2)
 			{

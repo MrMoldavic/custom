@@ -100,6 +100,7 @@ $contextpage = GETPOST('contextpage', 'aZ') ? GETPOST('contextpage', 'aZ') : str
 $backtopage = GETPOST('backtopage', 'alpha');
 $backtopageforcancel = GETPOST('backtopageforcancel', 'alpha');
 $dol_openinpopup = GETPOST('dol_openinpopup', 'aZ09');
+$fk_creneau = GETPOST('fk_creneau', 'int');
 
 // Initialize technical objects
 $object = new Assignation($db);
@@ -212,10 +213,9 @@ if (empty($reshook)) {
 
 
 if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'create'))) {
-	header("Location: ".DOL_URL_ROOT."/custom/scolarite/creneau_card.php?id=" . $object->fk_creneau_id);
+	header("Location: ".DOL_URL_ROOT."/custom/scolarite/creneau_card.php?id=" . $object->fk_creneau);
 	exit;
 }
-
 
 /*
  * View
@@ -254,15 +254,16 @@ if ($action == 'create') {
 
 	// Set some default values
 
-	$anneeScolaireClass = new Annee($db);
+	/*$anneeScolaireClass = new Annee($db);
 	$anneeScolaireClass->fetch('','',' AND active=1 AND annee_actuelle=1');
 
 
-	if (!GETPOSTISSET('fk_annee_scolaire')) $_POST['fk_annee_scolaire_id'] = $anneeScolaireClass->id;
+	if (!GETPOSTISSET('fk_annee_scolaire')) $_POST['fk_annee_scolaire_id'] = $anneeScolaireClass->id;*/
 	print '<table class="border centpercent tableforfieldcreate">'."\n";
 
+
 	// Common attributes
-	print '<input name="fk_eleve_id" value="'.$fk_eleve_id.'" hidden>';
+	print '<input name="fk_creneau" value="'.$fk_creneau.'" hidden>';
 	include DOL_DOCUMENT_ROOT.'/core/tpl/commonfields_add.tpl.php';
 
 	// Other attributess

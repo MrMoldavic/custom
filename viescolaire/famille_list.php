@@ -426,21 +426,6 @@ if ($num == 1 && !empty($conf->global->MAIN_SEARCH_DIRECT_OPEN_IF_ONLY_ONE) && $
 
 llxHeader('', $title, $help_url, '', 0, 0, $morejs, $morecss, '', '');
 
-// Example : Adding jquery code
-// print '<script type="text/javascript">
-// jQuery(document).ready(function() {
-// 	function init_myfunc()
-// 	{
-// 		jQuery("#myid").removeAttr(\'disabled\');
-// 		jQuery("#myid").attr(\'disabled\',\'disabled\');
-// 	}
-// 	init_myfunc();
-// 	jQuery("#mybutton").click(function() {
-// 		init_myfunc();
-// 	});
-// });
-// </script>';
-
 $arrayofselected = is_array($toselect) ? $toselect : array();
 
 $param = '';
@@ -489,36 +474,10 @@ $massactionbutton = $form->selectMassAction('', $arrayofmassactions);
 
 // Ajout du formulaire qui permet de changer son établissement de prédilection
 $etablissementClass = new Etablissement($db);
-$etablissementsList = $etablissementClass->fetchAll('', '', 0, 0, [], 'AND');
-$etablissements = [0 => 'Tous'];
+print dol_fiche_head();
+print $etablissementClass->returnSelectEtablimmentForm();
+print dol_fiche_end();
 
-foreach ($etablissementsList as $val) {
-	$etablissements[$val->id] = $val->nom;
-}
-print '<form action="' . $_SERVER['PHP_SELF'] . '" method="POST">';
-print '<input type="hidden" tyname="sortfield" value="' . $sortfield . '">';
-print '<input type="hidden" name="sortorder" value="' . $sortorder . '">';
-print '<input type="hidden" name="action" value="changeEtablissement">';
-print '<input type="hidden" name="token" value="' . newToken() . '">';
-dol_fiche_head('');
-print '<table class="border centpercent">';
-print '<tr>';
-print '</td></tr>';
-// Type de Kit
-print '<tr><td class="fieldrequired titlefieldcreate">Selectionnez votre établissement: </td><td>';
-print $form->selectarray('etablissementid', $etablissements, $_SESSION['etablissementid']);
-print ' <a href="' . DOL_URL_ROOT . '/custom/scolarite/etablissement_card.php?action=create">';
-print '<span class="fa fa-plus-circle valignmiddle paddingleft" title="Ajouter un etablissement"></span>';
-print '</a>';
-print '</td>';
-print '</tr>';
-print '<td></td>';
-print '<td>';
-print '<input type="submit" class="button" value="Valider">';
-print '</td>';
-print '</table>';
-dol_fiche_end();
-print '</form>';
 
 print '<form method="POST" id="searchFormList" action="'.$_SERVER["PHP_SELF"].'">'."\n";
 if ($optioncss != '') {

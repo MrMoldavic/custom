@@ -129,7 +129,7 @@ include DOL_DOCUMENT_ROOT.'/core/actions_fetchobject.inc.php'; // Must be includ
 $enablepermissioncheck = 1;
 if ($enablepermissioncheck) {
 	$permissiontoread = $user->rights->organisation->organisation->read;
-	$permissiontoadd = $user->rights->organisation->organisation->write; // Used by the include of actions_addupdatedelete.inc.php and actions_lineupdown.inc.php
+	$permissiontoadd = $user->rights->organisation->programmation->writeProgrammation; // Used by the include of actions_addupdatedelete.inc.php and actions_lineupdown.inc.php
 	$permissiontodelete = $user->rights->organisation->organisation->delete || ($permissiontoadd && isset($object->status) && $object->status == $object::STATUS_DRAFT);
 	$permissionnote = $user->rights->organisation->organisation->write; // Used by the include of actions_setnotes.inc.php
 	$permissiondellink = $user->rights->organisation->organisation->write; // Used by the include of actions_dellink.inc.php

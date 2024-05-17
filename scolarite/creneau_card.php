@@ -22,6 +22,10 @@
  *		\brief      Page to create/edit/view creneau
  */
 
+ ini_set('display_errors', '1');
+ini_set('display_startup_errors', '1');
+error_reporting(E_ALL);
+
 //if (! defined('NOREQUIREDB'))              define('NOREQUIREDB', '1');				// Do not create database handler $db
 //if (! defined('NOREQUIREUSER'))            define('NOREQUIREUSER', '1');				// Do not load object $user
 //if (! defined('NOREQUIRESOC'))             define('NOREQUIRESOC', '1');				// Do not load object $mysoc
@@ -81,6 +85,12 @@ require_once DOL_DOCUMENT_ROOT.'/core/class/html.formprojet.class.php';
 dol_include_once('/scolarite/class/creneau.class.php');
 dol_include_once('/scolarite/class/etablissement.class.php');
 dol_include_once('/viescolaire/class/affectation.class.php');
+dol_include_once('/viescolaire/class/dictionary.class.php');
+dol_include_once('/scolarite/class/dispositif.class.php');
+dol_include_once('/scolarite/class/salle.class.php');
+dol_include_once('/management/class/agent.class.php');
+dol_include_once('/viescolaire/class/assignation.class.php');
+dol_include_once('/organisation/class/instrument.class.php');
 dol_include_once('/scolarite/lib/scolarite_creneau.lib.php');
 
 // Load translation files required by the page
@@ -97,33 +107,6 @@ $backtopage = GETPOST('backtopage', 'alpha');
 $backtopageforcancel = GETPOST('backtopageforcancel', 'alpha');
 $lineid   = GETPOST('lineid', 'int');
 
-if ($action == 'desactivation') {
-
-	$affectation = 'SELECT s.fk_souhait FROM ' .MAIN_DB_PREFIX. 'affectation as s WHERE s.fk_creneau=' .$id. ' AND date_fin IS NULL';
-	$resqlAffectation = $db->query($affectation);
-
-	if($resqlAffectation->num_rows > 0)
-	{
-		setEventMessage('Vous ne pouvez pas désactiver un créneau qui contient des élèves.','errors');
-	}
-	else
-	{
-		$creneau = new Creneau($db);
-		$sql = 'UPDATE ' . MAIN_DB_PREFIX . 'creneau SET status = ' . $creneau::STATUS_CANCELED . ' WHERE rowid=' . $id;
-		$resql = $db->query($sql);
-		setEventMessage('Creneau desactivé avec succès');
-	}
-}
-
-if ($action == 'activation') {
-
-	$creneau = new Creneau($db);
-	$sql = 'UPDATE ' . MAIN_DB_PREFIX . 'creneau SET status = ' . $creneau::STATUS_VALIDATED . ' WHERE rowid=' . $id;
-	$resql = $db->query($sql);
-
-	setEventMessage('Creneau activé avec succès');
-
-}
 
 // Initialize technical objects
 $object = new Creneau($db);
@@ -239,6 +222,7 @@ if (empty($reshook)) {
 
 
 
+include DOL_DOCUMENT_ROOT.'/custom/viescolaire/core/actions/actions_creneau_viescolaire.inc.php';
 
 /*
  * View
@@ -356,25 +340,6 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 		} else setEventMessage('Vous ne pouvez pas supprimer un créneau qui contient des élèves','errors');
 	}
 
-	/*if ($action == 'Update') {
-
-		if(GETPOST('fk_salle','int'))
-		{
-			$existingCreneau = 'SELECT rowid FROM ' .MAIN_DB_PREFIX. 'creneau WHERE fk_salle=' .GETPOST('fk_salle','int'). ' AND heure_debut=' .GETPOST('heure_debut','alpha'). ' AND rowid !=' .$id. ' AND fk_annee_scolaire =' .GETPOST('fk_annee_scolaire','int');
-			$resqlExistingCreneau = $db->query($existingCreneau);
-			if($resqlExistingCreneau->num_rows > 0)
-			{
-				$formconfirm = $form->formconfirm($_SERVER['PHP_SELF'].'?id='.$id, $langs->trans('Modifier salle'), 'Cette salle est prise à cet horaire. Êtes-vous sûr de vouloir forcer la mise à jour?', 'update', '', 0, 1);
-
-			}
-			else
-			{
-				if ($object->update($user) < 0) {
-					setEventMessage('Une erreur est survenue', 'error');
-				}
-			}
-		}
-	}*/
 	// Confirmation to delete line
 	if ($action == 'deleteline') {
 		$formconfirm = $form->formconfirm($_SERVER['PHP_SELF'].'?id='.$object->id.'&lineid='.$lineid, $langs->trans('DeleteLine'), $langs->trans('ConfirmDeleteLine'), 'confirm_deleteline', '', 0, 1);
@@ -384,22 +349,6 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 		// Create an array for form
 		$formquestion = array();
 		$formconfirm = $form->formconfirm($_SERVER['PHP_SELF'].'?id='.$object->id, $langs->trans('ToClone'), $langs->trans('ConfirmCloneAsk', $object->ref), 'confirm_clone', $formquestion, 'yes', 1);
-	}
-
-	// Confirmation of action xxxx
-	if ($action == 'xxx') {
-		$formquestion = array();
-		/*
-		$forcecombo=0;
-		if ($conf->browser->name == 'ie') $forcecombo = 1;	// There is a bug in IE10 that make combo inside popup crazy
-		$formquestion = array(
-			// 'text' => $langs->trans("ConfirmClone"),
-			// array('type' => 'checkbox', 'name' => 'clone_content', 'label' => $langs->trans("CloneMainAttributes"), 'value' => 1),
-			// array('type' => 'checkbox', 'name' => 'update_prices', 'label' => $langs->trans("PuttingPricesUpToDate"), 'value' => 1),
-			// array('type' => 'other',    'name' => 'idwarehouse',   'label' => $langs->trans("SelectWarehouseForStockDecrease"), 'value' => $formproduct->selectWarehouses(GETPOST('idwarehouse')?GETPOST('idwarehouse'):'ifone', 'idwarehouse', '', 1, 0, 0, '', 0, $forcecombo))
-		);
-		*/
-		$formconfirm = $form->formconfirm($_SERVER['PHP_SELF'].'?id='.$object->id, $langs->trans('XXX'), $text, 'confirm_xxx', $formquestion, 0, 1, 220);
 	}
 
 	// Call Hook formConfirm
@@ -418,7 +367,7 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 	// ------------------------------------------------------------
 	$linkback = '<a href="'.dol_buildpath('/scolarite/creneau_list.php', 1).'?restore_lastsearch_values=1'.(!empty($socid) ? '&socid='.$socid : '').'">'.$langs->trans('BackToList').'</a>';
 
-	$morehtmlref = '<div class="refidno">';
+	$morehtmlref = '<div class="refid">';
 	$morehtmlref .= $object->nom_creneau;
 	$morehtmlref .= '</div>';
 
@@ -440,7 +389,8 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 	// Other attributes. Fields from hook formObjectOptions and Extrafields.
 	include DOL_DOCUMENT_ROOT.'/core/tpl/extrafields_view.tpl.php';
 	print '</table>';
-	print '<h3>Liste des élèves dans ce créneau:</h3>';
+
+	/*print load_fiche_titre('Liste des élèves dans ce créneau:', '', 'fa-user');
 
 	$sql1 = 'SELECT s.fk_instru_enseigne,e.nom, e.prenom,e.rowid FROM ' . MAIN_DB_PREFIX . 'souhait as s INNER JOIN ' . MAIN_DB_PREFIX . 'affectation as a ON a.fk_souhait = s.rowid INNER JOIN ' . MAIN_DB_PREFIX . 'eleve as e ON e.rowid = s.fk_eleve WHERE a.fk_creneau = ' . $object->id . ' AND a.status = 4';
 	$resqlAffectation = $db->query($sql1);
@@ -453,6 +403,19 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 
 		print '<a href="' . DOL_URL_ROOT . '/custom/viescolaire/eleve_card.php?id=' . $val['rowid'] . '">' .'- '. $val['nom'].' '.$val['prenom'].' / '.($objectInstru->instrument ? : 'Aucun instrument connu').'</a>';
 		print '<br>';
+	}*/
+
+
+	if($object->printProfesseursFromCreneau($object->id))
+	{
+		print load_fiche_titre('Liste des professeurs du créneau: ', '', 'fa-user');
+		print $object->printProfesseursFromCreneau($object->id,$permissiontoadd ? 'edit' : 'view');
+	}
+
+	if($object->printElevesFromCreneau($object->id))
+	{
+		print load_fiche_titre('Liste des élèves du créneau: ', '', 'fa-school');
+		print $object->printElevesFromCreneau($object->id);
 	}
 
 	print '</div>';
@@ -480,6 +443,8 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 			if ($object->status == $object::STATUS_VALIDATED) {
 				print dolGetButtonAction($langs->trans('Desactiver le creneau'), '', 'error', $_SERVER['PHP_SELF'] . '?id=' . $object->id . '&action=desactivation&token=' . newToken(), '', $permissiontoadd);
 				print dolGetButtonAction($langs->trans('Modifier le creneau'), '', 'default', $_SERVER['PHP_SELF'] . '?id=' . $object->id . '&action=edit&token=' . newToken(), '', $permissiontoadd);
+
+				print dolGetButtonAction($langs->trans('Ajouter un professeur'), '', 'default', DOL_URL_ROOT . '/custom/viescolaire/assignation_card.php?fk_creneau=' . $object->id . '&action=create&token=' . newToken(), '', $permissiontoadd);
 			}
 
 			if ($object->status == $object::STATUS_CANCELED) {
@@ -493,60 +458,6 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 		print '</div>'."\n";
 	}
 
-
-	// Select mail models is same action as presend
-	if (GETPOST('modelselected')) {
-		$action = 'presend';
-	}
-
-	if ($action != 'presend') {
-		print '<div class="fichecenter"><div class="fichehalfleft">';
-		print '<a name="builddoc"></a>'; // ancre
-
-		$includedocgeneration = 1;
-
-		// Documents
-		if ($includedocgeneration) {
-			$objref = dol_sanitizeFileName($object->ref);
-			$relativepath = $objref.'/'.$objref.'.pdf';
-			$filedir = $conf->scolarite->dir_output.'/'.$object->element.'/'.$objref;
-			$urlsource = $_SERVER['PHP_SELF']. '?id=' .$object->id;
-			$genallowed = $permissiontoread; // If you can read, you can build the PDF to read content
-			$delallowed = $permissiontoadd; // If you can create/edit, you can remove a file on card
-			print $formfile->showdocuments('scolarite:Creneau', $object->element.'/'.$objref, $filedir, $urlsource, $genallowed, $delallowed, $object->model_pdf, 1, 0, 0, 28, 0, '', '', '', $langs->defaultlang);
-		}
-
-		// Show links to link elements
-		$linktoelem = $form->showLinkToObjectBlock($object, null, array('creneau'));
-		$somethingshown = $form->showLinkedObjectBlock($object, $linktoelem);
-
-
-		print '</div><div class="fichehalfright">';
-
-		$MAXEVENT = 10;
-
-		$morehtmlcenter = dolGetButtonTitle($langs->trans('SeeAll'), '', 'fa fa-list-alt imgforviewmode', dol_buildpath('/scolarite/creneau_agenda.php', 1).'?id='.$object->id);
-
-		// List of actions on element
-		include_once DOL_DOCUMENT_ROOT.'/core/class/html.formactions.class.php';
-		$formactions = new FormActions($db);
-		$somethingshown = $formactions->showactions($object, $object->element.'@'.$object->module, (is_object($object->thirdparty) ? $object->thirdparty->id : 0), 1, '', $MAXEVENT, '', $morehtmlcenter);
-
-		print '</div></div>';
-	}
-
-	//Select mail models is same action as presend
-	if (GETPOST('modelselected')) {
-		$action = 'presend';
-	}
-
-	// Presend form
-	$modelmail = 'creneau';
-	$defaulttopic = 'InformationMessage';
-	$diroutput = $conf->scolarite->dir_output;
-	$trackid = 'creneau'.$object->id;
-
-	include DOL_DOCUMENT_ROOT.'/core/tpl/card_presend.tpl.php';
 }
 
 // End of page
