@@ -60,7 +60,7 @@ class Assignation extends CommonObject
 	/**
 	 * @var int  Does object support extrafields ? 0=No, 1=Yes
 	 */
-	public $isextrafieldmanaged = 1;
+	public $isextrafieldmanaged = 0;
 
 	/**
 	 * @var string String with name of icon for affectation. Must be the part after the 'object_' into object_affectation.png
@@ -106,10 +106,11 @@ class Assignation extends CommonObject
 	 * @var array  Array with all fields and their property. Do not use it as a static var. It may be modified by constructor.
 	 */
 
+
 	public $fields=array(
 		'rowid' => array('type'=>'integer', 'label'=>'TechnicalID', 'enabled'=>'1', 'position'=>1, 'notnull'=>1, 'visible'=>0, 'noteditable'=>'1', 'index'=>1, 'css'=>'left', 'comment'=>"Id"),
-		'fk_agent_id' => array('type'=>'integer:Agent:custom/management/class/agent.class.php:1', 'label'=>'Agent', 'enabled'=>'1', 'position'=>20, 'notnull'=>1, 'visible'=>1, 'index'=>1, 'searchall'=>1, 'showoncombobox'=>'1', 'validate'=>'1', 'comment'=>"Reference of object", 'css'=>'maxwidth200',),
-		'fk_creneau_id' => array('type'=>'integer:Creneau:custom/scolarite/class/creneau.class.php:1', 'label'=>'Créneau', 'enabled'=>'1', 'position'=>30, 'notnull'=>0, 'visible'=>1, 'searchall'=>1, 'css'=>'maxwidth300', 'cssview'=>'wordbreak', 'help'=>"Help text", 'showoncombobox'=>'1', 'validate'=>'1',),		'status' => array('type'=>'integer', 'label'=>'Status', 'enabled'=>'1', 'position'=>2000, 'notnull'=>1, 'visible'=>2, 'index'=>1, 'arrayofkeyval'=>array('0'=>'Brouillon', '4'=>'Valid&eacute;', '9'=>'Annul&eacute;'), 'validate'=>'1',),
+		'fk_agent' => array('type'=>'integer:Agent:custom/management/class/agent.class.php:1', 'label'=>'Agent', 'enabled'=>'1', 'position'=>20, 'notnull'=>1, 'visible'=>1, 'index'=>1, 'searchall'=>1, 'showoncombobox'=>'1', 'validate'=>'1', 'comment'=>"Reference of object", 'css'=>'maxwidth200',),
+		'fk_creneau' => array('type'=>'integer:Creneau:custom/scolarite/class/creneau.class.php:1','noteditable'=>1, 'label'=>'Créneau', 'enabled'=>'1', 'position'=>30, 'notnull'=>0, 'visible'=>1, 'searchall'=>1, 'css'=>'maxwidth300', 'cssview'=>'wordbreak', 'help'=>"Help text", 'showoncombobox'=>'1', 'validate'=>'1',),
 		'status' => array('type'=>'integer', 'label'=>'Status', 'enabled'=>'1', 'position'=>2000, 'notnull'=>1, 'visible'=>2, 'index'=>1, 'arrayofkeyval'=>array('0'=>'Brouillon', '4'=>'Valid&eacute;', '9'=>'Annul&eacute;'), 'validate'=>'1',),
 	);
 
@@ -192,6 +193,7 @@ class Assignation extends CommonObject
 			$this->fields['myfield']['noteditable'] = 0;
 		}*/
 
+
 		// Unset fields that are disabled
 		foreach ($this->fields as $key => $val) {
 			if (isset($val['enabled']) && empty($val['enabled'])) {
@@ -225,7 +227,7 @@ class Assignation extends CommonObject
 		$resCreate = $this->createCommon($user, $notrigger);
 
 		$creneauClass = new Creneau($this->db);
-		$creneauClass->fetch($this->fk_creneau_id);
+		$creneauClass->fetch($this->fk_creneau);
 		$creneauClass->nom_creneau = $creneauClass->printFullNameCreneau();
 		$resUpdate = $creneauClass->update($user);
 
@@ -347,9 +349,9 @@ class Assignation extends CommonObject
 	 * @param string $ref  Ref
 	 * @return int         <0 if KO, 0 if not found, >0 if OK
 	 */
-	public function fetch($id, $ref = null)
+	public function fetch($id, $ref = null,$moresql = null)
 	{
-		$result = $this->fetchCommon($id, $ref);
+		$result = $this->fetchCommon($id, $ref, $moresql);
 		if ($result > 0 && !empty($this->table_element_line)) {
 			$this->fetchLines();
 		}
@@ -411,8 +413,8 @@ class Assignation extends CommonObject
 					$sqlwhere[] = $key." = '".$this->db->idate($value)."'";
 				} elseif ($key == 'customsql') {
 					$sqlwhere[] = $value;
-				} elseif (!str_contains($value, '%')) {
-					$sqlwhere[] = $key." IN (".$this->db->sanitize($this->db->escape($value)).")";
+				} elseif (strpos($value, '%') === false) {
+					$sqlwhere[] = $key . ' IN (' . $this->db->sanitize($this->db->escape($value)) . ')';
 				} else {
 					$sqlwhere[] = $key." LIKE '%".$this->db->escape($value)."%'";
 				}

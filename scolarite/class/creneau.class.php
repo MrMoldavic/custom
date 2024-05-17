@@ -1698,16 +1698,15 @@ class Creneau extends CommonObject
 
 		foreach ($creneaux as $creneau)
 		{
-			if($creneau->fk_prof_1)
-			{
-				$assignationClass = new Assignation($this->db);
-				$assignationClass->fk_creneau = $creneau->id;
-				$assignationClass->fk_agent = $creneau->fk_prof_1;
-				$assignationClass->status = Assignation::STATUS_VALIDATED;
-				$resultCreate = $assignationClass->create($user);
 
-				if($resultCreate < 0) $error++;
-			}
+			$assignationClass = new Assignation($this->db);
+			$assignationClass->fk_creneau = $creneau->id;
+			$assignationClass->fk_agent = $creneau->fk_prof_1;
+			$assignationClass->status = Assignation::STATUS_VALIDATED;
+			$resultCreate1 = $assignationClass->create($user);
+
+			if($resultCreate1 < 0) $error++;
+
 
 			if($creneau->fk_prof_2)
 			{
@@ -1715,9 +1714,9 @@ class Creneau extends CommonObject
 				$assignationClass->fk_creneau = $creneau->id;
 				$assignationClass->fk_agent = $creneau->fk_prof_2;
 				$assignationClass->status = Assignation::STATUS_VALIDATED;
-				$resultCreate = $assignationClass->create($user);
+				$resultCreate2 = $assignationClass->create($user);
 
-				if($resultCreate < 0) $error++;
+				if($resultCreate2 < 0) $error++;
 			}
 
 			if($creneau->fk_prof_3)
@@ -1726,9 +1725,9 @@ class Creneau extends CommonObject
 				$assignationClass->fk_creneau = $creneau->id;
 				$assignationClass->fk_agent = $creneau->fk_prof_3;
 				$assignationClass->status = Assignation::STATUS_VALIDATED;
-				$resultCreate = $assignationClass->create($user);
+				$resultCreate3 = $assignationClass->create($user);
 
-				if($resultCreate < 0) $error++;
+				if($resultCreate3 < 0) $error++;
 			}
 		}
 
