@@ -1762,7 +1762,7 @@ class Creneau extends CommonObject
 			foreach ($eleves as $eleve)
 			{
 				$appelClass = new Appel($this->db);
-				$existingAppelsEleves = $appelClass->fetchAll('','','','',array('customsql'=>" AND fk_creneau=$creneau->id AND fk_eleve=$eleve->id AND treated=1 AND date_creation LIKE '$dateAppel%'"));
+				$existingAppelsEleves = $appelClass->fetchAll('','','','',array('customsql'=>"fk_creneau=$creneau->id AND fk_eleve=$eleve->id AND treated=1 AND date_creation LIKE '$dateAppel%'"));
 				// Compte des appels existants pour les élèves
 				$appelsEleves += count($existingAppelsEleves);
 			}
@@ -1776,16 +1776,16 @@ class Creneau extends CommonObject
 			foreach ($assignations as $assignation)
 			{
 				$appelClass = new Appel($this->db);
-				$existingAppelsAssignations = $appelClass->fetchAll('','','','',array('customsql'=>" AND fk_creneau=$creneau->id AND fk_user=$assignation->fk_agent AND treated=1 AND date_creation LIKE '$dateAppel%'"));
+				$existingAppelsAssignations = $appelClass->fetchAll('','','','',array('customsql'=>"fk_creneau=$creneau->id AND fk_user=$assignation->fk_agent AND treated=1 AND date_creation LIKE '$dateAppel%'"));
 				// Compte des appels existants pour les professeurs
 				$appelsProfesseurs += count($existingAppelsAssignations);
 			}
-		}
 
-		// Condition pour valider si l'appel est complet ou non
-		if($appelsEleves == $countEleves && $appelsProfesseurs == $countProfesseurs && count($creneauDuJour) != 0 && $appelsProfesseurs != 0 && $appelsEleves != 0)
-		{
-			$nbAppelComplete += 1;
+			// Condition pour valider si l'appel est complet ou non
+			if($appelsEleves == $countEleves && $appelsProfesseurs == $countProfesseurs && count($countProfesseurs) != 0 && $appelsProfesseurs != 0 && $appelsEleves != 0)
+			{
+				$nbAppelComplete++;
+			}
 		}
 
 		return array(count($creneauDuJour), $countEleves, $countProfesseurs, $appelsEleves, $appelsProfesseurs, $nbAppelComplete);
