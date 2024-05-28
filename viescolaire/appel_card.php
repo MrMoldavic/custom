@@ -207,17 +207,24 @@ if ($action == 'create' && !$antenneId)
 // Affichage de la page principale d'appel
 if (($action == 'create' or $action == 'modifAppel' or $action == 'returnFromError') && $antenneId)
 {
+	$antenneClass = new Etablissement($db);
+	$creneauClass = new Creneau($db);
+
 	print load_fiche_titre('Nouvel appel', '', 'fa-house');
 
 	print '<a href="' . DOL_URL_ROOT . '/custom/viescolaire/appel_card.php?antenneId=' . $antenneId . '&allCreaneaux='. !(GETPOST('allCreaneaux', 'alpha') == true) .'&action=create">'.(!GETPOST('allCreaneaux', 'alpha') ? 'Afficher tous les créneaux' : 'Afficher seulement les créneaux de l\'heure actuelle').'</a><br>';
 
+	// Affichage du formulaire de changement d'heure
 	print $object->printChangeHourFormAppel($antenneId, $heureActuelle, $selectedDay);
 
+	//Fetch de l'antenne actuelle pour récupérer son diminutif
+	$antenneClass->fetch($antenneId);
+
 	// Recherche de tout les créneau à un jour donné, heure donnée, antenne donnée
-	$creneauClass = new Creneau($db);
+	$creneauCountList = $creneauClass->fetchAll('','',$action == 'modifAppel' ? 1 : 0,0,array('t.jour'=>$selectedDay,'customsql'=>($allCreaneaux ? 't.heure_debut <=82800' : 't.heure_debut ='.($heureActuelle*3600)." AND a.diminutif='$antenneClass->diminutif' ".($action == 'modifAppel' ? ' AND t.rowid=' .GETPOST('creneauid','int') : '')),'t.status'=>Creneau::STATUS_VALIDATED),'AND',' INNER JOIN '.MAIN_DB_PREFIX.'dispositif as d ON t.fk_dispositif=d.rowid INNER JOIN '.MAIN_DB_PREFIX.'etablissement as a ON d.fk_etablissement=a.rowid');
 
-	$creneauCountList = $creneauClass->fetchAll('','',$action == 'modifAppel' ? 1 : 0,0,array('t.jour'=>$selectedDay,'customsql'=>($allCreaneaux ? 't.heure_debut <=82800' : 't.heure_debut ='.$heureActuelle*3600),'t.status'=>Creneau::STATUS_VALIDATED),'AND',' INNER JOIN '.MAIN_DB_PREFIX.'dispositif as d ON t.fk_dispositif=d.rowid');
-
+	/*var_dump($creneauCountList);
+	var_dump($action);*/
 	if(count($creneauCountList) == 0) setEventMessage("Aucun cours à cette heure, changez d'horaire.",'errors');
 
 	$heureAffichage = 0;
@@ -246,7 +253,7 @@ if (($action == 'create' or $action == 'modifAppel' or $action == 'returnFromErr
 		$eleveClass = new Eleve($db);
 		$eleves = $eleveClass->fetchAll('','',0,0,array('a.fk_creneau'=>$val->id,'a.status'=>Affectation::STATUS_VALIDATED),'AND',' INNER JOIN ' .MAIN_DB_PREFIX. 'souhait as s ON s.fk_eleve = t.rowid INNER JOIN '.MAIN_DB_PREFIX.'affectation as a ON a.fk_souhait=s.rowid');
 
-		$isComplete = $object->isAppelComplete($val->id,$selectedDate,$eleves, $professeurs);
+		list($isComplete,$injustifiee,$treated,$agentClass) = $object->returnAllAppelInfos($val->id,$selectedDate,$eleves, $professeurs);
 
 
 		// Div accordéon d'un cours
@@ -257,13 +264,12 @@ if (($action == 'create' or $action == 'modifAppel' or $action == 'returnFromErr
 			print '<span class="badge  badge-status10 badge-status" style="color:white;">Appel en cours de modification</span> ';
 		} elseif (!$isComplete) {
 			print '<span class="badge  badge-status2 badge-status" style="color:white;">Appel non Fait</span> ';
-		} elseif ($isComplete && $injustifiee && !$treated) {
-			print '<span class="badge  badge-status4 badge-status" style="color:white;">Appel Fait par '.($errorFetchScola ? : $appelObjectCreat->firstname.' '.$appelObjectCreat->lastname).'</span>&nbsp;&nbsp;&nbsp;<span class="badge  badge-status8 badge-status" style="color:white;">'.$countInj.' Absence Injustifiée(s)</span>&nbsp;&nbsp;&nbsp;</span><span class="badge  badge-status4 badge-status" style="color:white;">Traitées</span> ';
-		} elseif ($isComplete && $injustifiee && $treated) {
-			print '<span class="badge  badge-status4 badge-status" style="color:white;">Appel Fait par '.($errorFetchScola ? : $appelObjectCreat->firstname.' '.$appelObjectCreat->lastname).'</span>&nbsp;&nbsp;&nbsp;<span class="badge  badge-status8 badge-status" style="color:white;">'.$countInj.' Absence Injustifiée(s)</span>&nbsp;&nbsp;&nbsp;</span><span class="badge  badge-status1 badge-status" style="color:white;">Non traitée(s) </span> ';
-		}
-		else {
-			print '<span class="badge  badge-status4 badge-status" style="color:white;">Appel Fait par '.($errorFetchScola ? : $appelObjectCreat->firstname.' '.$appelObjectCreat->lastname).'</span> ';
+		} elseif ($injustifiee > 0 && $treated) {
+			print '<span class="badge  badge-status4 badge-status" style="color:white;">Appel Fait par '.($agentClass->id ? $agentClass->firstname.' '.$agentClass->lastname : 'Une erreur est survenue.').'</span>&nbsp;&nbsp;&nbsp;<span class="badge  badge-status8 badge-status" style="color:white;">'.(int)$injustifiee.' Absence Injustifiée(s)</span>&nbsp;&nbsp;&nbsp;</span><span class="badge  badge-status4 badge-status" style="color:white;">Traitée(s)</span> ';
+		} elseif ($injustifiee > 0 && !$treated) {
+			print '<span class="badge  badge-status4 badge-status" style="color:white;">Appel Fait par '.($agentClass->id ? $agentClass->firstname.' '.$agentClass->lastname : 'Une erreur est survenue.').'</span>&nbsp;&nbsp;&nbsp;<span class="badge  badge-status8 badge-status" style="color:white;">'.(int)$injustifiee.' Absence Injustifiée(s)</span>&nbsp;&nbsp;&nbsp;</span><span class="badge  badge-status1 badge-status" style="color:white;">Non traitée(s) </span> ';
+		} else {
+			print '<span class="badge  badge-status4 badge-status" style="color:white;">Appel Fait par '.($agentClass->id ? $agentClass->firstname.' '.$agentClass->lastname : 'Une erreur est survenue.').'</span> ';
 		}
 		print $val->nom_creneau;
 		print '';
@@ -293,9 +299,8 @@ if (($action == 'create' or $action == 'modifAppel' or $action == 'returnFromErr
 
 			// Recherche d'un appel existant pour ce professeur à cette date sur ce créneau
 			$appelClassAgent = new Appel($db);
-			$appelClassAgent->fetch('',''," AND fk_creneau=$val->id AND fk_user=$professeur->id AND treated=1 AND date_creation LIKE '$selectedDate%'");
+			$appelClassAgent->fetch('',''," AND fk_creneau=$val->id AND fk_user=$professeur->id AND date_creation LIKE '$selectedDate%'");
 
-			//print '<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">';
 			print '<tr class="oddeven">';
 			print '<td>';
 			print '<a href="' . DOL_URL_ROOT . '/custom/management/agent_card.php?id=' . $professeur->id . '" target="_blank">' .'(Prof) '. $professeur->prenom . ' ' . $professeur->nom. '</a>';
@@ -307,13 +312,13 @@ if (($action == 'create' or $action == 'modifAppel' or $action == 'returnFromErr
 			print '<input type="radio"  ' . ($appelClassAgent->status == 'retard' ? 'checked' : '') . '  ' . ($isComplete == 1 && $action == 'modifAppel' && $creneauid == $val->id ? '' : ($isComplete ? 'disabled' : '')) . ' value="retard" name="prof' . $professeur->id . '" id="">&nbsp;<span class="badge  badge-status1 badge-status" style="color:white;">Retard</span>';
 			print '</td>';
 			print '<td>';
-			print '<input type="radio" ' . (isset($appelClassAgent) && $appelClassAgent->status == 'remplace' ? 'checked' : '') . '  ' . ($isComplete == 1 && $action == 'modifAppel' && $creneauid == $val->id ? '' : ($isComplete ? 'disabled' : '')) . ' value="remplace" name="prof' . $professeur->id . '" id="">&nbsp;<span class="badge  badge-status5 badge-status" style="color:white;">Remplacé</span>';
+			print '<input type="radio" ' . ($appelClassAgent->status == 'remplace' ? 'checked' : '') . '  ' . ($isComplete == 1 && $action == 'modifAppel' && $creneauid == $val->id ? '' : ($isComplete ? 'disabled' : '')) . ' value="remplace" name="prof' . $professeur->id . '" id="">&nbsp;<span class="badge  badge-status5 badge-status" style="color:white;">Remplacé</span>';
 			print '</td>';
 			print '<td>';
-			print '<input type="radio" ' . (isset($appelClassAgent) && $appelClassAgent->status == 'absent' ? 'checked' : '') . '  ' . ($isComplete == 1 && $action == 'modifAppel' && $creneauid == $val->id ? '' : ($isComplete ? 'disabled' : '')) . ' value="absent" name="prof' . $professeur->id . '" id="">&nbsp;<span class="badge  badge-status8 badge-status" style="color:white;">Absent</span>';
+			print '<input type="radio" ' . ($appelClassAgent->status == 'absent' ? 'checked' : '') . '  ' . ($isComplete == 1 && $action == 'modifAppel' && $creneauid == $val->id ? '' : ($isComplete ? 'disabled' : '')) . ' value="absent" name="prof' . $professeur->id . '" id="">&nbsp;<span class="badge  badge-status8 badge-status" style="color:white;">Absent</span>';
 			print '</td>';
 			print '<td>';
-			print 'Infos: <input type="text" ' . ($isComplete && $action == 'modifAppel' && $creneauid == $val->id ? '' : ($isComplete ? 'disabled' : '')) . ' name="infos' . $professeur->id . '" value="' . (isset($appelClassAgent) ? $appelClassAgent->justification : '') . '" id=""/>';
+			print 'Infos: <input type="text" ' . ($isComplete && $action == 'modifAppel' && $creneauid == $val->id ? '' : ($isComplete ? 'disabled' : '')) . ' name="infos' . $professeur->id . '" value="' . ($appelClassAgent->justification ?  : '') . '" id=""/>';
 			print '</td>';
 			print '</tr>';
 		}
@@ -329,7 +334,7 @@ if (($action == 'create' or $action == 'modifAppel' or $action == 'returnFromErr
 
 			// Recherche d'un appel existant pour cet élève à cette date sur ce créneau
 			$appelClassEleve = new Appel($db);
-			$appelClassEleve->fetch('',''," AND fk_creneau=$val->id AND fk_eleve=$eleve->id AND treated=1 AND date_creation LIKE '$selectedDate%'");
+			$appelClassEleve->fetch('',''," AND fk_creneau=$val->id AND fk_eleve=$eleve->id AND date_creation LIKE '$selectedDate%'");
 
 			print '<tr class="oddeven">';
 			print '<td>';

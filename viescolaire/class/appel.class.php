@@ -28,6 +28,7 @@ error_reporting(E_ALL);*/
 
 // Put here all includes required by your class file
 require_once DOL_DOCUMENT_ROOT.'/core/class/commonobject.class.php';
+require_once DOL_DOCUMENT_ROOT.'/user/class/user.class.php';
 require_once DOL_DOCUMENT_ROOT.'/custom/scolarite/class/creneau.class.php';
 require_once DOL_DOCUMENT_ROOT.'/custom/viescolaire/class/assignation.class.php';
 require_once DOL_DOCUMENT_ROOT.'/custom/management/class/agent.class.php';
@@ -181,7 +182,7 @@ class Appel extends CommonObject
 	//  * @var AppelLine[]     Array of subtable lines
 	//  */
 	// public $lines = array();
-
+	public $justification;
 
 
 	/**
@@ -299,7 +300,6 @@ class Appel extends CommonObject
 			foreach ($object->array_options as $key => $option) {
 				$shortkey = preg_replace('/options_/', '', $key);
 				if (!empty($extrafields->attributes[$this->table_element]['unique'][$shortkey])) {
-					//var_dump($key); var_dump($clonedObj->array_options[$key]); exit;
 					unset($object->array_options[$key]);
 				}
 			}
@@ -1214,11 +1214,14 @@ class Appel extends CommonObject
 		return $out;
 	}
 
-	public function isAppelComplete(int $creneauId, string $dateAppel, array $eleves, array $professeurs)
+	public function returnAllAppelInfos(int $creneauId, string $dateAppel, array $eleves, array $professeurs)
 	{
 		$isComplete = true;
+		$countAppelInj = 0;
+		$treated = true;
+		$appelScolaAgent = 0;
 
-		$conditions = " AND fk_creneau={$creneauId} AND treated=1 AND date_creation LIKE '{$dateAppel}%' ORDER BY rowid DESC";
+		$conditions = " AND fk_creneau={$creneauId} AND date_creation LIKE '{$dateAppel}%' ORDER BY rowid DESC";
 
 		foreach ([$eleves, $professeurs] as $type)
 		{
@@ -1230,10 +1233,24 @@ class Appel extends CommonObject
 				if (!$appelClass->id) {
 					$isComplete = false;
 				}
+
+				if ($appelClass->status == 'absenceI') {
+					$countAppelInj++;
+					if ($appelClass->justification == '') {
+						$treated = false;
+					}
+				}
+
+				if($appelScolaAgent != $appelClass->fk_user_creat) {
+					$appelScolaAgent = $appelClass->fk_user_creat;
+				}
 			}
 		}
 
-		return $isComplete;
+		$userClass = new User($this->db);
+		$userClass->fetch($appelScolaAgent);
+
+		return [$isComplete,$countAppelInj, $treated, $userClass];
 	}
 
 
@@ -1249,6 +1266,7 @@ class Appel extends CommonObject
 		// pour chaque élève, ajout ou update de l'appel
 		foreach ($eleves as $eleve)
 		{
+			// Fetch d'un potentiel appel déjà éxistant
 			$appelClass = new self($this->db);
 			$appelClass->fetch('',''," AND fk_creneau={$creneauId} AND fk_eleve=$eleve->id AND treated=1 AND date_creation LIKE '{$dateCreation}%' ORDER BY rowid DESC");
 
@@ -1257,20 +1275,19 @@ class Appel extends CommonObject
 			{
 				$appelClass->status = GETPOST('presence' . $eleve->id , 'alpha');
 				$appelClass->justification = str_replace("'",'`',GETPOST('infos' . $eleve->id, 'alpha'));
+				$appelClass->treated = (GETPOST('presence' . $eleve->id, 'alpha') == 'absenceI' && !empty($appelClass->justification)) || GETPOST('presence' . $eleve->id, 'alpha') != 'absenceI' ? 1 : 0;
 				$resUpdateAppel = $appelClass->update($user);
 
 				if($resUpdateAppel < 0) $resFunction--;
 			} else {
-
+				// Sinon on en crée un
 				$appelClass = new self($this->db);
 				$appelClass->fk_creneau = $creneauId;
 				$appelClass->fk_eleve = $eleve->id;
 				$appelClass->justification = str_replace("'",'`',GETPOST('infos' . $eleve->id, 'alpha'));
 				$appelClass->date_creation = $dateCreation;
 				$appelClass->status = GETPOST('presence' . $eleve->id, 'alpha');
-				$appelClass->treated = 1;
-
-
+				$appelClass->treated = (GETPOST('presence' . $eleve->id, 'alpha') == 'absenceI' && !empty($appelClass->justification)) || GETPOST('presence' . $eleve->id, 'alpha') != 'absenceI' ? 1 : 0;
 
 				$resultInsertAppel = $appelClass->create($user);
 
@@ -1278,6 +1295,7 @@ class Appel extends CommonObject
 			}
 		}
 
+		// Return 0 pour OK et négatif si erreur
 		return $resFunction;
 	}
 
@@ -1303,6 +1321,7 @@ class Appel extends CommonObject
 			{
 				$appelClass->status = GETPOST('prof' . $professeur->id, 'alpha');
 				$appelClass->justification = str_replace("'",'`',GETPOST('infos' . $professeur->id, 'alpha'));
+				$appelClass->treated = (GETPOST('prof' . $professeur->id, 'alpha') == 'absenceI' && !empty($appelClass->justification)) || GETPOST('prof' . $professeur->id, 'alpha') != 'absenceI' ? 1 : 0;
 				$resUpdateAppel = $appelClass->update($user);
 
 				if($resUpdateAppel < 0) $resFunction--;
@@ -1314,7 +1333,8 @@ class Appel extends CommonObject
 				$appelClass->justification = str_replace("'",'`',GETPOST('infos' . $professeur->id, 'alpha'));
 				$appelClass->date_creation = $dateCreation;
 				$appelClass->status =  GETPOST('prof' . $professeur->id, 'alpha');
-				$appelClass->treated = 1;
+				$appelClass->treated = (GETPOST('prof' . $professeur->id, 'alpha') == 'absenceI' && !empty($appelClass->justification)) || GETPOST('prof' . $professeur->id, 'alpha') != 'absenceI' ? 1 : 0;
+
 
 				$resultInsertAppel = $appelClass->create($user);
 
