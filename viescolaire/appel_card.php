@@ -255,7 +255,6 @@ if (($action == 'create' or $action == 'modifAppel' or $action == 'returnFromErr
 
 		list($isComplete,$injustifiee,$treated,$agentClass) = $object->returnAllAppelInfos($val->id,$selectedDate,$eleves, $professeurs);
 
-
 		// Div accordéon d'un cours
 		print '<div class="appel-accordion'.(($action == 'modifAppel' || $action == 'returnFromError') && ($creneauid == $val->id) ? '-opened' : '').'" id="appel-' . $val->id . '">';
 		print '<h3>';

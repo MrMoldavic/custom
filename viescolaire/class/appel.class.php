@@ -1253,7 +1253,6 @@ class Appel extends CommonObject
 		return [$isComplete,$countAppelInj, $treated, $userClass];
 	}
 
-
 	/**
 	 *  Insert ou update tout les appels envoyé depuis un formulaire pour les élèves
 	 *
