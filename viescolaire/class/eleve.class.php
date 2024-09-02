@@ -25,6 +25,8 @@
 // Put here all includes required by your class file
 include_once DOL_DOCUMENT_ROOT . '/core/class/commonobject.class.php';
 include_once DOL_DOCUMENT_ROOT . '/core/class/workboardresponse.class.php';
+
+
 /**
  * Class for Eleve
  */
@@ -668,13 +670,6 @@ class Eleve extends CommonObject
 			return 0;
 		}
 
-		/*if (! ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->viescolaire->write))
-		 || (! empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->viescolaire->viescolaire_advance->validate))))
-		 {
-		 $this->error='Permission denied';
-		 return -1;
-		 }*/
-
 		return $this->setStatusCommon($user, self::STATUS_DRAFT, $notrigger, 'ELEVE_UNVALIDATE');
 	}
 
@@ -692,13 +687,6 @@ class Eleve extends CommonObject
 			return 0;
 		}
 
-		/*if (! ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->viescolaire->write))
-		 || (! empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->viescolaire->viescolaire_advance->validate))))
-		 {
-		 $this->error='Permission denied';
-		 return -1;
-		 }*/
-
 		return $this->setStatusCommon($user, self::STATUS_CANCELED, $notrigger, 'ELEVE_CANCEL');
 	}
 
@@ -715,13 +703,6 @@ class Eleve extends CommonObject
 		if ($this->status != self::STATUS_CANCELED) {
 			return 0;
 		}
-
-		/*if (! ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->viescolaire->write))
-		 || (! empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->viescolaire->viescolaire_advance->validate))))
-		 {
-		 $this->error='Permission denied';
-		 return -1;
-		 }*/
 
 		return $this->setStatusCommon($user, self::STATUS_VALIDATED, $notrigger, 'ELEVE_REOPEN');
 	}
@@ -863,10 +844,6 @@ class Eleve extends CommonObject
 
 			while ($obj = $this->db->fetch_object($resql)) {
 				$response->nbtodo++;
-
-				/*if ($this->db->jdate($obj->date_debut) < ($now - $conf->holiday->approve->warning_delay)) {
-					$response->nbtodolate++;
-				}*/
 			}
 
 			return $response;

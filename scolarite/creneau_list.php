@@ -444,14 +444,10 @@ if ($num == 1 && !empty($conf->global->MAIN_SEARCH_DIRECT_OPEN_IF_ONLY_ONE) && $
 	exit;
 }
 
-
-
 // Output page
 // --------------------------------------------------------------------
 
 llxHeader('', $title, $help_url, '', 0, 0, $morejs, $morecss, '', '');
-
-
 
 $arrayofselected = is_array($toselect) ? $toselect : array();
 
@@ -835,86 +831,26 @@ while ($i < $imaxinloop) {
 				if ($key == 'status') {
 					print $object->getLibStatut(5);
 				} elseif ($key == 'fk_instrument_enseigne') {
-					print dolGetButtonAction($object->showOutputField($val, $key, $object->$key, '') != "" ? $object->showOutputField($val, $key, $object->$key, '') : ($object->nom_groupe ? : 'Groupe sans nom'),'', 'danger','/custom/scolarite/creneau_card.php?id=' . $object->id, '', $permissiontoread);
+					$instrumentClass = new Instrument($db);
+					$instrumentClass->fetch($object->fk_instrument_enseigne);
+
+					print dolGetButtonAction($object->showOutputField($val, $key, $object->$key, '') != '' ? 'Cours de '.$instrumentClass->instrument : ($object->nom_groupe ? : 'Groupe sans nom'),'', 'danger','/custom/scolarite/creneau_card.php?id=' . $object->id, '', $permissiontoread);
 				} elseif ($key == 'nom_creneau'){
 					print $object->getNomUrl(1);
 				} elseif ($key == 'nombre_places'){
-
-					$count = 0;
-					$sql1 = "SELECT e.nom, e.prenom,e.rowid FROM " . MAIN_DB_PREFIX . "souhait as s INNER JOIN " . MAIN_DB_PREFIX . "affectation as a ON a.fk_souhait = s.rowid INNER JOIN " . MAIN_DB_PREFIX . "eleve as e ON e.rowid = s.fk_eleve WHERE a.fk_creneau = " . $object->id . " AND a.status = 4";
-					$resqlAffectation1 = $db->query($sql1);
-
-					print '<span class="badge  badge-status'.($resqlAffectation1->num_rows == intval($object->showOutputField($val, $key, $object->$key, '')) ? '8' : '4').' badge-status" style="color:white;">'.$resqlAffectation1->num_rows.'/'.$object->showOutputField($val, $key, $object->$key, '').'</span>';
-
-
+					print '<span class="badge  badge-status'.($object->printElevesFromCreneau($object->id)[1] == (int) $object->showOutputField($val, $key, $object->$key, '') ? '8' : '4').' badge-status" style="color:white;">'.$object->printElevesFromCreneau($object->id)[1].'/'.$object->showOutputField($val, $key, $object->$key, '').'</span>';
 				} elseif ($key == 'fk_dispositif'){
-
-					$diminutif = "SELECT diminutif FROM ".MAIN_DB_PREFIX."etablissement WHERE rowid = "."(SELECT fk_etablissement FROM ".MAIN_DB_PREFIX."dispositif WHERE rowid = ".$object->fk_dispositif.")";
-					$resqlDiminutif = $db->query($diminutif);
-					$objDiminutif = $db->fetch_object($resqlDiminutif);
-
-
-					$dispositif = "SELECT nom, rowid FROM ".MAIN_DB_PREFIX."dispositif WHERE rowid = ".$object->fk_dispositif;
-					$resqlDispositif = $db->query($dispositif);
-					$objDispositif = $db->fetch_object($resqlDispositif);
-
-					print $objDiminutif->diminutif.' - '.$objDispositif->nom;
+					$dispositifClass = new Dispositif($db);
+					$dispositifClass->fetch($object->fk_dispositif);
+					print $dispositifClass->nom;
 				} elseif ($key == 'fk_type_classe'){
-					$cours = "SELECT type FROM ".MAIN_DB_PREFIX."type_classe WHERE rowid =".$object->fk_type_classe;
-					$resqlCours = $db->query($cours);
-					$objCours= $db->fetch_object($resqlCours);
-
-					$niveau = "SELECT niveau FROM ".MAIN_DB_PREFIX."c_niveaux WHERE rowid =".$object->fk_niveau;
-					$resqlNiveau = $db->query($niveau);
-					$objNiveau= $db->fetch_object($resqlNiveau);
-
-					$instrument = "SELECT instrument FROM ".MAIN_DB_PREFIX."c_instrument_enseigne WHERE rowid =".$object->fk_instrument_enseigne;
-					$resqlInstrument = $db->query($instrument);
-					$objInstru = $db->fetch_object($resqlInstrument);
-
-
-					print '<span class="badge  badge-status'.($objCours->type == 'Cours' ? '4' : '1') .' badge-status">'.$objCours->type.'</span> - '.($objCours->type == "Cours" ? $objInstru->instrument : $object->nom_groupe).' - '.$objNiveau->niveau;
+					print $object->printTypeClasseCreneau();
 				} elseif ($key == 'professeurs') {
-
-					if($object->printProfesseursFromCreneau($object->id))
-					{
-						print $object->printProfesseursFromCreneau($object->id,'view');
-					}
-
+					print $object->printProfesseursFromCreneau($object->id,'view');
 				} elseif ($key == 'infos_creneau'){
-					$infos_creneau = "";
-
-					$Jour = "SELECT jour, rowid FROM ".MAIN_DB_PREFIX."c_jour WHERE rowid =".$object->jour;
-					$resqlJour = $db->query($Jour);
-					$objJour = $db->fetch_object($resqlJour);
-
-					$heure = "SELECT heure, rowid FROM ".MAIN_DB_PREFIX."c_heure WHERE rowid =".$object->heure_debut;
-					$resqlheure = $db->query($heure);
-					$objheure = $db->fetch_object($resqlheure);
-
-					$heureFin = "SELECT heure, rowid FROM ".MAIN_DB_PREFIX."c_heure WHERE rowid =".$object->heure_fin;
-					$resqlheureFin = $db->query($heureFin);
-					$objheureFin = $db->fetch_object($resqlheureFin);
-
-					if($object->fk_salle)
-					{
-						$Salle = "SELECT salle, rowid FROM ".MAIN_DB_PREFIX."salles WHERE rowid =".$object->fk_salle;
-						$resqlSalle = $db->query($Salle);
-						$objSalle = $db->fetch_object($resqlSalle);
-					}
-
-					$infos_creneau .= $objJour->jour.' | '.($object->heure_debut/3600).'h'.$object->minutes_debut.'-'.($object->heure_fin/3600).'h'.$object->minutes_fin.' | ';
-					$infos_creneau .= $object->fk_salle ? $objSalle->salle : "<span class='badge badge-danger'>Salle inconnue</span>";
-					print $infos_creneau;
-
+					print $object->printInfoCreneau();
 				} elseif ($key == 'eleves'){
-					$sql1 = "SELECT e.nom, e.prenom,e.rowid FROM " . MAIN_DB_PREFIX . "souhait as s INNER JOIN " . MAIN_DB_PREFIX . "affectation as a ON a.fk_souhait = s.rowid INNER JOIN " . MAIN_DB_PREFIX . "eleve as e ON e.rowid = s.fk_eleve WHERE a.fk_creneau = " . $object->id . " AND a.status = 4";
-					$resqlAffectation = $db->query($sql1);
-					foreach($resqlAffectation as $val)
-					{
-						print '<a href="' . DOL_URL_ROOT . '/custom/viescolaire/eleve_card.php?id=' . $val['rowid'] . '">' .'- '. $val['prenom'].' '.$val['nom'] . '</a>';
-						print '<br>';
-					}
+					print $object->printElevesFromCreneau($object->id)[0];
 				} else {
 					print $object->showOutputField($val, $key, $object->$key, '');
 				}

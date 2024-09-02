@@ -82,7 +82,9 @@ if (!$res) {
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formcompany.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formfile.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formprojet.class.php';
+
 dol_include_once('/scolarite/class/creneau.class.php');
+dol_include_once('/scolarite/class/annee.class.php');
 dol_include_once('/scolarite/class/etablissement.class.php');
 dol_include_once('/viescolaire/class/affectation.class.php');
 dol_include_once('/viescolaire/class/dictionary.class.php');
@@ -107,6 +109,7 @@ $backtopage = GETPOST('backtopage', 'alpha');
 $backtopageforcancel = GETPOST('backtopageforcancel', 'alpha');
 $lineid   = GETPOST('lineid', 'int');
 
+include DOL_DOCUMENT_ROOT.'/custom/viescolaire/core/actions/actions_creneau_viescolaire.inc.php';
 
 // Initialize technical objects
 $object = new Creneau($db);
@@ -155,10 +158,6 @@ if ($enablepermissioncheck) {
 $upload_dir = $conf->scolarite->multidir_output[isset($object->entity) ? $object->entity : 1].'/creneau';
 
 // Security check (enable the most restrictive one)
-//if ($user->socid > 0) accessforbidden();
-//if ($user->socid > 0) $socid = $user->socid;
-//$isdraft = (isset($object->status) && ($object->status == $object::STATUS_DRAFT) ? 1 : 0);
-//restrictedArea($user, $object->element, $object->id, $object->table_element, '', 'fk_soc', 'rowid', $isdraft);
 if (empty($conf->scolarite->enabled)) accessforbidden();
 if (!$permissiontoread) accessforbidden();
 
@@ -220,10 +219,6 @@ if (empty($reshook)) {
 	include DOL_DOCUMENT_ROOT.'/core/actions_sendmails.inc.php';
 }
 
-
-
-include DOL_DOCUMENT_ROOT.'/custom/viescolaire/core/actions/actions_creneau_viescolaire.inc.php';
-
 /*
  * View
  *
@@ -259,17 +254,13 @@ if ($action == 'create') {
 
 	print dol_get_fiche_head(array(), '');
 
-	// Set some default values
-	//if (! GETPOSTISSET('fieldname')) $_POST['fieldname'] = 'myvalue';
-
 	print '<table class="border centpercent tableforfieldcreate">'."\n";
 
-	$anneScolaire = 'SELECT annee,annee_actuelle,rowid FROM ' .MAIN_DB_PREFIX. 'c_annee_scolaire WHERE active = 1 AND annee_actuelle = 1';
-	$resqlAnneeScolaire = $db->query($anneScolaire);
-	$objAnneScolaire = $db->fetch_object($resqlAnneeScolaire);
+	$anneeClass = new Annee($db);
+	$anneeClass->fetch('','',' AND annee_actuelle=1');
 
 	if (!GETPOSTISSET('fk_type_classe')) $_POST['fk_type_classe'] = 1;
-	if (!GETPOSTISSET('fk_annee_scolaire')) $_POST['fk_annee_scolaire'] = $objAnneScolaire->rowid;
+	if (!GETPOSTISSET('fk_annee_scolaire')) $_POST['fk_annee_scolaire'] = $anneeClass->id;
 	// Common attributes
 	include DOL_DOCUMENT_ROOT.'/core/tpl/commonfields_add.tpl.php';
 
@@ -283,8 +274,6 @@ if ($action == 'create') {
 	print $form->buttonsSaveCancel('Create');
 
 	print '</form>';
-
-	//dol_set_focus('input[name="ref"]');
 }
 
 // Part to edit record
@@ -380,30 +369,11 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 
 
 	// Common attributes
-	//$keyforbreak='fieldkeytoswitchonsecondcolumn';	// We change column just before this field
-	//unset($object->fields['fk_project']);				// Hide field already shown in banner
-	//unset($object->fields['fk_soc']);					// Hide field already shown in banner
-
 	include DOL_DOCUMENT_ROOT.'/core/tpl/commonfields_view.tpl.php';
 
 	// Other attributes. Fields from hook formObjectOptions and Extrafields.
 	include DOL_DOCUMENT_ROOT.'/core/tpl/extrafields_view.tpl.php';
 	print '</table>';
-
-	/*print load_fiche_titre('Liste des élèves dans ce créneau:', '', 'fa-user');
-
-	$sql1 = 'SELECT s.fk_instru_enseigne,e.nom, e.prenom,e.rowid FROM ' . MAIN_DB_PREFIX . 'souhait as s INNER JOIN ' . MAIN_DB_PREFIX . 'affectation as a ON a.fk_souhait = s.rowid INNER JOIN ' . MAIN_DB_PREFIX . 'eleve as e ON e.rowid = s.fk_eleve WHERE a.fk_creneau = ' . $object->id . ' AND a.status = 4';
-	$resqlAffectation = $db->query($sql1);
-
-	foreach($resqlAffectation as $val)
-	{
-		$sqlIntstru = 'SELECT instrument FROM '.MAIN_DB_PREFIX .'c_instrument_enseigne WHERE rowid='.$val['fk_instru_enseigne'];
-		$resqlInstru = $db->query($sqlIntstru);
-		$objectInstru = $db->fetch_object($resqlInstru);
-
-		print '<a href="' . DOL_URL_ROOT . '/custom/viescolaire/eleve_card.php?id=' . $val['rowid'] . '">' .'- '. $val['nom'].' '.$val['prenom'].' / '.($objectInstru->instrument ? : 'Aucun instrument connu').'</a>';
-		print '<br>';
-	}*/
 
 
 	if($object->printProfesseursFromCreneau($object->id))
@@ -412,10 +382,10 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 		print $object->printProfesseursFromCreneau($object->id,$permissiontoadd ? 'edit' : 'view');
 	}
 
-	if($object->printElevesFromCreneau($object->id))
+	if($object->printElevesFromCreneau($object->id)[0])
 	{
 		print load_fiche_titre('Liste des élèves du créneau: ', '', 'fa-school');
-		print $object->printElevesFromCreneau($object->id);
+		print $object->printElevesFromCreneau($object->id)[0];
 	}
 
 	print '</div>';
@@ -457,7 +427,6 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 		}
 		print '</div>'."\n";
 	}
-
 }
 
 // End of page

@@ -122,12 +122,10 @@ class Creneau extends CommonObject
 		'rowid' => array('type'=>'integer(11)', 'label'=>'TechnicalID', 'enabled'=>'1', 'position'=>1, 'notnull'=>1, 'visible'=>2, 'noteditable'=>'1', 'index'=>1, 'css'=>'left', 'comment'=>"Id"),
 		'fk_dispositif' => array('type'=>'integer:Dispositif:custom/scolarite/class/dispositif.class.php', 'label'=>'Dispositif', 'enabled'=>'1', 'position'=>1, 'notnull'=>1, 'visible'=>1, 'index'=>1, 'searchall'=>1, 'css'=>'maxwidth300', 'validate'=>'1',),
 		'fk_type_classe' => array('type'=>'sellist:type_classe:type', 'label'=>'Type de classe', 'enabled'=>'1', 'position'=>2, 'notnull'=>1, 'visible'=>1, 'searchall'=>1, 'css'=>'minwidth300', 'validate'=>'1',),
-		'fk_instrument_enseigne' => array('type'=>'sellist:c_instrument_enseigne:instrument', 'label'=>'Instrument enseigné', 'enabled'=>'1', 'position'=>1, 'notnull'=>0, 'visible'=>1, 'help'=>"Laissez vide si groupe",),
-		'fk_niveau' => array('type'=>'sellist:c_niveaux:niveau', 'label'=>'Niveau du cours/groupe', 'enabled'=>'1', 'position'=>2, 'notnull'=>1, 'visible'=>3, 'help'=>"Niveau des élèves dans le groupe",),
-		//'fk_prof_1' => array('type'=>'integer:Agent:custom/management/class/agent.class.php:1:(t.status!=9)', 'label'=>'Agent n°1', 'enabled'=>'1', 'position'=>5, 'notnull'=>0, 'visible'=>1, 'css'=>'maxwidth200',),
-		//'fk_prof_2' => array('type'=>'integer:Agent:custom/management/class/agent.class.php:1:(t.status!=9)', 'label'=>'Agent n°2', 'enabled'=>'1', 'position'=>6, 'notnull'=>0, 'visible'=>1, 'css'=>'maxwidth200',),
-		//'fk_prof_3' => array('type'=>'integer:Agent:custom/management/class/agent.class.php:1:(t.status!=9)', 'label'=>'Agent n°3', 'enabled'=>'1', 'position'=>7, 'notnull'=>0, 'visible'=>1, 'css'=>'maxwidth200',),
+		'fk_instrument_enseigne' => array('type'=>'integer:Instrument:custom/organisation/class/instrument.class.php:instrument', 'label'=>'Instrument enseigné', 'enabled'=>'1', 'position'=>1, 'notnull'=>0, 'visible'=>1, 'help'=>"Laissez vide si groupe",'css'=>'maxwidth200'),
+		'fk_niveau' => array('type'=>'sellist:c_niveaux:niveau', 'label'=>'Niveau du cours/groupe', 'enabled'=>'1', 'position'=>2, 'notnull'=>0, 'visible'=>3, 'help'=>"Niveau des élèves dans le groupe",),
 		'professeurs' => array('type'=>'varchar(255)', 'label'=>'Agents', 'enabled'=>'1', 'position'=>4, 'notnull'=>0, 'visible'=>2, 'css'=>'minwidth200', 'validate'=>'1',),
+		'eleves' => array('type'=>'varchar(255)', 'label'=>'Elèves', 'enabled'=>'1', 'position'=>5, 'notnull'=>0, 'visible'=>2, 'css'=>'minwidth200', 'validate'=>'1',),
 		'infos_creneau' => array('type'=>'varchar(255)', 'label'=>'Infos créneau', 'enabled'=>'1', 'position'=>3, 'notnull'=>0, 'visible'=>2, 'searchall'=>1, 'css'=>'minwidth300', 'validate'=>'1',),
 		'nombre_places' => array('type'=>'integer', 'label'=>'Nombres de places', 'enabled'=>'1', 'position'=>3, 'notnull'=>1, 'visible'=>1, 'css'=>'maxwidth400', 'validate'=>'1',),
 		'fk_annee_scolaire' => array('type'=>'sellist:c_annee_scolaire:annee', 'label'=>'Année Scolaire', 'enabled'=>'1', 'position'=>7, 'notnull'=>1, 'visible'=>-1,),
@@ -234,12 +232,6 @@ class Creneau extends CommonObject
 			$this->fields['entity']['enabled'] = 0;
 		}
 
-		// Example to show how to set values of fields definition dynamically
-		/*if ($user->rights->scolarite->creneau->read) {
-			$this->fields['myfield']['visible'] = 1;
-			$this->fields['myfield']['noteditable'] = 0;
-		}*/
-
 		// Unset fields that are disabled
 		foreach ($this->fields as $key => $val) {
 			if (isset($val['enabled']) && empty($val['enabled'])) {
@@ -270,46 +262,23 @@ class Creneau extends CommonObject
 	{
 		if($this->fk_salle)
 		{
-			$existingCreneau = "SELECT rowid FROM ".MAIN_DB_PREFIX."creneau WHERE fk_salle=".$this->fk_salle." AND heure_debut=".$this->heure_debut." AND fk_annee_scolaire =".$this->fk_annee_scolaire." AND jour=".$this->jour;
-			$resqlExistingCreneau = $this->db->query($existingCreneau);
-			if($resqlExistingCreneau->num_rows > 0)
+			$existingCreneau = $this->fetchAll('','',0,0,array('fk_salle'=>(int) $this->fk_salle,'heure_debut'=>(int) $this->heure_debut,'fk_annee_scolaire'=>(int) $this->fk_annee_scolaire,'jour'=>(int) $this->jour));
+
+			if(!empty($existingCreneau))
 			{
 				return setEventMessage('Désolé, cette salle est déjà utilisée à cet horaire.','errors');
 			}
 		}
 
-		if($this->fk_prof_1 != NULL)
-		{
-			$profCours = "SELECT c.fk_prof_1,c.fk_prof_2,c.fk_prof_3,c.rowid FROM ".MAIN_DB_PREFIX."creneau as c WHERE c.heure_debut =".$this->heure_debut." AND c.jour=".$this->jour." AND fk_annee_scolaire =".$this->fk_annee_scolaire;
-			$profCours .= " AND ((c.fk_prof_1=".$this->fk_prof_1." OR c.fk_prof_2=".$this->fk_prof_1." OR c.fk_prof_3=".$this->fk_prof_1.")";
-			if($this->fk_prof_2 != NULL) $profCours .= " OR (c.fk_prof_1=".$this->fk_prof_2." OR c.fk_prof_2=".$this->fk_prof_2." OR c.fk_prof_3=".$this->fk_prof_2.")";
-			if($this->fk_prof_3 != NULL) $profCours .= " OR (c.fk_prof_1=".$this->fk_prof_3." OR c.fk_prof_2=".$this->fk_prof_3." OR c.fk_prof_3=".$this->fk_prof_3.")";
-			$profCours .= ")";
-			$resqlProfsCours = $this->db->query($profCours);
-
-			if($resqlProfsCours->num_rows > 0)
-			{
-				return setEventMessage('Désolé, un des professeur séléctionné à déjà cours à cette heure-ci.','errors');
-			}
-		}
-
-		if(!$this->nom_groupe && !$this->fk_instrument_enseigne)
-		{
-			return setEventMessage('Nom de groupe ou un instrument enseigné obligatoire.','errors');
-		}
-		elseif(intval($this->nombre_places) == 0)
+		if((int)$this->nombre_places == 0)
 		{
 			return setEventMessage('Veuillez choisir un nombre de place valide.','errors');
 		}
-		elseif(intval($this->fk_annee_scolaire) == 0)
+		elseif((int)$this->fk_annee_scolaire == 0)
 		{
 			return setEventMessage('Veuillez renseigner l\'année scolaire concernée.','errors');
 		}
-		elseif($this->nom_groupe && $this->fk_instrument_enseigne)
-		{
-			return setEventMessage('Veuillez choisir entre nom de groupe et instrument.','errors');
-		}
-		elseif(!$this->fk_niveau || !$this->heure_debut || !$this->heure_fin || !$this->jour || !$this->fk_type_classe)
+		elseif(!$this->heure_debut || !$this->heure_fin || !$this->jour || !$this->fk_type_classe)
 		{
 			return setEventMessage('Des données sont manquantes.','errors');
 		}
@@ -317,182 +286,18 @@ class Creneau extends CommonObject
 		{
 			return setEventMessage('Veuillez chosir des horaires valides','errors');
 		}
+		elseif($this->nom_groupe && $this->fk_instrument_enseigne)
+		{
+			return setEventMessage('Veuillez chosir entre groupe et cours d\'instrument.','errors');
+		}
 		else
 		{
-
-
-			if(!$this->nom_groupe)
-			{
-				$diminutif = "SELECT d.diminutif FROM ".MAIN_DB_PREFIX."etablissement as d WHERE d.rowid=".("(SELECT i.fk_etablissement FROM ".MAIN_DB_PREFIX."dispositif as i WHERE i.rowid =".$this->fk_dispositif.")");
-				$resql = $this->db->query($diminutif);
-				$object = $this->db->fetch_object($resql);
-
-				$this->nom_creneau = $object->diminutif . '-';
-
-				$instrument_enseigne = "SELECT i.instrument FROM ".MAIN_DB_PREFIX."c_instrument_enseigne as i WHERE i.rowid =".$this->fk_instrument_enseigne;
-				$resql = $this->db->query($instrument_enseigne);
-				$object = $this->db->fetch_object($resql);
-
-				$this->nom_creneau .= $object->instrument . '-';
-
-				$niveau = "SELECT n.niveau FROM ".MAIN_DB_PREFIX."c_niveaux as n WHERE n.rowid =".$this->fk_niveau;
-				$resql = $this->db->query($niveau);
-				$object = $this->db->fetch_object($resql);
-
-				$this->nom_creneau .= $object->niveau . '-';
-
-				$jour = "SELECT j.jour FROM ".MAIN_DB_PREFIX."c_jour as j WHERE j.rowid =".$this->jour;
-				$resql = $this->db->query($jour);
-				$object = $this->db->fetch_object($resql);
-
-				$this->nom_creneau .= $object->jour . '-';
-
-				/*$heure = "SELECT h.heure FROM ".MAIN_DB_PREFIX."c_heure as h WHERE h.rowid =".$this->hour_debut;
-				$resql = $this->db->query($heure);
-				$object = $this->db->fetch_object($resql);*/
-
-
-				if(!$this->minutes_debut)
-				{
-					$this->nom_creneau .= $object->heure. 'h00-';
-					$this->minutes_debut = "00";
-				}
-				else
-				{
-					$this->nom_creneau .= $object->heure. 'h'.$this->minutes_debut.'-';
-				}
-
-				if(!$this->minutes_fin)
-				{
-					$this->minutes_fin = "00";
-				}
-
-				if($this->fk_prof_1 != NULL)
-				{
-					$prof = "SELECT p.nom FROM ".MAIN_DB_PREFIX."management_agent as p WHERE p.rowid =".$this->fk_prof_1;
-					$resql = $this->db->query($prof);
-					$object = $this->db->fetch_object($resql);
-
-					$this->nom_creneau .= $object->nom;
-				}
-
-				$this->status = 4;
-
-			}
-			else
-			{
-
-				$diminutif = "SELECT d.diminutif FROM ".MAIN_DB_PREFIX."etablissement as d WHERE d.rowid=".("(SELECT i.fk_etablissement FROM ".MAIN_DB_PREFIX."dispositif as i WHERE i.rowid =".$this->fk_dispositif.")");
-				$resql = $this->db->query($diminutif);
-				$object = $this->db->fetch_object($resql);
-
-				$this->nom_creneau = $object->diminutif . '-'.$this->nom_groupe.'-';
-
-				$niveau = "SELECT n.niveau FROM ".MAIN_DB_PREFIX."c_niveaux as n WHERE n.rowid =".$this->fk_niveau;
-				$resql = $this->db->query($niveau);
-				$object = $this->db->fetch_object($resql);
-
-				$this->nom_creneau .= $object->niveau . '-';
-
-				$jour = "SELECT j.jour FROM ".MAIN_DB_PREFIX."c_jour as j WHERE j.rowid =".$this->jour;
-				$resql = $this->db->query($jour);
-				$object = $this->db->fetch_object($resql);
-
-				$this->nom_creneau .= $object->jour . '-';
-
-				$heure = "SELECT h.heure FROM ".MAIN_DB_PREFIX."c_heure as h WHERE h.rowid =".$this->heure_debut;
-				$resql = $this->db->query($heure);
-				$object = $this->db->fetch_object($resql);
-
-				if(!$this->minutes_debut)
-				{
-					$this->nom_creneau .= $object->heure. 'h00-';
-					$this->minutes_debut = "00";
-				}
-				else
-				{
-					$this->nom_creneau .= $object->heure. 'h'.$this->minutes_debut.'-';
-				}
-
-				if(!$this->minutes_fin)
-				{
-					$this->minutes_fin = "00";
-				}
-
-				if($this->fk_prof_1 != NULL)
-				{
-					$prof = "SELECT p.nom,p.prenom FROM ".MAIN_DB_PREFIX."management_agent as p WHERE p.rowid =".$this->fk_prof_1;
-					$resql = $this->db->query($prof);
-					$object = $this->db->fetch_object($resql);
-
-					$this->nom_creneau .= $object->prenom.'-'.$object->nom;
-				}
-			}
-
-			$affectation = "SELECT s.fk_souhait FROM ".MAIN_DB_PREFIX."affectation as s WHERE s.fk_creneau=".$this->id." AND date_fin IS NULL";
-			$resqlAffectation = $this->db->query($affectation);
-
-			foreach($resqlAffectation as $val)
-			{
-				$eleve = "SELECT e.nom,e.prenom,e.rowid FROM ".MAIN_DB_PREFIX."eleve as e WHERE e.rowid=".("(SELECT s.fk_eleve FROM ".MAIN_DB_PREFIX."souhait as s WHERE s.rowid =".$val['fk_souhait'].")");
-				$resqlEleve = $this->db->query($eleve);
-
-				foreach($resqlEleve as $res)
-				{
-					$this->eleves .= $res['rowid']."\n";
-				}
-			}
-
-			if($this->fk_salle)
-			{
-				$salle = "SELECT s.salle FROM ".MAIN_DB_PREFIX."salles as s WHERE s.rowid =".$this->fk_salle;
-				$resql = $this->db->query($salle);
-				$object = $this->db->fetch_object($resql);
-
-				$this->nom_creneau .= "-".$object->salle;
-			}
-
-
-			$professeur = "";
-
-			if($this->fk_prof_1 != NULL)
-			{
-				$sqlProf1 = "SELECT prenom,nom,rowid FROM ".MAIN_DB_PREFIX."management_agent WHERE rowid= ".$this->fk_prof_1;
-				$resqlProf1 = $this->db->query($sqlProf1);
-				$objProf1 = $this->db->fetch_object($resqlProf1);
-
-				$professeur .= $objProf1->prenom.' '.$objProf1->nom.' ';
-			}
-
-			if($this->fk_prof_2 != NULL)
-			{
-				$sqlProf2 = "SELECT prenom,nom,rowid FROM ".MAIN_DB_PREFIX."management_agent WHERE rowid= ".$this->fk_prof_2;
-				$resqlProf2 = $this->db->query($sqlProf2);
-				$objProf2 = $this->db->fetch_object($resqlProf2);
-
-				$professeur .= $objProf2->prenom.' '.$objProf2->nom.' ';
-			}
-
-			if($this->fk_prof_3 != NULL)
-			{
-				$sqlProf3 = "SELECT prenom,nom,rowid FROM ".MAIN_DB_PREFIX."management_agent WHERE rowid= ".$this->fk_prof_3;
-				$resqlProf3 = $this->db->query($sqlProf3);
-				$objProf3 = $this->db->fetch_object($resqlProf3);
-
-				$professeur .= $objProf3->prenom.' '.$objProf3->nom;
-			}
-
-			$this->professeurs = $professeur;
+			$this->nom_creneau = $this->printFullNameCreneau();
 
 			$this->status = 4;
 
-			$resultcreate = $this->createCommon($user, $notrigger);
-
-			// $resultvalidate = $this->validate($user, $notrigger);
-
-			return $resultcreate;
+			return $this->createCommon($user, $notrigger);
 		}
-
 	}
 
 	/**
@@ -519,9 +324,6 @@ class Creneau extends CommonObject
 			$object->fetchLines();
 		}
 
-		// get lines so they will be clone
-		//foreach($this->lines as $line)
-		//	$line->fetch_optionals();
 
 		// Reset some properties
 		unset($object->id);
@@ -551,7 +353,6 @@ class Creneau extends CommonObject
 			foreach ($object->array_options as $key => $option) {
 				$shortkey = preg_replace('/options_/', '', $key);
 				if (!empty($extrafields->attributes[$this->table_element]['unique'][$shortkey])) {
-					//var_dump($key); var_dump($clonedObj->array_options[$key]); exit;
 					unset($object->array_options[$key]);
 				}
 			}
@@ -607,14 +408,6 @@ class Creneau extends CommonObject
 		if ($result > 0 && !empty($this->table_element_line)) {
 			$this->fetchLines();
 		}
-
-		$sql = "SELECT COUNT(*) as total FROM ".MAIN_DB_PREFIX."affectation WHERE fk_creneau=".$id;
-		$sql .= " AND status = 4 AND DATE(NOW()) >= DATE(date_debut) AND (DATE(NOW()) <= DATE(date_fin) OR ISNULL(date_fin))";
-
-		$resql = $this->db->query($sql);
-		$object = $this->db->fetch_object($resql);
-
-		$place_restantes_cours = $this->nombre_places - $object->total;
 
 		return $result;
 	}
@@ -782,180 +575,42 @@ class Creneau extends CommonObject
 	 */
 	public function update(User $user, $notrigger = false)
 	{
-			if($this->fk_salle)
+		if($this->fk_salle)
+		{
+			$existingCreneau = $this->fetchAll('','',0,0,array('fk_salle'=>(int) $this->fk_salle,'heure_debut'=>(int) $this->heure_debut,'fk_annee_scolaire'=>(int) $this->fk_annee_scolaire,'jour'=>(int) $this->jour, 'customsql'=>" rowid != $this->id"));
+
+			if(!empty($existingCreneau))
 			{
-				$existingCreneau = "SELECT rowid FROM ".MAIN_DB_PREFIX."creneau WHERE fk_salle=".$this->fk_salle." AND heure_debut=".$this->heure_debut." AND jour=".$this->jour." AND rowid !=".$this->id." AND fk_annee_scolaire =".$this->fk_annee_scolaire;
-				$resqlExistingCreneau = $this->db->query($existingCreneau);
-				if($resqlExistingCreneau->num_rows > 0)
-				{
-					return setEventMessage('Désolé, cette salle est déjà utilisée à cet horaire.','errors');
-				}
+				return setEventMessage('Désolé, cette salle est déjà utilisée à cet horaire.','errors');
 			}
+		}
 
-			if($this->fk_prof_1)
-			{
-				$profCours = "SELECT c.fk_prof_1,c.fk_prof_2,c.fk_prof_3,c.rowid FROM ".MAIN_DB_PREFIX."creneau as c WHERE c.heure_debut =".$this->heure_debut." AND c.jour=".$this->jour." AND fk_annee_scolaire =".$this->fk_annee_scolaire." AND rowid !=".$this->id;
-				$profCours .= " AND ((c.fk_prof_1=".$this->fk_prof_1." OR c.fk_prof_2=".$this->fk_prof_1." OR c.fk_prof_3=".$this->fk_prof_1.")";
-				if($this->fk_prof_2 != NULL) $profCours .= " OR (c.fk_prof_1=".$this->fk_prof_2." OR c.fk_prof_2=".$this->fk_prof_2." OR c.fk_prof_3=".$this->fk_prof_2.")";
-				if($this->fk_prof_3 != NULL) $profCours .= " OR (c.fk_prof_1=".$this->fk_prof_3." OR c.fk_prof_2=".$this->fk_prof_3." OR c.fk_prof_3=".$this->fk_prof_3.")";
-				$profCours .= ")";
-				$resqlProfsCours = $this->db->query($profCours);
+		if((int)$this->nombre_places === 0)
+		{
+			return setEventMessage('Veuillez choisir un nombre de place valide.','errors');
+		}
+		elseif((int)$this->fk_annee_scolaire === 0)
+		{
+			return setEventMessage('Veuillez renseigner l\'année scolaire concernée.','errors');
+		}
+		elseif(!$this->heure_debut || !$this->heure_fin || !$this->jour || !$this->fk_type_classe)
+		{
+			return setEventMessage('Des données sont manquantes.','errors');
+		}
+		elseif(($this->heure_debut > $this->heure_fin) || ($this->heure_debut == $this->heure_fin))
+		{
+			return setEventMessage('Veuillez chosir des horaires valides','errors');
+		}
+		elseif($this->nom_groupe && $this->fk_instrument_enseigne)
+		{
+			return setEventMessage('Veuillez chosir entre groupe et cours d\'instrument.','errors');
+		}
+		else
+		{
+			$this->nom_creneau = $this->printFullNameCreneau();
 
-				if($resqlProfsCours->num_rows > 0)
-				{
-					return setEventMessage('Désolé, un des professeur séléctionné à déjà cours à cette heure-ci.','errors');
-				}
-			}
-
-
-			if(!$this->nom_groupe && !$this->fk_instrument_enseigne)
-			{
-				return setEventMessage('Nom de groupe ou un instrument enseigné obligatoire.','errors');
-			}
-			elseif($this->nom_groupe && $this->fk_instrument_enseigne)
-			{
-				return setEventMessage('Veuillez choisir entre nom de groupe et instrument.','errors');
-			}
-			elseif(!$this->fk_niveau || !$this->heure_debut || !$this->heure_fin || !$this->jour || !$this->fk_type_classe)
-			{
-				return setEventMessage('Des données sont manquantes.','errors');
-			}
-			elseif(($this->heure_debut > $this->heure_fin) || ($this->heure_debut == $this->heure_fin))
-			{
-				return setEventMessage('Veuillez chosir des horaires valides','errors');
-			}
-
-			$affectation = "SELECT s.fk_souhait FROM ".MAIN_DB_PREFIX."affectation as s WHERE s.fk_creneau=".$this->id." AND date_fin IS NULL";
-			$resqlAffectation = $this->db->query($affectation);
-
-			$this->eleves = "";
-			foreach($resqlAffectation as $val)
-			{
-				$eleve = "SELECT e.nom,e.prenom,e.rowid FROM ".MAIN_DB_PREFIX."eleve as e WHERE e.rowid=".("(SELECT s.fk_eleve FROM ".MAIN_DB_PREFIX."souhait as s WHERE s.rowid =".$val['fk_souhait'].")");
-				$resqlEleve = $this->db->query($eleve);
-
-				foreach($resqlEleve as $res)
-				{
-					$this->eleves .= $res['prenom'].' '.$res['nom'].' ';
-				}
-
-			}
-
-			if($this->fk_instrument_enseigne == "0")
-			{
-				$this->nom_creneau = "";
-
-				$diminutif = "SELECT d.diminutif FROM ".MAIN_DB_PREFIX."etablissement as d WHERE d.rowid=".("(SELECT i.fk_etablissement FROM ".MAIN_DB_PREFIX."dispositif as i WHERE i.rowid =".$this->fk_dispositif.")");
-				$resql = $this->db->query($diminutif);
-				$object = $this->db->fetch_object($resql);
-
-				$this->nom_creneau .= $object->diminutif . '-' . $this->nom_groupe . '-';
-
-			}
-			else
-			{
-
-				$this->nom_creneau = "";
-
-				$diminutif = "SELECT d.diminutif FROM ".MAIN_DB_PREFIX."etablissement as d WHERE d.rowid=".("(SELECT i.fk_etablissement FROM ".MAIN_DB_PREFIX."dispositif as i WHERE i.rowid =".$this->fk_dispositif.")");
-				$resql = $this->db->query($diminutif);
-				$object = $this->db->fetch_object($resql);
-
-				$this->nom_creneau .= $object->diminutif . '-';
-
-				$instrument_enseigne = "SELECT i.instrument FROM ".MAIN_DB_PREFIX."c_instrument_enseigne as i WHERE i.rowid =".$this->fk_instrument_enseigne;
-				$resqlinstru = $this->db->query($instrument_enseigne);
-				$object = $this->db->fetch_object($resqlinstru);
-
-				$this->nom_creneau .= $object->instrument . '-';
-
-			}
-
-
-			$niveau = "SELECT n.niveau FROM ".MAIN_DB_PREFIX."c_niveaux as n WHERE n.rowid =".$this->fk_niveau;
-			$resql = $this->db->query($niveau);
-			$object = $this->db->fetch_object($resql);
-
-			$this->nom_creneau .= $object->niveau . '-';
-
-			$jour = "SELECT j.jour FROM ".MAIN_DB_PREFIX."c_jour as j WHERE j.rowid =".$this->jour;
-			$resql = $this->db->query($jour);
-			$object = $this->db->fetch_object($resql);
-
-			$this->nom_creneau .= $object->jour . '-';
-
-			$heure = "SELECT h.heure FROM ".MAIN_DB_PREFIX."c_heure as h WHERE h.rowid =".$this->heure_debut;
-			$resql = $this->db->query($heure);
-			$object = $this->db->fetch_object($resql);
-
-
-			if(!$this->minutes_debut)
-			{
-				$this->nom_creneau .= ($this->heure_debut/3600). 'h00';
-				$this->minutes_debut = "00";
-			}
-			else
-			{
-				$this->nom_creneau .= ($this->heure_debut/3600). 'h'.$this->minutes_debut;
-			}
-
-			if(!$this->minutes_fin)
-			{
-				$this->minutes_fin = "00";
-			}
-
-			$professeur = "";
-			if($this->fk_prof_1 != NULL)
-			{
-				$prof = "SELECT p.nom,p.prenom FROM ".MAIN_DB_PREFIX."management_agent as p WHERE p.rowid =".$this->fk_prof_1;
-				$resql = $this->db->query($prof);
-				$object = $this->db->fetch_object($resql);
-
-				$this->nom_creneau .= "-".$object->prenom.'-'.$object->nom;
-				$professeur .= $object->prenom.' '.$object->nom.' ';
-			}
-
-
-			if($this->fk_salle)
-			{
-				$salle = "SELECT s.salle FROM ".MAIN_DB_PREFIX."salles as s WHERE s.rowid =".$this->fk_salle;
-				$resql = $this->db->query($salle);
-				$object = $this->db->fetch_object($resql);
-
-				$this->nom_creneau .= "-".$object->salle;
-			}
-
-
-			if($this->fk_prof_2 != NULL)
-			{
-				$sqlProf2 = "SELECT prenom,nom,rowid FROM ".MAIN_DB_PREFIX."management_agent WHERE rowid= ".$this->fk_prof_2;
-				$resqlProf2 = $this->db->query($sqlProf2);
-				$objProf2 = $this->db->fetch_object($resqlProf2);
-
-				$professeur .= $objProf2->prenom.' '.$objProf2->nom.' ';
-			}
-
-			if($this->fk_prof_3 != NULL)
-			{
-				$sqlProf3 = "SELECT prenom,nom,rowid FROM ".MAIN_DB_PREFIX."management_agent WHERE rowid= ".$this->fk_prof_3;
-				$resqlProf3 = $this->db->query($sqlProf3);
-				$objProf3 = $this->db->fetch_object($resqlProf3);
-
-				$professeur .= $objProf3->prenom.' '.$objProf3->nom;
-			}
-
-			$this->professeurs = $professeur;
-
-			//$this->nom_creneau = $this->printFullNameCreneau();
-
-			$resUpdate = $this->updateCommon($user, $notrigger);
-
-			if($resUpdate > 0) {
-				setEventMessage('Créneau mis à jour avec succès!');
-			} else {
-				setEventMessage('Une erreur est survenue.','errors');
-			}
-			return $resUpdate;
+			return $this->updateCommon($user, $notrigger);
+		}
 	}
 
 	/**
@@ -1010,14 +665,6 @@ class Creneau extends CommonObject
 			dol_syslog(get_class($this)."::validate action abandonned: already validated", LOG_WARNING);
 			return 0;
 		}
-
-		/*if (! ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->scolarite->creneau->write))
-		 || (! empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->scolarite->creneau->creneau_advance->validate))))
-		 {
-		 $this->error='NotEnoughPermissions';
-		 dol_syslog(get_class($this)."::valid ".$this->error, LOG_ERR);
-		 return -1;
-		 }*/
 
 		$now = dol_now();
 
@@ -1129,13 +776,6 @@ class Creneau extends CommonObject
 			return 0;
 		}
 
-		/*if (! ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->scolarite->write))
-		 || (! empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->scolarite->scolarite_advance->validate))))
-		 {
-		 $this->error='Permission denied';
-		 return -1;
-		 }*/
-
 		return $this->setStatusCommon($user, self::STATUS_DRAFT, $notrigger, 'CRENEAU_UNVALIDATE');
 	}
 
@@ -1153,13 +793,6 @@ class Creneau extends CommonObject
 			return 0;
 		}
 
-		/*if (! ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->scolarite->write))
-		 || (! empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->scolarite->scolarite_advance->validate))))
-		 {
-		 $this->error='Permission denied';
-		 return -1;
-		 }*/
-
 		return $this->setStatusCommon($user, self::STATUS_CANCELED, $notrigger, 'CRENEAU_CANCEL');
 	}
 
@@ -1176,13 +809,6 @@ class Creneau extends CommonObject
 		if ($this->status != self::STATUS_CANCELED) {
 			return 0;
 		}
-
-		/*if (! ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->scolarite->write))
-		 || (! empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->scolarite->scolarite_advance->validate))))
-		 {
-		 $this->error='Permission denied';
-		 return -1;
-		 }*/
 
 		return $this->setStatusCommon($user, self::STATUS_VALIDATED, $notrigger, 'CRENEAU_REOPEN');
 	}
@@ -1597,20 +1223,22 @@ class Creneau extends CommonObject
 		if($this->nom_groupe)
 		{
 			$out .= "$this->nom_groupe-";
-		} else {
+		} elseif($this->fk_instrument_enseigne) {
+
+
 			$instrumentClass = new Instrument($this->db);
 			$instrumentClass->fetch($this->fk_instrument_enseigne);
 
 			$out .= ucfirst($instrumentClass->instrument).'-';
+		} else {
+			$out .= '';
 		}
 
-		$resNiveau = $dictionaryClass->fetchByDictionary('c_niveaux', array('niveau'), $this->fk_niveau, 'rowid');
-		$out .= "$resNiveau->niveau-";
 
 		$resJour = $dictionaryClass->fetchByDictionary('c_jour', array('jour'), $this->jour, 'rowid');
 		$out .= "$resJour->jour-";
 
-		$out .= ($this->heure_debut / 3600) . 'h';
+		$out .= date('H:i',($this->heure_debut-3600)). 'h';
 
 		if ($this->fk_salle) {
 			$salleClass = new Salle($this->db);
@@ -1636,15 +1264,14 @@ class Creneau extends CommonObject
 		return $out;
 	}
 
-
-
 	/**
 	 * Retourne la liste des élèves depuis un créneau donné
 	 *
 	 * @return    string            liste brut (prénom-nom)
 	 */
-	public final function printElevesFromCreneau(int $creneauId)
+	final public function printElevesFromCreneau(int $creneauId): array
 	{
+		$count = 0;
 		$eleveClass = new Eleve($this->db);
 		$eleves = $eleveClass->fetchAll('', '', 0, 0, array('a.fk_creneau' => $creneauId, 'a.status' => Affectation::STATUS_VALIDATED), 'AND', ' INNER JOIN ' . MAIN_DB_PREFIX . 'souhait as s ON s.fk_eleve = t.rowid INNER JOIN ' . MAIN_DB_PREFIX . 'affectation as a ON a.fk_souhait=s.rowid');
 
@@ -1653,10 +1280,11 @@ class Creneau extends CommonObject
 		if ($eleves) {
 			foreach ($eleves as $eleve) {
 				$outEleves .= '- <a href=' . DOL_URL_ROOT . '/custom/viescolaire/eleve_card.php?id=' . $eleve->id . ">$eleve->prenom $eleve->nom</a><br>";
+				$count++;
 			}
 		} else $outEleves = 'Aucun élève dans ce créneau!';
 
-		return $outEleves;
+		return [$outEleves,$count];
 	}
 
 
@@ -1664,7 +1292,7 @@ class Creneau extends CommonObject
 	 *
 	 * @return    string            liste brut (prénom-nom)
 	 */
-	public final function printProfesseursFromCreneau(int $creneauId,string $viewMode = 'view')
+	final public function printProfesseursFromCreneau(int $creneauId, string $viewMode = 'view')
 	{
 		// Recherche des professeurs assignés à ce créneau
 		$assignationClass = new Assignation($this->db);
@@ -1687,6 +1315,65 @@ class Creneau extends CommonObject
 		} else $outProfs = 'Aucun professeur dans ce créneau!';
 
 		return $outProfs;
+	}
+
+	/**
+	 *
+	 * @return    string            infos du créneau pour affichage simplifié liste
+	 */
+	public function printInfoCreneau() {
+
+		$dictionaryClass = new Dictionary($this->db);
+		$jour = $dictionaryClass->fetchByDictionary('c_jour', array('jour','rowid'),$this->jour,'rowid','');
+
+		$infos_creneau = "$jour->jour | ";
+
+		$infos_creneau .= date('H:i',($this->heure_debut-3600)).' - '.date('H:i',($this->heure_fin-3600));
+
+		if($this->fk_salle) {
+			$salleClass = new Salle($this->db);
+			$salleClass->fetch($this->fk_salle);
+
+			$infos_creneau .= ' | '.$salleClass->salle;
+		} else {
+			$infos_creneau .= " | <span class='badge badge-danger'>Salle inconnue</span>";
+		}
+
+		return $infos_creneau;
+	}
+
+	/**
+	 *
+	 * @return    string            infos du type de classe du créneau pour affichage simplifié liste
+	 */
+	public function printTypeClasseCreneau() {
+
+		$typeClassOut = '';
+
+		$dictionaryClass = new Dictionary($this->db);
+		$typeClass = $dictionaryClass->fetchByDictionary('type_classe', array('type'),(int) $this->fk_type_classe,'rowid','');
+
+		$typeClassOut .= '<span class="badge  badge-status' . ($typeClass->type == 'Cours' ? '4' : '1') . ' badge-status">' . $typeClass->type . '</span> - ';
+
+		if($this->nom_groupe || $this->fk_instrument_enseigne) {
+			if($this->fk_instrument_enseigne) {
+				$instrumentClass = new Instrument($this->db);
+				$instrumentClass->fetch($this->fk_instrument_enseigne);
+
+				$typeClassOut .= "$instrumentClass->instrument";
+			} else {
+				$typeClassOut .= "$this->nom_groupe";
+			}
+
+		} else $typeClassOut .= 'Groupe ou instrument indéfini';
+
+		if($this->fk_niveau) {
+
+			$niveau = $dictionaryClass->fetchByDictionary('c_niveaux', array('niveau'),(int) $this->fk_niveau,'rowid','');
+			$typeClassOut .= " - $niveau->niveau";
+		}
+
+		return $typeClassOut;
 	}
 
 
@@ -1742,6 +1429,10 @@ class Creneau extends CommonObject
 	public final function returnSqlCountCreneauSommaire($jour, $loop, $etablissementId, $dateAppel)
 	{
 		// Requête qui va chercher tout les créneaux d'une heure donnée
+		//TODO : Erreur au fetch des appels car ne prends pas en compte les sous antennes (CZ-HA par exemple).
+		// Modifier la requête pour aller chercher les créneaux grâce à l'identifiant antenne, et non l'id de l'établissement.
+		// Cela évitera aussi que le sommaire soit parasité par des appels d'autres antennes
+
 		$creneauDuJour = $this->fetchAll('','',0,0,array('t.jour'=>$jour,'t.heure_debut'=>$loop*3600,'d.fk_etablissement'=>$etablissementId,'t.status'=>self::STATUS_VALIDATED),'AND',' INNER JOIN '.MAIN_DB_PREFIX.'dispositif as d ON t.fk_dispositif=d.rowid');
 
 		$nbAppelComplete = 0;
@@ -1782,7 +1473,7 @@ class Creneau extends CommonObject
 			}
 
 			// Condition pour valider si l'appel est complet ou non
-			if($appelsEleves == $countEleves && $appelsProfesseurs == $countProfesseurs && count($countProfesseurs) != 0 && $appelsProfesseurs != 0 && $appelsEleves != 0)
+			if(($appelsEleves == $countEleves) && ($appelsProfesseurs == $countProfesseurs) && count($countProfesseurs) != 0 && $appelsProfesseurs != 0 && $appelsEleves != 0)
 			{
 				$nbAppelComplete++;
 			}

@@ -83,8 +83,6 @@ class Dictionary extends CommonObject
 				while ($i < ($limit ? min($limit, $num) : $num)) {
 
 					$obj = $this->db->fetch_object($resql);
-					//$record = new self($this->db);
-					//$record->setVarsFromFetchObj($obj);
 
 					$records[$obj->id ?: $obj->rowid] = $obj;
 

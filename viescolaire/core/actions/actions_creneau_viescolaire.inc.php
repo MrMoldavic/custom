@@ -3,10 +3,10 @@
 
 if ($action == 'desactivation')
 {
-	$souhaitClass = new Souhait($db);
-	$souhaits = $souhaitClass->fetchAll('','',0,0,array('customsql'=>'fk_creneau='.$id.' AND date_fin IS NULL'));
+	$affectationClass = new Affectation($db);
+	$affectations = $affectationClass->fetchAll('','',0,0,array('customsql'=>' t.fk_creneau='.$id.' AND t.date_fin IS NULL'));
 
-	if($souhaits)
+	if($affectations)
 	{
 		setEventMessage('Vous ne pouvez pas désactiver un créneau qui contient des élèves.','errors');
 	}
