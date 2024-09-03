@@ -65,6 +65,7 @@ dol_include_once('scolarite/class/dispositif.class.php');
 dol_include_once('scolarite/class/etablissement.class.php');
 dol_include_once('scolarite/class/classe.class.php');
 dol_include_once('scolarite/class/creneau.class.php');
+dol_include_once('scolarite/class/annee.class.php');
 dol_include_once('viescolaire/class/famille.class.php');
 dol_include_once('viescolaire/class/parents.class.php');
 
@@ -75,7 +76,7 @@ $action = GETPOST('action', 'aZ09');
 $anneeFromForm = GETPOST('annee', 'aZ09');
 $etabFromForm = GETPOST('etablissement', 'aZ09');
 $docName = str_replace(' ','_',GETPOST('doc_name', 'alpha'));
-
+$backtopageforcancel = GETPOST('backtopageforcancel', 'alpha');
 
 $max = 5;
 $now = dol_now();
@@ -87,12 +88,25 @@ if (isset($user->socid) && $user->socid > 0) {
 	$socid = $user->socid;
 }
 
-if($action == 'addIntoAssignations')
-{
-	$creneauClass = new Creneau($db);
-	$creneauClass->addIntoAssignations();
+// TODO: mettre dans une fonction propre
+if($action == 'confirm_desactivate' || $action == 'confirm_activate' ) {
+
+	$itemClass = GETPOST('item','alpha');
+
+	$sql = 'UPDATE ' . MAIN_DB_PREFIX .strtolower(GETPOST('item','alpha')).' SET status = ' .($action == 'confirm_desactivate' ? $itemClass::STATUS_CANCELED : $itemClass::STATUS_VALIDATED). ' WHERE fk_annee_scolaire=' . $anneeFromForm;
+	$resql = $db->query($sql);
+
+	$anneeClass = new Annee($db);
+	$anneeClass->fetch($anneeFromForm);
+
+	if($resql > 0) {
+		setEventMessage(GETPOST('item','alpha').' de l\'année scolaire '.$anneeClass->annee.($action == 'confirm_desactivate' ? 'désactivés' : 'activés').' avec succès!');
+	} else {
+		setEventMessage('Une erreur est survenue.');
+	}
 }
 
+// TODO: mettre dans une fonction propre
 if($action == 'confirmExport')
 {
 	$souhait = new Souhait($db);
@@ -107,7 +121,7 @@ if($action == 'confirmExport')
 	$resqlEleve = $db->query($sql);
 
 	$dispositif = new Dispositif($db);
-	$resqlDispositif = $dispositif->fetchBy(['rowid','nom','fk_etablissement'], 0, '');
+	$resqlDispositif = $dispositif->fetchByd(['rowid','nom','fk_etablissement'], 0, '');
 
 	$customers_data = array();
 
@@ -285,8 +299,6 @@ print '<style>
 }
 </style>';
 
-
-
 $form = new Form($db);
 $formfile = new FormFile($db);
 $souhait = new Souhait($db);
@@ -296,27 +308,21 @@ llxHeader('', $langs->trans('Admin'));
 print load_fiche_titre($langs->trans('Zone Admin'), '', $user->picto);
 
 $formconfirm = '';
-if ($action == 'desactivate_souhait') {
 
-	$sqlSouhaitPreUpdate = 'SELECT COUNT(*) as total FROM ' . MAIN_DB_PREFIX . 'souhait WHERE status !=' . $souhait::STATUS_CANCELED. ' AND fk_annee_scolaire=' .$anneeFromForm;
-	$resqlSouhaitPreUpdate = $db->query($sqlSouhaitPreUpdate);
-	$objSouhaitPreUpdate = $db->fetch_object($resqlSouhaitPreUpdate);
+if ((GETPOST('subAction','alpha') == 'form_desactivate' || GETPOST('subAction','alpha') == 'form_activate')) {
 
-	$formconfirm = $form->formconfirm($_SERVER['PHP_SELF'].'?id='.$object->id.'&annee='.$anneeFromForm, $langs->trans('Désactiver souhaits'), "Voulez-vous vraiment désactiver l'intégralité des souhaits de cette année scolaire? Nombre de lignes affectées : ".$objSouhaitPreUpdate->total. '', 'confirm_desactivate_souhait', '', 0, 1, 0, 500, 0, 'Désactiver', 'Annuler');
-}
+	$className = GETPOST('item','alpha');
 
+	if($className == '0') {
+		setEventMessage('Merci de choisir un élément valide.','errors');
+	} else {
 
-if($action == 'confirm_desactivate_souhait')
-{
-	$sql = 'UPDATE ' . MAIN_DB_PREFIX . 'souhait SET status = ' . $souhait::STATUS_CANCELED . ' WHERE fk_annee_scolaire=' . $anneeFromForm;
-	$resql = $db->query($sql);
+		$itemClass = new $className($db);
 
-	$sqlAnnee = 'SELECT annee FROM ' . MAIN_DB_PREFIX . 'c_annee_scolaire WHERE rowid=' . $anneeFromForm;
-	$resqlAnnee = $db->query($sqlAnnee);
-	$objAnnee = $db->fetch_object($resqlAnnee);
+		$items = $itemClass->fetchAll('','',0,0,array('t.fk_annee_scolaire'=>$anneeFromForm,'customsql'=>' t.status = '.(GETPOST('subAction','alpha') == 'form_desactivate' ? $className::STATUS_VALIDATED : $className::STATUS_CANCELED)));
 
-	setEventMessage('Souhait de l\'année scolaire '.$objAnnee->annee.' désactivés avec succès');
-
+		$formconfirm = $form->formconfirm($_SERVER['PHP_SELF'].'?id='.$object->id.'&annee='.$anneeFromForm.'&item='.GETPOST('item','alpha'), ((GETPOST('subAction','alpha') == 'form_desactivate' ? 'Désactiver '.strtolower(GETPOST('item','alpha')) : 'Activer '.strtolower(GETPOST('item','alpha'))) ), 'Voulez-vous vraiment ' . (GETPOST('subAction','alpha') == 'form_desactivate' ? 'désactiver' : 'activer')." l'intégralité des ".GETPOST('item','alpha'). ' de cette année scolaire? Nombre de lignes affectées : ' .count($items). '', (GETPOST('subAction','alpha') == 'form_desactivate' ? 'confirm_desactivate' : 'confirm_activate'), '', 0, 1, 0, 500, 0, ($action == 'activate_creneau' ? 'Désactiver' : 'Activer'), 'Annuler');
+	}
 }
 
 // Call Hook formConfirm
@@ -335,59 +341,31 @@ print '<div class="fichecenter"><div class="fichethirdleft">';
 
 if ($action == 'cardDesactivate') {
 
-	if(GETPOSTISSET('s','alpha'))
-	{
-		print load_fiche_titre($langs->trans('Désactiver les souhaits'), '', 'object_'.$object->picto);
-	}
-	elseif(GETPOSTISSET('c','alpha'))
-	{
-		print load_fiche_titre($langs->trans('Désactiver les créneaux'), '', 'object_'.$object->picto);
-
-	}
-
+	print load_fiche_titre((GETPOST('subAction','alpha') == 'activate' ? 'Activer' : 'Désactiver').' un élément', '', 'object_'.$object->picto);
 	print '<form method="POST" action="'.$_SERVER['PHP_SELF'].'">';
 	print '<input type="hidden" name="token" value="'.newToken().'">';
+	print '<input type="hidden" name="subAction" value="form_'.GETPOST('subAction','alpha').'">';
 
-	if(GETPOSTISSET('s','alpha'))
-	{
-		print '<input type="hidden" name="action" value="desactivate_souhait">';
-	}
-	elseif(GETPOSTISSET('c','alpha'))
-	{
-		print '<input type="hidden" name="action" value="desactivate_creneau">';
-	}
-
-	if ($backtopage) {
-		print '<input type="hidden" name="backtopage" value="'.$backtopage.'">';
-	}
 	if ($backtopageforcancel) {
-		print '<input type="hidden" name="backtopageforcancel" value="'.$backtopageforcancel.'">';
+		print '<input type="hidden" name="backtopageforcancel" value="/custom/admin/adminindex.php?action=cardDesactivate">';
 	}
 
-	print dol_get_fiche_head(array(), '');
-
-	// Set some default values
-	//if (! GETPOSTISSET('fieldname')) $_POST['fieldname'] = 'myvalue';
+	print dol_get_fiche_head(array(''), '');
 
 	print '<table class="border centpercent tableforfieldcreate">'."\n";
-
-	$annee = array();
-	$annee_scolaire = 'SELECT c.rowid, c.annee FROM ' .MAIN_DB_PREFIX. 'c_annee_scolaire as c';
-	$resqlAnneeScolaire = $db->query($annee_scolaire);
-	$num = $db->num_rows($resqlAnneeScolaire);
-
 	print '<div class="center">';
 	print '<label>Selectionnez l\'année concernée : </label>';
 
-	$i = 0;
-	while ($i < $num)
-	{
-		$objAnneeScolaire = $db->fetch_object($resqlAnneeScolaire);
-		$annee[$objAnneeScolaire->rowid] = $objAnneeScolaire->annee;
-		$i++;
-	}
+	$anneeClass = new Annee($db);
+	print $form->selectarray('annee',$anneeClass->returnAnneeNameArray());
 
-	print $form->selectarray('annee',$annee);
+	print '</div><br>';
+	print '<div class="center">';
+	print '<label>Selectionnez l\'élément concerné : </label>';
+
+	$item = [0=>'','Souhait'=>'Souhait','Creneau'=>'Creneau','Agent'=>'Agent'];
+	print $form->selectarray('item',$item);
+
 	print '</div>';
 	print '</table>'."\n";
 
@@ -398,6 +376,7 @@ if ($action == 'cardDesactivate') {
 	print '</form>';
 
 }
+
 if ($action == 'export') {
 
 	print load_fiche_titre('Exporter des données', '', 'object_'.$object->picto);
@@ -414,9 +393,6 @@ if ($action == 'export') {
 
 	print dol_get_fiche_head(array(), '');
 
-	// Set some default values
-	//if (! GETPOSTISSET('fieldname')) $_POST['fieldname'] = 'myvalue';
-
 	print '<table class="border centpercent tableforfieldcreate">'."\n";
 	print '<div class="center">';
 	print '<label>Nom du document après export (sans extension) : </label>';
@@ -426,40 +402,16 @@ if ($action == 'export') {
 	print '<div class="center">';
 	print '<label>Selectionnez l\'année concernée : </label>';
 
-	$annee = array();
-	$annee_scolaire = 'SELECT c.rowid, c.annee FROM ' .MAIN_DB_PREFIX. 'c_annee_scolaire as c';
-	$resqlAnneeScolaire = $db->query($annee_scolaire);
-	$num = $db->num_rows($resqlAnneeScolaire);
+	$anneeClass = new Annee($db);
+	print $form->selectarray('annee',$anneeClass->returnAnneeNameArray());
 
-	$i = 0;
-	while ($i < $num)
-	{
-		$objAnneeScolaire = $db->fetch_object($resqlAnneeScolaire);
-		$annee[$objAnneeScolaire->rowid] = $objAnneeScolaire->annee;
-		$i++;
-	}
-
-	print $form->selectarray('annee',$annee);
 	print '</div><br>';
-
 
 	print '<div class="center">';
 	print '<label>Selectionnez l\'antenne concerné : </label>';
 
-	$etablissement = array(0=> 'Tout les établissements');
-	$sqlEtablissement = 'SELECT e.rowid, e.nom FROM ' .MAIN_DB_PREFIX. 'etablissement as e';
-	$resqlEtablissement = $db->query($sqlEtablissement);
-	$numEtablissement = $db->num_rows($resqlEtablissement);
-
-	$i = 0;
-	while ($i < $numEtablissement)
-	{
-		$objEtablissement = $db->fetch_object($resqlEtablissement);
-		$etablissement[$objEtablissement->rowid] = $objEtablissement->nom;
-		$i++;
-	}
-
-	print $form->selectarray('etablissement',$etablissement);
+	$etablissementClass = new Etablissement($db);
+	print $form->selectarray('etablissement',$etablissementClass->returnAntenneNameArray());
 	print '</div><br>';
 	print '</table>'."\n";
 
@@ -474,45 +426,18 @@ if ($action == 'export') {
 }
 else
 {
-	print load_fiche_titre($langs->trans('Souhaits'), '', 'object_'.$object->picto);
+	print load_fiche_titre($langs->trans('Zone de danger !'), '', 'object_'.$object->picto);
 	print '<div style="display;flex">';
-	print '<a href="'.$_SERVER['PHP_SELF'].'?action=cardDesactivate&s&desactivate&token='.newToken().'" class="button">Désactiver tout les souhaits d\'une année</a><br>';
-	print '<a href="'.$_SERVER['PHP_SELF'].'?action=cardDesactivate&s&activate&token='.newToken().'" class="button">Activer tout les souhaits d\'une année</a><br>';
+	print '<a href="'.$_SERVER['PHP_SELF'].'?action=cardDesactivate&subAction=activate&token='.newToken().'" class="button">Activer tout les éléments d\'une année</a><br>';
+	print '<a href="'.$_SERVER['PHP_SELF'].'?action=cardDesactivate&subAction=desactivate&token='.newToken().'" class="button">Désactiver tout les éléments d\'une année</a><br>';
 	print '</div>';
-	print '<hr>';
-	print load_fiche_titre($langs->trans('Créneaux'), '', 'object_'.$object->picto);
-	print '<div style="display;flex">';
-	print '<a href="'.$_SERVER['PHP_SELF'].'?action=cardDesactivate&c&token='.newToken().'" class="button">Désactiver tout les créneaux d\'une année</a><br>';
-	print '<a href="'.$_SERVER['PHP_SELF'].'?action=cardDesactivate&s&token='.newToken().'" class="button">Activer tout les souhaits d\'une année</a><br>';
-	print '</div>';
-	print '<hr>';
-	print load_fiche_titre($langs->trans('Agents'), '', 'object_'.$object->picto);
-	print '<div style="display;flex">';
-	print '<a href="'.$_SERVER['PHP_SELF'].'?action=cardDesactivate&c&token='.newToken().'" class="button">Désactiver tout les agents d\'une année</a><br>';
-	print '<a href="'.$_SERVER['PHP_SELF'].'?action=cardDesactivate&s&token='.newToken().'" class="button">Activer tout les agents d\'une année</a><br>';
-	print '</div>';
-	print '<hr>';
-	print load_fiche_titre($langs->trans('Export'), '', 'object_'.$object->picto);
 
+	print load_fiche_titre($langs->trans('Export'), '', 'object_'.$object->picto);
 	print '<div style="display;flex">';
 	print '<div id="loader"></div>';
 	print '<a href="'.$_SERVER['PHP_SELF'].'?action=export" class="button validExport">Créer un export</a><br>';
 	print '</div>';
 	print '<hr>';
-
-	print '<div style="display;flex">';
-	print '<div id="loader"></div>';
-	print dolGetButtonAction('Assignations', '', 'delete', $_SERVER['PHP_SELF'].'?id='.$object->id.'&action=addIntoAssignations&token='.newToken(), '');
-	print '</div>';
-	print '<hr>';
-
-
-
-
-
-
-
-
 }
 print '</div><div class="fichetwothirdright">';
 
