@@ -58,7 +58,7 @@ class Annee extends CommonObject
 	/**
 	 * @var int  Does object support extrafields ? 0=No, 1=Yes
 	 */
-	public $isextrafieldmanaged = 1;
+	public $isextrafieldmanaged = 0;
 
 	/**
 	 * @var string String with name of icon for etablissement. Must be the part after the 'object_' into object_etablissement.png
@@ -510,56 +510,19 @@ class Annee extends CommonObject
 		return dolGetStatus($this->labelStatus[$status], $this->labelStatusShort[$status], '', $statusType, $mode);
 	}
 
-
-
-	// Permet de changer l'établissement par défaut dans les listes
-	public final function checkSetCookieEtablissement($etab)
+	/**
+	 *  Retourne la liste du noms des années dans un tableau
+	 *
+	 *  @return     array 			Tableau des antennes
+	 */
+	public final function returnAnneeNameArray()
 	{
-		if($_SESSION['etablissementid'] != intval($etab))
-		{
-			$_SESSION['etablissementid'] = intval($etab);
-			setEventMessage('Etablissement enregistré avec succès!');
+		$anneeList = $this->fetchAll('', '', 0, 0, [], 'AND');
+
+		foreach ($anneeList as $val) {
+			$annees[$val->id] = $val->annee;
 		}
+
+		return $annees;
 	}
-
-	// Affiche un formulaire qui permet de modifier l'établissement choisi de base
-	public final function printFormChangeAntenne(): string
-	{
-		$form = new Form($this->db);
-		$out = "";
-
-		$antenneList = $this->fetchAll('', '', 0, 0, [], 'AND');
-		$antennes = ['Tous'];
-
-		foreach ($antenneList as $val) {
-			$antennes[$val->id] = $val->nom_antenne;
-		}
-		$out .= '<hr>';
-		$out .= '<form action="' . $_SERVER['PHP_SELF'] . '" method="POST">';
-		$out .= '<input type="hidden" tyname="sortfield" value="' . $sortfield . '">';
-		$out .= '<input type="hidden" name="sortorder" value="' . $sortorder . '">';
-		$out .= '<input type="hidden" name="action" value="changeEtablissement">';
-		$out .= '<input type="hidden" name="token" value="' . newToken() . '">';
-		$out .= '<table class="border centpercent">';
-		$out .= '<tr>';
-		$out .= '</td></tr>';
-		$out .= '<tr><td class="fieldrequired titlefieldcreate">Selectionnez votre établissement: </td><td>';
-		$out .= $form->selectarray('etablissementid', $antennes, $_SESSION['etablissementid']);
-		$out .= ' <a href="' . DOL_URL_ROOT . '/custom/scolarite/etablissement_card.php?action=create">';
-		$out .= '<span class="fa fa-plus-circle valignmiddle paddingleft" title="Ajouter un etablissement"></span>';
-		$out .= '</a>';
-		$out .= '</td>';
-		$out .= '</tr>';
-		$out .= '<td></td>';
-		$out .= '<td>';
-		$out .= '<input type="submit" class="button" value="Valider">';
-		$out .= '</td>';
-		$out .= '</table>';
-		$out .= '</form>';
-		$out .= '<hr>';
-
-		return $out;
-
-	}
-
 }
