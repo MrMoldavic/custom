@@ -122,7 +122,7 @@ class Creneau extends CommonObject
 		'rowid' => array('type'=>'integer(11)', 'label'=>'TechnicalID', 'enabled'=>'1', 'position'=>1, 'notnull'=>1, 'visible'=>2, 'noteditable'=>'1', 'index'=>1, 'css'=>'left', 'comment'=>"Id"),
 		'fk_dispositif' => array('type'=>'integer:Dispositif:custom/scolarite/class/dispositif.class.php', 'label'=>'Dispositif', 'enabled'=>'1', 'position'=>1, 'notnull'=>1, 'visible'=>1, 'index'=>1, 'searchall'=>1, 'css'=>'maxwidth300', 'validate'=>'1',),
 		'fk_type_classe' => array('type'=>'sellist:type_classe:type', 'label'=>'Type de classe', 'enabled'=>'1', 'position'=>2, 'notnull'=>1, 'visible'=>1, 'searchall'=>1, 'css'=>'minwidth300', 'validate'=>'1',),
-		'fk_instrument_enseigne' => array('type'=>'integer:Instrument:custom/organisation/class/instrument.class.php:instrument', 'label'=>'Instrument enseigné', 'enabled'=>'1', 'position'=>1, 'notnull'=>0, 'visible'=>1, 'help'=>"Laissez vide si groupe",'css'=>'maxwidth200'),
+		'fk_instrument_enseigne' => array('type'=>'sellist:c_instrument_enseigne:instrument', 'label'=>'Instrument enseigné', 'enabled'=>'1', 'position'=>1, 'notnull'=>-1, 'visible'=>1, 'help'=>"Laissez vide si groupe",'css'=>'maxwidth200'),
 		'fk_niveau' => array('type'=>'sellist:c_niveaux:niveau', 'label'=>'Niveau du cours/groupe', 'enabled'=>'1', 'position'=>2, 'notnull'=>0, 'visible'=>3, 'help'=>"Niveau des élèves dans le groupe",),
 		'professeurs' => array('type'=>'varchar(255)', 'label'=>'Agents', 'enabled'=>'1', 'position'=>4, 'notnull'=>0, 'visible'=>2, 'css'=>'minwidth200', 'validate'=>'1',),
 		'eleves' => array('type'=>'varchar(255)', 'label'=>'Elèves', 'enabled'=>'1', 'position'=>5, 'notnull'=>0, 'visible'=>2, 'css'=>'minwidth200', 'validate'=>'1',),
@@ -280,7 +280,7 @@ class Creneau extends CommonObject
 		}
 		elseif(!$this->heure_debut || !$this->heure_fin || !$this->jour || !$this->fk_type_classe)
 		{
-			return setEventMessage('Des données sont manquantes.','errors');
+			return setEventMessage('L\'heure, le jour ou type de classe sont manquants.','errors');
 		}
 		elseif(($this->heure_debut > $this->heure_fin) || ($this->heure_debut == $this->heure_fin))
 		{
@@ -1225,9 +1225,7 @@ class Creneau extends CommonObject
 			$out .= "$this->nom_groupe-";
 		} elseif($this->fk_instrument_enseigne) {
 
-
-			$instrumentClass = new Instrument($this->db);
-			$instrumentClass->fetch($this->fk_instrument_enseigne);
+			$instrumentClass = $dictionaryClass->fetchByDictionary('c_instrument_enseigne', ['instrument','rowid'],$this->fk_instrument_enseigne,'rowid');
 
 			$out .= ucfirst($instrumentClass->instrument).'-';
 		} else {
@@ -1267,7 +1265,8 @@ class Creneau extends CommonObject
 	/**
 	 * Retourne la liste des élèves depuis un créneau donné
 	 *
-	 * @return    string            liste brut (prénom-nom)
+	 * @param int $creneauId id du créneau cible
+	 * @return array liste brut (prénom-nom)
 	 */
 	final public function printElevesFromCreneau(int $creneauId): array
 	{
@@ -1360,70 +1359,20 @@ class Creneau extends CommonObject
 				$instrumentClass = new Instrument($this->db);
 				$instrumentClass->fetch($this->fk_instrument_enseigne);
 
-				$typeClassOut .= "$instrumentClass->instrument";
+				$typeClassOut .= $instrumentClass->instrument;
 			} else {
-				$typeClassOut .= "$this->nom_groupe";
+				$typeClassOut .= $this->nom_groupe;
 			}
 
 		} else $typeClassOut .= 'Groupe ou instrument indéfini';
 
 		if($this->fk_niveau) {
 
-			$niveau = $dictionaryClass->fetchByDictionary('c_niveaux', array('niveau'),(int) $this->fk_niveau,'rowid','');
+			$niveau = $dictionaryClass->fetchByDictionary('c_niveaux', array('niveau'), (int) $this->fk_niveau,'rowid','');
 			$typeClassOut .= " - $niveau->niveau";
 		}
 
 		return $typeClassOut;
-	}
-
-
-	public function addIntoAssignations()
-	{
-		$error = 0;
-		global $user;
-
-		$creneaux = $this->fetchAll('','',0,0,array('status'=>self::STATUS_VALIDATED));
-
-		foreach ($creneaux as $creneau)
-		{
-
-			$assignationClass = new Assignation($this->db);
-			$assignationClass->fk_creneau = $creneau->id;
-			$assignationClass->fk_agent = $creneau->fk_prof_1;
-			$assignationClass->status = Assignation::STATUS_VALIDATED;
-			$resultCreate1 = $assignationClass->create($user);
-
-			if($resultCreate1 < 0) $error++;
-
-			if($creneau->fk_prof_2)
-			{
-				$assignationClass = new Assignation($this->db);
-				$assignationClass->fk_creneau = $creneau->id;
-				$assignationClass->fk_agent = $creneau->fk_prof_2;
-				$assignationClass->status = Assignation::STATUS_VALIDATED;
-				$resultCreate2 = $assignationClass->create($user);
-
-				if($resultCreate2 < 0) $error++;
-			}
-
-			if($creneau->fk_prof_3)
-			{
-				$assignationClass = new Assignation($this->db);
-				$assignationClass->fk_creneau = $creneau->id;
-				$assignationClass->fk_agent = $creneau->fk_prof_3;
-				$assignationClass->status = Assignation::STATUS_VALIDATED;
-				$resultCreate3 = $assignationClass->create($user);
-
-				if($resultCreate3 < 0) $error++;
-			}
-		}
-
-		if($error > 0){
-			setEventMessage('Une erreur est survenue.','errors');
-		} else {
-			setEventMessage('Assignations créées avec succès');
-		}
-
 	}
 
 	public final function returnSqlCountCreneauSommaire($jour, $loop, $etablissementId, $dateAppel)
