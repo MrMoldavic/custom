@@ -1356,8 +1356,8 @@ class Creneau extends CommonObject
 
 		if($this->nom_groupe || $this->fk_instrument_enseigne) {
 			if($this->fk_instrument_enseigne) {
-				$instrumentClass = new Instrument($this->db);
-				$instrumentClass->fetch($this->fk_instrument_enseigne);
+
+				$instrumentClass = $dictionaryClass->fetchByDictionary('c_instrument_enseigne', ['instrument','rowid'],$this->fk_instrument_enseigne,'rowid');
 
 				$typeClassOut .= $instrumentClass->instrument;
 			} else {

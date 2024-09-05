@@ -21,7 +21,9 @@
  *		\ingroup    scolarite
  *		\brief      List page for creneau
  */
-
+/*ini_set('display_errors', '1');
+ini_set('display_startup_errors', '1');
+error_reporting(E_ALL);*/
 
 
 
@@ -81,7 +83,10 @@ if (!$res) {
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formcompany.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/date.lib.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/company.lib.php';
+
 dol_include_once('/scolarite/class/etablissement.class.php');
+dol_include_once('/scolarite/class/annee.class.php');
+dol_include_once('/viescolaire/class/dictionary.class.php');
 
 // load scolarite libraries
 require_once __DIR__.'/class/creneau.class.php';
@@ -105,7 +110,7 @@ $allYear = GETPOST('allYear','aZ09') ? GETPOST('allYear','aZ09') : 'false';
 $data = GETPOST('data','alpha');
 $creneauErrors = GETPOST('creneauErrors','aZ09') ? GETPOST('creneauErrors','aZ09') : 'false';
 
-// Changement de la valeur de session que quand on valide le formulaire
+// Changement de la valeur de session seulement quand on valide le formulaire
 if($action == "changeEtablissement")
 {
 	$etablissementClass = new Etablissement($db);
@@ -128,18 +133,11 @@ $pageprev = $page - 1;
 $pagenext = $page + 1;
 
 
-
 // Initialize technical objects
 $object = new Creneau($db);
 $extrafields = new ExtraFields($db);
 $diroutputmassaction = $conf->scolarite->dir_output.'/temp/massgeneration/'.$user->id;
 $hookmanager->initHooks(array('creneaulist')); // Note that conf->hooks_modules contains array
-
-
-if($action == 'addIntoAssignations')
-{
-	$object->addIntoAssignations();
-}
 
 // Fetch optionals attributes and labels
 $extrafields->fetch_name_optionals_label($object->table_element);
@@ -204,10 +202,6 @@ if ($enablepermissioncheck) {
 
 // Security check (enable the most restrictive one)
 if ($user->socid > 0) accessforbidden();
-//if ($user->socid > 0) accessforbidden();
-//$socid = 0; if ($user->socid > 0) $socid = $user->socid;
-//$isdraft = (($object->status == $object::STATUS_DRAFT) ? 1 : 0);
-//restrictedArea($user, $object->element, $object->id, $object->table_element, '', 'fk_soc', 'rowid', $isdraft);
 if (empty($conf->scolarite->enabled)) accessforbidden('Moule not enabled');
 if (!$permissiontoread) accessforbidden();
 
@@ -300,7 +294,7 @@ $sql .= $hookmanager->resPrint;
 
 if ($_SESSION['etablissementid'] != 0) {
 	$sql .= ' INNER JOIN '.MAIN_DB_PREFIX.'dispositif as d ON d.rowid=t.fk_dispositif';
-	$sql .= ' INNER JOIN '.MAIN_DB_PREFIX.'etablissement as a ON d.fk_etablissement=' . $_SESSION['etablissementid'];
+	$sql .= ' INNER JOIN '.MAIN_DB_PREFIX.'etablissement as e ON d.fk_etablissement=' . $_SESSION['etablissementid'];
 }
 
 if($search['professeurs']) {
@@ -310,18 +304,18 @@ if ($object->ismultientitymanaged == 1) {
 	$sql .= " WHERE t.entity IN (".getEntity($object->element).")";
 }
 elseif($allYear == 'false') {
-	$anneScolaire = "SELECT annee,annee_actuelle,rowid FROM ".MAIN_DB_PREFIX."c_annee_scolaire WHERE active = 1 AND annee_actuelle = 1";
-	$resqlAnneeScolaire = $db->query($anneScolaire);
-	$objAnneScolaire = $db->fetch_object($resqlAnneeScolaire);
+	$anneeClass = new Annee($db);
+	$anneeClass->fetch('','',' AND annee_actuelle = 1 AND active = 1');
 
-	$sql .= " WHERE fk_annee_scolaire = ".$objAnneScolaire->rowid;
+	$sql .= " WHERE fk_annee_scolaire = ".$anneeClass->id;
 }
 else {
 	$sql .= " WHERE 1 = 1";
 }
+
 if($creneauErrors == 'true')
 {
-	$sql .= " AND fk_prof_1 IS NULL OR fk_salle IS NULL OR fk_salle=''";
+	$sql .= " AND fk_salle IS NULL OR fk_salle=''";
 }
 if(GETPOST('search_myfield'))
 {
@@ -394,6 +388,7 @@ $parameters = array();
 $reshook = $hookmanager->executeHooks('printFieldListWhere', $parameters, $object); // Note that $action and $object may have been modified by hook
 $sql .= $hookmanager->resPrint;
 
+
 // Count total nb of records
 $nbtotalofrecords = '';
 if (empty($conf->global->MAIN_DISABLE_FULL_SCANLIST)) {
@@ -431,6 +426,8 @@ if (!$resql) {
 	dol_print_error($db);
 	exit;
 }
+/*var_dump($allYear);
+var_dump($sql);*/
 
 $num = $db->num_rows($resql);
 
@@ -495,28 +492,10 @@ if (GETPOST('nomassaction', 'int') || in_array($massaction, array('presend', 'pr
 }
 $massactionbutton = $form->selectMassAction('', $arrayofmassactions);
 
-$sqlIntru = "SELECT * FROM ".MAIN_DB_PREFIX."c_instrument_enseigne";
-$resqlInstru = $db->query($sqlIntru);
 
-$instrumentEnseigne = [''=>''];
-
-foreach($resqlInstru as $value)
+if($massaction == 'telephone' || $massaction == 'mail' || $massaction == 'eleves' || $massaction == 'coordonnee')
 {
-	$instrumentEnseigne[$value['rowid']] = $value['instrument'];
-}
-
-$concernes = [''=>'', 'professeurs'=>'Professeurs','eleves'=>'Élèves'];
-$date = date('Y-m-d H:i:s');
-
-
-
-
-
-
-
-if($massaction == 'telephone' || $massaction == 'mail' || $massaction == "eleves" || $massaction == "coordonnee")
-{
-	print "<br>";
+	print '<br>';
 	foreach($arrayofselected as $value)
 	{
 		$affectation = "SELECT s.fk_souhait FROM ".MAIN_DB_PREFIX."affectation as s WHERE s.fk_creneau={$value} AND date_fin IS NULL";
@@ -528,7 +507,6 @@ if($massaction == 'telephone' || $massaction == 'mail' || $massaction == "eleves
 			$resqlEleve = $db->query($eleve);
 				foreach($resqlEleve as $res)
 				{
-
 					if($massaction == 'eleves')
 					{
 						if($res['prenom'] != NULL)
@@ -604,12 +582,12 @@ print '<input type="hidden" name="formfilteraction" id="formfilteraction" value=
 print '<input type="hidden" name="action" value="list">';
 print '<input type="hidden" name="sortfield" value="'.$sortfield.'">';
 print '<input type="hidden" name="sortorder" value="'.$sortorder.'">';
-print '<input type="hidden" name="page" value="'.$page.'">';
+print '<input type="hidden" name="page" value="'.//.'">';
 print '<input type="hidden" name="contextpage" value="'.$contextpage.'">';
 
 $newcardbutton = dolGetButtonTitle($langs->trans('New'), '', 'fa fa-plus-circle', dol_buildpath('/scolarite/creneau_card.php', 1).'?action=create&backtopage='.urlencode($_SERVER['PHP_SELF']), '', $permissiontoadd);
 
-print_barre_liste($title, $page, $_SERVER["PHP_SELF"], $param, $sortfield, $sortorder, $massactionbutton, $num, $nbtotalofrecords, 'object_'.$object->picto, 0, $newcardbutton, '', $limit, 0, 0, 1);
+print_barre_liste($title, $page, $_SERVER["PHP_SELF"], $param.'&allYear='.($allYear == 'false' ? 'false' : 'true'), $sortfield, $sortorder, $massactionbutton, $num, $nbtotalofrecords, 'object_'.$object->picto, 0, $newcardbutton, '', $limit, 0, 0, 1);
 
 // Add code for pre mass action (confirmation or email presend form)
 $topicmail = "SendCreneauRef";
@@ -831,8 +809,8 @@ while ($i < $imaxinloop) {
 				if ($key == 'status') {
 					print $object->getLibStatut(5);
 				} elseif ($key == 'fk_instrument_enseigne') {
-					$instrumentClass = new Instrument($db);
-					$instrumentClass->fetch($object->fk_instrument_enseigne);
+					$dictionaryClass = new Dictionary($db);
+					$instrumentClass = $dictionaryClass->fetchByDictionary('c_instrument_enseigne', ['instrument','rowid'],$object->fk_instrument_enseigne,'rowid');
 
 					print dolGetButtonAction($object->showOutputField($val, $key, $object->$key, '') != '' ? 'Cours de '.$instrumentClass->instrument : ($object->nom_groupe ? : 'Groupe sans nom'),'', 'danger','/custom/scolarite/creneau_card.php?id=' . $object->id, '', $permissiontoread);
 				} elseif ($key == 'nom_creneau'){
@@ -846,7 +824,7 @@ while ($i < $imaxinloop) {
 				} elseif ($key == 'fk_type_classe'){
 					print $object->printTypeClasseCreneau();
 				} elseif ($key == 'professeurs') {
-					print $object->printProfesseursFromCreneau($object->id,'view');
+					print $object->printProfesseursFromCreneau($object->id);
 				} elseif ($key == 'infos_creneau'){
 					print $object->printInfoCreneau();
 				} elseif ($key == 'eleves'){
