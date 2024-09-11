@@ -809,12 +809,22 @@ while ($i < $imaxinloop) {
 				if ($key == 'status') {
 					print $object->getLibStatut(5);
 				} elseif ($key == 'fk_instrument_enseigne') {
-					$dictionaryClass = new Dictionary($db);
-					$instrumentClass = $dictionaryClass->fetchByDictionary('c_instrument_enseigne', ['instrument','rowid'],$object->fk_instrument_enseigne,'rowid');
 
-					print dolGetButtonAction($object->showOutputField($val, $key, $object->$key, '') != '' ? 'Cours de '.$instrumentClass->instrument : ($object->nom_groupe ? : 'Groupe sans nom'),'', 'danger','/custom/scolarite/creneau_card.php?id=' . $object->id, '', $permissiontoread);
-				} elseif ($key == 'nom_creneau'){
-					print $object->getNomUrl(1);
+					$valueCreneau = '';
+
+					// Si le créneau est un cours
+					if($object->fk_instrument_enseigne) {
+						$dictionaryClass = new Dictionary($db);
+						$instrumentClass = $dictionaryClass->fetchByDictionary('c_instrument_enseigne', ['instrument','rowid'],$object->fk_instrument_enseigne,'rowid');
+
+						$valueCreneau = "Cours de $instrumentClass->instrument";
+					} elseif($object->nom_groupe) {
+						$valueCreneau = $object->nom_groupe;
+					} else {
+						$valueCreneau = 'Créneau sans infos';
+					}
+
+					print dolGetButtonAction($valueCreneau,'', 'danger','/custom/scolarite/creneau_card.php?id=' . $object->id, '', $permissiontoread);
 				} elseif ($key == 'nombre_places'){
 					print '<span class="badge  badge-status'.($object->printElevesFromCreneau($object->id)[1] == (int) $object->showOutputField($val, $key, $object->$key, '') ? '8' : '4').' badge-status" style="color:white;">'.$object->printElevesFromCreneau($object->id)[1].'/'.$object->showOutputField($val, $key, $object->$key, '').'</span>';
 				} elseif ($key == 'fk_dispositif'){
