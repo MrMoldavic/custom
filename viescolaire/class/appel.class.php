@@ -64,7 +64,7 @@ class Appel extends CommonObject
 	/**
 	 * @var int  Does object support extrafields ? 0=No, 1=Yes
 	 */
-	public $isextrafieldmanaged = 1;
+	public $isextrafieldmanaged = 0;
 
 	/**
 	 * @var string String with name of icon for appel. Must be the part after the 'object_' into object_appel.png
@@ -1043,36 +1043,6 @@ class Appel extends CommonObject
 		return $result;
 	}
 
-	/**
-	 * Action executed by scheduler
-	 * CAN BE A CRON TASK. In such a case, parameters come from the schedule job setup field 'Parameters'
-	 * Use public function doScheduledJob($param1, $param2, ...) to get parameters
-	 *
-	 * @return	int			0 if OK, <>0 if KO (this function is used also by cron so only 0 is OK)
-	 */
-	public function doScheduledJob()
-	{
-		global $conf, $langs;
-
-		//$conf->global->SYSLOG_FILE = 'DOL_DATA_ROOT/dolibarr_mydedicatedlofile.log';
-
-		$error = 0;
-		$this->output = '';
-		$this->error = '';
-
-		dol_syslog(__METHOD__, LOG_DEBUG);
-
-		$now = dol_now();
-
-		$this->db->begin();
-
-		// ...
-
-		$this->db->commit();
-
-		return $error;
-	}
-
 	public function printStatsIndex()
 	{
 		global $conf;
@@ -1121,7 +1091,6 @@ class Appel extends CommonObject
 
 	public function printAbsencesIndex()
 	{
-
 		require_once DOL_DOCUMENT_ROOT.'/custom/viescolaire/class/eleve.class.php';
 		require_once DOL_DOCUMENT_ROOT.'/custom/scolarite/class/creneau.class.php';
 
@@ -1167,7 +1136,7 @@ class Appel extends CommonObject
 				print "<tr class='oddeven'>";
 				print "<td style='width:20%'>$eleveClass->prenom $eleveClass->nom</td>";
 				print "<td style='width:20%'>{$value['justification']}</td>";
-				print "<td style='width:45%'><a href=" . DOL_URL_ROOT . "/custom/scolarite/creneau_card.php?id=$creneauClass->rowid>" . $creneauClass->nom_creneau . '</a></td>';
+				print "<td style='width:45%'><a href=" . dol_buildpath('/custom/scolarite/creneau_card.php',1) . "?id=$creneauClass->rowid>" . $creneauClass->nom_creneau . '</a></td>';
 				print '<td>' . '<span class="badge  badge-status' . ($value['status'] == 'retard' ? '1' : ($value['status'] == 'absenceJ' ? '7' : ($value['status'] == 'present' ? '4' : '8'))) . ' badge-status" style="color:white;">' . $value['status'] . '</span>' . '</td>';
 
 				print '</tr>';
@@ -1186,7 +1155,7 @@ class Appel extends CommonObject
 	 *
 	 *  @return string      		Formulaire
 	 */
-	public function printChangeHourFormAppel(int $antenneId, string $heureActuelle, string $selectedDay)
+	public function printChangeHourFormAppel(int $antenneId, string $heureActuelle, string $selectedDay, string $selectedDate)
 	{
 		$form = new Form($this->db);
 
@@ -1201,6 +1170,7 @@ class Appel extends CommonObject
 		$out .= '<label>Selectionnez l\'heure désirée : </label>';
 
 		$out .= '<input type="string" name="selectedDay" value='.$selectedDay.' hidden>';
+		$out .= '<input type="string" name="selectedDate" value='.$selectedDate.' hidden>';
 		$out .= '<input type="time" name="heureActuelle" value="'.$heureActuelle.':00" >';
 		$out .= '</div>';
 		$out .= '</table>'."\n";
@@ -1267,7 +1237,7 @@ class Appel extends CommonObject
 		{
 			// Fetch d'un potentiel appel déjà éxistant
 			$appelClass = new self($this->db);
-			$appelClass->fetch('',''," AND fk_creneau={$creneauId} AND fk_eleve=$eleve->id AND treated=1 AND date_creation LIKE '{$dateCreation}%' ORDER BY rowid DESC");
+			$appelClass->fetch('',''," AND fk_creneau={$creneauId} AND fk_eleve=$eleve->id AND date_creation LIKE '{$dateCreation}%' ORDER BY rowid DESC");
 
 			// Si un appel éxiste déjà on l'update
 			if($appelClass->id)
@@ -1313,7 +1283,7 @@ class Appel extends CommonObject
 		foreach ($professeurs as $professeur)
 		{
 			$appelClass = new self($this->db);
-			$appelClass->fetch('',''," AND fk_creneau={$creneauId} AND fk_user=$professeur->id AND treated=1 AND date_creation LIKE '{$dateCreation}%' ORDER BY rowid DESC");
+			$appelClass->fetch('',''," AND fk_creneau={$creneauId} AND fk_user=$professeur->id AND date_creation LIKE '{$dateCreation}%' ORDER BY rowid DESC");
 
 			// Si un appel éxiste déjà on l'update
 			if($appelClass->id)
@@ -1383,32 +1353,5 @@ class Appel extends CommonObject
 		}
 
 		return true; // Tous les appels sont envoyés
-	}
-}
-
-
-require_once DOL_DOCUMENT_ROOT.'/core/class/commonobjectline.class.php';
-
-/**
- * Class AppelLine. You can also remove this and generate a CRUD class for lines objects.
- */
-class AppelLine extends CommonObjectLine
-{
-	// To complete with content of an object AppelLine
-	// We should have a field rowid, fk_appel and position
-
-	/**
-	 * @var int  Does object support extrafields ? 0=No, 1=Yes
-	 */
-	public $isextrafieldmanaged = 0;
-
-	/**
-	 * Constructor
-	 *
-	 * @param DoliDb $db Database handler
-	 */
-	public function __construct(DoliDB $db)
-	{
-		$this->db = $db;
 	}
 }

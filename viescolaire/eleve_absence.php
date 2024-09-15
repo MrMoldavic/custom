@@ -78,7 +78,8 @@ if (!$res) {
 }
 
 dol_include_once('/viescolaire/class/eleve.class.php');
-dol_include_once('/scolarite/class/creneau.class.php');
+
+//dol_include_once('/scolarite/class/creneau.class.php');
 dol_include_once('/scolarite/class/etablissement.class.php');
 dol_include_once('/viescolaire/class/appel.class.php');
 dol_include_once('/management/class/agent.class.php');
@@ -143,8 +144,12 @@ if ($action == 'deleteAbsence') {
 	$appelClass->fetch(GETPOST('idAppel', 'int'));
 	$result = $appelClass->delete($user);
 
-	if($result > 0) setEventMessage('Absence supprimée avec succès !');
-	else setEventMessage("Une erreur est survenue : $appelClass->error",'errors');
+	if($result > 0) {
+		setEventMessage('Absence supprimée avec succès !');
+	}
+	else {
+		setEventMessage("Une erreur est survenue : $appelClass->error", 'errors');
+	}
 }
 
 /*

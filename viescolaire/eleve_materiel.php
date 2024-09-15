@@ -120,10 +120,6 @@ if ($enablepermissioncheck) {
 }
 
 // Security check (enable the most restrictive one)
-//if ($user->socid > 0) accessforbidden();
-//if ($user->socid > 0) $socid = $user->socid;
-//$isdraft = (($object->status == $object::STATUS_DRAFT) ? 1 : 0);
-//restrictedArea($user, $object->element, $object->id, $object->table_element, '', 'fk_soc', 'rowid', $isdraft);
 if (empty($conf->viescolaire->enabled)) accessforbidden();
 if (!$permissiontoread) accessforbidden();
 
@@ -165,43 +161,6 @@ if ($id > 0 || !empty($ref)) {
 
 	$morehtmlref = '<div class="refidno">';
 	$morehtmlref .= $object->prenom;
-	/*
-	 // Ref customer
-	 $morehtmlref.=$form->editfieldkey("RefCustomer", 'ref_client', $object->ref_client, $object, 0, 'string', '', 0, 1);
-	 $morehtmlref.=$form->editfieldval("RefCustomer", 'ref_client', $object->ref_client, $object, 0, 'string', '', null, null, '', 1);
-	 // Thirdparty
-	 $morehtmlref.='<br>'.$langs->trans('ThirdParty') . ' : ' . (is_object($object->thirdparty) ? $object->thirdparty->getNomUrl(1) : '');
-	 // Project
-	 if (! empty($conf->projet->enabled))
-	 {
-	 $langs->load("projects");
-	 $morehtmlref.='<br>'.$langs->trans('Project') . ' ';
-	 if ($permissiontoadd)
-	 {
-	 if ($action != 'classify')
-	 //$morehtmlref.='<a class="editfielda" href="' . $_SERVER['PHP_SELF'] . '?action=classify&token='.newToken().'&id=' . $object->id . '">' . img_edit($langs->transnoentitiesnoconv('SetProject')) . '</a> : ';
-	 $morehtmlref.=' : ';
-	 if ($action == 'classify') {
-	 //$morehtmlref.=$form->form_project($_SERVER['PHP_SELF'] . '?id=' . $object->id, $object->socid, $object->fk_project, 'projectid', 0, 0, 1, 1);
-	 $morehtmlref.='<form method="post" action="'.$_SERVER['PHP_SELF'].'?id='.$object->id.'">';
-	 $morehtmlref.='<input type="hidden" name="action" value="classin">';
-	 $morehtmlref.='<input type="hidden" name="token" value="'.newToken().'">';
-	 $morehtmlref.=$formproject->select_projects($object->socid, $object->fk_project, 'projectid', $maxlength, 0, 1, 0, 1, 0, 0, '', 1);
-	 $morehtmlref.='<input type="submit" class="button valignmiddle" value="'.$langs->trans("Modify").'">';
-	 $morehtmlref.='</form>';
-	 } else {
-	 $morehtmlref.=$form->form_project($_SERVER['PHP_SELF'] . '?id=' . $object->id, $object->socid, $object->fk_project, 'none', 0, 0, 0, 1);
-	 }
-	 } else {
-	 if (! empty($object->fk_project)) {
-	 $proj = new Project($db);
-	 $proj->fetch($object->fk_project);
-	 $morehtmlref .= ': '.$proj->getNomUrl();
-	 } else {
-	 $morehtmlref .= '';
-	 }
-	 }
-	 }*/
 	 $morehtmlref .= '</div>';
 
 
@@ -238,12 +197,12 @@ if ($id > 0 || !empty($ref)) {
 			$resqlTypeExploit = $db->query($sqlTypeExploit);
 			$objTypeExploit = $db->fetch_object($resqlTypeExploit);
 
-			
+
 
 			print '<h2>Contrat N° :  <a href="/custom/exploitation/card.php?action=view&token='.newToken().'&id='.$val['rowid'].'"><span class="badge badge-status2">'.$objTypeExploit->indicatif."-".$val['cote'].'</span></a> ⬇️</h2>';
 			print '<table class="tagtable liste">';
 			print '<tbody>';
-		
+
 			print '<tr class="liste_titre">
 				<th class="wrapcolumntitle liste_titre">Cote</th>
 				<th class="wrapcolumntitle liste_titre">Précisions</th>
@@ -256,15 +215,15 @@ if ($id > 0 || !empty($ref)) {
 
 			foreach($resqlInstruments as $value)
 			{
-				
+
 				$sqlInstruments = "SELECT * FROM ".MAIN_DB_PREFIX."materiel WHERE rowid=".$value['fk_materiel'];
 				$resqlInstrumentListe = $db->query($sqlInstruments);
 				$objInstrument = $db->fetch_object($resqlInstrumentListe);
-		
+
 				$sqlMarque = "SELECT marque FROM ".MAIN_DB_PREFIX."c_marque WHERE rowid=".$objInstrument->fk_marque;
 				$resqlMarque = $db->query($sqlMarque);
 				$objMarque= $db->fetch_object($resqlMarque);
-		
+
 				$sqlEtat = "SELECT etat, badge_status_code FROM ".MAIN_DB_PREFIX."c_etat_materiel WHERE rowid=".$objInstrument->fk_etat;
 				$resqlEtat = $db->query($sqlEtat);
 				$objEtat= $db->fetch_object($resqlEtat);
@@ -272,11 +231,11 @@ if ($id > 0 || !empty($ref)) {
 				$sqlTypeMateriel = "SELECT indicatif FROM ".MAIN_DB_PREFIX."c_type_materiel WHERE rowid=".$objInstrument->fk_type_materiel;
 				$resqTypeMateriel = $db->query($sqlTypeMateriel);
 				$objTypeMateriel = $db->fetch_object($resqTypeMateriel);
-	
+
 				$sqlDates = "SELECT date_debut,date_fin, rowid FROM ".MAIN_DB_PREFIX."exploitation WHERE fk_exploitant = ".$object->id." AND fk_type_exploitation= 1 AND active = 1";
 				$resqlDates = $db->query($sqlDates);
 				$objDates= $db->fetch_object($resqlDates);
-			
+
 				$cote = "";
 				if(strlen($objInstrument->cote) == 1)
 				{
@@ -291,7 +250,7 @@ if ($id > 0 || !empty($ref)) {
 					$cote = $objInstrument->cote;
 				}
 
-			
+
 				print '<tr class="oddeven">';
 				print '<td><a href="/custom/materiel/materiel_card.php?action=view&token='.newToken().'&id='.$objInstrument->rowid.'"><span class="badge badge-status4">'.$objTypeMateriel->indicatif.'-'.$cote.'</span></a></td>';
 				print '<td><span class="badge badge-status7">'.$objInstrument->precision_type.'</span></td>';
@@ -305,9 +264,9 @@ if ($id > 0 || !empty($ref)) {
 			}
 			print '</tbody>';
 			print '</table>';
-	
-		}	
-		
+
+		}
+
 	}
 
 

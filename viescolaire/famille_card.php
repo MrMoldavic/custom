@@ -22,9 +22,10 @@
  *		\brief      Page to create/edit/view famille
  */
 
-/*ini_set('display_errors', '1');
+ini_set('display_errors', '1');
 ini_set('display_startup_errors', '1');
-error_reporting(E_ALL);*/
+error_reporting(E_ALL);
+
 //if (! defined('NOREQUIREDB'))              define('NOREQUIREDB', '1');				// Do not create database handler $db
 //if (! defined('NOREQUIREUSER'))            define('NOREQUIREUSER', '1');				// Do not load object $user
 //if (! defined('NOREQUIRESOC'))             define('NOREQUIRESOC', '1');				// Do not load object $mysoc
@@ -86,6 +87,8 @@ require_once DOL_DOCUMENT_ROOT.'/user/class/user.class.php';
 dol_include_once('/viescolaire/class/famille.class.php');
 dol_include_once('/viescolaire/class/dictionary.class.php');
 dol_include_once('/viescolaire/class/parents.class.php');
+dol_include_once('/viescolaire/class/eleve.class.php');
+dol_include_once('/viescolaire/class/souhait.class.php');
 dol_include_once('/viescolaire/class/contribution.class.php');
 dol_include_once('/viescolaire/lib/viescolaire_famille.lib.php');
 
@@ -105,69 +108,8 @@ $lineid   = GETPOST('lineid', 'int');
 $parentId = GETPOST('id_parent','int');
 $contributionId = GETPOST('contributionId','int');
 
-if( $action == 'stateModify')
-{
-	$famille = new Famille($db);
-	$sql = "UPDATE " . MAIN_DB_PREFIX . "famille SET status = " . GETPOST('stateInscription', 'int') . " WHERE rowid=" . $id;
-	$resql = $db->query($sql);
 
-	setEventMessage('Etat modifié avec succès!');
-}
-
-
-if ($action == 'deleteParent') {
-
-	$parentsClass = new Parents($db);
-	$parentsClass->fetch($parentId);
-	$res = $parentsClass->delete($user);
-
-	if($res)
-	{
-		$familleClass = new Famille($db);
-		$familleClass->fetch($id);
-
-		$parents = $parentsClass->fetchAll('ASC','rowid','','',['fk_famille'=>$id],'ASC');
-
-		$newIdentifiant = "";
-		foreach ($parents as $parent)
-		{
-			$newIdentifiant .= "$parent->firstname-$parent->lastname / ";
-		}
-
-		$familleClass->identifiant_famille = $newIdentifiant;
-		$familleClass->update($user);
-		setEventMessage('Parent supprimé avec succès');
-	}else setEventMessage('Une erreur est survenue.', 'errors');
-
-
-}
-
-
-if($action == 'deleteContribution')
-{
-	$contributionClass = new Contribution($db);
-	$contributionClass->fetch($contributionId);
-
-	$contributionContentClass = new ContributionContent($db);
-	$contents = $contributionContentClass->fetchAll('ASC','rowid','','',['fk_contribution'=>$contributionId],'ASC');
-	if($contents)
-	{
-		foreach ($contents as $content)
-		{
-			$contributionContentClass = new ContributionContent($db);
-			$contributionContentClass->fetch($content->id);
-			$contributionContentClass->delete($user);
-
-			unset($contributionContentClass);
-		}
-	}
-
-	$result = $contributionClass->delete($user);
-
-	if($result) setEventMessage('Contribution et son contenu supprimé avec succès');
-	else setEventMessage('Une erreur est survenue.', 'errors');
-}
-
+include DOL_DOCUMENT_ROOT.'/custom/viescolaire/core/actions/actions_famille_viescolaire.inc.php';
 
 // Initialize technical objects
 $object = new Famille($db);
@@ -217,10 +159,6 @@ if ($enablepermissioncheck) {
 $upload_dir = $conf->viescolaire->multidir_output[isset($object->entity) ? $object->entity : 1].'/famille';
 
 // Security check (enable the most restrictive one)
-//if ($user->socid > 0) accessforbidden();
-//if ($user->socid > 0) $socid = $user->socid;
-//$isdraft = (isset($object->status) && ($object->status == $object::STATUS_DRAFT) ? 1 : 0);
-//restrictedArea($user, $object->element, $object->id, $object->table_element, '', 'fk_soc', 'rowid', $isdraft);
 if (empty($conf->viescolaire->enabled)) accessforbidden();
 if (!$permissiontoread) accessforbidden();
 
@@ -405,12 +343,13 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 	$linkback = '<a href="'.dol_buildpath('/viescolaire/famille_list.php', 1).'?restore_lastsearch_values=1'.(!empty($socid) ? '&socid='.$socid : '').'">'.$langs->trans("BackToList").'</a>';
 
 
-	$morehtmlref = '<div class="refidno">';
+	$morehtmlref = '<div class="refid">';
+	$morehtmlref .= $object->returnFamilyName();
 	$morehtmlref .= '</div>';
 
 
 
-	dol_banner_tab($object, 'ref', $linkback, 1, 'ref', 'identifiant_famille', $morehtmlref);
+	dol_banner_tab($object, 'ref', $linkback, 1, 'ref', 'none', $morehtmlref);
 
 
 	print '<div class="fichecenter">';
@@ -428,43 +367,40 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 
 	print '</table>';
 
-
+	print '<div style="background-color: #FFFFFF; border: 1px solid #ddd;border-radius: 12px; padding: 20px; max-width: 100%;box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); ">';
 	print '<form action="/custom/viescolaire/famille_card.php?id='.$object->id.'&action=stateModify" method="post">';
 	print '<input type="hidden" name="id_eleve" value='.$object->id.'>';
 	print '<input type="hidden" name="token" value='.newToken().'>';
 	print load_fiche_titre("Etat du paiement", '', 'fa-euro');
 	print '<table class="border centpercent">'."\n";
 
+
 	print '<div class="center">';
 
-	$infos=array(0 => "Non budgétisé", 1 => "Budgétisé", 7 => "En cours de paiement", 4 => "Payé", 8 => "Problème");
+	$infos= [0 => 'Non budgétisé', 1 => 'Budgétisé', 7 => 'En cours de paiement', 4 => 'Payé', 8 => 'Problème'];
 
 	print $form->selectarray('stateInscription',$infos,$object->status);
-	print dol_get_fiche_end()."<br>";
+	print dol_get_fiche_end(). '<br>';
 
 	if($permissiontoadd) {
-		print $form->buttonsSaveCancel("Valider état");
+		print $form->buttonsSaveCancel('Valider état');
 	}
 	print '</div>';
 	print '</table>'."\n";
 
 
 	print '</form>';
-
-	print '<hr>';
-
-
 	print '</div>';
 
 	print '</div>';
 
 	//Listing des parents dans le card
 	$parentsClass = new Parents($db);
-	$result = $parentsClass->fetchBy(['lastname','firstname','phone','mail','address','town','zipcode','description','contact_preferentiel','fk_type_parent','rowid'],$object->id,'fk_famille');
+	$parents = $parentsClass->fetchAll('','',0,0,['fk_famille'=>$object->id]);
 
-	print load_fiche_titre("Liste des membres de la famille", '', 'fa-user');
+	print load_fiche_titre('Liste des parents', '', 'fa-user');
 
-	if($result != null)
+	if(!empty($parents))
 	{
 		print '<table class="noborder allwidth">';
 		print '<tbody>';
@@ -480,102 +416,109 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 					<th class="wrapcolumntitle liste_titre">Précisions</th>
 					<th class="wrapcolumntitle liste_titre">Supprimer</th>
 					</tr>';
-		foreach($result as $val)
+		foreach($parents as $parent)
 		{
 			$dictionaryClass = new Dictionary($db);
-			if($val->fk_type_parent != 0)
+			if((int) $parent->fk_type_parent !== 0)
 			{
-				$typeParent = $dictionaryClass->fetchByDictionary('c_type_parent',['type','rowid'],$val->fk_type_parent,'rowid');
+				$typeParent = $dictionaryClass->fetchByDictionary('c_type_parent',['type','rowid'],$parent->fk_type_parent,'rowid');
 			}
 
 			print '<tr class="oddeven">';
-			print '<td><a href=' . DOL_URL_ROOT . '/custom/viescolaire/parents_card.php?id=' . $val->rowid . '&action=edit'. '>' .$val->firstname. '</td>';
-			print "<td>".$val->lastname."</td>";
-			print "<td>".($typeParent != null ? $typeParent->type : 'Type Inconnu')."</td>";
-			print "<td><span class='badge  badge-status".($val->contact_preferentiel == 1 ? '4': '8')." badge-status'>".($val->contact_preferentiel == 1 ? 'Oui': 'Non').'</td>';
-			print "<td>".$val->phone."</td>";
-			print "<td>".$val->mail."</td>";
-			print "<td>$val->address $val->zipcode $val->town</td>";
-			print "<td>$val->description</td>";
-			print "<td><a href=".$_SERVER['PHP_SELF']."?id=".$object->id."&id_parent=".$val->rowid."&action=deleteParent&token=".newToken().">Supprimer</a></td>";
+			print '<td><a href=' . dol_buildpath('/custom/viescolaire/parents_card.php',1) . '?id=' . $parent->id . '&action=edit'. '>' .$parent->firstname. '</td>';
+			print '<td>' .$parent->lastname."</td>";
+			print '<td>' .($typeParent !== null ? $typeParent->type : 'Type Inconnu'). '</td>';
+			print "<td><span class='badge  badge-status".((int) $parent->contact_preferentiel === 1 ? '4': '8')." badge-status'>".((int) $parent->contact_preferentiel === 1 ? 'Oui': 'Non').'</td>';
+			print '<td>' .$parent->phone. '</td>';
+			print '<td>' .$parent->mail. '</td>';
+			print "<td>$parent->address $parent->zipcode $parent->town</td>";
+			print "<td>$parent->description</td>";
+			print '<td><a href=' .$_SERVER['PHP_SELF']. '?id=' .$object->id. '&id_parent=' .$parent->id. '&action=deleteParent&token=' .newToken(). '>'.img_picto('', 'fa-trash', 'class="valignmiddle"').'</a></td>';
 			print '</tr>';
 		}
 		print '</tbody>';
 		print '</table>';
-	} else print "Aucun membre connu";
+	} else {
+		print '<p>Aucun parent connu.</p>';
+	}
 
 	print dolGetButtonAction($langs->trans('Ajouter un parent'), '', 'default', '/custom/viescolaire/parents_card.php?action=create&fk_famille='.$object->id.'&token='.newToken(), '', $permissiontoadd);
 
 
-	$enfants = "SELECT * FROM ".MAIN_DB_PREFIX."eleve WHERE fk_famille = ".$object->id;
-	$resqlEnfants = $db->query($enfants);
-	$objEnfants = $db->fetch_object($resqlEnfants);
+	print '<hr>';
+	// Partie qui affiche les enfants appartenants à la famille
+	print load_fiche_titre('Information cours des enfants', '', 'fa-school');
 
+	$eleveClass = new Eleve($db);
+	$eleves = $eleveClass->fetchAll('','',0,0,['fk_famille'=>$object->id]);
 
-	print load_fiche_titre("Information cours des enfants", '', 'fa-school');
-
-	print '<table class="noborder allwidth">'."\n";
-	print '<tbody>';
-
-	print '<tr>';
-	print '<td><h4>Enfant<h4></td>';
-	print '<td><h4>Souhait(s)<h4></td>';
-	print '<td><h4>Affectation(s)<h4></td>';
-	print '</tr>';
-
-	foreach($resqlEnfants as $value)
+	if(!empty($eleves))
 	{
+		print '<table class="noborder allwidth">'."\n";
+		print '<tbody>';
+
 		print '<tr>';
-		print '<td>'.'<a href="' . DOL_URL_ROOT . '/custom/viescolaire/eleve_card.php?id=' . $value['rowid'] . '">'.$value['nom'].' '.$value['prenom'].'</a>'.'<br>';
-
-		print '<td>';
-
-		$souhaits = "SELECT * FROM ".MAIN_DB_PREFIX."souhait WHERE fk_eleve = ".$value['rowid'];
-		$resqlSouhait = $db->query($souhaits);
-		$objSouhait = $db->fetch_object($resqlSouhait);
-		$souhait = "";
-		foreach($resqlSouhait as $value)
-		{
-			$souhait .= '<a href="' . DOL_URL_ROOT . '/custom/viescolaire/souhait_card.php?id=' . $value['rowid'] . '">' . $value['nom_souhait'] . '</a>'.'<br>';
-		}
-
-		print $souhait;
-
-		print '</td>';
-		print '<td>';
-		$etat = "";
-		foreach($resqlSouhait as $res)
-		{
-			if($res['status'] == 4)
-			{
-				$etat .= "&#9989;	Affecté"."<br>";
-			}
-			elseif($res['status'] == 9)
-			{
-				$etat .= "&#9209;&#65039;	Souhait désactivé"."<br>";
-			}
-			elseif($res['status'] == 0)
-			{
-				$etat .= "&#9888;&#65039;	Affectation manquante"."<br>";
-			}
-		}
-
-		print $etat;
-
-		print '</td>';
+		print '<td><h4>Enfant</h4></td>';
+		print '<td><h4>Souhait(s)</h4></td>';
+		print '<td><h4>Affectation(s)</h4></td>';
 		print '</tr>';
+
+		foreach ($eleves as $eleve) {
+			print '<tr>';
+			print '<td>' . '<a href="' . dol_buildpath('/custom/viescolaire/eleve_card.php',1) . '?id=' . $eleve->id . '">' . $eleve->getNomUrl(1) . '</a>' . '<br>';
+
+			print '<td>';
+
+			$souhaitClass = new Souhait($db);
+			$souhaits = $souhaitClass->fetchAll('','',9,0,['fk_eleve'=>$eleve->id]);
+
+			if(!empty($souhaits))
+			{
+				foreach ($souhaits as $souhait) {
+					print '<a href="' . dol_buildpath('/custom/viescolaire/souhait_card.php',1) . '?id=' . $souhait->id . '">' . $souhait->returnFullNameSouhait() . '</a>' . '<br>';
+				}
+			} else {
+				print 'Aucun(s) souhait(s) connu(s).';
+			}
+
+			print '</td>';
+			print '<td>';
+
+
+			if(!empty($souhaits))
+			{
+				foreach ($souhaits as $res) {
+					if ($res->status === Souhait::STATUS_VALIDATED) {
+						print '<span class="badge badge-status4 badge-status">'.img_picto('', 'fa-link', 'class="valignmiddle"').' Affecté' . '</span><br>';
+					} elseif ($res->status === Souhait::STATUS_CANCELED) {
+						print '<span class="badge badge-status6 badge-status">'.img_picto('', 'fa-ban', 'class="valignmiddle"').' Souhait désactivé' . '</span><br>';
+					} elseif ($res->status === Souhait::STATUS_DRAFT) {
+						print '<span class="badge badge-status6 badge-status">'.img_picto('', 'fa-question', 'class="valignmiddle"').'	Affectation manquante' . '</span><br>';
+					}
+				}
+
+			} else {
+				print 'Aucune(s) affectation(s) connue(s)';
+			}
+
+			print '</td>';
+			print '</tr>';
+		}
+
+		print '</tbody>';
+		print '</table>';
+	} else {
+		print '<p>Aucun enfant connu.</p>';
 	}
-	print '</tbody>';
-	print '</table>';
+
+	print '<hr>';
 
 	//Listing des parents dans le card
+	print load_fiche_titre('Liste des contributions', '', 'fa-euro');
+
 	$contributionClass = new Contribution($db);
-	$result = $contributionClass->fetchBy(['ref','fk_antenne','fk_annee_scolaire','montant_total','rowid'],$object->id,'fk_famille');
-
-
-	print load_fiche_titre("Liste des contributions", '', 'fa-euro');
-
-	if($result != NULL)
+	$contributions = $contributionClass->fetchAll('','',0,0,['fk_famille'=>$object->id]);
+	if(!empty($contributions))
 	{
 		print '<table class="noborder allwidth">';
 		print '<tbody>';
@@ -587,29 +530,31 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 					<th class="wrapcolumntitle liste_titre">Montant</th>
 					<th class="wrapcolumntitle liste_titre"></th>
 					</tr>';
-		foreach($result as $val)
+
+		foreach($contributions as $contribution)
 		{
 			print '<tr class="oddeven">';
-			print '<td><a href=' . DOL_URL_ROOT . '/custom/viescolaire/contribution_card.php?id=' . $val->rowid . '&action=view'. '>' .$val->ref. '</td>';
+			print '<td><a href=' . dol_buildpath('/custom/viescolaire/contribution_card.php',1) . '?id=' . $contribution->id . '&action=view'. '>' .$contribution->ref. '</td>';
 
 			$antenne = new Etablissement($db);
-			$antenne->fetch($val->fk_antenne);
-			print "<td>".$antenne->nom."</td>";
+			$antenne->fetch($contribution->fk_antenne);
+			print "<td>{$antenne->getNomUrl(1)}</td>";
 
-			$dictionaryClass = new Dictionary($db);
-			$resultAnnee = $dictionaryClass->fetchByDictionary('c_annee_scolaire',['annee'],$val->fk_annee_scolaire,'rowid');
+			$anneeClass = new Annee($db);
+			$anneeClass->fetch($contribution->fk_annee_scolaire);
 
-			print "<td><span class='badge badge-status4 badge-status'>".$resultAnnee->annee."</span></td>";
-			print "<td><span class='badge badge-status4 badge-status'>".$val->montant_total."€</span></td>";
-			print '<td align="center">';
-			print '<a class="reposition editfielda" href="'.$_SERVER["PHP_SELF"].'?action=deleteContribution&contributionId='. $val->rowid .'&id='.$object->id.'">'.img_delete().'</a>';
-			print '&nbsp;';
+			print "<td><span class='badge badge-status4 badge-status'>".$anneeClass->annee. '</span></td>';
+			print "<td><span class='badge badge-status4 badge-status'>".$contribution->montant_total. '€</span></td>';
+			print '<td center>';
+			print '<a class="reposition editfielda" href="'.$_SERVER['PHP_SELF'].'?action=deleteContribution&contributionId='. $contribution->id .'&id='.$object->id.'">'.img_delete().'</a>';
 			print '</td>';
 			print '</tr>';
 		}
 		print '</tbody>';
 		print '</table>';
-	}else print "Aucune contribution connue.";
+	}else {
+		print '<p>Aucune contribution connue.</p>';
+	}
 
 	print dolGetButtonAction($langs->trans('Créer une contribution'), '', 'default', '/custom/viescolaire/contribution_card.php?action=create&fk_famille='.$object->id.'&token='.newToken(), '', $permissiontoadd);
 
@@ -637,61 +582,6 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 		}
 		print '</div>'."\n";
 	}
-
-
-	// Select mail models is same action as presend
-	/*if (GETPOST('modelselected')) {
-		$action = 'presend';
-	}
-
-	if ($action != 'presend') {
-		print '<div class="fichecenter"><div class="fichehalfleft">';
-		print '<a name="builddoc"></a>'; // ancre
-
-		$includedocgeneration = 0;
-
-		// Documents
-		if ($includedocgeneration) {
-			$objref = dol_sanitizeFileName($object->ref);
-			$relativepath = $objref.'/'.$objref.'.pdf';
-			$filedir = $conf->viescolaire->dir_output.'/'.$object->element.'/'.$objref;
-			$urlsource = $_SERVER["PHP_SELF"]."?id=".$object->id;
-			$genallowed = $permissiontoread; // If you can read, you can build the PDF to read content
-			$delallowed = $permissiontoadd; // If you can create/edit, you can remove a file on card
-			print $formfile->showdocuments('viescolaire:Famille', $object->element.'/'.$objref, $filedir, $urlsource, $genallowed, $delallowed, $object->model_pdf, 1, 0, 0, 28, 0, '', '', '', $langs->defaultlang);
-		}
-
-		// Show links to link elements
-		$linktoelem = $form->showLinkToObjectBlock($object, null, array('famille'));
-		$somethingshown = $form->showLinkedObjectBlock($object, $linktoelem);
-
-
-		print '</div><div class="fichehalfright">';
-
-		$MAXEVENT = 10;
-
-		$morehtmlcenter = dolGetButtonTitle($langs->trans('SeeAll'), '', 'fa fa-list-alt imgforviewmode', dol_buildpath('/viescolaire/famille_agenda.php', 1).'?id='.$object->id);
-
-		// List of actions on element
-		include_once DOL_DOCUMENT_ROOT.'/core/class/html.formactions.class.php';
-		$formactions = new FormActions($db);
-		$somethingshown = $formactions->showactions($object, $object->element.'@'.$object->module, (is_object($object->thirdparty) ? $object->thirdparty->id : 0), 1, '', $MAXEVENT, '', $morehtmlcenter);
-
-		print '</div></div>';
-	}
-
-	//Select mail models is same action as presend
-	if (GETPOST('modelselected')) {
-		$action = 'presend';
-	}
-
-	// Presend form
-	$modelmail = 'famille';
-	$defaulttopic = 'InformationMessage';
-	$diroutput = $conf->viescolaire->dir_output;
-	$trackid = 'famille'.$object->id;
-
-	include DOL_DOCUMENT_ROOT.'/core/tpl/card_presend.tpl.php';*/
 }
 
 // End of page

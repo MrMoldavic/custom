@@ -111,10 +111,6 @@ if ($action == 'changeEtablissement') {
 	$etablissementClass->checkSetCookieEtablissement(GETPOST('etablissementid', 'int'));
 }
 
-/*ini_set('display_errors', '1');
-ini_set('display_startup_errors', '1');
-error_reporting(E_ALL);*/
-
 // Load variable for pagination
 $limit = GETPOST('limit', 'int') ? GETPOST('limit', 'int') : $conf->liste_limit;
 $sortfield = GETPOST('sortfield', 'aZ09comma');
@@ -207,10 +203,6 @@ if ($enablepermissioncheck) {
 
 // Security check (enable the most restrictive one)
 if ($user->socid > 0) accessforbidden();
-//if ($user->socid > 0) accessforbidden();
-//$socid = 0; if ($user->socid > 0) $socid = $user->socid;
-//$isdraft = (($object->status == $object::STATUS_DRAFT) ? 1 : 0);
-//restrictedArea($user, $object->module, 0, $object->table_element, $object->element, 'fk_soc', 'rowid', $isdraft);
 if (!isModEnabled("viescolaire")) {
 	accessforbidden('Module viescolaire not enabled');
 }
@@ -409,21 +401,6 @@ if ($num == 1 && !empty($conf->global->MAIN_SEARCH_DIRECT_OPEN_IF_ONLY_ONE) && $
 
 llxHeader('', $title, $help_url, '', 0, 0, $morejs, $morecss, '', 'bodyforlist');	// Can use also classforhorizontalscrolloftabs instead of bodyforlist for no horizontal scroll
 
-// Example : Adding jquery code
-// print '<script type="text/javascript">
-// jQuery(document).ready(function() {
-// 	function init_myfunc()
-// 	{
-// 		jQuery("#myid").removeAttr(\'disabled\');
-// 		jQuery("#myid").attr(\'disabled\',\'disabled\');
-// 	}
-// 	init_myfunc();
-// 	jQuery("#mybutton").click(function() {
-// 		init_myfunc();
-// 	});
-// });
-// </script>';
-
 $arrayofselected = is_array($toselect) ? $toselect : array();
 
 $param = '';
@@ -462,12 +439,8 @@ $reshook = $hookmanager->executeHooks('printFieldListSearchParam', $parameters, 
 $param .= $hookmanager->resPrint;
 
 // List of mass actions available
-$arrayofmassactions = array(
-	//'validate'=>img_picto('', 'check', 'class="pictofixedwidth"').$langs->trans("Validate"),
-	//'generate_doc'=>img_picto('', 'pdf', 'class="pictofixedwidth"').$langs->trans("ReGeneratePDF"),
-	//'builddoc'=>img_picto('', 'pdf', 'class="pictofixedwidth"').$langs->trans("PDFMerge"),
-	//'presend'=>img_picto('', 'email', 'class="pictofixedwidth"').$langs->trans("SendByMail"),
-);
+$arrayofmassactions = array();
+
 if (!empty($permissiontodelete)) {
 	$arrayofmassactions['predelete'] = img_picto('', 'delete', 'class="pictofixedwidth"').$langs->trans("Delete");
 }
@@ -478,36 +451,10 @@ $massactionbutton = $form->selectMassAction('', $arrayofmassactions);
 
 // Ajout du formulaire qui permet de changer son établissement de prédilection
 $etablissementClass = new Etablissement($db);
-$etablissementsList = $etablissementClass->fetchAll('', '', 0, 0, [], 'AND');
-$etablissements = [0 => 'Tous'];
+print dol_fiche_head();
+print $etablissementClass->returnSelectEtablimmentForm();
+print dol_fiche_end();
 
-foreach ($etablissementsList as $val) {
-	$etablissements[$val->id] = $val->nom;
-}
-print '<form action="' . $_SERVER['PHP_SELF'] . '" method="POST">';
-print '<input type="hidden" tyname="sortfield" value="' . $sortfield . '">';
-print '<input type="hidden" name="sortorder" value="' . $sortorder . '">';
-print '<input type="hidden" name="action" value="changeEtablissement">';
-print '<input type="hidden" name="token" value="' . newToken() . '">';
-dol_fiche_head('');
-print '<table class="border centpercent">';
-print '<tr>';
-print '</td></tr>';
-// Type de Kit
-print '<tr><td class="fieldrequired titlefieldcreate">Selectionnez votre établissement: </td><td>';
-print $form->selectarray('etablissementid', $etablissements, $_SESSION['etablissementid']);
-print ' <a href="' . DOL_URL_ROOT . '/custom/scolarite/etablissement_card.php?action=create">';
-print '<span class="fa fa-plus-circle valignmiddle paddingleft" title="Ajouter un etablissement"></span>';
-print '</a>';
-print '</td>';
-print '</tr>';
-print '<td></td>';
-print '<td>';
-print '<input type="submit" class="button" value="Valider">';
-print '</td>';
-print '</table>';
-dol_fiche_end();
-print '</form>';
 
 print '<form method="POST" id="searchFormList" action="'.$_SERVER["PHP_SELF"].'">'."\n";
 if ($optioncss != '') {
@@ -550,9 +497,6 @@ if ($search_all) {
 }
 
 $moreforfilter = '';
-/*$moreforfilter.='<div class="divsearchfield">';
-$moreforfilter.= $langs->trans('MyFilter') . ': <input type="text" name="search_myfield" value="'.dol_escape_htmltag($search_myfield).'">';
-$moreforfilter.= '</div>';*/
 
 $parameters = array();
 $reshook = $hookmanager->executeHooks('printFieldPreListTitle', $parameters, $object, $action); // Note that $action and $object may have been modified by hook
@@ -672,10 +616,7 @@ include DOL_DOCUMENT_ROOT.'/core/tpl/extrafields_list_search_title.tpl.php';
 $parameters = array('arrayfields'=>$arrayfields, 'param'=>$param, 'sortfield'=>$sortfield, 'sortorder'=>$sortorder, 'totalarray'=>&$totalarray);
 $reshook = $hookmanager->executeHooks('printFieldListTitle', $parameters, $object, $action); // Note that $action and $object may have been modified by hook
 print $hookmanager->resPrint;
-/*if (!empty($arrayfields['anotherfield']['checked'])) {
-	print '<th class="liste_titre right">'.$langs->trans("AnotherField").'</th>';
-	$totalarray['nbfield']++;
-}*/
+
 // Action column
 if (!getDolGlobalString('MAIN_CHECKBOX_LEFT_COLUMN')) {
 	print getTitleFieldOfList(($mode != 'kanban' ? $selectedfields : ''), 0, $_SERVER["PHP_SELF"], '', '', '', '', $sortfield, $sortorder, 'center maxwidthsearch ')."\n";
@@ -790,24 +731,26 @@ while ($i < $imaxinloop) {
 
 					if(count($existingContents) > 0)
 					{
+						$dictionaryClass = new Dictionary($db);
 						foreach ($existingContents as $value)
 						{
 							$countTotal += $value->montant;
 
-							$dictionaryClass = new Dictionary($db);
 							if($value->fk_type_contribution_content === 0)
 							{
-								$res = $dictionaryClass->fetchByDictionary('subscription',['rowid'],0,''," WHERE fk_adherent=$value->fk_adherent AND fk_contribution_content=$value->id");;
-								if(!$res->rowid) $count++;
+								$res = $dictionaryClass->fetchByDictionary('subscription',['rowid'],0,''," fk_adherent=$value->fk_adherent AND fk_contribution_content=$value->id");;
+								if(!$res->rowid) {
+									$count++;
+								}
 							}
 							elseif($value->fk_type_contribution_content === 1)
 							{
 								$existingFacture++;
 
 								$parentClass = new Parents($db);
-								$allParents = $parentClass->fetchAll('rowid','rowid',0,0,['fk_famille'=>$object->fk_famille]);
+								$parents = $parentClass->fetchAll('rowid','rowid',0,0,['fk_famille'=>$object->fk_famille]);
 
-								foreach ($allParents as $parent)
+								foreach ($parents as $parent)
 								{
 									$factureClass = new Facture($db);
 									if($parent->fk_tiers)
@@ -817,16 +760,24 @@ while ($i < $imaxinloop) {
 											$factureTermines++;
 											$existingFacture--;
 										}
-										elseif(!$object->getFactureForParentInContribution((int) $value->id,(int) $parent->fk_tiers)) $existingFacture-1;
+										elseif(!$object->getFactureForParentInContribution((int) $value->id,(int) $parent->fk_tiers)) {
+											$existingFacture - 1;
+										}
 									}
 								}
 							}
 							elseif($value->fk_type_contribution_content === 2)
 							{
 								$donClass = new Don($db);
-								if($object->getDonForAdherentInContribution($value->id) && ($object->getDonForAdherentInContribution($value->id)->fk_statut != ($donClass::STATUS_PAID || $donClass::STATUS_MAIL_ENVOYE))) $donsNonTermines++;
-								elseif($object->getDonForAdherentInContribution($value->id) && ($object->getDonForAdherentInContribution($value->id)->fk_statut == $donClass::STATUS_PAID || $object->getDonForAdherentInContribution($value->id)->fk_statut == $donClass::STATUS_MAIL_ENVOYE)) $donsTermines++;
-								elseif(!$object->getDonForAdherentInContribution($value->id)) $existingDon++;
+								if($object->getDonForAdherentInContribution($value->id) && ($object->getDonForAdherentInContribution($value->id)->fk_statut != ($donClass::STATUS_PAID || $donClass::STATUS_MAIL_ENVOYE))) {
+									$donsNonTermines++;
+								}
+								elseif($object->getDonForAdherentInContribution($value->id) && ($object->getDonForAdherentInContribution($value->id)->fk_statut == $donClass::STATUS_PAID || $object->getDonForAdherentInContribution($value->id)->fk_statut == $donClass::STATUS_MAIL_ENVOYE)) {
+									$donsTermines++;
+								}
+								elseif(!$object->getDonForAdherentInContribution($value->id)) {
+									$existingDon++;
+								}
 							}
 						}
 					}
@@ -836,21 +787,35 @@ while ($i < $imaxinloop) {
 					{
 						print "<span class='badge badge-status8 badge-status'>$count adhésion(s) non payée(s)</span><br>";
 					}
-					elseif($count == 0 && $existingContents) print "<span class='badge badge-status4 badge-status'>Toutes les adhésions sont payées</span><br>";
+					elseif($count === 0 && $existingContents) {
+						print "<span class='badge badge-status4 badge-status'>Toutes les adhésions sont payées</span><br>";
+					}
 
 
 					if(($countTotal != $object->montant_total))
 					{
-						print "<span class='badge badge-status5 badge-status'>Montant total non atteint ($countTotal € / $object->montant_total €)</span><br>";
-					} else print "<span class='badge badge-status4 badge-status'>Montant total promesses atteint</span><br>";
+						print "<span class='badge badge-status5 badge-status'>Montant total non atteint ({$countTotal} € / $object->montant_total €)</span><br>";
+					} else {
+						print "<span class='badge badge-status4 badge-status'>Montant total promesses atteint</span><br>";
+					}
 
-					if($existingDon > 0) print "<span class='badge badge-status1 badge-status'>$existingDon don(s) non reçu(s)</span><br>";
-					if($donsNonTermines > 0) print "<span class='badge badge-status2 badge-status'>$donsNonTermines don(s) à traiter</span><br>";
-					if($donsTermines > 0) print "<span class='badge badge-status4 badge-status'>$donsTermines don(s) traité(s)</span><br>";
+					if($existingDon > 0) {
+						print "<span class='badge badge-status1 badge-status'>{$existingDon} don(s) non reçu(s)</span><br>";
+					}
+					if($donsNonTermines > 0) {
+						print "<span class='badge badge-status2 badge-status'>{$donsNonTermines} don(s) à traiter</span><br>";
+					}
+					if($donsTermines > 0) {
+						print "<span class='badge badge-status4 badge-status'>{$donsTermines} don(s) traité(s)</span><br>";
+					}
 
 					print '<hr>';
-					if($existingFacture > 0) print "<span class='badge badge-status1 badge-status'>$existingFacture facture(s) à payer</span><br>";
-					if($factureTermines > 0) print "<span class='badge badge-status4 badge-status'>$factureTermines facture(s) payée(s)</span><br>";
+					if($existingFacture > 0) {
+						print "<span class='badge badge-status1 badge-status'>{$existingFacture} facture(s) à payer</span><br>";
+					}
+					if($factureTermines > 0) {
+						print "<span class='badge badge-status4 badge-status'>{$factureTermines} facture(s) payée(s)</span><br>";
+					}
 					print '<br>';
 
 				}

@@ -73,12 +73,12 @@ class Creneau extends CommonObject
 	/**
 	 * @var int  Does object support extrafields ? 0=No, 1=Yes
 	 */
-	public $isextrafieldmanaged = 1;
+	public $isextrafieldmanaged = 0;
 
 	/**
 	 * @var string String with name of icon for creneau. Must be the part after the 'object_' into object_creneau.png
 	 */
-	public $picto = 'creneau@scolarite';
+	public $picto = 'fa-sign';
 
 
 	const STATUS_DRAFT = 0;
@@ -410,62 +410,6 @@ class Creneau extends CommonObject
 		}
 
 		return $result;
-	}
-
-	/**
-	 * Fetch lines from database
-	 *
-	 * @param array $parameters array of column to fetch
-	 * @param int $id id of item requested for direct fetch
-	 * @param string $column string column requested for direct fetch
-	 * @return int <0 if KO, >0 if OK
-	 */
-	public function fetchBy(array $parameters, int $id = 0, string $column = '')
-	{
-		$sql = "SELECT ";
-		for($i=0;$i<count($parameters);$i++)
-		{
-			$sql .= $this->db->sanitize($this->db->escape($parameters[$i])).', ';
-		}
-		$sql = substr($sql, 0, -2);
-		$sql .= " FROM ".MAIN_DB_PREFIX.$this->table_element;
-
-		if($id)
-		{
-			$sql .= " WHERE ".$this->db->sanitize($this->db->escape($column))." = ".$this->db->sanitize($this->db->escape($id));
-		}
-		$resql = $this->db->query($sql);
-
-
-		if ($resql) {
-			$num = $this->db->num_rows($resql);
-			$i = 0;
-			if($num == 1)
-			{
-				$records = $this->db->fetch_object($resql);
-			}
-			else
-			{
-				while ($i < ($limit ? min($limit, $num) : $num)) {
-
-					$obj = $this->db->fetch_object($resql);
-					$record = new self($this->db);
-					$record->setVarsFromFetchObj($obj);
-
-					$records[$record->id] = $record;
-
-					$i++;
-				}
-			}
-
-			$this->db->free($resql);
-			return $records;
-		} else {
-			$this->errors[] = 'Error '.$this->db->lasterror();
-			dol_syslog(__METHOD__.' '.join(',', $this->errors), LOG_ERR);
-
-			return -1;
-		}
 	}
 
 	/**
@@ -1274,13 +1218,14 @@ class Creneau extends CommonObject
 		$eleveClass = new Eleve($this->db);
 		$eleves = $eleveClass->fetchAll('', '', 0, 0, array('a.fk_creneau' => $creneauId, 'a.status' => Affectation::STATUS_VALIDATED), 'AND', ' INNER JOIN ' . MAIN_DB_PREFIX . 'souhait as s ON s.fk_eleve = t.rowid INNER JOIN ' . MAIN_DB_PREFIX . 'affectation as a ON a.fk_souhait=s.rowid');
 
-		$outEleves = '';
+		$outEleves = '<ul>';
 
 		if ($eleves) {
 			foreach ($eleves as $eleve) {
-				$outEleves .= '- <a href=' . DOL_URL_ROOT . '/custom/viescolaire/eleve_card.php?id=' . $eleve->id . ">$eleve->prenom $eleve->nom</a><br>";
+				$outEleves .= '<li>'.$eleve->getNomUrl(1).'</li>';
 				$count++;
 			}
+			$outEleves .= '</ul>';
 		} else $outEleves = 'Aucun élève dans ce créneau!';
 
 		return [$outEleves,$count];
@@ -1297,20 +1242,21 @@ class Creneau extends CommonObject
 		$assignationClass = new Assignation($this->db);
 		$assignations = $assignationClass->fetchAll('', '', 0, 0, array('fk_creneau'=>$creneauId, 'status' => Assignation::STATUS_VALIDATED));
 
-		$outProfs = '';
+		$outProfs = '<ul>';
 
 		if ($assignations) {
 			foreach ($assignations as $assignation) {
 				$agentClass = new Agent($this->db);
 				$agentClass->fetch($assignation->fk_agent);
 
-				$outProfs .= '- <a href=' . DOL_URL_ROOT . '/custom/management/agent_card.php?id=' . $agentClass->id .">$agentClass->prenom $agentClass->nom</a>";
+				$outProfs .= '<li>'.$agentClass->getNomUrl(1);
 				if($viewMode === 'edit')
 				{
 					$outProfs .= '<a href=' . $_SERVER['PHP_SELF'] . '?id='.$this->id.'&ida='. $assignation->id .'&action=deleteAgent&token='.newToken().''. '>&nbsp;&nbsp;&nbsp;' . img_picto('', 'delete').'</a>';
 				}
-				$outProfs .= '<br>';
+				$outProfs .= '</li>';
 			}
+			$outProfs .= '</ul>';
 		} else $outProfs = 'Aucun professeur dans ce créneau!';
 
 		return $outProfs;

@@ -152,10 +152,6 @@ if ($enablepermissioncheck) {
 $upload_dir = $conf->viescolaire->multidir_output[isset($object->entity) ? $object->entity : 1].'/appel';
 
 // Security check (enable the most restrictive one)
-//if ($user->socid > 0) accessforbidden();
-//if ($user->socid > 0) $socid = $user->socid;
-//$isdraft = (isset($object->status) && ($object->status == $object::STATUS_DRAFT) ? 1 : 0);
-//restrictedArea($user, $object->element, $object->id, $object->table_element, '', 'fk_soc', 'rowid', $isdraft);
 if (empty($conf->viescolaire->enabled)) accessforbidden();
 if (!$permissiontoread) accessforbidden();
 

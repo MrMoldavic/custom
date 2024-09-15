@@ -84,6 +84,7 @@ class Contribution extends CommonObject
 
 	const STATUS_DRAFT = 0;
 	const STATUS_VALIDATED = 4;
+	const STATUS_TERMINATED = 7;
 	const STATUS_CANCELED = 9;
 
 
@@ -306,7 +307,7 @@ class Contribution extends CommonObject
 
 		$existingContribution = $this->fetchAll('ASC','rowid','','',['fk_famille'=>$this->fk_famille,'fk_annee_scolaire'=>$this->fk_annee_scolaire]);
 
-		if($existingContribution) setEventMessages("Une contribution avec ces informations existe déjà", null, 'errors');
+		if($existingContribution) setEventMessages('Une contribution avec ces informations existe déjà', null, 'errors');
 		else
 		{
 			$famille = $familleClass->fetchBy(['fk_antenne','identifiant_famille','rowid'], $this->fk_famille, 'rowid');
@@ -1059,11 +1060,13 @@ class Contribution extends CommonObject
 		if (empty($this->labelStatus) || empty($this->labelStatusShort)) {
 			global $langs;
 			//$langs->load("viescolaire@viescolaire");
-			$this->labelStatus[self::STATUS_DRAFT] = $langs->transnoentitiesnoconv('Draft');
-			$this->labelStatus[self::STATUS_VALIDATED] = $langs->transnoentitiesnoconv('Enabled');
+			$this->labelStatus[self::STATUS_DRAFT] = 'À définir';
+			$this->labelStatus[self::STATUS_VALIDATED] = 'Promesse validée';
+			$this->labelStatus[self::STATUS_TERMINATED] = 'Finalisée';
 			$this->labelStatus[self::STATUS_CANCELED] = $langs->transnoentitiesnoconv('Disabled');
-			$this->labelStatusShort[self::STATUS_DRAFT] = $langs->transnoentitiesnoconv('Draft');
-			$this->labelStatusShort[self::STATUS_VALIDATED] = $langs->transnoentitiesnoconv('Enabled');
+			$this->labelStatusShort[self::STATUS_DRAFT] = 'À définir';
+			$this->labelStatusShort[self::STATUS_VALIDATED] = 'Promesse validée';
+			$this->labelStatusShort[self::STATUS_TERMINATED] = 'Finalisée';
 			$this->labelStatusShort[self::STATUS_CANCELED] = $langs->transnoentitiesnoconv('Disabled');
 		}
 
@@ -1318,7 +1321,7 @@ class Contribution extends CommonObject
 						print '<br>';
 
 						$existingSubscription = new Dictionary($this->db);
-						$res = $existingSubscription->fetchByDictionary('subscription',['rowid'],0,''," WHERE fk_adherent=$line->fk_adherent AND fk_contribution_content=$line->id");
+						$res = $existingSubscription->fetchByDictionary('subscription',['rowid'],0,''," fk_adherent=$line->fk_adherent AND fk_contribution_content=$line->id");
 
 						if($res->rowid) $PrintModifAndDelete = 0;
 						print '<a class="reposition editfielda '.($res ? 'badge badge-status4 badge-status' : '').'" href="'.($res ? '../../adherents/subscription/card.php?rowid='.$res->rowid : $_SERVER["PHP_SELF"].'?action=addSubscription&fk_adherent='.$line->fk_adherent.'&token='.newToken().'&montant='.$line->montant.'&id='.$this->id.'&lineid='.$line->id).'">'.($res ? 'Cotisation payée' : 'Cotiser').'</a>';

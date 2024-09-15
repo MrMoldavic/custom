@@ -81,6 +81,7 @@ require_once DOL_DOCUMENT_ROOT.'/core/lib/company.lib.php';
 require_once DOL_DOCUMENT_ROOT.'/custom/scolarite/class/etablissement.class.php';
 
 dol_include_once('/viescolaire/class/parents.class.php');
+dol_include_once('/viescolaire/class/eleve.class.php');
 
 
 // load viescolaire libraries
@@ -204,10 +205,6 @@ if ($enablepermissioncheck) {
 
 // Security check (enable the most restrictive one)
 if ($user->socid > 0) accessforbidden();
-//if ($user->socid > 0) accessforbidden();
-//$socid = 0; if ($user->socid > 0) $socid = $user->socid;
-//$isdraft = (($object->status == $object::STATUS_DRAFT) ? 1 : 0);
-//restrictedArea($user, $object->element, $object->id, $object->table_element, '', 'fk_soc', 'rowid', $isdraft);
 if (empty($conf->viescolaire->enabled)) accessforbidden('Moule not enabled');
 if (!$permissiontoread) accessforbidden();
 
@@ -348,43 +345,9 @@ $parameters = array();
 $reshook = $hookmanager->executeHooks('printFieldListWhere', $parameters, $object); // Note that $action and $object may have been modified by hook
 $sql .= $hookmanager->resPrint;
 
-/* If a group by is required
-$sql .= " GROUP BY ";
-foreach($object->fields as $key => $val) {
-	$sql .= "t.".$key.", ";
-}
-// Add fields from extrafields
-if (!empty($extrafields->attributes[$object->table_element]['label'])) {
-	foreach ($extrafields->attributes[$object->table_element]['label'] as $key => $val) {
-		$sql .= ($extrafields->attributes[$object->table_element]['type'][$key] != 'separate' ? "ef.".$key.', ' : '');
-	}
-}
-// Add where from hooks
-$parameters = array();
-$reshook = $hookmanager->executeHooks('printFieldListGroupBy', $parameters, $object);    // Note that $action and $object may have been modified by hook
-$sql .= $hookmanager->resPrint;
-$sql = preg_replace('/,\s*$/', '', $sql);
-*/
-
-// Add HAVING from hooks
-/*
-$parameters = array();
-$reshook = $hookmanager->executeHooks('printFieldListHaving', $parameters, $object); // Note that $action and $object may have been modified by hook
-$sql .= empty($hookmanager->resPrint) ? "" : " HAVING 1=1 ".$hookmanager->resPrint;
-*/
-
 // Count total nb of records
 $nbtotalofrecords = '';
 if (empty($conf->global->MAIN_DISABLE_FULL_SCANLIST)) {
-	/* This old and fast method to get and count full list returns all record so use a high amount of memory.
-	$resql = $db->query($sql);
-	$nbtotalofrecords = $db->num_rows($resql);
-	*/
-	/* The slow method does not consume memory on mysql (not tested on pgsql) */
-	/*$resql = $db->query($sql, 0, 'auto', 1);
-	while ($db->fetch_object($resql)) {
-		$nbtotalofrecords++;
-	}*/
 	/* The fast and low memory method to get and count full list converts the sql into a sql count */
 	$sqlforcount = preg_replace('/^SELECT[a-z0-9\._\s\(\),]+FROM/i', 'SELECT COUNT(*) as nbtotalofrecords FROM', $sql);
 	$resql = $db->query($sqlforcount);
@@ -457,12 +420,8 @@ $reshook = $hookmanager->executeHooks('printFieldListSearchParam', $parameters, 
 $param .= $hookmanager->resPrint;
 
 // List of mass actions available
-$arrayofmassactions = array(
-	//'validate'=>img_picto('', 'check', 'class="pictofixedwidth"').$langs->trans("Validate"),
-	//'generate_doc'=>img_picto('', 'pdf', 'class="pictofixedwidth"').$langs->trans("ReGeneratePDF"),
-	//'builddoc'=>img_picto('', 'pdf', 'class="pictofixedwidth"').$langs->trans("PDFMerge"),
-	//'presend'=>img_picto('', 'email', 'class="pictofixedwidth"').$langs->trans("SendByMail"),
-);
+$arrayofmassactions = array();
+
 if ($permissiontodelete) {
 	$arrayofmassactions['predelete'] = img_picto('', 'delete', 'class="pictofixedwidth"').$langs->trans("Delete");
 }
@@ -513,10 +472,6 @@ if ($search_all) {
 }
 
 $moreforfilter = '';
-/*$moreforfilter.='<div class="divsearchfield">';
-$moreforfilter.= $langs->trans('MyFilter') . ': <input type="text" name="search_myfield" value="'.dol_escape_htmltag($search_myfield).'">';
-$moreforfilter.= '</div>';*/
-
 $parameters = array();
 $reshook = $hookmanager->executeHooks('printFieldPreListTitle', $parameters, $object); // Note that $action and $object may have been modified by hook
 if (empty($reshook)) {
@@ -645,115 +600,6 @@ if (isset($extrafields->attributes[$object->table_element]['computed']) && is_ar
 }
 
 
-// // Loop on record
-// // --------------------------------------------------------------------
-// $i = 0;
-// $totalarray = array();
-// $totalarray['nbfield'] = 0;
-// while ($i < ($limit ? min($num, $limit) : $num)) {
-// 	$obj = $db->fetch_object($resql);
-// 	if (empty($obj)) {
-// 		break; // Should not happen
-// 	}
-
-// 	// Store properties in $object
-// 	$object->setVarsFromFetchObj($obj);
-
-// 	// Show here line of result
-// 	print '<tr class="oddeven">';
-// 	foreach ($object->fields as $key => $val) {
-// 		$cssforfield = (empty($val['csslist']) ? (empty($val['css']) ? '' : $val['css']) : $val['csslist']);
-// 		if (in_array($val['type'], array('date', 'datetime', 'timestamp'))) {
-// 			$cssforfield .= ($cssforfield ? ' ' : '').'center';
-// 		} elseif ($key == 'status') {
-// 			$cssforfield .= ($cssforfield ? ' ' : '').'center';
-// 		}
-
-// 		if (in_array($val['type'], array('timestamp'))) {
-// 			$cssforfield .= ($cssforfield ? ' ' : '').'nowrap';
-// 		} elseif ($key == 'ref') {
-// 			$cssforfield .= ($cssforfield ? ' ' : '').'nowrap';
-// 		}
-
-// 		if (in_array($val['type'], array('double(24,8)', 'double(6,3)', 'integer', 'real', 'price')) && !in_array($key, array('rowid', 'status')) && empty($val['arrayofkeyval'])) {
-// 			$cssforfield .= ($cssforfield ? ' ' : '').'right';
-// 		}
-
-
-// 		if (!empty($arrayfields['t.'.$key]['checked'])) {
-// 			print '<td'.($cssforfield ? ' class="'.$cssforfield.'"' : '').'>';
-// 			if ($key == 'status') {
-// 				print $object->getLibStatut(5);
-// 			} elseif ($key == 'rowid') {
-// 				print $object->showOutputField($val, $key, $object->id, '');
-// 			} elseif ($key == 'nom_parent_1') {
-// 				print $object->getNomUrl(1);
-// 			} elseif ($key == 'identifiant_famille') {
-// 				print '<a href="' . DOL_URL_ROOT . '/custom/viescolaire/famille_card.php?id=' . $object->id . '">' . $object->identifiant_famille . '</a>';
-// 			} elseif ($key == 'antenne') {
-// 				$antenne = "SELECT * FROM ".MAIN_DB_PREFIX."etablissement WHERE rowid = ".$object->antenne;
-// 				$resqlAntenne = $db->query($antenne);
-// 				$objAntenne = $db->fetch_object($resqlAntenne);
-// 				print '<a href="' . DOL_URL_ROOT . '/custom/scolarite/etablissement_card.php?id=' . $objAntenne->rowid . '">' . $objAntenne->diminutif . '</a>';
-// 			} elseif ($key == 'enfants') {
-// 				$enfants = "SELECT * FROM ".MAIN_DB_PREFIX."eleve WHERE fk_famille = ".$object->id;
-// 				$resqlEnfants = $db->query($enfants);
-// 				$enfants= "";
-// 				foreach($resqlEnfants as $value)
-// 				{
-// 					$enfants .= $value['nom'].' '.$value['prenom'].'<br>';
-
-// 				}
-// 				print $enfants;
-
-// 			} else {
-// 				print $object->showOutputField($val, $key, $object->$key, '');
-// 			}
-// 			print '</td>';
-// 			if (!$i) {
-// 				$totalarray['nbfield']++;
-// 			}
-// 			if (!empty($val['isameasure']) && $val['isameasure'] == 1) {
-// 				if (!$i) {
-// 					$totalarray['pos'][$totalarray['nbfield']] = 't.'.$key;
-// 				}
-// 				if (!isset($totalarray['val'])) {
-// 					$totalarray['val'] = array();
-// 				}
-// 				if (!isset($totalarray['val']['t.'.$key])) {
-// 					$totalarray['val']['t.'.$key] = 0;
-// 				}
-// 				$totalarray['val']['t.'.$key] += $object->$key;
-// 			}
-// 		}
-// 	}
-// 	// Extra fields
-// 	include DOL_DOCUMENT_ROOT.'/core/tpl/extrafields_list_print_fields.tpl.php';
-// 	// Fields from hook
-// 	$parameters = array('arrayfields'=>$arrayfields, 'object'=>$object, 'obj'=>$obj, 'i'=>$i, 'totalarray'=>&$totalarray);
-// 	$reshook = $hookmanager->executeHooks('printFieldListValue', $parameters, $object); // Note that $action and $object may have been modified by hook
-// 	print $hookmanager->resPrint;
-// 	// Action column
-// 	print '<td class="nowrap center">';
-// 	if ($massactionbutton || $massaction) { // If we are in select mode (massactionbutton defined) or if we have already selected and sent an action ($massaction) defined
-// 		$selected = 0;
-// 		if (in_array($object->id, $arrayofselected)) {
-// 			$selected = 1;
-// 		}
-// 		print '<input id="cb'.$object->id.'" class="flat checkforselect" type="checkbox" name="toselect[]" value="'.$object->id.'"'.($selected ? ' checked="checked"' : '').'>';
-// 	}
-// 	print '</td>';
-// 	if (!$i) {
-// 		$totalarray['nbfield']++;
-// 	}
-
-// 	print '</tr>'."\n";
-
-// 	$i++;
-// }
-
-
-
 $i = 0;
 $savnbfield = $totalarray['nbfield'];
 $totalarray = array();
@@ -824,9 +670,6 @@ while ($i < $imaxinloop) {
 					print $object->getLibStatut(5);
 				} elseif ($key == 'rowid') {
 					print $object->showOutputField($val, $key, $object->id, '');
-				} elseif ($key == 'nom_parent_1') {
-					print $object->getNomUrl(1);
-				} elseif ($key == 'identifiant_famille') {
 
 					$parentClass = new Parents($db);
 					$parentsFromFamily = $parentClass->fetchAll('','','','',['fk_famille'=>$object->id]);
@@ -834,29 +677,28 @@ while ($i < $imaxinloop) {
 					$error = 0;
 					foreach ($parentsFromFamily as $value)
 					{
-						if(!$value->mail) $error++;
-						if(!$value->phone) $error++;
+						if(!$value->mail || !$value->phone) {
+							$error++;
+						}
 					}
-
-					print '<a href="' . DOL_URL_ROOT . '/custom/viescolaire/famille_card.php?id=' . $object->id . '">' . $object->identifiant_famille . '<br>';
-						if(count($parentsFromFamily) == 0) print ' <span class="badge badge-danger">Responsables manquants &#9888</span><br>';
-						elseif($error > 0) print ' <span class="badge badge-danger">Mail ou Téléphone manquant &#9888</span>';
+					if(count($parentsFromFamily) === 0) {
+						print ' <span style="font-size: 1em" class="badge badge-danger">Responsables manquants '.img_picto('', 'fa-warning', 'class="valignmiddle"').'</span><br>';
+					}
+					elseif($error > 0) {
+						print ' <span style="font-size: 1em"  class="badge badge-danger">Mail ou Téléphone manquant '.img_picto('', 'fa-warning', 'class="valignmiddle"').'</span>';
+					}
 					print '</a>';
-				} elseif ($key == 'antenne') {
-					$antenne = "SELECT * FROM ".MAIN_DB_PREFIX."etablissement WHERE rowid = ".$object->antenne;
-					$resqlAntenne = $db->query($antenne);
-					$objAntenne = $db->fetch_object($resqlAntenne);
-					print '<a href="' . DOL_URL_ROOT . '/custom/scolarite/etablissement_card.php?id=' . $objAntenne->rowid . '">' . $objAntenne->diminutif . '</a>';
 				} elseif ($key == 'enfants') {
-					$enfants = "SELECT * FROM ".MAIN_DB_PREFIX."eleve WHERE fk_famille = ".$object->id;
-					$resqlEnfants = $db->query($enfants);
-					$enfants= "";
-					foreach($resqlEnfants as $value)
-					{
-						$enfants .= $value['nom'].' '.$value['prenom'].'<br>';
 
+					$eleveClass = new Eleve($db);
+					$eleves = $eleveClass->fetchAll('','',0,0,['fk_famille'=>$object->id]);
+
+					print '<ul>';
+					foreach($eleves as $enfant)
+					{
+						print '<li>'.$enfant->getNomUrl(1).'</li>';
 					}
-					print $enfants;
+					print '</ul>';
 
 				} else {
 					print $object->showOutputField($val, $key, $object->$key, '');

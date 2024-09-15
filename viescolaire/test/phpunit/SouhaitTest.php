@@ -13,7 +13,7 @@ require_once dirname(__FILE__).'/../../../../core/db/DoliDB.class.php';
 require_once dirname(__FILE__).'/../../class/eleve.class.php';
 
 
-class EleveTest extends PHPUnit\Framework\TestCase
+class SouhaitTest extends PHPUnit\Framework\TestCase
 {
 	/**
 	 * Constructor
@@ -35,6 +35,6 @@ class EleveTest extends PHPUnit\Framework\TestCase
 		$eleveClass = new Eleve($db);
 		$eleveClass->fetch(2);
 
-        $this->assertEquals('kjzaefzef',$eleveClass->nom);
+        return $this->assertEquals('kjzaefzef',$eleveClass->nom);
     }
 }

@@ -201,10 +201,6 @@ if ($enablepermissioncheck) {
 
 // Security check (enable the most restrictive one)
 if ($user->socid > 0) accessforbidden();
-//if ($user->socid > 0) accessforbidden();
-//$socid = 0; if ($user->socid > 0) $socid = $user->socid;
-//$isdraft = (($object->status == $object::STATUS_DRAFT) ? 1 : 0);
-//restrictedArea($user, $object->element, 0, $object->table_element, '', 'fk_soc', 'rowid', $isdraft);
 if (empty($conf->scolarite->enabled)) accessforbidden('Module not enabled');
 if (!$permissiontoread) accessforbidden();
 
@@ -391,21 +387,6 @@ if ($num == 1 && !empty($conf->global->MAIN_SEARCH_DIRECT_OPEN_IF_ONLY_ONE) && $
 
 llxHeader('', $title, $help_url, '', 0, 0, $morejs, $morecss, '', 'bodyforlist');
 
-// Example : Adding jquery code
-// print '<script type="text/javascript">
-// jQuery(document).ready(function() {
-// 	function init_myfunc()
-// 	{
-// 		jQuery("#myid").removeAttr(\'disabled\');
-// 		jQuery("#myid").attr(\'disabled\',\'disabled\');
-// 	}
-// 	init_myfunc();
-// 	jQuery("#mybutton").click(function() {
-// 		init_myfunc();
-// 	});
-// });
-// </script>';
-
 $arrayofselected = is_array($toselect) ? $toselect : array();
 
 $param = '';
@@ -441,10 +422,6 @@ $param .= $hookmanager->resPrint;
 
 // List of mass actions available
 $arrayofmassactions = array(
-	//'validate'=>img_picto('', 'check', 'class="pictofixedwidth"').$langs->trans("Validate"),
-	//'generate_doc'=>img_picto('', 'pdf', 'class="pictofixedwidth"').$langs->trans("ReGeneratePDF"),
-	//'builddoc'=>img_picto('', 'pdf', 'class="pictofixedwidth"').$langs->trans("PDFMerge"),
-	//'presend'=>img_picto('', 'email', 'class="pictofixedwidth"').$langs->trans("SendByMail"),
 );
 if (!empty($permissiontodelete)) {
 	$arrayofmassactions['predelete'] = img_picto('', 'delete', 'class="pictofixedwidth"').$langs->trans("Delete");
@@ -494,9 +471,6 @@ if ($search_all) {
 }
 
 $moreforfilter = '';
-/*$moreforfilter.='<div class="divsearchfield">';
-$moreforfilter.= $langs->trans('MyFilter') . ': <input type="text" name="search_myfield" value="'.dol_escape_htmltag($search_myfield).'">';
-$moreforfilter.= '</div>';*/
 
 $parameters = array();
 $reshook = $hookmanager->executeHooks('printFieldPreListTitle', $parameters, $object); // Note that $action and $object may have been modified by hook
@@ -712,12 +686,10 @@ while ($i < $imaxinloop) {
 				} elseif ($key == 'rowid') {
 					print $object->showOutputField($val, $key, $object->id, '');
 				} elseif ($key == 'fk_cle') {
-					$cle = "SELECT numero_cle FROM ".MAIN_DB_PREFIX."cles WHERE rowid = ".$object->fk_cle;
-					$resqlCle = $db->query($cle);
-					$objCle = $db->fetch_object($resqlCle);
+					$cleClass = new Cles($db);
+					$cleClass->fetch($object->fk_cle);
 
-					print '<a href="' . DOL_URL_ROOT . '/custom/scolarite/attribution_card.php?id=' . $object->id . '">' . $objCle->numero_cle . '</a>';
-
+					print '<a href="' .dol_buildpath('/scolarite/attribution_card.php', 1).'?id=' . $object->id . '">' . $cleClass->numero_cle . '</a>';
 				} else {
 					print $object->showOutputField($val, $key, $object->$key, '');
 				}

@@ -29,6 +29,9 @@
 // Put here all includes required by your class file
 require_once DOL_DOCUMENT_ROOT . '/core/class/commonobject.class.php';
 require_once DOL_DOCUMENT_ROOT . '/custom/viescolaire/class/eleve.class.php';
+require_once DOL_DOCUMENT_ROOT . '/custom/scolarite/class/annee.class.php';
+require_once DOL_DOCUMENT_ROOT . '/custom/viescolaire/class/dictionary.class.php';
+
 
 /**
  * Class for Souhait
@@ -59,12 +62,12 @@ class Souhait extends CommonObject
 	/**
 	 * @var int  Does object support extrafields ? 0=No, 1=Yes
 	 */
-	public $isextrafieldmanaged = 1;
+	public $isextrafieldmanaged = 0;
 
 	/**
 	 * @var string String with name of icon for souhait. Must be the part after the 'object_' into object_souhait.png
 	 */
-	public $picto = 'souhait@viescolaire';
+	public $picto = 'fa-comment';
 
 
 	const STATUS_DRAFT = 0;
@@ -131,7 +134,9 @@ class Souhait extends CommonObject
 	public $eleve_object;
 	public $fk_type_classe;
 	public $fk_instru_enseigne;
+	public $fk_annee_scolaire;
 	public $details;
+	public $fk_niveau;
 	public $disponibilite;
 	public $note_public;
 	public $note_private;
@@ -201,7 +206,7 @@ class Souhait extends CommonObject
 		}
 
 		// Affichage de la partie affectation que si un administrateur l'a décidé
-		if (intval($conf->global->TIME_FOR_APPRECIATION)) {
+		if ((int)$conf->global->TIME_FOR_APPRECIATION) {
 			$this->fields['details']['visible'] = 1;
 
 			// Si l'utilisateur n'as pas les droits en écriture, on enlève tout les autres champs
@@ -247,35 +252,48 @@ class Souhait extends CommonObject
 	 */
 	public function create(User $user, $notrigger = false)
 	{
-		if($this->fk_type_classe == "1" && $this->fk_instru_enseigne == "5")
+		if($this->fk_type_classe === 1 && $this->fk_instru_enseigne === 5)
 		{
 			setEventMessage('Type d\'instrument incompatible avec un cours','errors');
 		}
-		elseif(!$this->fk_annee_scolaire) setEventMessage('Veuillez choisir une année scolaire','errors');
+		elseif(!$this->fk_annee_scolaire) {
+			setEventMessage('Veuillez choisir une année scolaire', 'errors');
+		}
 		else
 		{
-			$eleve = new Eleve($this->db);
-			$eleve->fetch($this->fk_eleve);
+			$this->status = self::STATUS_DRAFT;
+			$this->nom_souhait = $this->returnFullNameSouhait();
 
-			$type_cours = "SELECT t.type FROM ".MAIN_DB_PREFIX."type_classe as t WHERE t.rowid =".$this->fk_type_classe;
-			$resql = $this->db->query($type_cours);
-			$obj = $this->db->fetch_object($resql);
+			return $this->createCommon($user, $notrigger);
+		}
+	}
 
-			$instrument_enseigne = "SELECT i.instrument FROM ".MAIN_DB_PREFIX."c_instrument_enseigne as i WHERE i.rowid =".$this->fk_instru_enseigne;
-			$resql = $this->db->query($instrument_enseigne);
-			$object = $this->db->fetch_object($resql);
 
-			$niveau = "SELECT n.niveau FROM ".MAIN_DB_PREFIX."c_niveaux as n WHERE n.rowid =".$this->fk_niveau;
-			$resql = $this->db->query($niveau);
-			$object1 = $this->db->fetch_object($resql);
+	public function returnFullNameSouhait(): string
+	{
+		$nom_souhait = '';
+		$dictionaryClass = new Dictionary($this->db);
+		$eleveClass = new Eleve($this->db);
 
-			$this->nom_souhait= $eleve->nom .'-'. $eleve->prenom .'-'. $obj->type .'-'. $object->instrument . '-' . $object1->niveau;
+		$eleveClass->fetch($this->fk_eleve);
 
-			$resultcreate = $this->createCommon($user, $notrigger);
+		$nom_souhait .= strtoupper($eleveClass->nom).'-'.$eleveClass->prenom.'-';
 
-			return $resultcreate;
+		$type = $dictionaryClass->fetchByDictionary('type_classe', ['type,rowid'],$this->fk_type_classe,'rowid');
+		$nom_souhait .= (string)$type->type;
+
+		if($this->fk_instru_enseigne) {
+			$instrument = $dictionaryClass->fetchByDictionary('c_instrument_enseigne', ['instrument,rowid'],$this->fk_instru_enseigne,'rowid');
+			$nom_souhait .= "-$instrument->instrument";
 		}
 
+		if($this->fk_niveau) {
+			$niveau = $dictionaryClass->fetchByDictionary('c_niveaux', ['niveau,rowid'],$this->fk_niveau,'rowid');
+
+			$nom_souhait .= "-$niveau->niveau";
+		}
+
+		return $nom_souhait;
 	}
 
 	/**
@@ -301,10 +319,6 @@ class Souhait extends CommonObject
 		if ($result > 0 && !empty($object->table_element_line)) {
 			$object->fetchLines();
 		}
-
-		// get lines so they will be clone
-		// foreach($this->lines as $line)
-		// 	$line->fetch_optionals();
 
 		// Reset some properties
 		unset($object->id);
@@ -384,71 +398,14 @@ class Souhait extends CommonObject
 	 * @param string $ref  Ref
 	 * @return int         <0 if KO, 0 if not found, >0 if OK
 	 */
-	public function fetch($id, $ref = null)
+	public function fetch($id, $ref = null,$moresql = null)
 	{
-		$result = $this->fetchCommon($id, $ref);
+		$result = $this->fetchCommon($id, $ref, $moresql);
 		if ($result > 0 && !empty($this->table_element_line)) {
 			$this->fetchLines();
 		}
-		$this->eleve_object = new Eleve($this->db);
-		$this->eleve_object->fetch($this->fk_eleve);
-
 
 		return $result;
-	}
-
-
-	/**
-	 * Delete object in database
-	 *
-	 * @param array $parameters array of column to fetch
-	 * @param int $id id of item requested for direct fetch
-	 * @param string $column string column requested for direct fetch
-	 * @return int <0 if KO, >0 if OK
-	 */
-	public function fetchBy(array $parameters, int $id = 0, string $column = '')
-	{
-		$sql = "SELECT ";
-		for($i=0;$i<count($parameters);$i++)
-		{
-			$sql .= $this->db->sanitize($this->db->escape($parameters[$i])).', ';
-		}
-		$sql = substr($sql, 0, -2);
-		$sql .= " FROM ".MAIN_DB_PREFIX.$this->table_element;
-
-		if($id)
-		{
-			$sql .= " WHERE ".$this->db->sanitize($this->db->escape($column))." = ".$this->db->sanitize($this->db->escape($id));
-		}
-		$resql = $this->db->query($sql);
-
-
-		if ($resql) {
-			$num = $this->db->num_rows($resql);
-			$i = 0;
-			if($num == 1)
-			{
-				$records = $this->db->fetch_object($resql);
-			}
-			else
-			{
-				$records = array();
-				while ($i < ($limit ? min($limit, $num) : $num)) {
-					$obj = $this->db->fetch_object($resql);
-					$records[$obj->rowid] = $obj;
-					$i++;
-				}
-			}
-
-			$this->db->free($resql);
-
-			return $records;
-		} else {
-			$this->errors[] = 'Error '.$this->db->lasterror();
-			dol_syslog(__METHOD__.' '.join(',', $this->errors), LOG_ERR);
-
-			return -1;
-		}
 	}
 
 	/**
@@ -554,21 +511,7 @@ class Souhait extends CommonObject
 	 */
 	public function update(User $user, $notrigger = false)
 	{
-		$eleve = new Eleve($this->db);
-		$eleve->fetch($this->fk_eleve);
-		$type_cours = "SELECT t.type FROM ".MAIN_DB_PREFIX."type_classe as t WHERE t.rowid =".$this->fk_type_classe;
-		$resql = $this->db->query($type_cours);
-		$obj = $this->db->fetch_object($resql);
-
-		$instrument_enseigne = "SELECT i.instrument FROM ".MAIN_DB_PREFIX."c_instrument_enseigne as i WHERE i.rowid =".$this->fk_instru_enseigne;
-		$resql = $this->db->query($instrument_enseigne);
-		$object = $this->db->fetch_object($resql);
-
-		$niveau = "SELECT n.niveau FROM ".MAIN_DB_PREFIX."c_niveaux as n WHERE n.rowid =".$this->fk_niveau;
-		$resql = $this->db->query($niveau);
-		$object1 = $this->db->fetch_object($resql);
-
-		$this->nom_souhait=$eleve->nom .'-'. $eleve->prenom .'-'. $obj->type .'-'. $object->instrument . '-' . $object1->niveau;
+		$this->nom_souhait = $this->returnFullNameSouhait();
 
 		return $this->updateCommon($user, $notrigger);
 	}
@@ -583,7 +526,6 @@ class Souhait extends CommonObject
 	public function delete(User $user, $notrigger = false)
 	{
 		return $this->deleteCommon($user, $notrigger);
-		//return $this->deleteCommon($user, $notrigger, 1);
 	}
 
 	/**
@@ -625,14 +567,6 @@ class Souhait extends CommonObject
 			dol_syslog(get_class($this) . "::validate action abandonned: already validated", LOG_WARNING);
 			return 0;
 		}
-
-		/*if (! ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->viescolaire->souhait->write))
-		 || (! empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->viescolaire->souhait->souhait_advance->validate))))
-		 {
-		 $this->error='NotEnoughPermissions';
-		 dol_syslog(get_class($this)."::valid ".$this->error, LOG_ERR);
-		 return -1;
-		 }*/
 
 		$now = dol_now();
 
@@ -744,13 +678,6 @@ class Souhait extends CommonObject
 			return 0;
 		}
 
-		/*if (! ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->viescolaire->write))
-		 || (! empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->viescolaire->viescolaire_advance->validate))))
-		 {
-		 $this->error='Permission denied';
-		 return -1;
-		 }*/
-
 		return $this->setStatusCommon($user, self::STATUS_DRAFT, $notrigger, 'SOUHAIT_UNVALIDATE');
 	}
 
@@ -768,13 +695,6 @@ class Souhait extends CommonObject
 			return 0;
 		}
 
-		/*if (! ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->viescolaire->write))
-		 || (! empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->viescolaire->viescolaire_advance->validate))))
-		 {
-		 $this->error='Permission denied';
-		 return -1;
-		 }*/
-
 		return $this->setStatusCommon($user, self::STATUS_CANCELED, $notrigger, 'SOUHAIT_CANCEL');
 	}
 
@@ -791,13 +711,6 @@ class Souhait extends CommonObject
 		if ($this->status != self::STATUS_CANCELED) {
 			return 0;
 		}
-
-		/*if (! ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->viescolaire->write))
-		 || (! empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->viescolaire->viescolaire_advance->validate))))
-		 {
-		 $this->error='Permission denied';
-		 return -1;
-		 }*/
 
 		return $this->setStatusCommon($user, self::STATUS_VALIDATED, $notrigger, 'SOUHAIT_REOPEN');
 	}
@@ -1110,99 +1023,18 @@ class Souhait extends CommonObject
 		}
 	}
 
-	/**
-	 *  Create a document onto disk according to template module.
-	 *
-	 *  @param	    string		$modele			Force template to use ('' to not force)
-	 *  @param		Translate	$outputlangs	objet lang a utiliser pour traduction
-	 *  @param      int			$hidedetails    Hide details of lines
-	 *  @param      int			$hidedesc       Hide description
-	 *  @param      int			$hideref        Hide ref
-	 *  @param      null|array  $moreparams     Array to provide more information
-	 *  @return     int         				0 if KO, 1 if OK
-	 */
-	public function generateDocument($modele, $outputlangs, $hidedetails = 0, $hidedesc = 0, $hideref = 0, $moreparams = null)
+	public function printCountAffectationSouhaits($eleveId) : string
 	{
-		global $conf, $langs;
+		$anneScolaire = new Annee($this->db);
+		$anneScolaire->fetch('','',' AND active=1 AND annee_actuelle=1');
 
-		$result = 0;
-		$includedocgeneration = 0;
+		$affectedSouhaits = $this->fetchAll('','',0,0,array('fk_eleve'=>$eleveId,'status'=>self::STATUS_VALIDATED,'fk_annee_scolaire'=>$anneScolaire->id),'AND');
 
-		$langs->load("viescolaire@viescolaire");
 
-		if (!dol_strlen($modele)) {
-			$modele = 'standard_souhait';
+		$souhaits = $this->fetchAll('','',0,0,array('fk_eleve'=>$eleveId,'customsql'=>'(t.status='.self::STATUS_VALIDATED.' OR t.status='.self::STATUS_DRAFT.')','fk_annee_scolaire'=>$anneScolaire->id),'AND');
 
-			if (!empty($this->model_pdf)) {
-				$modele = $this->model_pdf;
-			} elseif (!empty($conf->global->SOUHAIT_ADDON_PDF)) {
-				$modele = $conf->global->SOUHAIT_ADDON_PDF;
-			}
-		}
 
-		$modelpath = "core/modules/viescolaire/doc/";
-
-		if ($includedocgeneration && !empty($modele)) {
-			$result = $this->commonGenerateDocument($modelpath, $modele, $outputlangs, $hidedetails, $hidedesc, $hideref, $moreparams);
-		}
-
-		return $result;
+		return count($affectedSouhaits) . ' / '.count($souhaits) . (count($affectedSouhaits) !== count($souhaits) ? ' <span class="badge badge-danger">&#9888</span>' : '');
 	}
 
-	/**
-	 * Action executed by scheduler
-	 * CAN BE A CRON TASK. In such a case, parameters come from the schedule job setup field 'Parameters'
-	 * Use public function doScheduledJob($param1, $param2, ...) to get parameters
-	 *
-	 * @return	int			0 if OK, <>0 if KO (this function is used also by cron so only 0 is OK)
-	 */
-	public function doScheduledJob()
-	{
-		global $conf, $langs;
-
-		//$conf->global->SYSLOG_FILE = 'DOL_DATA_ROOT/dolibarr_mydedicatedlofile.log';
-
-		$error = 0;
-		$this->output = '';
-		$this->error = '';
-
-		dol_syslog(__METHOD__, LOG_DEBUG);
-
-		$now = dol_now();
-
-		$this->db->begin();
-
-		// ...
-
-		$this->db->commit();
-
-		return $error;
-	}
-}
-
-
-require_once DOL_DOCUMENT_ROOT . '/core/class/commonobjectline.class.php';
-
-/**
- * Class SouhaitLine. You can also remove this and generate a CRUD class for lines objects.
- */
-class SouhaitLine extends CommonObjectLine
-{
-	// To complete with content of an object SouhaitLine
-	// We should have a field rowid, fk_souhait and position
-
-	/**
-	 * @var int  Does object support extrafields ? 0=No, 1=Yes
-	 */
-	public $isextrafieldmanaged = 0;
-
-	/**
-	 * Constructor
-	 *
-	 * @param DoliDb $db Database handler
-	 */
-	public function __construct(DoliDB $db)
-	{
-		$this->db = $db;
-	}
 }

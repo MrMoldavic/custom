@@ -22,9 +22,9 @@
  *		\brief      Page to create/edit/view eleve
  */
 
-/*ini_set('display_errors', '1');
+ini_set('display_errors', '1');
 ini_set('display_startup_errors', '1');
-error_reporting(E_ALL);*/
+error_reporting(E_ALL);
 
 //if (! defined('NOREQUIREDB'))              define('NOREQUIREDB', '1');				// Do not create database handler $db
 //if (! defined('NOREQUIREUSER'))            define('NOREQUIREUSER', '1');				// Do not load object $user
@@ -82,6 +82,7 @@ if (!$res) {
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formcompany.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formfile.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formprojet.class.php';
+
 dol_include_once('/viescolaire/class/eleve.class.php');
 dol_include_once('/viescolaire/class/souhait.class.php');
 dol_include_once('/viescolaire/class/parents.class.php');
@@ -255,14 +256,10 @@ if ($action == 'create') {
 
 	print dol_get_fiche_head(array(), '');
 
-	// Set some default values
-	//if (! GETPOSTISSET('fieldname')) $_POST['fieldname'] = 'myvalue';
-
 	print '<table class="border centpercent tableforfieldcreate">'."\n";
 
 	// Common attributes
 	include DOL_DOCUMENT_ROOT.'/core/tpl/commonfields_add.tpl.php';
-	// print $form->selectArrayAjax('test','intranet.tousalamusique.com/custom/scolarite/ajax/getClasseSelect.php?etablissementid=1');
 
 	// Other attributes
 	include DOL_DOCUMENT_ROOT.'/core/tpl/extrafields_add.tpl.php';
@@ -274,8 +271,6 @@ if ($action == 'create') {
 	print $form->buttonsSaveCancel("Create");
 
 	print '</form>';
-
-	//dol_set_focus('input[name="ref"]');
 }
 
 // Part to edit record
@@ -332,18 +327,8 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 	if ($action == 'activation') {
 		$formconfirm = $form->formconfirm($_SERVER["PHP_SELF"].'?id='.$object->id, 'Activation d\'un élève', 'Voulez-vous activer cet élève? Cette action est réversible sur le card de l\'élève.', 'confirm_activation', '', 0, 1);
 	}
-	// Confirmation to delete line
-	if ($action == 'deleteline') {
-		$formconfirm = $form->formconfirm($_SERVER["PHP_SELF"].'?id='.$object->id.'&lineid='.$lineid, $langs->trans('DeleteLine'), $langs->trans('ConfirmDeleteLine'), 'confirm_deleteline', '', 0, 1);
-	}
 	if ($action == 'deleteInscription') {
 		$formconfirm = $form->formconfirm($_SERVER["PHP_SELF"].'?id='.$object->id.'&inscriptionid='.GETPOST('inscriptionid','int'), 'Suppression d\'une inscription', 'Voulez-vous supprimer cette inscription? Ceci est irréversible.', 'confirm_delete_inscription', '', 0, 1);
-	}
-	// Clone confirmation
-	if ($action == 'clone') {
-		// Create an array for form
-		$formquestion = array();
-		$formconfirm = $form->formconfirm($_SERVER["PHP_SELF"].'?id='.$object->id, $langs->trans('ToClone'), $langs->trans('ConfirmCloneAsk', $object->ref), 'confirm_clone', $formquestion, 'yes', 1);
 	}
 
 	// Call Hook formConfirm
@@ -381,17 +366,63 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 	// Common attributes
 	include DOL_DOCUMENT_ROOT.'/core/tpl/commonfields_view.tpl.php';
 
-	// Other attributes. Fields from hook formObjectOptions and Extrafields.
 	include DOL_DOCUMENT_ROOT.'/core/tpl/extrafields_view.tpl.php';
 
 	print '</table>';
 
-	if($object->status != $object::STATUS_CANCELED)
+	// Partie qui affiche les informations des inscriptions d'un élève
+	if($object->status !== Eleve::STATUS_CANCELED)
 	{
-		print load_fiche_titre("Etats des inscriptions", '', 'fa-pen');
+		print load_fiche_titre('Etats des inscriptions', '', 'fa-pen');
 
 		$inscriptionClass = new Inscription($db);
-		$inscriptionClass->inscriptionsPerYear($object->id);
+
+		$dictionaryClass = new Dictionary($db);
+		$resqlAnneeScolaire = $dictionaryClass->fetchByDictionary('c_annee_scolaire', ['rowid', 'annee', 'annee_actuelle'], 0, '', ' active = 1 ORDER BY rowid DESC');
+
+		foreach ($resqlAnneeScolaire as $value) {
+			$results = $inscriptionClass->fetchAll('', '', 0, '', ['fk_eleve' => $object->id, 'fk_annee_scolaire' => $value->rowid]);
+
+			print '<div class="annee-accordion' . ((int) $value->annee_actuelle === 1 ? '-opened' : '') . '">';
+			print '<h3><span class="badge badge-status4 badge-status">Année ' . $value->annee . ((int) $value->annee_actuelle === 1 ? ' (année actuelle)' : ' (année précédente)') . '</span></h3>';
+
+			if (count($results) > 0) {
+				print '<table class="tagtable liste">';
+				print '<tbody>';
+
+				print '<tr class="liste_titre">
+					<th class="wrapcolumntitle liste_titre">Année scolaire</th>
+					<th class="wrapcolumntitle liste_titre">Etat</th>
+					<th class="wrapcolumntitle liste_titre">Crée par</th>
+					<th class="wrapcolumntitle liste_titre">Le</th>
+					<th class="wrapcolumntitle liste_titre"></th>
+					</tr>';
+
+				print '</tbody>';
+				foreach ($results as $result) {
+					print '<tr class="oddeven">';
+					print '<td>' . $dictionaryClass->fetchByDictionary('c_annee_scolaire', ['annee'], $result->fk_annee_scolaire, 'rowid')->annee . '</td>';
+					print '<td><span class="badge badge-status' . $result->status . ' badge-status">' . $inscriptionClass->LibStatut($result->status) . '</span></td>';
+
+					$userClass = new User($db);
+					$userClass->fetch($result->fk_user_creat);
+
+					print "<td>$userClass->firstname $userClass->lastname</td>";
+					print '<td>' . date('d/m/Y', $result->date_creation) . '</td>';
+					print '<td>';
+					print '<a href="../viescolaire/inscription_card.php?id=' . $result->id . '&action=edit">' . img_picto('', 'fa-pen', 'class="valignmiddle"', $pictoisfullpath) . '️</a> ';
+					print '<a href="' . $_SERVER['PHP_SELF'] . '?id=' . $object->id . '&inscriptionid=' . $result->id . '&action=deleteInscription">' . img_picto('', 'fa-trash', 'class="valignmiddle"', $pictoisfullpath) . '</a>';
+					print '</td>';
+					print '</tr>';
+				}
+				unset($result);
+				print '</table>';
+			} else {
+				print '<p>Aucune inscription connue pour cette année scolaire.</p>';
+			}
+
+			print '</div>';
+		}
 	}
 
 	print '</div>';
@@ -399,12 +430,15 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 	print '</div>';
 
 	print '<div class="clearboth"></div>';
-	print load_fiche_titre('Liste des parents', '', 'object_' . $object->picto);
+	print load_fiche_titre('Liste des parents', '', 'fa-user');
+
+	// Partie affichant les informations de la famille d'un élève
 	if($object->fk_famille)
 	{
-		$parentsClass = new Parents($db);
-		$resultParents = $parentsClass->fetchAll('','',0,0,['fk_famille'=>$object->fk_famille],'AND');
+		$dictionaryClass = new Dictionary($db);
 
+		$parentsClass = new Parents($db);
+		$parents = $parentsClass->fetchAll('','',0,0,['fk_famille'=>$object->fk_famille],'AND');
 
 		print '<table class="noborder allwidth">';
 		print '<tbody>';
@@ -419,26 +453,30 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 					<th class="wrapcolumntitle liste_titre">Adresse</th>
 					<th class="wrapcolumntitle liste_titre">Précisions</th>
 					</tr>';
-		foreach ($resultParents as $val) {
-			$dictionaryClass = new Dictionary($db);
-			if ($val->fk_type_parent != 0) {
-				$typeParent = $dictionaryClass->fetchByDictionary('c_type_parent', ['type', 'rowid'], $val->fk_type_parent, 'rowid');
+
+		foreach ($parents as $parent)
+		{
+			if ($parent->fk_type_parent) {
+				$typeParent = $dictionaryClass->fetchByDictionary('c_type_parent', ['type', 'rowid'], $parent->fk_type_parent, 'rowid');
 			}
 
 			print '<tr class="oddeven">';
-			print '<td><a href=' . DOL_URL_ROOT . '/custom/viescolaire/parents_card.php?id=' . $val->id . '&action=edit' . '>' . $val->firstname . '</td>';
-			print '<td>' . $val->lastname . '</td>';
-			print '<td>' . ($typeParent != null ? $typeParent->type : 'Type Inconnu') . '</td>';
-			print "<td><span class='badge  badge-status" . ($val->contact_preferentiel == 1 ? '4' : '8') . " badge-status'>" . ($val->contact_preferentiel == 1 ? 'Oui' : 'Non') . '</td>';
-			print '<td>' . $val->phone . '</td>';
-			print '<td>' . $val->mail . '</td>';
-			print "<td>$val->address $val->zipcode $val->town</td>";
-			print "<td>$val->description</td>";
+			print '<td><a href=' . dol_buildpath('/custom/viescolaire/parents_card.php',1) . '?id=' . $parent->id . '&action=edit' . '>' . $parent->firstname . '</td>';
+			print '<td>' . $parent->lastname . '</td>';
+			print '<td>' . ($typeParent && $parent->fk_type_parent  ? $typeParent->type : 'Type Inconnu') . '</td>';
+			print "<td><span class='badge  badge-status" . ($parent->contact_preferentiel ? 4 : 8) . " badge-status'>" . ($parent->contact_preferentiel ? 'Oui' : 'Non') . '</td>';
+			print '<td>' . $parent->phone . '</td>';
+			print '<td>' . $parent->mail . '</td>';
+			print "<td>$parent->address $parent->zipcode $parent->town</td>";
+			print "<td>$parent->description</td>";
 			print '</tr>';
 		}
+
 		print '</tbody>';
 		print '</table>';
-	}else print '<h3><span class="badge badge-danger">Sans Famille liée &#9888</span></h3>';
+	} else {
+		print '<h3><span class="badge badge-danger">Sans Famille liée &#9888</span></h3>';
+	}
 
 	if ($action != 'presend' && $action != 'editline') {
 		print '<div class="tabsAction">'."\n";
@@ -450,20 +488,20 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 
 		if (empty($reshook)) {
 
-			if($object->status != $object::STATUS_CANCELED)
+			if($object->status !== Eleve::STATUS_CANCELED)
 			{
-				print dolGetButtonAction($langs->trans('Engager dans un groupe'), '', '', DOL_URL_ROOT.'/custom/organisation/engagement_card.php?fk_eleve='.$object->id.'&action=create' , '', $permissiontoadd);
-				print dolGetButtonAction($langs->trans('Modifier l\'élève'), '', '', '?id='.$object->id.'&action=edit&token='.newToken(), '', $permissiontoadd);
+				print dolGetButtonAction($langs->trans('Engager dans un groupe'), '', '', dol_buildpath('/custom/organisation/engagement_card.php',1).'?fk_eleve='.$object->id.'&action=create' , '', $permissiontoadd);
+				print dolGetButtonAction($langs->trans('Modifier l\'élève'), '', '', $_SERVER["PHP_SELF"].'?id='.$object->id.'&action=edit&token='.newToken(), '', $permissiontoadd);
 			}
-			print "<br>";
+			print '<br>';
 
-			print dolGetButtonAction($langs->trans('Ajouter une inscription'), '', 'delete', DOL_URL_ROOT.'/custom/viescolaire/inscription_card.php?fk_eleve='.$object->id.'&action=create&token=' . newToken(), '', $permissiontoadd);
+			print dolGetButtonAction($langs->trans('Ajouter une inscription'), '', 'delete', dol_buildpath('/custom/viescolaire/inscription_card.php',1).'?fk_eleve='.$object->id.'&action=create&token=' . newToken(), '', $permissiontoadd);
 
-			if($object->status == $object::STATUS_CANCELED)
+			if($object->status === Eleve::STATUS_CANCELED)
 			{
-				print dolGetButtonAction($langs->trans('Activer l\'élève'), '', 'delete', $_SERVER["PHP_SELF"] . '?id=' . $object->id . '&action=activation&token=' . newToken(), '', $permissiontoadd);
+				print dolGetButtonAction($langs->trans('Activer l\'élève'), '', 'delete', $_SERVER['PHP_SELF'] . '?id=' . $object->id . '&action=activation&token=' . newToken(), '', $permissiontoadd);
 			}
-			else print dolGetButtonAction($langs->trans('Desactiver l\'élève'), '', 'delete', $_SERVER["PHP_SELF"] . '?id=' . $object->id . '&action=desactivation&token=' . newToken(), '', $permissiontoadd);
+			else print dolGetButtonAction($langs->trans('Desactiver l\'élève'), '', 'delete', $_SERVER['PHP_SELF'] . '?id=' . $object->id . '&action=desactivation&token=' . newToken(), '', $permissiontoadd);
 
 			print dolGetButtonAction($langs->trans('Delete'), '', 'delete', $_SERVER['PHP_SELF'].'?id='.$object->id.'&action=delete&token='.newToken(), '', $permissiontodelete);
 
@@ -471,32 +509,33 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 		print '</div>'."\n";
 	}
 
-	if($object->status != $object::STATUS_CANCELED && $object->status != $object::STATUS_ABANDON)
+	// Patie qui affiche les souhaits et leurs états par années scolaires
+	if($object->status !== Eleve::STATUS_CANCELED && $object->status !== Eleve::STATUS_ABANDON)
 	{
 		print '<hr>';
 		print load_fiche_titre("Liste des souhait de l'élève", '', 'fa-school');
 
-		print '<p>'.dolGetButtonAction('Ajouter un souhait', '', 'default', '/custom/viescolaire/souhait_card.php'.'?action=create&fk_eleve='.$object->id, '', $permissiontoadd).'</p>';
+		print '<div style="margin: 20px">'.dolGetButtonAction('Ajouter un souhait', '', 'default', '/custom/viescolaire/souhait_card.php'.'?action=create&fk_eleve='.$object->id, '', $permissiontoadd).'</div>';
 
 		$souhaitClass = new Souhait($db);
 		$souhaitsEleve = $souhaitClass->fetchAll('','','','',array('fk_eleve'=>$object->id));
 
-		if(count($souhaitsEleve) == 0)
+		if(count($souhaitsEleve) === 0)
 		{
 			print '<p>Aucun souhaits connus pour cette année scolaire.</p>';
 		}
 		else
 		{
-			$dictionaryClass = new Dictionary($db);
-			$annesScolaires = $dictionaryClass->fetchByDictionary('c_annee_scolaire',['rowid','annee','annee_actuelle'],0,'',' WHERE active = 1 ORDER BY annee_actuelle DESC, rowid ASC');
+			$anneeClass = new Annee($db);
+			$annees = $anneeClass->fetchAll('DESC,ASC','annee_actuelle,rowid',0,0,['active'=>1],'AND');
 
-			foreach($annesScolaires as $value)
+			foreach($annees as $value)
 			{
 				$souhaitClass = new Souhait($db);
-				$souhaits = $souhaitClass->fetchAll('ASC','status',0,0,['fk_eleve'=>$object->id,'fk_annee_scolaire'=>$value->rowid],'AND');
+				$souhaits = $souhaitClass->fetchAll('ASC','status',0,0,['fk_eleve'=>$object->id,'fk_annee_scolaire'=>$value->id],'AND');
 
-				print '<div class="annee-accordion'.($value->annee_actuelle == 1 ? '-opened' : '').'">';
-				print '<h3><span class="badge badge-status4 badge-status">'.$value->annee.($value->annee_actuelle != 1 ? ' (année précédente)' : '').'</span></h3>';
+				print '<div style="width : 75%" class="annee-accordion'.($value->annee_actuelle === 1 ? '-opened' : '').'">';
+				print '<h3><span class="badge badge-status4 badge-status">'.$value->annee.($value->annee_actuelle !== 1 ? ' (année précédente)' : ' (année actuelle)').'</span></h3>';
 
 				if(count($souhaits) > 0)
 				{
@@ -510,17 +549,18 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 					<th class="wrapcolumntitle liste_titre">Affecté par, le</th>
 					</tr>';
 
-					foreach($souhaits as $val)
+					foreach($souhaits as $souhait)
 					{
 						print '<tr class="oddeven">';
-						print '<td><a href="' . DOL_URL_ROOT . '/custom/viescolaire/souhait_card.php?id=' . $val->id. '">' .'- ' . $val->nom_souhait.'</a>'.($value->annee_actuelle != 1 ? ' <span class="badge  badge-status'.($val->details != ""  ? "4" : "8").' badge-status" style="color:white;">'.($val->details != "" && getDolGlobalString('TIME_FOR_APPRECIATION', '') ? "Appréciation Faite" : "Appréciation manquante") : '').'</span></td>';
-						if($val->status == 4)
+						print '<td><a href="' . dol_buildpath('/custom/viescolaire/souhait_card.php',1) . '?id=' . $souhait->id. '">' .'- ' . $souhait->returnFullNameSouhait().'</a>'.($value->annee_actuelle !== 1 ? ' <span class="badge  badge-status'.($souhait->details !== ''  ? 4 : 8).' badge-status" style="color:white;">'.($souhait->details !== '' && getDolGlobalString('TIME_FOR_APPRECIATION', '') ? 'Appréciation Faite' : 'Appréciation manquante') : '').'</span></td>';
+
+						if($souhait->status === Souhait::STATUS_VALIDATED)
 						{
 							$creneauClass = new Creneau($db);
-							$objectCreneau = $creneauClass->getCreneauxFromSouhaits($val->id,$val->status);
+							$objectCreneau = $creneauClass->getCreneauxFromSouhaits($souhait->id,$souhait->status);
 
 							print '<td><span class="badge  badge-status4 badge-status" style="color:white;">Affecté</span></td>';
-							print '<td><a href="'.DOL_URL_ROOT.'/custom/scolarite/creneau_card.php?id='.$objectCreneau->rowid.'">'.$objectCreneau->nom_creneau.'</a></td>';
+							print '<td><a href="'.dol_buildpath('/custom/scolarite/creneau_card.php',1).'?id='.$objectCreneau->rowid.'">'.$objectCreneau->nom_creneau.'</a></td>';
 
 							$userClass = new User($db);
 							$userClass->fetch($objectCreneau->fk_user_creat);
@@ -530,18 +570,16 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 
 							print "<td>$userClass->firstname $userClass->lastname, ".$dateFormat.'</td>';
 						}
-						elseif($val->status == 9)
+						elseif($souhait->status === Souhait::STATUS_CANCELED)
 						{
-							print '<td><span class="badge  badge-status8 badge-status" style="color:white;">Souhait désactivé</span></td>';
-							print '<td>Aucun créneau</td>';
-							print '<td>Aucune info</td>';
+							print '<td><span class="badge badge-status8 badge-status" style="color:white;">Souhait désactivé</span></td>';
 						}
 						else
 						{
-							print '<td><span class="badge  badge-status1 badge-status" style="color:white;">En attente d\'affectation</span></td>';
-							print '<td>Aucun créneau</td>';
-							print '<td>Aucune info</td>';
+							print '<td><span class="badge badge-status1 badge-status" style="color:white;">En attente d\'affectation</span></td>';
 						}
+						print '<td>Aucun créneau</td>';
+						print '<td>Aucune info</td>';
 						print '</tr>';
 					}
 					print '</tbody>';

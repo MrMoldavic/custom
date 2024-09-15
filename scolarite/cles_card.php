@@ -22,6 +22,10 @@
  *		\brief      Page to create/edit/view cles
  */
 
+/*ini_set('display_errors', '1');
+ini_set('display_startup_errors', '1');
+error_reporting(E_ALL);*/
+
 //if (! defined('NOREQUIREDB'))              define('NOREQUIREDB', '1');				// Do not create database handler $db
 //if (! defined('NOREQUIREUSER'))            define('NOREQUIREUSER', '1');				// Do not load object $user
 //if (! defined('NOREQUIRESOC'))             define('NOREQUIRESOC', '1');				// Do not load object $mysoc
@@ -78,9 +82,10 @@ if (!$res) {
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formcompany.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formfile.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formprojet.class.php';
+
 dol_include_once('/scolarite/class/cles.class.php');
 dol_include_once('/scolarite/class/attribution.class.php');
-dol_include_once('/viescolaire/class/dictionary.class.php');
+dol_include_once('/scolarite/class/annee.class.php');
 dol_include_once('/scolarite/lib/scolarite_cles.lib.php');
 
 // Load translation files required by the page
@@ -147,10 +152,6 @@ if ($enablepermissioncheck) {
 $upload_dir = $conf->scolarite->multidir_output[isset($object->entity) ? $object->entity : 1].'/cles';
 
 // Security check (enable the most restrictive one)
-//if ($user->socid > 0) accessforbidden();
-//if ($user->socid > 0) $socid = $user->socid;
-//$isdraft = (isset($object->status) && ($object->status == $object::STATUS_DRAFT) ? 1 : 0);
-//restrictedArea($user, $object->element, $object->id, $object->table_element, '', 'fk_soc', 'rowid', $isdraft);
 if (empty($conf->scolarite->enabled)) accessforbidden();
 if (!$permissiontoread) accessforbidden();
 
@@ -190,9 +191,6 @@ if (empty($reshook)) {
 
 	// Actions when printing a doc from card
 	include DOL_DOCUMENT_ROOT.'/core/actions_printing.inc.php';
-
-	// Action to move up and down lines of object
-	//include DOL_DOCUMENT_ROOT.'/core/actions_lineupdown.inc.php';
 
 	// Action to build doc
 	include DOL_DOCUMENT_ROOT.'/core/actions_builddoc.inc.php';
@@ -252,9 +250,6 @@ if ($action == 'create') {
 	}
 
 	print dol_get_fiche_head(array(), '');
-
-	// Set some default values
-	//if (! GETPOSTISSET('fieldname')) $_POST['fieldname'] = 'myvalue';
 
 	print '<table class="border centpercent tableforfieldcreate">'."\n";
 
@@ -389,9 +384,6 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 	print '<table class="border centpercent tableforfield">'."\n";
 
 	// Common attributes
-	//$keyforbreak='fieldkeytoswitchonsecondcolumn';	// We change column just before this field
-	//unset($object->fields['fk_project']);				// Hide field already shown in banner
-	//unset($object->fields['fk_soc']);					// Hide field already shown in banner
 	include DOL_DOCUMENT_ROOT.'/core/tpl/commonfields_view.tpl.php';
 
 	// Other attributes. Fields from hook formObjectOptions and Extrafields.
@@ -403,7 +395,59 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 
 	// Appel de la fonction qui affiche les attributions par années
 	$attributionClass = new Attribution($db);
-	$attributionClass->attributionsPerYear($object->id);
+	/*$attributionClass->attributionsPerYear($object->id);*/
+
+	// Récupération des années scolaires actives
+	$anneeClass = new Annee($db);
+	$resqlAnneeScolaire = $anneeClass->fetchAll('','',0,0,array('active'=>1));
+
+
+	// Boucle sur chaque année scolaire récupérée
+	foreach ($resqlAnneeScolaire as $value) {
+
+		// Récupération des attributions pour l'année scolaire courante et la clé spécifiée
+		$results = $attributionClass->fetchAll('DESC', 'rowid', 0, 0, ['fk_cle' => $object->id, 'fk_annee_scolaire' => $value->id]);
+		// Ouverture du conteneur pour l'année scolaire
+		print '<div class="annee-accordion' . ($value->annee_actuelle == 1 ? '-opened' : '') . '">';
+		print '<h3><span class="badge badge-status4 badge-status">Année ' . htmlspecialchars($value->annee) . ($value->annee_actuelle != 1 ? ' (année précédente)' : '') . '</span></h3>';
+
+		// Vérification de la présence des résultats
+		if (!empty($results)) {
+			// Début du tableau d'attributions
+			print '<table class="tagtable liste">';
+			print '<thead>';
+			print '<tr class="liste_titre">
+                <th class="wrapcolumntitle liste_titre">Prêtée à</th>
+					<th class="wrapcolumntitle liste_titre">Etat</th>
+					<th class="wrapcolumntitle liste_titre">Début</th>
+					<th class="wrapcolumntitle liste_titre">Fin</th>
+              </tr>';
+			print '</thead>';
+			print '<tbody>';
+
+			// Boucle sur chaque attribution trouvée
+			foreach ($results as $result) {
+				$agentClass = new Agent($db);
+				$agentClass->fetch($result->fk_user_pret);
+
+				// Affichage des détails de chaque attribution
+				print '<tr class="oddeven">';
+				print '<td><a href="' . dol_buildpath('/custom/scolarite/attribution_card.php?id=' . $result->id, 1) . '">' . htmlspecialchars($agentClass->prenom . ' ' . $agentClass->nom) . '</a></td>';
+				print '<td><span class="badge badge-status' . htmlspecialchars($result->status) . ' badge-status">' . htmlspecialchars($attributionClass->LibStatut($object->status)) . '</span></td>';
+				print '<td>' . dol_print_date($result->date_debut_pret, 'day') . '</td>';
+				print '<td>' . (!empty($result->date_fin_pret) ? dol_print_date($result->date_fin_pret, 'day') : 'Aucune date connue') . '</td>';
+				print '</tr>';
+			}
+			print '</tbody>';
+			print '</table>';
+		} else {
+			print '<p>Aucune attribution connue pour cette année scolaire.</p>';
+		}
+
+		// Fermeture du conteneur de l'année scolaire
+		print '</div>';
+	}
+
 
 	print '</div>';
 
@@ -422,58 +466,6 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 
 	print dol_get_fiche_end();
 
-
-	/*
-	 * Lines
-	 */
-
-	if (!empty($object->table_element_line)) {
-		// Show object lines
-		$result = $object->getLinesArray();
-
-		print '	<form name="addproduct" id="addproduct" action="'.$_SERVER["PHP_SELF"].'?id='.$object->id.(($action != 'editline') ? '' : '#line_'.GETPOST('lineid', 'int')).'" method="POST">
-		<input type="hidden" name="token" value="' . newToken().'">
-		<input type="hidden" name="action" value="' . (($action != 'editline') ? 'addline' : 'updateline').'">
-		<input type="hidden" name="mode" value="">
-		<input type="hidden" name="page_y" value="">
-		<input type="hidden" name="id" value="' . $object->id.'">
-		';
-
-		if (!empty($conf->use_javascript_ajax) && $object->status == 0) {
-			include DOL_DOCUMENT_ROOT.'/core/tpl/ajaxrow.tpl.php';
-		}
-
-		print '<div class="div-table-responsive-no-min">';
-		if (!empty($object->lines) || ($object->status == $object::STATUS_DRAFT && $permissiontoadd && $action != 'selectlines' && $action != 'editline')) {
-			print '<table id="tablelines" class="noborder noshadow" width="100%">';
-		}
-
-		if (!empty($object->lines)) {
-			$object->printObjectLines($action, $mysoc, null, GETPOST('lineid', 'int'), 1);
-		}
-
-		// Form to add new line
-		if ($object->status == 0 && $permissiontoadd && $action != 'selectlines') {
-			if ($action != 'editline') {
-				// Add products/services form
-
-				$parameters = array();
-				$reshook = $hookmanager->executeHooks('formAddObjectLine', $parameters, $object, $action); // Note that $action and $object may have been modified by hook
-				if ($reshook < 0) setEventMessages($hookmanager->error, $hookmanager->errors, 'errors');
-				if (empty($reshook))
-					$object->formAddObjectLine(1, $mysoc, $soc);
-			}
-		}
-
-		if (!empty($object->lines) || ($object->status == $object::STATUS_DRAFT && $permissiontoadd && $action != 'selectlines' && $action != 'editline')) {
-			print '</table>';
-		}
-		print '</div>';
-
-		print "</form>\n";
-	}
-
-
 	// Buttons for actions
 
 	if ($action != 'presend' && $action != 'editline') {
@@ -486,25 +478,25 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 
 		if (empty($reshook)) {
 			// Si le status de la clé n'est pas perdue, on affiche le bouton qui permet de la déclarée comme telle
-			if($object->status != $object::STATUS_PERDUE)
+			if($object->status != Cles::STATUS_PERDUE)
 			{
 				print dolGetButtonAction($langs->trans('Clé perdue'), '', 'danger', $_SERVER['PHP_SELF'] . '?id=' . $object->id . '&action=lostKey&token=' . newToken(), '', $permissiontoadd);
 			}
 			// Si le status de la clé n'est pas retrouvée, on affiche le bouton qui permet de la déclarée comme telle
-			if($object->status == $object::STATUS_PERDUE)
+			if($object->status == Cles::STATUS_PERDUE)
 			{
 				print dolGetButtonAction($langs->trans('Clé retrouvée'), '', 'danger', $_SERVER['PHP_SELF'] . '?id=' . $object->id . '&action=keyFound&token=' . newToken(), '', $permissiontoadd);
 			}
 
 			// Si la clé n'est ni perdue ni en cours de prêt, on permet la modif et l'attribution
-			if($object->status != $object::STATUS_VALIDATED && $object->status != $object::STATUS_PERDUE)
+			if($object->status != Cles::STATUS_VALIDATED && $object->status != Cles::STATUS_PERDUE)
 			{
 				print dolGetButtonAction($langs->trans('Attribuer la clé'), '', 'danger','/custom/scolarite/attribution_card.php?fk_cle=' . $object->id . '&action=create&token=' . newToken(), '', $permissiontoadd);
 				print dolGetButtonAction($langs->trans('Modifier la clé'), '', 'default', $_SERVER['PHP_SELF'] . '?id=' . $object->id . '&action=edit&token=' . newToken(), '', $permissiontoadd);
 			}
 
 			// Validate
-			if ($object->status == $object::STATUS_DRAFT) {
+			if ($object->status == Cles::STATUS_DRAFT) {
 				if (empty($object->table_element_line) || (is_array($object->lines) && count($object->lines) > 0)) {
 					print dolGetButtonAction($langs->trans('Validate'), '', 'default', $_SERVER['PHP_SELF'].'?id='.$object->id.'&action=confirm_validate&confirm=yes&token='.newToken(), '', $permissiontoadd);
 				} else {
@@ -518,15 +510,6 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 		}
 		print '</div>'."\n";
 	}
-
-
-	// Presend form
-	$modelmail = 'cles';
-	$defaulttopic = 'InformationMessage';
-	$diroutput = $conf->scolarite->dir_output;
-	$trackid = 'cles'.$object->id;
-
-	include DOL_DOCUMENT_ROOT.'/core/tpl/card_presend.tpl.php';
 }
 
 // Script qui permet l'affichage des menus déroulants

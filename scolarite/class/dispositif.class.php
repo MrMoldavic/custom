@@ -56,7 +56,7 @@ class Dispositif extends CommonObject
 	/**
 	 * @var int  Does object support extrafields ? 0=No, 1=Yes
 	 */
-	public $isextrafieldmanaged = 1;
+	public $isextrafieldmanaged = 0;
 
 	/**
 	 * @var string String with name of icon for dispositif. Must be the part after the 'object_' into object_dispositif.png
@@ -65,7 +65,7 @@ class Dispositif extends CommonObject
 
 
 	const STATUS_DRAFT = 0;
-	const STATUS_VALIDATED = 1;
+	const STATUS_VALIDATED = 4;
 	const STATUS_CANCELED = 9;
 
 
@@ -188,12 +188,6 @@ class Dispositif extends CommonObject
 			$this->fields['entity']['enabled'] = 0;
 		}
 
-		// Example to show how to set values of fields definition dynamically
-		/*if ($user->rights->scolarite->dispositif->read) {
-			$this->fields['myfield']['visible'] = 1;
-			$this->fields['myfield']['noteditable'] = 0;
-		}*/
-
 		// Unset fields that are disabled
 		foreach ($this->fields as $key => $val) {
 			if (isset($val['enabled']) && empty($val['enabled'])) {
@@ -224,62 +218,7 @@ class Dispositif extends CommonObject
 	{
 		$resultcreate = $this->createCommon($user, $notrigger);
 
-		//$resultvalidate = $this->validate($user, $notrigger);
-
 		return $resultcreate;
-	}
-
-
-	/**
-	 * Delete object in database
-	 *
-	 * @param array $parameters array of column to fetch
-	 * @param int $id id of item requested for direct fetch
-	 * @param string $column string column requested for direct fetch
-	 * @return int <0 if KO, >0 if OK
-	 */
-	public function fetchBy(array $parameters, int $id = 0, string $column = '')
-	{
-		$sql = "SELECT ";
-		for($i=0;$i<count($parameters);$i++)
-		{
-			$sql .= $this->db->escape($parameters[$i]).', ';
-		}
-		$sql = substr($sql, 0, -2);
-		$sql .= " FROM ".MAIN_DB_PREFIX.$this->table_element;
-
-		if($id)
-		{
-			$sql .= " WHERE ".$this->db->sanitize($this->db->escape($column))." = ".$this->db->sanitize($this->db->escape($id));
-		}
-		$resql = $this->db->query($sql);
-
-		if ($resql) {
-			$num = $this->db->num_rows($resql);
-			$i = 0;
-			if($num == 1)
-			{
-				$records = $this->db->fetch_object($resql);
-			}
-			else
-			{
-				$records = array();
-				while ($i < ($limit ? min($limit, $num) : $num)) {
-					$obj = $this->db->fetch_object($resql);
-					$records[$obj->rowid] = $obj;
-					$i++;
-				}
-			}
-
-			$this->db->free($resql);
-
-			return $records;
-		} else {
-			$this->errors[] = 'Error '.$this->db->lasterror();
-			dol_syslog(__METHOD__.' '.join(',', $this->errors), LOG_ERR);
-
-			return -1;
-		}
 	}
 
 	/**
@@ -556,14 +495,6 @@ class Dispositif extends CommonObject
 			return 0;
 		}
 
-		/*if (! ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->scolarite->dispositif->write))
-		 || (! empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->scolarite->dispositif->dispositif_advance->validate))))
-		 {
-		 $this->error='NotEnoughPermissions';
-		 dol_syslog(get_class($this)."::valid ".$this->error, LOG_ERR);
-		 return -1;
-		 }*/
-
 		$now = dol_now();
 
 		$this->db->begin();
@@ -674,13 +605,6 @@ class Dispositif extends CommonObject
 			return 0;
 		}
 
-		/*if (! ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->scolarite->write))
-		 || (! empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->scolarite->scolarite_advance->validate))))
-		 {
-		 $this->error='Permission denied';
-		 return -1;
-		 }*/
-
 		return $this->setStatusCommon($user, self::STATUS_DRAFT, $notrigger, 'DISPOSITIF_UNVALIDATE');
 	}
 
@@ -698,13 +622,6 @@ class Dispositif extends CommonObject
 			return 0;
 		}
 
-		/*if (! ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->scolarite->write))
-		 || (! empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->scolarite->scolarite_advance->validate))))
-		 {
-		 $this->error='Permission denied';
-		 return -1;
-		 }*/
-
 		return $this->setStatusCommon($user, self::STATUS_CANCELED, $notrigger, 'DISPOSITIF_CANCEL');
 	}
 
@@ -721,13 +638,6 @@ class Dispositif extends CommonObject
 		if ($this->status != self::STATUS_CANCELED) {
 			return 0;
 		}
-
-		/*if (! ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->scolarite->write))
-		 || (! empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->scolarite->scolarite_advance->validate))))
-		 {
-		 $this->error='Permission denied';
-		 return -1;
-		 }*/
 
 		return $this->setStatusCommon($user, self::STATUS_VALIDATED, $notrigger, 'DISPOSITIF_REOPEN');
 	}

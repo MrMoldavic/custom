@@ -24,8 +24,8 @@
  *		\ingroup    viescolaire
  *		\brief      Page to create/edit/view appel
  */
-
-/* ini_set('display_errors', '1');
+/*
+ ini_set('display_errors', '1');
 ini_set('display_startup_errors', '1');
 error_reporting(E_ALL);*/
 
@@ -105,7 +105,7 @@ $langs->loadLangs(array('viescolaire@viescolaire', 'other'));
 $action = GETPOST('action', 'alpha');
 $creneauid = GETPOST('creneauid', 'int');
 $getHeureActuelle = (GETPOST('heureActuelle', 'alpha') ? : (int)strftime('%k'));
-$allCreaneaux = GETPOST('allCreaneaux', 'alpha') ? : false;
+$allCreneaux = GETPOST('allCreneaux', 'alpha') ? : false;
 $selectedDate = GETPOST('selectedDate', 'alpha') ? : date('Y-m-d');
 $antenneId = GETPOST('antenneId','int');
 
@@ -138,7 +138,7 @@ include DOL_DOCUMENT_ROOT . '/core/actions_fetchobject.inc.php'; // Must be incl
 
 // There is several ways to check permission.
 // Set $enablepermissioncheck to 1 to enable a minimum low level of checks
-$enablepermissioncheck = 0;
+$enablepermissioncheck = 1;
 if ($enablepermissioncheck) {
      $permissiontoread = $user->rights->viescolaire->appel->read;
      $permissiontoadd = $user->rights->viescolaire->appel->write; // Used by the include of actions_addupdatedelete.inc.php and actions_lineupdown.inc.php
@@ -205,33 +205,38 @@ if ($action == 'create' && !$antenneId)
 }
 
 // Affichage de la page principale d'appel
-if (($action == 'create' or $action == 'modifAppel' or $action == 'returnFromError') && $antenneId)
+if (($action == 'create' || $action == 'modifAppel' || $action == 'returnFromError') && $antenneId)
 {
 	$antenneClass = new Etablissement($db);
 	$creneauClass = new Creneau($db);
 
-	print load_fiche_titre('Nouvel appel', '', 'fa-house');
+	$dateTime = DateTime::createFromFormat('Y-m-d', $selectedDate); // Crée un objet DateTime à partir de ta date
+	$formattedDate = $dateTime->format('d/m/Y'); // Formate la date en JJ/MM/YYYY
 
-	print '<a href="' . DOL_URL_ROOT . '/custom/viescolaire/appel_card.php?antenneId=' . $antenneId . '&allCreaneaux='. !(GETPOST('allCreaneaux', 'alpha') == true) .'&action=create">'.(!GETPOST('allCreaneaux', 'alpha') ? 'Afficher tous les créneaux' : 'Afficher seulement les créneaux de l\'heure actuelle').'</a><br>';
+
+	print load_fiche_titre('Appel du '.$formattedDate, '', 'fa-house');
 
 	// Affichage du formulaire de changement d'heure
-	print $object->printChangeHourFormAppel($antenneId, $heureActuelle, $selectedDay);
+	print $object->printChangeHourFormAppel($antenneId, $heureActuelle, $selectedDay, $selectedDate);
 
 	//Fetch de l'antenne actuelle pour récupérer son diminutif
 	$antenneClass->fetch($antenneId);
 
 	// Recherche de tout les créneau à un jour donné, heure donnée, antenne donnée
-	$creneauCountList = $creneauClass->fetchAll('','',$action == 'modifAppel' ? 1 : 0,0,array('t.jour'=>$selectedDay,'customsql'=>($allCreaneaux ? 't.heure_debut <=82800' : 't.heure_debut ='.($heureActuelle*3600)." AND a.diminutif='$antenneClass->diminutif' ".($action == 'modifAppel' ? ' AND t.rowid=' .GETPOST('creneauid','int') : '')),'t.status'=>Creneau::STATUS_VALIDATED),'AND',' INNER JOIN '.MAIN_DB_PREFIX.'dispositif as d ON t.fk_dispositif=d.rowid INNER JOIN '.MAIN_DB_PREFIX.'etablissement as a ON d.fk_etablissement=a.rowid');
+	$creneauCountList = $creneauClass->fetchAll('','',$action === 'modifAppel' ? 1 : 0,0, ['t.jour'=>$selectedDay,'customsql'=>($action == 'modifAppel' ? ' t.rowid=' .GETPOST('creneauid','int') : ($allCreneaux ? 't.heure_debut <=82800' : 't.heure_debut ='.($heureActuelle*3600)." AND a.diminutif='$antenneClass->diminutif'")),'t.status'=>Creneau::STATUS_VALIDATED],'AND',' INNER JOIN '.MAIN_DB_PREFIX.'dispositif as d ON t.fk_dispositif=d.rowid INNER JOIN '.MAIN_DB_PREFIX.'etablissement as a ON d.fk_etablissement=a.rowid');
 
-	/*var_dump($creneauCountList);
-	var_dump($action);*/
-	if(count($creneauCountList) == 0) setEventMessage("Aucun cours à cette heure, changez d'horaire.",'errors');
+	if(count($creneauCountList) === 0) {
+		setEventMessage("Aucun cours à cette heure, changez d'horaire.", 'errors');
+	}
+
+	print dolGetButtonAction($langs->trans('Retour au sommaire'), '', '', dol_buildpath('/custom/viescolaire/appel_sommaire.php',1).'?antenneId='.$antenneId.'&action=create&appel='.$formattedDate , '');
+
+	print dolGetButtonAction((!GETPOST('allCreneaux', 'alpha') ? 'Afficher tous les créneaux' : 'Afficher seulement les créneaux de l\'heure actuelle'), '', 'danger', dol_buildpath('/custom/viescolaire/appel_card.php',1) .'?antenneId='.$antenneId.'&selectedDay='.$selectedDay.'&selectedDate='.$selectedDate.'&heureActuelle='.$heureActuelle.(!GETPOST('allCreneaux', 'alpha') ? '&allCreneaux=true' : '').'&action=create&token=' . newToken(), '');
 
 	$heureAffichage = 0;
-
 	foreach ($creneauCountList as $val)
 	{
-		if($val->heure_debut != $heureAffichage)
+		if($val->heure_debut !== $heureAffichage)
 		{
 			print '<div style="dislay:flex;">';
 			print '<h3 id="'.($val->debut/3600).'h">Créneau(x) de '.($val->heure_debut/3600).'h <i class="fa-solid fa-chevron-down"></i></h3>';
@@ -302,7 +307,7 @@ if (($action == 'create' or $action == 'modifAppel' or $action == 'returnFromErr
 
 			print '<tr class="oddeven">';
 			print '<td>';
-			print '<a href="' . DOL_URL_ROOT . '/custom/management/agent_card.php?id=' . $professeur->id . '" target="_blank">' .'(Prof) '. $professeur->prenom . ' ' . $professeur->nom. '</a>';
+			print $professeur->getNomUrl(1,'target="_blank"');
 			print '</td>';
 			print '<td>';
 			print '<input type="radio" ' . (isset($appelClassAgent->id) && $appelClassAgent->status == 'present' ? 'checked' : '') . '  ' . ($isComplete == 1 && $action == 'modifAppel' && $creneauid == $val->id ? '' : ($isComplete ? 'disabled' : '')) . ' value="present" name="prof' . $professeur->id . '" id="">&nbsp;<span class="badge  badge-status4 badge-status" style="color:white;">Présent</span>';
@@ -337,7 +342,7 @@ if (($action == 'create' or $action == 'modifAppel' or $action == 'returnFromErr
 
 			print '<tr class="oddeven">';
 			print '<td>';
-			print '<a href="' . DOL_URL_ROOT . '/custom/viescolaire/eleve_card.php?id=' . $eleve->id . '" target="_blank">' . $eleve->prenom . ' ' . $eleve->nom . '</a>';
+			print $eleve->getNomUrl(1);
 			print '</td>';
 			print '<td>';
 			print '<input type="radio"  ' . (isset($appelClassEleve) && $appelClassEleve->status == 'present' ? 'checked' : '') . '  ' . ($isComplete == 1 && $action == 'modifAppel' && $creneauid == $val->id ? '' : ($isComplete ? 'disabled' : '')) . ' value="present" name="presence' . $eleve->id . '" id="">&nbsp;<span class="badge  badge-status4 badge-status" style="color:white;">Présent</span>';

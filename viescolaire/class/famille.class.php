@@ -56,22 +56,22 @@ class Famille extends CommonObject
 	/**
 	 * @var int  Does object support extrafields ? 0=No, 1=Yes
 	 */
-	public $isextrafieldmanaged = 1;
+	public $isextrafieldmanaged = 0;
 
 	/**
 	 * @var string String with name of icon for famille. Must be the part after the 'object_' into object_famille.png
 	 */
-	public $picto = 'famille@viescolaire';
+	public $picto = 'fa-user';
 
 
-	const STATUS_DRAFT = 0;
-	const STATUS_VALIDATED = 4;
-	const STATUS_BUDGETISE = 1;
-	const STATUS_ENCOURS = 7;
-	const STATUS_PROBLEME = 8;
-	const STATUS_CANCELED = 9;
-	const STATUS_FAMILLE_INCOMPLETE = 8;
-	const STATUS_INFO_INCOMPLETE = 8;
+	public const STATUS_DRAFT = 0;
+	public const STATUS_VALIDATED = 4;
+	public const STATUS_BUDGETISE = 1;
+	public const STATUS_ENCOURS = 7;
+	public const STATUS_PROBLEME = 8;
+	public const STATUS_CANCELED = 9;
+	public const STATUS_FAMILLE_INCOMPLETE = 8;
+	public const STATUS_INFO_INCOMPLETE = 8;
 
 
 	/**
@@ -107,7 +107,7 @@ class Famille extends CommonObject
 	 * @var array  Array with all fields and their property. Do not use it as a static var. It may be modified by constructor.
 	 */
 	public $fields=array(
-		'rowid' => array('type'=>'integer', 'label'=>'TechnicalID', 'enabled'=>'1', 'position'=>1, 'notnull'=>1, 'visible'=>0, 'noteditable'=>'1', 'index'=>1),
+		'rowid' => array('type'=>'integer', 'label'=>'TechnicalID', 'enabled'=>'1', 'position'=>1, 'notnull'=>1, 'visible'=>2, 'noteditable'=>'1', 'index'=>1),
 		'identifiant_famille' => array('type'=>'varchar(255)', 'label'=>'Identifiant famille', 'enabled'=>'1', 'position'=>1, 'notnull'=>0, 'visible'=>2,'showoncombobox'=>'2', 'index'=>1, 'searchall'=>1, 'validate'=>'1','css'=>'maxwidth300',),
 		'fk_antenne' => array('type'=>'integer:Etablissement:custom/scolarite/class/etablissement.class.php:1', 'label'=>'Antenne', 'enabled'=>'1', 'position'=>1, 'notnull'=>1, 'visible'=>1, 'index'=>1, 'searchall'=>1, 'validate'=>'1','css'=>'maxwidth300',),
 		'enfants' => array('type'=>'varchar(255)', 'label'=>'Enfants', 'enabled'=>'1', 'position'=>1, 'notnull'=>0, 'visible'=>2, 'index'=>1, 'searchall'=>1, 'validate'=>'1','css'=>'maxwidth300',),
@@ -122,6 +122,7 @@ class Famille extends CommonObject
 		'model_pdf' => array('type'=>'varchar(255)', 'label'=>'Model pdf', 'enabled'=>'1', 'position'=>1010, 'notnull'=>-1, 'visible'=>0,),
 		'status' => array('type' => 'integer', 'label' => 'Etat', 'enabled' => '1', 'position' => 1011, 'notnull' => 1, 'visible' => 2, 'default' => 0),
 	);
+
 	public $rowid;
 	public $identifiant_famille;
 	public $fk_antenne;
@@ -188,17 +189,11 @@ class Famille extends CommonObject
 		$this->db = $db;
 
 		if (empty($conf->global->MAIN_SHOW_TECHNICAL_ID) && isset($this->fields['rowid'])) {
-			$this->fields['rowid']['visible'] = 0;
+			$this->fields['rowid']['visible'] = 2;
 		}
 		if (empty($conf->multicompany->enabled) && isset($this->fields['entity'])) {
 			$this->fields['entity']['enabled'] = 0;
 		}
-
-		// Example to show how to set values of fields definition dynamically
-		/*if ($user->rights->viescolaire->famille->read) {
-			$this->fields['myfield']['visible'] = 1;
-			$this->fields['myfield']['noteditable'] = 0;
-		}*/
 
 		// Unset fields that are disabled
 		foreach ($this->fields as $key => $val) {
@@ -228,106 +223,10 @@ class Famille extends CommonObject
 	 */
 	public function create(User $user, $notrigger = false)
 	{
-		$this->identifiant_famille = "Identifiant provisoire";
+		$this->identifiant_famille = 'Identifiant provisoire';
 		$this->status = self::STATUS_FAMILLE_INCOMPLETE;
 
-		$resultcreate = $this->createCommon($user, $notrigger);
-		return $resultcreate;
-	}
-
-	/**
-	 * Clone an object into another one
-	 *
-	 * @param  	User 	$user      	User that creates
-	 * @param  	int 	$fromid     Id of object to clone
-	 * @return 	mixed 				New object created, <0 if KO
-	 */
-	public function createFromClone(User $user, $fromid)
-	{
-		global $langs, $extrafields;
-		$error = 0;
-
-		dol_syslog(__METHOD__, LOG_DEBUG);
-
-		$object = new self($this->db);
-
-		$this->db->begin();
-
-		// Load source object
-		$result = $object->fetchCommon($fromid);
-		if ($result > 0 && !empty($object->table_element_line)) {
-			$object->fetchLines();
-		}
-
-		// Reset some properties
-		unset($object->id);
-		unset($object->fk_user_creat);
-		unset($object->import_key);
-
-		// Clear fields
-		if (property_exists($object, 'ref')) {
-			$object->ref = empty($this->fields['ref']['default']) ? "Copy_Of_".$object->ref : $this->fields['ref']['default'];
-		}
-		if (property_exists($object, 'label')) {
-			$object->label = empty($this->fields['label']['default']) ? $langs->trans("CopyOf")." ".$object->label : $this->fields['label']['default'];
-		}
-		if (property_exists($object, 'status')) {
-			$object->status = self::STATUS_DRAFT;
-		}
-		if (property_exists($object, 'date_creation')) {
-			$object->date_creation = dol_now();
-		}
-		if (property_exists($object, 'date_modification')) {
-			$object->date_modification = null;
-		}
-		// ...
-		// Clear extrafields that are unique
-		if (is_array($object->array_options) && count($object->array_options) > 0) {
-			$extrafields->fetch_name_optionals_label($this->table_element);
-			foreach ($object->array_options as $key => $option) {
-				$shortkey = preg_replace('/options_/', '', $key);
-				if (!empty($extrafields->attributes[$this->table_element]['unique'][$shortkey])) {
-					//var_dump($key); var_dump($clonedObj->array_options[$key]); exit;
-					unset($object->array_options[$key]);
-				}
-			}
-		}
-
-		// Create clone
-		$object->context['createfromclone'] = 'createfromclone';
-		$result = $object->createCommon($user);
-		if ($result < 0) {
-			$error++;
-			$this->error = $object->error;
-			$this->errors = $object->errors;
-		}
-
-		if (!$error) {
-			// copy internal contacts
-			if ($this->copy_linked_contact($object, 'internal') < 0) {
-				$error++;
-			}
-		}
-
-		if (!$error) {
-			// copy external contacts if same company
-			if (!empty($object->socid) && property_exists($this, 'fk_soc') && $this->fk_soc == $object->socid) {
-				if ($this->copy_linked_contact($object, 'external') < 0) {
-					$error++;
-				}
-			}
-		}
-
-		unset($object->context['createfromclone']);
-
-		// End
-		if (!$error) {
-			$this->db->commit();
-			return $object;
-		} else {
-			$this->db->rollback();
-			return -1;
-		}
+		return $this->createCommon($user, $notrigger);
 	}
 
 	/**
@@ -337,15 +236,16 @@ class Famille extends CommonObject
 	 * @param string $ref  Ref
 	 * @return int         <0 if KO, 0 if not found, >0 if OK
 	 */
-	public function fetch($id, $ref = null)
+	public function fetch($id, $ref = null, $moresql = null)
 	{
-		$result = $this->fetchCommon($id, $ref);
+		$result = $this->fetchCommon($id, $ref, $moresql);
 		if ($result > 0 && !empty($this->table_element_line)) {
 			$this->fetchLines();
 		}
 		return $result;
 	}
 
+	// TODO : CHANGER OBLIGATOIREMENT
 	/**
 	 * Delete object in database
 	 *
@@ -505,6 +405,7 @@ class Famille extends CommonObject
 	 */
 	public function update(User $user, $notrigger = false)
 	{
+		if($this->status < 0 ) return -1;
 		return $this->updateCommon($user, $notrigger);
 	}
 
@@ -670,13 +571,6 @@ class Famille extends CommonObject
 			return 0;
 		}
 
-		/*if (! ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->viescolaire->write))
-		 || (! empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->viescolaire->viescolaire_advance->validate))))
-		 {
-		 $this->error='Permission denied';
-		 return -1;
-		 }*/
-
 		return $this->setStatusCommon($user, self::STATUS_DRAFT, $notrigger, 'FAMILLE_UNVALIDATE');
 	}
 
@@ -694,13 +588,6 @@ class Famille extends CommonObject
 			return 0;
 		}
 
-		/*if (! ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->viescolaire->write))
-		 || (! empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->viescolaire->viescolaire_advance->validate))))
-		 {
-		 $this->error='Permission denied';
-		 return -1;
-		 }*/
-
 		return $this->setStatusCommon($user, self::STATUS_CANCELED, $notrigger, 'FAMILLE_CANCEL');
 	}
 
@@ -717,13 +604,6 @@ class Famille extends CommonObject
 		if ($this->status != self::STATUS_CANCELED) {
 			return 0;
 		}
-
-		/*if (! ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->viescolaire->write))
-		 || (! empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->viescolaire->viescolaire_advance->validate))))
-		 {
-		 $this->error='Permission denied';
-		 return -1;
-		 }*/
 
 		return $this->setStatusCommon($user, self::STATUS_VALIDATED, $notrigger, 'FAMILLE_REOPEN');
 	}
@@ -824,7 +704,7 @@ class Famille extends CommonObject
 		}
 
 		if ($withpicto != 2) {
-			$result .= $this->identifiant_famille;
+			$result .= $this->returnFamilyName();
 		}
 
 		$result .= $linkend;
@@ -1086,59 +966,37 @@ class Famille extends CommonObject
 	}
 
 	/**
-	 * Action executed by scheduler
-	 * CAN BE A CRON TASK. In such a case, parameters come from the schedule job setup field 'Parameters'
-	 * Use public function doScheduledJob($param1, $param2, ...) to get parameters
+	 *  Retourne l'identifiant de la famille
 	 *
-	 * @return	int			0 if OK, <>0 if KO (this function is used also by cron so only 0 is OK)
+	 *  @return     string         				identifiant famille
 	 */
-	public function doScheduledJob()
+	public function returnFamilyName(): string
 	{
-		global $conf, $langs;
+		$out = $this->identifiant_famille;
 
-		//$conf->global->SYSLOG_FILE = 'DOL_DATA_ROOT/dolibarr_mydedicatedlofile.log';
+		$parentClass = new Parents($this->db);
+		$parents = $parentClass->fetchAll('', '', 0, 0, ['fk_famille' => $this->id]);
 
-		$error = 0;
-		$this->output = '';
-		$this->error = '';
+		if (!empty($parents)) {
+			// Extraire les noms et prénoms des parents
+			$parentNames = [];
+			$lastnames = [];
 
-		dol_syslog(__METHOD__, LOG_DEBUG);
+			foreach ($parents as $parent) {
+				$parentNames[] = "{$parent->lastname} {$parent->firstname}";
+				$lastnames[] = strtoupper($parent->lastname);
+			}
 
-		$now = dol_now();
+			// Vérifier si tous les noms de famille sont identiques
+			if (count(array_unique($lastnames)) === 1) {
+				// Tous les parents ont le même nom de famille
+				$out = implode(' / ', $parentNames);
+			} else {
+				// Si les parents ont des noms de famille différents, afficher seulement les noms de famille
+				$out = implode(' / ', array_unique($lastnames));
+			}
+		}
 
-		$this->db->begin();
-
-		// ...
-
-		$this->db->commit();
-
-		return $error;
-	}
-}
-
-
-require_once DOL_DOCUMENT_ROOT.'/core/class/commonobjectline.class.php';
-
-/**
- * Class FamilleLine. You can also remove this and generate a CRUD class for lines objects.
- */
-class FamilleLine extends CommonObjectLine
-{
-	// To complete with content of an object FamilleLine
-	// We should have a field rowid, fk_famille and position
-
-	/**
-	 * @var int  Does object support extrafields ? 0=No, 1=Yes
-	 */
-	public $isextrafieldmanaged = 0;
-
-	/**
-	 * Constructor
-	 *
-	 * @param DoliDb $db Database handler
-	 */
-	public function __construct(DoliDB $db)
-	{
-		$this->db = $db;
+		return $out;
 	}
 }

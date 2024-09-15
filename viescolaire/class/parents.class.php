@@ -24,8 +24,9 @@
 
 // Put here all includes required by your class file
 require_once DOL_DOCUMENT_ROOT.'/core/class/commonobject.class.php';
+
 dol_include_once('viescolaire/class/famille.class.php');
-dol_include_once('viescolaire/class/parents.class.php');
+//dol_include_once('viescolaire/class/parents.class.php');
 //require_once DOL_DOCUMENT_ROOT . '/societe/class/societe.class.php';
 //require_once DOL_DOCUMENT_ROOT . '/product/class/product.class.php';
 
@@ -139,20 +140,22 @@ class Parents extends CommonObject
 	);
 
 	public $rowid;
-	public $lastname;
 	public $firstname;
+	public $lastname;
 	public $address;
 	public $zipcode;
 	public $town;
 	public $phone;
 	public $mail;
 	public $csp;
-	public $contact_preferentiel;
 	public $quotient_familial;
 	public $description;
+	public $fk_type_parent;
+	public $contact_preferentiel;
+
 	public $fk_famille;
-	public $fk_adherent;
 	public $fk_tiers;
+	public $fk_adherent;
 	public $date_creation;
 	public $tms;
 	public $fk_user_creat;
@@ -215,12 +218,6 @@ class Parents extends CommonObject
 		if (!isModEnabled('multicompany') && isset($this->fields['entity'])) {
 			$this->fields['entity']['enabled'] = 0;
 		}
-
-		// Example to show how to set values of fields definition dynamically
-		/*if ($user->rights->viescolaire->parents->read) {
-			$this->fields['myfield']['visible'] = 1;
-			$this->fields['myfield']['noteditable'] = 0;
-		}*/
 
 		// Unset fields that are disabled
 		foreach ($this->fields as $key => $val) {
@@ -286,12 +283,12 @@ class Parents extends CommonObject
 
 		if ($familleId > 0) {
 
-			if($familleClass->identifiant_famille == "Identifiant provisoire")
+			if($familleClass->identifiant_famille === 'Identifiant provisoire')
 			{
 				$familleClass->identifiant_famille = "$this->firstname $this->lastname";
 			}else{
 
-				$parentsClass = new Parents($this->db);
+				$parentsClass = new self($this->db);
 				$parents = $parentsClass->fetchAll('ASC','rowid','','',['fk_famille'=>$familleId],'ASC');
 
 				$newIdentifiant = "";
@@ -337,10 +334,6 @@ class Parents extends CommonObject
 		if ($result > 0 && !empty($object->table_element_line)) {
 			$object->fetchLines();
 		}
-
-		// get lines so they will be clone
-		//foreach($this->lines as $line)
-		//	$line->fetch_optionals();
 
 		// Reset some properties
 		unset($object->id);
@@ -416,15 +409,17 @@ class Parents extends CommonObject
 
 
 	/**
-	 *	Load the info information in the object
+	 *    Load the info information in the object
 	 *
-	 *	@param  int		$id       Id of object
-	 *	@return	void
+	 * @param $firstname
+	 * @param $lastname
+	 * @param $table
+	 * @return object
 	 */
-	public function fetchAdherentOrTiersByParent($firstname,$lastname,$table)
+	public function fetchAdherentOrTiersByParent($firstname,$lastname,$table) : object
 	{
 		$sql = "SELECT a.rowid";
-		$sql .= " FROM ".MAIN_DB_PREFIX.((string) $table)." as a";
+		$sql .= " FROM ".MAIN_DB_PREFIX.((string) $table). ' as a';
 		if($table == "adherent")
 		{
 			$sql .= " WHERE a.firstname = '".((string) $firstname)."'";
@@ -732,14 +727,6 @@ class Parents extends CommonObject
 			return 0;
 		}
 
-		/*if (! ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && !empty($user->rights->viescolaire->parents->write))
-		 || (!empty($conf->global->MAIN_USE_ADVANCED_PERMS) && !empty($user->rights->viescolaire->parents->parents_advance->validate))))
-		 {
-		 $this->error='NotEnoughPermissions';
-		 dol_syslog(get_class($this)."::valid ".$this->error, LOG_ERR);
-		 return -1;
-		 }*/
-
 		$now = dol_now();
 
 		$this->db->begin();
@@ -850,13 +837,6 @@ class Parents extends CommonObject
 			return 0;
 		}
 
-		/*if (! ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && !empty($user->rights->viescolaire->write))
-		 || (!empty($conf->global->MAIN_USE_ADVANCED_PERMS) && !empty($user->rights->viescolaire->viescolaire_advance->validate))))
-		 {
-		 $this->error='Permission denied';
-		 return -1;
-		 }*/
-
 		return $this->setStatusCommon($user, self::STATUS_DRAFT, $notrigger, 'PARENTS_UNVALIDATE');
 	}
 
@@ -874,13 +854,6 @@ class Parents extends CommonObject
 			return 0;
 		}
 
-		/*if (! ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && !empty($user->rights->viescolaire->write))
-		 || (!empty($conf->global->MAIN_USE_ADVANCED_PERMS) && !empty($user->rights->viescolaire->viescolaire_advance->validate))))
-		 {
-		 $this->error='Permission denied';
-		 return -1;
-		 }*/
-
 		return $this->setStatusCommon($user, self::STATUS_CANCELED, $notrigger, 'PARENTS_CANCEL');
 	}
 
@@ -897,13 +870,6 @@ class Parents extends CommonObject
 		if ($this->status == self::STATUS_VALIDATED) {
 			return 0;
 		}
-
-		/*if (! ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && !empty($user->rights->viescolaire->write))
-		 || (!empty($conf->global->MAIN_USE_ADVANCED_PERMS) && !empty($user->rights->viescolaire->viescolaire_advance->validate))))
-		 {
-		 $this->error='Permission denied';
-		 return -1;
-		 }*/
 
 		return $this->setStatusCommon($user, self::STATUS_VALIDATED, $notrigger, 'PARENTS_REOPEN');
 	}
@@ -1022,36 +988,6 @@ class Parents extends CommonObject
 
 		return $result;
 	}
-
-	/**
-	 *	Return a thumb for kanban views
-	 *
-	 *	@param      string	    $option                 Where point the link (0=> main card, 1,2 => shipment, 'nolink'=>No link)
-	 *  @return		string								HTML Code for Kanban thumb.
-	 */
-	/*
-	public function getKanbanView($option = '')
-	{
-		$return = '<div class="box-flex-item box-flex-grow-zero">';
-		$return .= '<div class="info-box info-box-sm">';
-		$return .= '<span class="info-box-icon bg-infobox-action">';
-		$return .= img_picto('', $this->picto);
-		$return .= '</span>';
-		$return .= '<div class="info-box-content">';
-		$return .= '<span class="info-box-ref">'.(method_exists($this, 'getNomUrl') ? $this->getNomUrl() : $this->ref).'</span>';
-		if (property_exists($this, 'label')) {
-			$return .= '<br><span class="info-box-label opacitymedium">'.$this->label.'</span>';
-		}
-		if (method_exists($this, 'getLibStatut')) {
-			$return .= '<br><div class="info-box-status margintoponly">'.$this->getLibStatut(5).'</div>';
-		}
-		$return .= '</div>';
-		$return .= '</div>';
-		$return .= '</div>';
-
-		return $return;
-	}
-	*/
 
 	/**
 	 *  Return the label of the status
@@ -1274,62 +1210,5 @@ class Parents extends CommonObject
 		}
 
 		return $result;
-	}
-
-	/**
-	 * Action executed by scheduler
-	 * CAN BE A CRON TASK. In such a case, parameters come from the schedule job setup field 'Parameters'
-	 * Use public function doScheduledJob($param1, $param2, ...) to get parameters
-	 *
-	 * @return	int			0 if OK, <>0 if KO (this function is used also by cron so only 0 is OK)
-	 */
-	public function doScheduledJob()
-	{
-		global $conf, $langs;
-
-		//$conf->global->SYSLOG_FILE = 'DOL_DATA_ROOT/dolibarr_mydedicatedlofile.log';
-
-		$error = 0;
-		$this->output = '';
-		$this->error = '';
-
-		dol_syslog(__METHOD__, LOG_DEBUG);
-
-		$now = dol_now();
-
-		$this->db->begin();
-
-		// ...
-
-		$this->db->commit();
-
-		return $error;
-	}
-}
-
-
-require_once DOL_DOCUMENT_ROOT.'/core/class/commonobjectline.class.php';
-
-/**
- * Class ParentsLine. You can also remove this and generate a CRUD class for lines objects.
- */
-class ParentsLine extends CommonObjectLine
-{
-	// To complete with content of an object ParentsLine
-	// We should have a field rowid, fk_parents and position
-
-	/**
-	 * @var int  Does object support extrafields ? 0=No, 1=Yes
-	 */
-	public $isextrafieldmanaged = 0;
-
-	/**
-	 * Constructor
-	 *
-	 * @param DoliDb $db Database handler
-	 */
-	public function __construct(DoliDB $db)
-	{
-		$this->db = $db;
 	}
 }

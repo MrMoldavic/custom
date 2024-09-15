@@ -56,7 +56,7 @@ class Classe extends CommonObject
 	/**
 	 * @var int  Does object support extrafields ? 0=No, 1=Yes
 	 */
-	public $isextrafieldmanaged = 1;
+	public $isextrafieldmanaged = 0;
 
 	/**
 	 * @var string String with name of icon for classe. Must be the part after the 'object_' into object_classe.png
@@ -65,7 +65,7 @@ class Classe extends CommonObject
 
 
 	const STATUS_DRAFT = 0;
-	const STATUS_VALIDATED = 1;
+	const STATUS_VALIDATED = 4;
 	const STATUS_CANCELED = 9;
 
 
@@ -187,12 +187,6 @@ class Classe extends CommonObject
 			$this->fields['entity']['enabled'] = 0;
 		}
 
-		// Example to show how to set values of fields definition dynamically
-		/*if ($user->rights->scolarite->classe->read) {
-			$this->fields['myfield']['visible'] = 1;
-			$this->fields['myfield']['noteditable'] = 0;
-		}*/
-
 		// Unset fields that are disabled
 		foreach ($this->fields as $key => $val) {
 			if (isset($val['enabled']) && empty($val['enabled'])) {
@@ -251,10 +245,6 @@ class Classe extends CommonObject
 		if ($result > 0 && !empty($object->table_element_line)) {
 			$object->fetchLines();
 		}
-
-		// get lines so they will be clone
-		//foreach($this->lines as $line)
-		//	$line->fetch_optionals();
 
 		// Reset some properties
 		unset($object->id);
@@ -343,62 +333,6 @@ class Classe extends CommonObject
 		return $result;
 	}
 
-
-	/**
-	 * Delete object in database
-	 *
-	 * @param array $parameters array of column to fetch
-	 * @param int $id id of item requested for direct fetch
-	 * @param string $column string column requested for direct fetch
-	 * @return int <0 if KO, >0 if OK
-	 */
-	public function fetchBy(array $parameters, int $id = 0, string $column = '')
-	{
-		$sql = "SELECT ";
-		for($i=0;$i<count($parameters);$i++)
-		{
-			$sql .= $this->db->sanitize($this->db->escape($parameters[$i])).', ';
-		}
-		$sql = substr($sql, 0, -2);
-		$sql .= " FROM ".MAIN_DB_PREFIX.$this->table_element;
-
-		if($id)
-		{
-			$sql .= " WHERE ".$this->db->sanitize($this->db->escape($column))." = ".$this->db->sanitize($this->db->escape($id));
-		}
-		$resql = $this->db->query($sql);
-
-
-		if ($resql) {
-			$num = $this->db->num_rows($resql);
-			$i = 0;
-			if($num == 1)
-			{
-				$records = $this->db->fetch_object($resql);
-			}
-			else
-			{
-				while ($i < ($limit ? min($limit, $num) : $num)) {
-
-					$obj = $this->db->fetch_object($resql);
-					$record = new self($this->db);
-					$record->setVarsFromFetchObj($obj);
-
-					$records[$record->id] = $record;
-
-					$i++;
-				}
-			}
-
-			$this->db->free($resql);
-			return $records;
-		} else {
-			$this->errors[] = 'Error '.$this->db->lasterror();
-			dol_syslog(__METHOD__.' '.join(',', $this->errors), LOG_ERR);
-
-			return -1;
-		}
-	}
 
 	/**
 	 * Load object lines in memory from the database
@@ -559,14 +493,6 @@ class Classe extends CommonObject
 			return 0;
 		}
 
-		/*if (! ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->scolarite->classe->write))
-		 || (! empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->scolarite->classe->classe_advance->validate))))
-		 {
-		 $this->error='NotEnoughPermissions';
-		 dol_syslog(get_class($this)."::valid ".$this->error, LOG_ERR);
-		 return -1;
-		 }*/
-
 		$now = dol_now();
 
 		$this->db->begin();
@@ -678,13 +604,6 @@ class Classe extends CommonObject
 			return 0;
 		}
 
-		/*if (! ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->scolarite->write))
-		 || (! empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->scolarite->scolarite_advance->validate))))
-		 {
-		 $this->error='Permission denied';
-		 return -1;
-		 }*/
-
 		return $this->setStatusCommon($user, self::STATUS_DRAFT, $notrigger, 'CLASSE_UNVALIDATE');
 	}
 
@@ -702,13 +621,6 @@ class Classe extends CommonObject
 			return 0;
 		}
 
-		/*if (! ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->scolarite->write))
-		 || (! empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->scolarite->scolarite_advance->validate))))
-		 {
-		 $this->error='Permission denied';
-		 return -1;
-		 }*/
-
 		return $this->setStatusCommon($user, self::STATUS_CANCELED, $notrigger, 'CLASSE_CANCEL');
 	}
 
@@ -725,13 +637,6 @@ class Classe extends CommonObject
 		if ($this->status != self::STATUS_CANCELED) {
 			return 0;
 		}
-
-		/*if (! ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->scolarite->write))
-		 || (! empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->scolarite->scolarite_advance->validate))))
-		 {
-		 $this->error='Permission denied';
-		 return -1;
-		 }*/
 
 		return $this->setStatusCommon($user, self::STATUS_VALIDATED, $notrigger, 'CLASSE_REOPEN');
 	}
@@ -1081,61 +986,5 @@ class Classe extends CommonObject
 
 		return $result;
 	}
-
-	/**
-	 * Action executed by scheduler
-	 * CAN BE A CRON TASK. In such a case, parameters come from the schedule job setup field 'Parameters'
-	 * Use public function doScheduledJob($param1, $param2, ...) to get parameters
-	 *
-	 * @return	int			0 if OK, <>0 if KO (this function is used also by cron so only 0 is OK)
-	 */
-	public function doScheduledJob()
-	{
-		global $conf, $langs;
-
-		//$conf->global->SYSLOG_FILE = 'DOL_DATA_ROOT/dolibarr_mydedicatedlofile.log';
-
-		$error = 0;
-		$this->output = '';
-		$this->error = '';
-
-		dol_syslog(__METHOD__, LOG_DEBUG);
-
-		$now = dol_now();
-
-		$this->db->begin();
-
-		// ...
-
-		$this->db->commit();
-
-		return $error;
-	}
 }
 
-
-require_once DOL_DOCUMENT_ROOT . '/core/class/commonobjectline.class.php';
-
-/**
- * Class ClasseLine. You can also remove this and generate a CRUD class for lines objects.
- */
-class ClasseLine extends CommonObjectLine
-{
-	// To complete with content of an object ClasseLine
-	// We should have a field rowid, fk_classe and position
-
-	/**
-	 * @var int  Does object support extrafields ? 0=No, 1=Yes
-	 */
-	public $isextrafieldmanaged = 0;
-
-	/**
-	 * Constructor
-	 *
-	 * @param DoliDb $db Database handler
-	 */
-	public function __construct(DoliDB $db)
-	{
-		$this->db = $db;
-	}
-}

@@ -79,6 +79,7 @@ if (!$res) {
 }
 
 dol_include_once('/viescolaire/class/eleve.class.php');
+dol_include_once('/viescolaire/class/souhait.class.php');
 dol_include_once('/viescolaire/lib/viescolaire_eleve.lib.php');
 
 // Load translation files required by the page
@@ -120,10 +121,6 @@ if ($enablepermissioncheck) {
 }
 
 // Security check (enable the most restrictive one)
-//if ($user->socid > 0) accessforbidden();
-//if ($user->socid > 0) $socid = $user->socid;
-//$isdraft = (($object->status == $object::STATUS_DRAFT) ? 1 : 0);
-//restrictedArea($user, $object->element, $object->id, $object->table_element, '', 'fk_soc', 'rowid', $isdraft);
 if (empty($conf->viescolaire->enabled)) accessforbidden();
 if (!$permissiontoread) accessforbidden();
 
@@ -148,7 +145,6 @@ if (empty($reshook)) {
 
 $form = new Form($db);
 
-//$help_url='EN:Customers_Orders|FR:Commandes_Clients|ES:Pedidos de clientes';
 $help_url = '';
 llxHeader('', $langs->trans('Eleve'), $help_url);
 
@@ -165,7 +161,7 @@ if ($id > 0 || !empty($ref)) {
 
 	$morehtmlref = '<div class="refidno">';
 	$morehtmlref .= $object->prenom;
-	 $morehtmlref .= '</div>';
+	$morehtmlref .= '</div>';
 
 
 	dol_banner_tab($object, 'ref', $linkback, 1, 'ref', 'nom', $morehtmlref);
@@ -174,12 +170,10 @@ if ($id > 0 || !empty($ref)) {
 	print '<div class="fichecenter">';
 	print '<div class="underbanner clearboth"></div>';
 
-	print '<h2><u>Appréciations de l\'élève</u></h2>';
+	print load_fiche_titre('Appréciations de l\'élève', '', 'fa-pen');
 
-	print '<hr>';
-
-	$sql = "SELECT rowid,details,nom_souhait FROM ".MAIN_DB_PREFIX."souhait WHERE fk_eleve=".$object->id;
-	$resql = $db->query($sql);
+	$souhaitClass = new Souhait($db);
+	$souhaits = $souhaitClass->fetchAll('','',0,0,['fk_eleve'=>$object->id]);
 
 	print '<table class="tagtable liste" style="width:100%">';
 	print '<tbody>';
@@ -188,13 +182,12 @@ if ($id > 0 || !empty($ref)) {
 		<th class="wrapcolumntitle liste_titre">Appréciation</th>
 	</tr>';
 
-		foreach($resql as $val)
+		foreach($souhaits as $souhait)
 		{
 			print '<tr>';
-			print '<td><a href="' . DOL_URL_ROOT . '/custom/viescolaire/souhait_card.php?id=' . $val['rowid']. '">' .'- ' . $val['nom_souhait'].'</a></td>';
-			print '<td>'.$val['details'].'</td>';
+			print '<td><a href="' . dol_buildpath('/custom/viescolaire/souhait_card.php',1) . '?id=' . $souhait->id. '">' .'- ' . $souhait->returnFullNameSouhait().'</a></td>';
+			print '<td>'.$souhait->details.'</td>';
 			print '</tr>';
-
 		}
 
 	print '</tbody>';

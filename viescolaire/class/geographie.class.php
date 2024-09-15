@@ -58,7 +58,7 @@ class Geographie extends CommonObject
 	/**
 	 * @var int  Does object support extrafields ? 0=No, 1=Yes
 	 */
-	public $isextrafieldmanaged = 1;
+	public $isextrafieldmanaged = 0;
 
 	/**
 	 * @var string String with name of icon for etablissement. Must be the part after the 'object_' into object_etablissement.png
@@ -200,27 +200,6 @@ class Geographie extends CommonObject
 		return $this->createCommon($user, $notrigger);
 	}
 
-	public function returnActualyear()
-	{
-		$sql = 'SELECT ';
-		$sql .= 'rowid, nom_annee, annee_actuelle ';
-		$sql .= 'FROM ' . MAIN_DB_PREFIX . 'c_annee_scolaire ';
-		$sql .= 'WHERE annee_actuelle = 1';
-
-		$resql = $this->db->query($sql);
-		if ($resql) {
-			$record = $this->db->fetch_object($resql);
-			$this->db->free($resql);
-
-			return $record;
-		} else {
-			$this->errors[] = 'Error ' . $this->db->lasterror();
-			dol_syslog(__METHOD__ . ' ' . join(',', $this->errors), LOG_ERR);
-
-			return -1;
-		}
-	}
-
 	/**
 	 * Clone an object into another one
 	 *
@@ -335,76 +314,6 @@ class Geographie extends CommonObject
 		}
 		return $result;
 	}
-
-
-
-	/**
-	 * Delete object in database
-	 *
-	 * @param array $parameters array of column to fetch
-	 * @param int $id id of item requested for direct fetch
-	 * @param string $column string column requested for direct fetch
-	 * @return int <0 if KO, >0 if OK
-	 */
-	public function fetchBy(array $parameters, int $id = 0, string $column = '')
-	{
-		$sql = "SELECT ";
-		for($i=0;$i<count($parameters);$i++)
-		{
-			$sql .= $this->db->sanitize($this->db->escape($parameters[$i])).', ';
-		}
-		$sql = substr($sql, 0, -2);
-		$sql .= " FROM ".MAIN_DB_PREFIX.$this->table_element;
-
-		if($id)
-		{
-			$sql .= " WHERE ".$this->db->sanitize($this->db->escape($column))." = ".$this->db->sanitize($this->db->escape($id));
-		}
-		$resql = $this->db->query($sql);
-
-		if ($resql) {
-			$num = $this->db->num_rows($resql);
-			$i = 0;
-			if($num == 1)
-			{
-				$records = $this->db->fetch_object($resql);
-			}
-			else
-			{
-				while ($i < ($limit ? min($limit, $num) : $num)) {
-
-					$obj = $this->db->fetch_object($resql);
-					$records[$obj->rowid] = $obj;
-
-					$i++;
-				}
-			}
-
-			$this->db->free($resql);
-			return $records;
-		} else {
-			$this->errors[] = 'Error '.$this->db->lasterror();
-			dol_syslog(__METHOD__.' '.join(',', $this->errors), LOG_ERR);
-
-			return -1;
-		}
-	}
-
-	/*public function fetchOneField(int $id,string $field)
-	{
-		$sql = "SELECT ".$this->db->sanitize($this->db->escape($field)).',rowid';
-		$sql .= " FROM ".MAIN_DB_PREFIX.$this->table_element;
-		$sql .= " WHERE rowid=".$id;
-
-		$resql = $this->db->query($sql);
-		if($resql) $result = $this->db->fetch_object($resql);
-
-		return $result;
-
-	}*/
-
-
-
 
 	/**
 	 * Load object lines in memory from the database
@@ -1058,55 +967,4 @@ class Geographie extends CommonObject
 
 		return $result;
 	}
-
-	// Permet de changer l'établissement par défaut dans les listes
-	public final function checkSetCookieEtablissement($etab)
-	{
-		if($_SESSION['etablissementid'] != intval($etab))
-		{
-			$_SESSION['etablissementid'] = intval($etab);
-			setEventMessage('Etablissement enregistré avec succès!');
-		}
-	}
-
-	// Affiche un formulaire qui permet de modifier l'établissement choisi de base
-	public final function printFormChangeAntenne(): string
-	{
-		$form = new Form($this->db);
-		$out = "";
-
-		$antenneList = $this->fetchAll('', '', 0, 0, [], 'AND');
-		$antennes = ['Tous'];
-
-		foreach ($antenneList as $val) {
-			$antennes[$val->id] = $val->nom_antenne;
-		}
-		$out .= '<hr>';
-		$out .= '<form action="' . $_SERVER['PHP_SELF'] . '" method="POST">';
-		$out .= '<input type="hidden" tyname="sortfield" value="' . $sortfield . '">';
-		$out .= '<input type="hidden" name="sortorder" value="' . $sortorder . '">';
-		$out .= '<input type="hidden" name="action" value="changeEtablissement">';
-		$out .= '<input type="hidden" name="token" value="' . newToken() . '">';
-		$out .= '<table class="border centpercent">';
-		$out .= '<tr>';
-		$out .= '</td></tr>';
-		$out .= '<tr><td class="fieldrequired titlefieldcreate">Selectionnez votre établissement: </td><td>';
-		$out .= $form->selectarray('etablissementid', $antennes, $_SESSION['etablissementid']);
-		$out .= ' <a href="' . DOL_URL_ROOT . '/custom/scolarite/etablissement_card.php?action=create">';
-		$out .= '<span class="fa fa-plus-circle valignmiddle paddingleft" title="Ajouter un etablissement"></span>';
-		$out .= '</a>';
-		$out .= '</td>';
-		$out .= '</tr>';
-		$out .= '<td></td>';
-		$out .= '<td>';
-		$out .= '<input type="submit" class="button" value="Valider">';
-		$out .= '</td>';
-		$out .= '</table>';
-		$out .= '</form>';
-		$out .= '<hr>';
-
-		return $out;
-
-	}
-
 }

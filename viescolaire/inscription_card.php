@@ -80,8 +80,9 @@ if (!$res) {
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formcompany.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formfile.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formprojet.class.php';
+
 dol_include_once('/viescolaire/class/inscription.class.php');
-dol_include_once('/viescolaire/class/dictionary.class.php');
+dol_include_once('/scolarite/class/annee.class.php');
 dol_include_once('/viescolaire/lib/viescolaire_inscription.lib.php');
 
 // Load translation files required by the page
@@ -252,12 +253,11 @@ if ($action == 'create') {
 
 	print dol_get_fiche_head(array(), '');
 
-	// Set some default values
 
-	$dictionaryClass = new Dictionary($db);
-	$objectAnnescolaire = $dictionaryClass->fetchByDictionary('c_annee_scolaire',['rowid'],0,'rowid',' WHERE annee_actuelle=1');
+	$anneeClass = new Annee($db);
+	$anneeClass->fetch('','',' AND annee_actuelle=1');
 
-	if (!GETPOSTISSET('fk_annee_scolaire')) $_POST['fk_annee_scolaire'] = $objectAnnescolaire->rowid;
+	if (!GETPOSTISSET('fk_annee_scolaire')) $_POST['fk_annee_scolaire'] = $anneeClass->id;
 	print '<table class="border centpercent tableforfieldcreate">'."\n";
 
 	// Common attributes

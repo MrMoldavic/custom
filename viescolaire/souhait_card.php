@@ -90,15 +90,15 @@ require_once DOL_DOCUMENT_ROOT . '/core/class/html.formprojet.class.php';
 require_once DOL_DOCUMENT_ROOT .  '/user/class/user.class.php';
 
 dol_include_once('viescolaire/class/souhait.class.php');
+dol_include_once('scolarite/class/classe.class.php');
 dol_include_once('viescolaire/lib/viescolaire_souhait.lib.php');
 
 dol_include_once('viescolaire/class/affectation.class.php');
 dol_include_once('viescolaire/class/dictionary.class.php');
 dol_include_once('management/class/agent.class.php');
 dol_include_once('scolarite/class/creneau.class.php');
+dol_include_once('scolarite/class/annee.class.php');
 // dol_include_once('viescolaire/class/eleve.class.php');
-
-
 
 
 // Load translation files required by the page
@@ -169,10 +169,6 @@ if ($enablepermissioncheck) {
 $upload_dir = $conf->viescolaire->multidir_output[isset($object->entity) ? $object->entity : 1] . '/souhait';
 
 // Security check (enable the most restrictive one)
-//if ($user->socid > 0) accessforbidden();
-//if ($user->socid > 0) $socid = $user->socid;
-//$isdraft = (isset($object->status) && ($object->status == $object::STATUS_DRAFT) ? 1 : 0);
-//restrictedArea($user, $object->element, $object->id, $object->table_element, '', 'fk_soc', 'rowid', $isdraft);
 if (empty($conf->viescolaire->enabled)) accessforbidden();
 if (!$permissiontoread) accessforbidden();
 
@@ -258,7 +254,7 @@ if ($action == 'create') {
 		exit;
 	}
 
-	print load_fiche_titre($langs->trans("NewObject", $langs->transnoentitiesnoconv("Souhait")), '', 'object_' . $object->picto);
+	print load_fiche_titre($langs->trans("NewObject", $langs->transnoentitiesnoconv("Souhait")), '', 'fa-heart');
 
 	print '<form method="POST" action="' . $_SERVER["PHP_SELF"] . '">';
 	print '<input type="hidden" name="token" value="' . newToken() . '">';
@@ -272,18 +268,15 @@ if ($action == 'create') {
 
 	print dol_get_fiche_head(array(), '');
 
-	// Set some default values
-	//if (! GETPOSTISSET('fieldname')) $_POST['fieldname'] = 'myvalue';
 
 	print '<table class="border centpercent tableforfieldcreate">' . "\n";
 
-	$anneScolaire = "SELECT annee,annee_actuelle,rowid FROM ".MAIN_DB_PREFIX."c_annee_scolaire WHERE active = 1 AND annee_actuelle = 1";
-	$resqlAnneeScolaire = $db->query($anneScolaire);
-	$objAnneScolaire = $db->fetch_object($resqlAnneeScolaire);
+	$anneeScolaire = new Annee($db);
+	$anneeScolaire->fetch('','',' AND active=1 AND annee_actuelle=1');
 
 	if (!GETPOSTISSET('fk_type_classe')) $_POST['fk_type_classe'] = 1;
 	if (!GETPOSTISSET('fk_niveau')) $_POST['fk_niveau'] = 1;
-	if (!GETPOSTISSET('fk_annee_scolaire')) $_POST['fk_annee_scolaire'] = $objAnneScolaire->rowid;
+	if (!GETPOSTISSET('fk_annee_scolaire')) $_POST['fk_annee_scolaire'] = $anneeScolaire->id;
 	// Common attributes
 	include DOL_DOCUMENT_ROOT . '/core/tpl/commonfields_add.tpl.php';
 
@@ -298,13 +291,11 @@ if ($action == 'create') {
 	print $form->buttonsSaveCancel("Create");
 
 	print '</form>';
-
-	//dol_set_focus('input[name="ref"]');
 }
 
 // Part to edit record
 if (($id || $ref) && $action == 'edit') {
-	print load_fiche_titre($langs->trans("Souhait"), '', 'object_' . $object->picto);
+	print load_fiche_titre($langs->trans("Souhait"), '', 'fa-heart');
 
 	print '<form method="POST" action="' . $_SERVER["PHP_SELF"] . '">';
 	print '<input type="hidden" name="token" value="' . newToken() . '">';
@@ -322,7 +313,6 @@ if (($id || $ref) && $action == 'edit') {
 	print '<table class="border centpercent tableforfieldedit">' . "\n";
 
 	// Common attributes
-
 	include DOL_DOCUMENT_ROOT . '/core/tpl/commonfields_edit.tpl.php';
 
 	// Other attributes
@@ -350,10 +340,7 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 	if ($action == 'delete') {
 		$formconfirm = $form->formconfirm($_SERVER["PHP_SELF"] . '?id=' . $object->id, $langs->trans('DeleteSouhait'), $langs->trans('ConfirmDeleteObject'), 'confirm_delete', '', 0, 1);
 	}
-	// Confirmation to delete line
-	if ($action == 'deleteline') {
-		$formconfirm = $form->formconfirm($_SERVER["PHP_SELF"] . '?id=' . $object->id . '&lineid=' . $lineid, $langs->trans('DeleteLine'), $langs->trans('ConfirmDeleteLine'), 'confirm_deleteline', '', 0, 1);
-	}
+
 	// Clone confirmation
 	if ($action == 'clone') {
 		// Create an array for form
@@ -364,7 +351,7 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 	if ($action == 'setdraft') {
 		// Create an array for form
 		$formquestion = array();
-		$formconfirm = $form->formconfirm($_SERVER["PHP_SELF"] . '?id=' . $object->id, $langs->trans('ToClone'), 'Si vous repassez le souhait en brouillon, cela va le désaffecter de son créneau actuel. Continuer?', 'confirm_setdraft', $formquestion, 'yes', 1);
+		$formconfirm = $form->formconfirm($_SERVER["PHP_SELF"] . '?id=' . $object->id, 'Désaffecter le souhait', 'Cette action va désaffecter le souhait de son créneau actuel. Continuer?', 'confirm_setdraft', $formquestion, 'yes', 1);
 	}
 
 	if ($action == 'deleteAffectation') {
@@ -388,14 +375,18 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 	// ------------------------------------------------------------
 	$linkback = '<a href="' . dol_buildpath('/viescolaire/souhait_list.php', 1) . '?restore_lastsearch_values=1' . (!empty($socid) ? '&socid=' . $socid : '') . '">' . $langs->trans("BackToList") . '</a>';
 
-	$morehtmlref = '<div class="refidno">';
-	$sqlEtablissement = "SELECT nom,diminutif FROM ".MAIN_DB_PREFIX."etablissement WHERE rowid=".("(SELECT fk_etablissement FROM ".MAIN_DB_PREFIX."eleve WHERE rowid=".$object->fk_eleve).")";
-	$resqlEtablissement = $db->query($sqlEtablissement);
-	$resEtablissement = $db->fetch_object($resqlEtablissement);
-	$morehtmlref.= $resEtablissement->nom;
+	$morehtmlref = '<div class="refid">';
+	$morehtmlref.= $object->returnFullNameSouhait();
+
+	$etablissementClass = new Etablissement($db);
+	$etablissement = $etablissementClass->fetchAll('','',1,0,['e.rowid'=>$object->fk_eleve],'',' INNER JOIN '.MAIN_DB_PREFIX.'classe as c ON t.rowid=c.fk_college INNER JOIN '.MAIN_DB_PREFIX.'eleve as e ON e.fk_classe_etablissement=c.rowid');
+
+	$morehtmlref.= '<div class="refidno">';
+	$morehtmlref.= $etablissement->nom;
+	$morehtmlref .= '</div>';
 	$morehtmlref .= '</div>';
 
-	dol_banner_tab($object, 'ref', $linkback, 1, 'ref', 'nom_souhait', $morehtmlref);
+	dol_banner_tab($object, 'ref', $linkback, 1, 'ref', 'none', $morehtmlref);
 
 
 	print '<div class="fichecenter">';
@@ -407,129 +398,106 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 	print '<table class="border centpercent tableforfield">' . "\n";
 
 	// Common attributes
-	//$keyforbreak='fieldkeytoswitchonsecondcolumn';	// We change column just before this field
-	//unset($object->fields['fk_project']);				// Hide field already shown in banner
-	//unset($object->fields['fk_soc']);					// Hide field already shown in banner
 	include DOL_DOCUMENT_ROOT . '/core/tpl/commonfields_view.tpl.php';
 	// Other attributes. Fields from hook formObjectOptions and Extrafields.
 	include DOL_DOCUMENT_ROOT . '/core/tpl/extrafields_view.tpl.php';
 
 	print '</table>';
-	print '<h3>Créneau actuel:</h3>';
 
-	$sqlCreneauActuel = 'SELECT c.jour, c.heure_debut, c.heure_fin, c.fk_prof_1, c.nom_creneau, c.rowid
-						FROM ' .MAIN_DB_PREFIX. 'creneau as c
-						INNER JOIN ' .MAIN_DB_PREFIX."affectation as e ON c.rowid = e.fk_creneau
-						WHERE e.fk_souhait = $object->id AND e.status = 4";
+	// partie pour afficher les infos du créneau actuel
+	print load_fiche_titre('Créneau actuel', '', 'fa-sign');
 
-	$resqlCreneauActuel = $db->query($sqlCreneauActuel);
-	$objectCreneauActuel = $db->fetch_object($resqlCreneauActuel);
+	$creneauClass = new Creneau($db);
+	$affectationClass = new Affectation($db);
 
-	if(!$objectCreneauActuel && $object->status != 9)
-	{
-		print '<span class="badge  badge-status8 badge-status" style="color:white;">Non affecté</span>';
-	}
-	elseif($object->status == 9)
-	{
-		print '<span class="badge  badge-status9 badge-status" style="color:white;">Souhait Désactivé</span>';
-	}
-	else
-	{
-		$JourCreneauActuel = "SELECT jour, rowid FROM ".MAIN_DB_PREFIX."c_jour WHERE rowid =".$objectCreneauActuel->jour;
-		$resqlJourCreneauActuel = $db->query($JourCreneauActuel);
-		$objJourCreneauActuel = $db->fetch_object($resqlJourCreneauActuel);
+	// Récupération des créneaux associés à l'objet en cours
+	$actualCreneau = $creneauClass->fetchAll('', '', 1, 0, array('a.fk_souhait' => $object->id, 'a.status' => Affectation::STATUS_VALIDATED), 'AND', ' INNER JOIN ' . MAIN_DB_PREFIX . $affectationClass->table_element . ' as a ON t.rowid = a.fk_creneau');
 
-		$heureDebutCreneauActuel = "SELECT heure, rowid FROM ".MAIN_DB_PREFIX."c_heure WHERE rowid =".$objectCreneauActuel->heure_debut;
-		$resqlheureDebutCreneauActuel = $db->query($heureDebutCreneauActuel);
-		$objheureDebutCreneauActuel = $db->fetch_object($resqlheureDebutCreneauActuel);
+	print '<div style="background-color: #FFFFFF; border: 1px solid #ddd;border-radius: 12px; padding: 20px; max-width: 60%;box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); ">';
+	// Vérification si aucun créneau n'est affecté et le statut n'est pas annulé
+	if (empty($actualCreneau) && $object->status !== Souhait::STATUS_CANCELED) {
+		print '<span class="badge badge-status8 badge-status" style="color:white;">Aucun créneau affecté à ce souhait</span>';
+	} elseif ($object->status === Souhait::STATUS_CANCELED) {
+		// Affichage pour un souhait annulé
+		print '<span class="badge badge-status9 badge-status" style="color:white;">Souhait Désactivé</span>';
+	} else {
+		// Affichage des créneaux affectés
+		foreach ($actualCreneau as $valueCreneau) {
+			// Affichage du nom du créneau
+			print 'Intitulé du cours : <h3 style="margin-left: 20px">' . htmlspecialchars($valueCreneau->nom_creneau) . '</h3>';
 
-		$heureFinCreneauActuel = "SELECT heure, rowid FROM ".MAIN_DB_PREFIX."c_heure WHERE rowid =".$objectCreneauActuel->heure_fin;
-		$resqlheureFinCreneauActuel = $db->query($heureFinCreneauActuel);
-		$objheureFinCreneauActuel = $db->fetch_object($resqlheureFinCreneauActuel);
+			// Affichage des professeurs associés au créneau
+			print 'Professeur(s) :<br>';
+			print $valueCreneau->printProfesseursFromCreneau($valueCreneau->id);
 
-		if($objectCreneauActuel->fk_prof_1 != NULL)
-		{
-			$professeurCreneauActuel = "SELECT prenom,nom FROM ".MAIN_DB_PREFIX."management_agent WHERE rowid = ".$objectCreneauActuel->fk_prof_1;
-			$resqlUserCreneauActuel = $db->query($professeurCreneauActuel);
-			$objUserCreneauActuel = $db->fetch_object($resqlUserCreneauActuel);
-		}
+			print '<br>';
+			// Bouton pour accéder à la page du cours
+			print dolGetButtonAction('Page du cours', '', 'default', '/custom/scolarite/creneau_card.php?id=' . $valueCreneau->id, '', $permissiontoread);
 
-
-		print '<div style="background-color: #f2f2f2;border-radius: 25px;padding:1em;max-width:60%;margin:1em">';
-		print 'Jour : <span class="badge  badge-status8 badge-status" style="color:white;">'.$objJourCreneauActuel->jour.'</span><br>';
-		print 'Heure : '.$objheureDebutCreneauActuel->heure.'h / '.$objheureFinCreneauActuel->heure."h<br>";
-		print 'Professeur : '.($objUserCreneauActuel->prenom != NULL ? ($objUserCreneauActuel->prenom.' '.$objUserCreneauActuel->nom) : 'Aucun professeur pour l\'instant!')."<br>";
-		print 'Lien :'.'<a href="'.DOL_URL_ROOT.'/custom/scolarite/creneau_card.php?id='.$objectCreneauActuel->rowid.'">'.$objectCreneauActuel->nom_creneau.'</a>';
-		print '</div>';
-
-	}
-
-	if ($object->status == $object::STATUS_VALIDATED) {
-		print dolGetButtonAction($langs->trans('Désaffecter'), '', 'default', $_SERVER["PHP_SELF"] . '?id=' . $object->id . '&action=setdraft&token=' . newToken(), '', $permissiontoadd);
-	}
-	print '<h3>Infos anciens créneaux pour ce souhait:</h3>';
-
-		$anneScolaire = "SELECT annee,annee_actuelle,rowid FROM ".MAIN_DB_PREFIX."c_annee_scolaire WHERE active = 1 ORDER BY annee_actuelle DESC, rowid ASC";
-		$resqlAnneeScolaire = $db->query($anneScolaire);
-		$objAnneScolaire = $db->fetch_object($resqlAnneeScolaire);
-
-
-		foreach($resqlAnneeScolaire as $val)
-		{
-			$sqlCountAffectation = "SELECT a.fk_creneau,a.date_creation,a.fk_user_creat,a.rowid FROM ".MAIN_DB_PREFIX."affectation as a INNER JOIN ".MAIN_DB_PREFIX."souhait as s ON a.fk_souhait=s.rowid WHERE a.fk_souhait =".$object->id." AND a.status = 8 AND s.fk_annee_scolaire=".$val['rowid'];
-			$resqlAffectation = $db->query($sqlCountAffectation);
-
-			if($resqlAffectation->num_rows > 0)
-			{
-				print '<div class="annee-accordion'.($val['annee_actuelle'] == 1 ? '-opened' : '').'">';
-				print '<h3><span class="badge badge-status4 badge-status">'.$val['annee'].($val['annee_actuelle'] == 1 ? ' - (année actuelle)' : '(année précédente)').'</span></h3>';
-
-				print '<table class="tagtable liste">';
-				print '<tbody>';
-
-				print '<tr class="liste_titre">
-					<th class="wrapcolumntitle liste_titre">Jour</th>
-					<th class="wrapcolumntitle liste_titre">Horaire</th>
-					<th class="wrapcolumntitle liste_titre">Professeur</th>
-					<th class="wrapcolumntitle liste_titre">Créé par, le</th>
-					<th></th>
-					</tr>';
-				foreach($resqlAffectation as $value)
-				{
-					$creneauClass = new Creneau($db);
-					$resultCreneau = $creneauClass->fetchBy(['jour','heure_debut','heure_fin','fk_prof_1','rowid'],$value['fk_creneau'],'rowid');
-
-					if($resultCreneau)
-					{
-						$resultJour = $dictionaryClass->fetchByDictionary('c_jour',['jour','rowid'],$resultCreneau->jour,'rowid');
-						$resultHeureDebut = $dictionaryClass->fetchByDictionary('c_heure',['heure','rowid'],$resultCreneau->heure_debut,'rowid');
-						$resultHeureFin = $dictionaryClass->fetchByDictionary('c_heure',['heure','rowid'],$resultCreneau->heure_fin,'rowid');
-
-						if($resultCreneau->fk_prof_1 != NULL)
-						{
-							$agentClass = new Agent($db);
-							$agent = $agentClass->fetchBy(['prenom','nom','rowid'],$resultCreneau->fk_prof_1,'rowid');
-						}
-
-						print '<tr class="oddeven">';
-						print "<td>$resultJour->jour</td>";
-						print '<td>'.$resultHeureDebut->heure.'h / '.$resultHeureFin->heure.'h</td>';
-						if($resultCreneau->fk_prof_1 != NULL) print '<td>'.$agent->prenom.' '.$agent->nom.'</td>';
-
-						$userClass = new User($db);
-						$userClass->fetch($value['fk_user_creat']);
-
-						print '<td>'.$userClass->firstname.' '.$userClass->lastname.' le '.date('d/m/Y',strtotime($value['date_creation'])).'</td>';
-						print '<td><a href="' . $_SERVER['PHP_SELF'] . '?id=' . $object->id . '&affectationid=' . $value['rowid'] . '&action=deleteAffectation">❌️</a></td>';
-						print '</tr>';
-					}
-				}
-				print '</tbody>';
-				print '</table>';
-				print '</div>';
+			// Bouton pour désaffecter le souhait si le statut est validé
+			if ($object->status === Souhait::STATUS_VALIDATED) {
+				print dolGetButtonAction($langs->trans('Désaffecter'), '', 'default', $_SERVER['PHP_SELF'] . '?id=' . $object->id . '&action=setdraft&token=' . newToken(), '', $permissiontoadd
+				);
 			}
-
 		}
+	}
+	print '</div>';
+
+	// partie pour afficher les infos d'anciens créneaux
+	$anneeScolaire = new Annee($db);
+	$anneeScolaires = $anneeScolaire->fetchAll('DESC,ASC','annee_actuelle,rowid',0,0,array('active'=>1));
+
+	print load_fiche_titre('Infos anciens créneaux pour ce souhait', '', 'fa-table');
+	foreach($anneeScolaires as $val)
+	{
+
+		$affectationClass = new Affectation($db);
+		$affectations =  $affectationClass->fetchAll('','',0,0,array('t.fk_souhait'=>$object->id,'t.status'=>Affectation::STATUS_CANCELED,'s.fk_annee_scolaire'=>$val->id),'AND',' INNER JOIN '.MAIN_DB_PREFIX.$object->table_element.' as s ON t.fk_souhait=s.rowid');
+
+		if(!empty($affectations))
+		{
+			print '<div class="annee-accordion'.($val->annee_actuelle == 1 ? '-opened' : '').'">';
+			print '<h3><span class="badge badge-status4 badge-status">'.$val->annee.($val->annee_actuelle == 1 ? ' - (année actuelle)' : '(année précédente)').'</span></h3>';
+
+			print '<table class="tagtable liste table">';
+			print '<tbody>';
+
+			print '<tr class="liste_titre">
+				<th class="wrapcolumntitle liste_titre">Jour</th>
+				<th class="wrapcolumntitle liste_titre">Horaire</th>
+				<th class="wrapcolumntitle liste_titre">Professeur</th>
+				<th class="wrapcolumntitle liste_titre">Créé par, le</th>
+				<th colspan="2"></th>
+				</tr>';
+			foreach($affectations as $value)
+			{
+				$creneauClass = new Creneau($db);
+				$creneauClass->fetch($value->fk_creneau,'');
+
+				if($creneauClass)
+				{
+					$resultJour = $dictionaryClass->fetchByDictionary('c_jour',['jour','rowid'],$creneauClass->jour,'rowid');
+
+					print '<tr class="oddeven">';
+					print "<td>$resultJour->jour</td>";
+					print '<td>'.date('H:i',$creneauClass->heure_debut-3600).'h / '.date('H:i',$creneauClass->heure_fin-3600).'h</td>';
+					print '<td>'.$creneauClass->printProfesseursFromCreneau($creneauClass->id).'</td>';
+
+					$userClass = new User($db);
+					$userClass->fetch($value->fk_user_creat);
+
+					print '<td>'.$userClass->firstname.' '.$userClass->lastname.' le '.date('d/m/Y',$value->date_creation).'</td>';
+					print '<td><a title="Voir le créneau" href="' . dol_buildpath('/custom/scolarite/creneau_card.php',1).'?id=' . $creneauClass->id .'">'.img_picto('', 'fa-eye', 'class="valignmiddle"').'</a></td>';
+					print '<td><a  title="Supprimer l\'affectation" href="' . $_SERVER['PHP_SELF'] . '?id=' . $object->id . '&affectationid=' . $value->id . '&action=deleteAffectation">'.img_picto('', 'fa-trash', 'class="valignmiddle pictotitle"', $pictoisfullpath).'</a></td>';
+					print '</tr>';
+				}
+			}
+			print '</tbody>';
+			print '</table>';
+			print '</div>';
+		}
+
+	}
 	print '</div>';
 	print '</div>';
 
@@ -551,19 +519,19 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 
 		if (empty($reshook)) {
 
-			if(intval($conf->global->TIME_FOR_APPRECIATION))
+			if((int)$conf->global->TIME_FOR_APPRECIATION)
 			{
 				print dolGetButtonAction($langs->trans('Faire appréciation de l\'élève'), '', 'default', $_SERVER['PHP_SELF'] . '?id=' . $object->id . '&action=edit&token=' . newToken(), '', $permissionappreciation);
 			}
 
 			print dolGetButtonAction($langs->trans('Modifier le souhait'), '', 'default', $_SERVER["PHP_SELF"] . '?id=' . $object->id . '&action=edit&token=' . newToken(), '', $permissiontoadd);
 
-			if ($object->status == $object::STATUS_DRAFT) {
+			if ($object->status === Souhait::STATUS_DRAFT) {
 				print dolGetButtonAction($langs->trans('Cloner le souhait'), '', 'default', $_SERVER['PHP_SELF'] . '?id=' . $object->id . (!empty($object->socid) ? '&socid=' . $object->socid : '') . '&action=clone&token=' . newToken(), '', $permissiontoadd);
 				print dolGetButtonAction($langs->trans('Desactiver le souhait'), '', 'danger', $_SERVER["PHP_SELF"] . '?id=' . $object->id . '&action=desactivation&token=' . newToken(), '', $permissiontoadd);
 			}
 
-			if ($object->status == $object::STATUS_CANCELED) {
+			if ($object->status === Souhait::STATUS_CANCELED) {
 				print dolGetButtonAction($langs->trans('Activer le souhait'), '', 'danger', $_SERVER["PHP_SELF"] . '?id=' . $object->id . '&action=activation&token=' . newToken(), '', $permissiontoadd);
 			}
 
@@ -572,164 +540,123 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 		print '</div>' . "\n";
 	}
 
+	// TODO : trouver un moyen d'améliorer ça.
+	if ($object->status == Souhait::STATUS_DRAFT) {
 
-	// Select mail models is same action as presend
-	if (GETPOST('modelselected')) {
-		$action = 'presend';
-	}
+		$instruEnseigne = $object->fk_instru_enseigne;
+		$typeClasse = $object->fk_type_classe;
+		$object = new Affectation($db);
 
-	if ($action != 'presend') {
-		print '<div class="fichecenter">';
-		print '<a name="builddoc"></a>'; // ancre
+		$object->fk_souhait = $id;
+		print load_fiche_titre('Nouvelle affectation', '', 'fa-sign');
 
-		$includedocgeneration = 0;
-
-		// Documents
-		if ($includedocgeneration) {
-			$objref = dol_sanitizeFileName($object->ref);
-			$relativepath = $objref . '/' . $objref . '.pdf';
-			$filedir = $conf->viescolaire->dir_output . '/' . $object->element . '/' . $objref;
-			$urlsource = $_SERVER["PHP_SELF"] . "?id=" . $object->id;
-			$genallowed = $permissiontoread; // If you can read, you can build the PDF to read content
-			$delallowed = $permissiontoadd; // If you can create/edit, you can remove a file on card
-			print $formfile->showdocuments('viescolaire:Souhait', $object->element . '/' . $objref, $filedir, $urlsource, $genallowed, $delallowed, $object->model_pdf, 1, 0, 0, 28, 0, '', '', '', $langs->defaultlang);
+		print '<form method="POST" action="' . $_SERVER["PHP_SELF"] . '?id=' . $id . '">';
+		print '<input type="hidden" name="token" value="' . newToken() . '">';
+		print '<input type="hidden" name="action" value="newaffectation">';
+		if ($backtopage) {
+			print '<input type="hidden" name="backtopage" value="' . $backtopage . '">';
 		}
+		if ($backtopageforcancel) {
+			print '<input type="hidden" name="backtopageforcancel" value="' . $backtopageforcancel . '">';
+		}
+		//var_dump($object->fields);
+		print dol_get_fiche_head(array(), '');
 
-		$MAXEVENT = 10;
 
-		if ($object->status == 0) {
-			$instruEnseigne = $object->fk_instru_enseigne;
-			$typeClasse = $object->fk_type_classe;
-			$object = new Affectation($db);
+		// Set some default values
+		$_POST['fk_souhait'] = $id;
+		$_POST['date_debutmonth'] = date('m', time());
+		$_POST['date_debutday'] = date('d', time());
+		$_POST['date_debutyear'] = date('Y', time());
 
-			$object->fk_souhait = $id;
-			print load_fiche_titre($langs->trans("NewObject", $langs->transnoentitiesnoconv("Affectation")), '', 'object_' . $object->picto);
+		print '<table class="border centpercent tableforfieldcreate">' . "\n";
 
-			print '<form method="POST" action="' . $_SERVER["PHP_SELF"] . '?id=' . $id . '">';
-			print '<input type="hidden" name="token" value="' . newToken() . '">';
-			print '<input type="hidden" name="action" value="newaffectation">';
-			if ($backtopage) {
-				print '<input type="hidden" name="backtopage" value="' . $backtopage . '">';
+		// Copie d'un code existant (commonfields_add.tpl.php) afin de modifier la clause qui nous intéresse
+		foreach ($object->fields as $key => $val) {
+			// Discard if field is a hidden field on form
+			if (abs($val['visible']) != 1 && abs($val['visible']) != 3) {
+				continue;
 			}
-			if ($backtopageforcancel) {
-				print '<input type="hidden" name="backtopageforcancel" value="' . $backtopageforcancel . '">';
+
+			if (array_key_exists('enabled', $val) && isset($val['enabled']) && !verifCond($val['enabled'])) {
+				continue; // We don't want this field
 			}
-			//var_dump($object->fields);
-			print dol_get_fiche_head(array(), '');
 
-
-			// Set some default values
-			$_POST['fk_souhait'] = $id;
-			$_POST['date_debutmonth'] = date('m', time());
-			$_POST['date_debutday'] = date('d', time());
-			$_POST['date_debutyear'] = date('Y', time());
-
-			print '<table class="border centpercent tableforfieldcreate">' . "\n";
-
-			// Copie d'un code existant (commonfields_add.tpl.php) afin de modifier la clause qui nous intéresse
-			foreach ($object->fields as $key => $val) {
-				// Discard if field is a hidden field on form
-				if (abs($val['visible']) != 1 && abs($val['visible']) != 3) {
-					continue;
-				}
-
-				if (array_key_exists('enabled', $val) && isset($val['enabled']) && !verifCond($val['enabled'])) {
-					continue; // We don't want this field
-				}
-
-				print '<tr class="field_'.$key.'">';
-				print '<td';
-				print ' class="titlefieldcreate';
-				if (isset($val['notnull']) && $val['notnull'] > 0) {
-					print ' fieldrequired';
-				}
-				if ($val['type'] == 'text' || $val['type'] == 'html') {
-					print ' tdtop';
-				}
-				print '"';
-				print '>';
-				if (!empty($val['help'])) {
-					print $form->textwithpicto($langs->trans($val['label']), $langs->trans($val['help']));
+			print '<tr class="field_'.$key.'">';
+			print '<td';
+			print ' class="titlefieldcreate';
+			if (isset($val['notnull']) && $val['notnull'] > 0) {
+				print ' fieldrequired';
+			}
+			if ($val['type'] == 'text' || $val['type'] == 'html') {
+				print ' tdtop';
+			}
+			print '"';
+			print '>';
+			if (!empty($val['help'])) {
+				print $form->textwithpicto($langs->trans($val['label']), $langs->trans($val['help']));
+			} else {
+				print $langs->trans($val['label']);
+			}
+			print '</td>';
+			print '<td class="valuefieldcreate">';
+			if (!empty($val['picto'])) {
+				print img_picto('', $val['picto'], '', false, 0, 0, '', 'pictofixedwidth');
+			}
+			if (in_array($val['type'], array('int', 'integer'))) {
+				$value = GETPOST($key, 'int');
+			} elseif ($val['type'] == 'double') {
+				$value = price2num(GETPOST($key, 'alphanohtml'));
+			} elseif ($val['type'] == 'text' || $val['type'] == 'html') {
+				$value = GETPOST($key, 'restricthtml');
+			} elseif ($val['type'] == 'date') {
+				$value = dol_mktime(12, 0, 0, GETPOST($key.'month', 'int'), GETPOST($key.'day', 'int'), GETPOST($key.'year', 'int'));
+			} elseif ($val['type'] == 'datetime') {
+				$value = dol_mktime(GETPOST($key.'hour', 'int'), GETPOST($key.'min', 'int'), 0, GETPOST($key.'month', 'int'), GETPOST($key.'day', 'int'), GETPOST($key.'year', 'int'));
+			} elseif ($val['type'] == 'boolean') {
+				$value = (GETPOST($key) == 'on' ? 1 : 0);
+			} elseif ($val['type'] == 'price') {
+				$value = price2num(GETPOST($key));
+			} elseif ($key == 'lang') {
+				$value = GETPOST($key, 'aZ09');
+			} else {
+				$value = GETPOST($key, 'alphanohtml');
+			}
+			if (!empty($val['noteditable'])) {
+				print $object->showOutputField($val, $key, $value, '', '', '', 0);
+			} else {
+				if ($key == 'lang') {
+					print img_picto('', 'language', 'class="pictofixedwidth"');
+					print $formadmin->select_language($value, $key, 0, null, 1, 0, 0, 'minwidth300', 2);
 				} else {
-					print $langs->trans($val['label']);
-				}
-				print '</td>';
-				print '<td class="valuefieldcreate">';
-				if (!empty($val['picto'])) {
-					print img_picto('', $val['picto'], '', false, 0, 0, '', 'pictofixedwidth');
-				}
-				if (in_array($val['type'], array('int', 'integer'))) {
-					$value = GETPOST($key, 'int');
-				} elseif ($val['type'] == 'double') {
-					$value = price2num(GETPOST($key, 'alphanohtml'));
-				} elseif ($val['type'] == 'text' || $val['type'] == 'html') {
-					$value = GETPOST($key, 'restricthtml');
-				} elseif ($val['type'] == 'date') {
-					$value = dol_mktime(12, 0, 0, GETPOST($key.'month', 'int'), GETPOST($key.'day', 'int'), GETPOST($key.'year', 'int'));
-				} elseif ($val['type'] == 'datetime') {
-					$value = dol_mktime(GETPOST($key.'hour', 'int'), GETPOST($key.'min', 'int'), 0, GETPOST($key.'month', 'int'), GETPOST($key.'day', 'int'), GETPOST($key.'year', 'int'));
-				} elseif ($val['type'] == 'boolean') {
-					$value = (GETPOST($key) == 'on' ? 1 : 0);
-				} elseif ($val['type'] == 'price') {
-					$value = price2num(GETPOST($key));
-				} elseif ($key == 'lang') {
-					$value = GETPOST($key, 'aZ09');
-				} else {
-					$value = GETPOST($key, 'alphanohtml');
-				}
-				if (!empty($val['noteditable'])) {
-					print $object->showOutputField($val, $key, $value, '', '', '', 0);
-				} else {
-					if ($key == 'lang') {
-						print img_picto('', 'language', 'class="pictofixedwidth"');
-						print $formadmin->select_language($value, $key, 0, null, 1, 0, 0, 'minwidth300', 2);
-					} else {
-						// Si on est sur l'input fk_creneau, on rentre dans la boucle
-						if($key == 'fk_creneau') {
-							// On supprime le champ Type de fk_creneau
-							unset($object->fields['fk_creneau']['type']);
-							// On ajoute le notre, avec nos conditions
-							$object->fields['fk_creneau']['type'] = "integer:Creneau:custom/scolarite/class/creneau.class.php:1:(t.nombre_places>(SELECT COUNT(*) FROM llx_affectation as c WHERE c.fk_creneau=t.rowid AND c.status = 4 AND DATE(NOW()) >= DATE(c.date_debut) AND (DATE(NOW()) <= DATE(c.date_fin) OR ISNULL(c.date_fin))) AND t.status = 4 AND (t.nom_creneau LIKE '%".substr($resEtablissement->diminutif, 0,2)."%') ".($typeClasse == 2 ? "AND t.fk_type_classe=".$typeClasse : "AND t.fk_instrument_enseigne = ".$instruEnseigne).") ";
-						}
-						print $object->showInputField($val, $key, $value, '', '', '', 0);
+					// Si on est sur l'input fk_creneau, on rentre dans la boucle
+					if($key == 'fk_creneau') {
+						// On supprime le champ Type de fk_creneau
+						unset($object->fields['fk_creneau']['type']);
+						// On ajoute le notre, avec nos conditions
+						$object->fields['fk_creneau']['type'] = "integer:Creneau:custom/scolarite/class/creneau.class.php:1:(t.nombre_places>(SELECT COUNT(*) FROM llx_affectation as c WHERE c.fk_creneau=t.rowid AND c.status = 4 AND DATE(NOW()) >= DATE(c.date_debut) AND (DATE(NOW()) <= DATE(c.date_fin) OR ISNULL(c.date_fin))) AND t.status = 4 AND (t.nom_creneau LIKE '%".substr($resEtablissement->diminutif, 0,2)."%') ".($typeClasse == 2 ? "AND t.fk_type_classe=".$typeClasse : "AND t.fk_instrument_enseigne = ".$instruEnseigne).") ";
 					}
+					print $object->showInputField($val, $key, $value, '', '', '', 0);
 				}
-				print '</td>';
-				print '</tr>';
 			}
-
-			// Common attributes
-			//include DOL_DOCUMENT_ROOT . '/core/tpl/commonfields_add.tpl.php';
-
-			// Other attributes
-			include DOL_DOCUMENT_ROOT . '/core/tpl/extrafields_add.tpl.php';
-
-			print '</table>' . "\n";
-
-			print dol_get_fiche_end();
-
-			print '<div id="div-creneau">';
-			print $form->buttonsSaveCancel("Créer affectation");
-			print '</div>';
-
-			print '</form>';
-
-			print '</div>';
+			print '</td>';
+			print '</tr>';
 		}
+
+		print '</table>' . "\n";
+
+		print dol_get_fiche_end();
+
+		print '<div id="div-creneau">';
+		print $form->buttonsSaveCancel("Créer affectation");
+		print '</div>';
+
+		print '</form>';
+
+		print '</div>';
 	}
 
-	//Select mail models is same action as presend
-	if (GETPOST('modelselected')) {
-		$action = 'presend';
-	}
 
-	// Presend form
-	$modelmail = 'souhait';
-	$defaulttopic = 'InformationMessage';
-	$diroutput = $conf->viescolaire->dir_output;
-	$trackid = 'souhait' . $object->id;
-
-	include DOL_DOCUMENT_ROOT . '/core/tpl/card_presend.tpl.php';
 	print '<script src="/custom/viescolaire/scripts/selectCreneaux.js" defer ></script>';
 }
 

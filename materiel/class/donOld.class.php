@@ -35,7 +35,7 @@ require_once DOL_DOCUMENT_ROOT.'/core/class/commonobject.class.php';
 /**
  *		Class to manage donations
  */
-class Don extends CommonObject
+class DonOld extends CommonObject
 {
 	/**
 	 * @var string ID to identify managed object
@@ -141,6 +141,7 @@ class Don extends CommonObject
 	const STATUS_DRAFT = 0;
 	const STATUS_VALIDATED = 1;
 	const STATUS_PAID = 2;
+	const STATUS_MAIL_ENVOYE = 3;
 	const STATUS_CANCELED = -1;
 
 
@@ -177,17 +178,19 @@ class Don extends CommonObject
 	public function LibStatut($status, $mode = 0)
 	{
 		// phpcs:enable
-		if (empty($this->labelStatus) || empty($this->labelStatusShort)) {
+		/*if (empty($this->labelStatus) || empty($this->labelStatusShort)) {
 			global $langs;
 			$langs->load("donations");
 			$this->labelStatus[-1] = $langs->transnoentitiesnoconv("Canceled");
 			$this->labelStatus[0] = $langs->transnoentitiesnoconv("DonationStatusPromiseNotValidated");
 			$this->labelStatus[1] = $langs->transnoentitiesnoconv("DonationStatusPromiseValidated");
 			$this->labelStatus[2] = $langs->transnoentitiesnoconv("DonationStatusPaid");
+			$this->labelStatus[3] = 'Mail envoyé';
 			$this->labelStatusShort[-1] = $langs->transnoentitiesnoconv("Canceled");
 			$this->labelStatusShort[0] = $langs->transnoentitiesnoconv("DonationStatusPromiseNotValidatedShort");
 			$this->labelStatusShort[1] = $langs->transnoentitiesnoconv("DonationStatusPromiseValidatedShort");
 			$this->labelStatusShort[2] = $langs->transnoentitiesnoconv("DonationStatusPaidShort");
+			$this->labelStatusShort[3] = 'Mail envoyé';
 		}
 
 		$statusType = 'status'.$status;
@@ -197,8 +200,12 @@ class Don extends CommonObject
 		if ($status == self::STATUS_PAID) {
 			$statusType = 'status6';
 		}
+		if($status == self::STATUS_MAIL_ENVOYE) {
+			$statusType = 'status3';
+		}
 
-		return dolGetStatus($this->labelStatus[$status], $this->labelStatusShort[$status], '', $statusType, $mode);
+		return dolGetStatus($this->labelStatus[$status], $this->labelStatusShort[$status], '', $statusType, $mode);*/
+
 	}
 
 
@@ -1029,7 +1036,7 @@ class Don extends CommonObject
 		}
 
 		$modelpath = "core/modules/dons/";
-		
+
 
 		// TODO Restore use of commonGenerateDocument instead of dedicated code here
 		//return $this->commonGenerateDocument($modelpath, $modele, $outputlangs, $hidedetails, $hidedesc, $hideref);

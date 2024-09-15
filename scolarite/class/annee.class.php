@@ -110,9 +110,9 @@ class Annee extends CommonObject
 		'active' => array('type'=>'integer', 'label'=>'Adresse', 'enabled'=>'1', 'position'=>4, 'notnull'=>1, 'visible'=>1, 'validate'=>'1',),
 	);
 	public $rowid;
-	public $ref;
-	public $label;
-	public $nom;
+	public $annee;
+	public $annee_actuelle;
+	public $active;
 	// END MODULEBUILDER PROPERTIES
 
 

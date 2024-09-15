@@ -6,6 +6,7 @@
         <cache>
           <versions>
             <info id="Local" version="10.4.2" />
+            <info id="Local/Users/baptistediodati/PhpstormProjects/phpunit.phar" version="10.4.2" />
           </versions>
         </cache>
       </tool>

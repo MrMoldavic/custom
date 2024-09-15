@@ -63,7 +63,7 @@ class Attribution extends CommonObject
 	/**
 	 * @var int  Does object support extrafields ? 0=No, 1=Yes
 	 */
-	public $isextrafieldmanaged = 1;
+	public $isextrafieldmanaged = 0;
 
 	/**
 	 * @var string String with name of icon for attribution. Must be a 'fa-xxx' fontawesome code (or 'fa-xxx_fa_color_size') or 'attribution@scolarite' if picto is file 'img/object_attribution.png'.
@@ -127,7 +127,6 @@ class Attribution extends CommonObject
 		'commentaire' => array('type'=>'text', 'label'=>'Description', 'enabled'=>'1', 'position'=>60, 'notnull'=>0, 'visible'=>3, 'validate'=>'1', 'css'=>'maxwidth300',),
 		'date_debut_pret' => array('type'=>'date', 'label'=>'Date de prêt', 'enabled'=>'1', 'position'=>51, 'notnull'=>1, 'visible'=>1,),
 		'date_fin_pret' => array('type'=>'date', 'label'=>'Date fin de prêt', 'enabled'=>'1', 'position'=>52, 'notnull'=>0, 'visible'=>1,),
-		//'numero_contrat' => array('type'=>'varchar(255)', 'label'=>'Numéro contrat', 'position'=>53, 'notnull'=>-1, 'visible'=>1, 'index'=>1, 'css'=>'maxwidth300','validate'=>'1',),
 		'etat_contrat' => array('type'=>'integer', 'label'=>'Etat du contrat', 'enabled'=>'$conf->project->enabled', 'position'=>52, 'notnull'=>-1, 'visible'=>-1, 'index'=>1, 'css'=>'maxwidth300', 'validate'=>'1', 'arrayofkeyval'=>array('1'=>'Signé, à récupérer','2'=>'Edité, à signer', '3'=>'A éditer','4'=>'Signé et récupéré')),
 		'nom_attribution' => array('type'=>'varchar(255)', 'label'=>'Nom Attribution', 'position'=>1, 'notnull'=>0, 'visible'=>2, 'index'=>1, 'css'=>'maxwidth300', 'validate'=>'1',),
 		'fk_annee_scolaire' => array('type'=>'sellist:c_annee_scolaire:annee', 'label'=>'Année scolaire', 'enabled'=>'1', 'position'=>40, 'notnull'=>1, 'visible'=>1, 'default'=>'null', 'isameasure'=>'1', 'validate'=>'1',),
@@ -221,12 +220,6 @@ class Attribution extends CommonObject
 			$this->fields['entity']['enabled'] = 0;
 		}
 
-		// Example to show how to set values of fields definition dynamically
-		/*if ($user->rights->scolarite->attribution->read) {
-			$this->fields['myfield']['visible'] = 1;
-			$this->fields['myfield']['noteditable'] = 0;
-		}*/
-
 		// Unset fields that are disabled
 		foreach ($this->fields as $key => $val) {
 			if (isset($val['enabled']) && empty($val['enabled'])) {
@@ -296,10 +289,6 @@ class Attribution extends CommonObject
 		if ($result > 0 && !empty($object->table_element_line)) {
 			$object->fetchLines();
 		}
-
-		// get lines so they will be clone
-		//foreach($this->lines as $line)
-		//	$line->fetch_optionals();
 
 		// Reset some properties
 		unset($object->id);
@@ -548,14 +537,6 @@ class Attribution extends CommonObject
 			return 0;
 		}
 
-		/*if (! ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->scolarite->attribution->write))
-		 || (! empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->scolarite->attribution->attribution_advance->validate))))
-		 {
-		 $this->error='NotEnoughPermissions';
-		 dol_syslog(get_class($this)."::valid ".$this->error, LOG_ERR);
-		 return -1;
-		 }*/
-
 		$now = dol_now();
 
 		$this->db->begin();
@@ -665,13 +646,6 @@ class Attribution extends CommonObject
 			return 0;
 		}
 
-		/*if (! ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->scolarite->write))
-		 || (! empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->scolarite->scolarite_advance->validate))))
-		 {
-		 $this->error='Permission denied';
-		 return -1;
-		 }*/
-
 		return $this->setStatusCommon($user, self::STATUS_DRAFT, $notrigger, 'ATTRIBUTION_UNVALIDATE');
 	}
 
@@ -689,13 +663,6 @@ class Attribution extends CommonObject
 			return 0;
 		}
 
-		/*if (! ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->scolarite->write))
-		 || (! empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->scolarite->scolarite_advance->validate))))
-		 {
-		 $this->error='Permission denied';
-		 return -1;
-		 }*/
-
 		return $this->setStatusCommon($user, self::STATUS_CANCELED, $notrigger, 'ATTRIBUTION_CANCEL');
 	}
 
@@ -712,13 +679,6 @@ class Attribution extends CommonObject
 		if ($this->status != self::STATUS_CANCELED) {
 			return 0;
 		}
-
-		/*if (! ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->scolarite->write))
-		 || (! empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->scolarite->scolarite_advance->validate))))
-		 {
-		 $this->error='Permission denied';
-		 return -1;
-		 }*/
 
 		return $this->setStatusCommon($user, self::STATUS_VALIDATED, $notrigger, 'ATTRIBUTION_REOPEN');
 	}
@@ -1065,105 +1025,6 @@ class Attribution extends CommonObject
 		return $result;
 	}
 
-	/**
-	 * Action executed by scheduler
-	 * CAN BE A CRON TASK. In such a case, parameters come from the schedule job setup field 'Parameters'
-	 * Use public function doScheduledJob($param1, $param2, ...) to get parameters
-	 *
-	 * @return	int			0 if OK, <>0 if KO (this function is used also by cron so only 0 is OK)
-	 */
-	public function doScheduledJob()
-	{
-		global $conf, $langs;
 
-		//$conf->global->SYSLOG_FILE = 'DOL_DATA_ROOT/dolibarr_mydedicatedlofile.log';
-
-		$error = 0;
-		$this->output = '';
-		$this->error = '';
-
-		dol_syslog(__METHOD__, LOG_DEBUG);
-
-		$now = dol_now();
-
-		$this->db->begin();
-
-		// ...
-
-		$this->db->commit();
-
-		return $error;
-	}
-
-	public function attributionsPerYear(int $cle)
-	{
-		global $langs;
-
-		$dictionaryClass = new Dictionary($this->db);
-		$resqlAnneeScolaire = $dictionaryClass->fetchByDictionary('c_annee_scolaire', ['rowid', 'annee', 'annee_actuelle'], 0, '', ' WHERE active = 1 ORDER BY rowid DESC');
-
-		foreach ($resqlAnneeScolaire as $value) {
-			$results = $this->fetchAll('DESC', 'rowid', 0, '', ['fk_cle' => $cle, 'fk_annee_scolaire' => $value->rowid]);
-
-			print '<div class="annee-accordion' . ($value->annee_actuelle == 1 ? '-opened' : '') . '">';
-			print '<h3><span class="badge badge-status4 badge-status">Année ' . $value->annee . ($value->annee_actuelle != 1 ? ' (année précédente)' : '') . '</span></h3>';
-
-			if (count($results) > 0) {
-				print '<table class="tagtable liste">';
-				print '<tbody>';
-
-				print '<tr class="liste_titre">
-					<th class="wrapcolumntitle liste_titre">Prêtée à</th>
-					<th class="wrapcolumntitle liste_titre">Etat</th>
-					<th class="wrapcolumntitle liste_titre">Début</th>
-					<th class="wrapcolumntitle liste_titre">Fin</th>
-					</tr>';
-				print '</tbody>';
-				foreach ($results as $result) {
-					print '<tr class="oddeven">';
-
-					$agentClass = new Agent($this->db);
-					$agentClass->fetch($result->fk_user_pret);
-					print '<td><a href="/custom/scolarite/attribution_card.php?id='.$result->id.'">'.$agentClass->prenom.' '.$agentClass->nom.'</a></td>';
-					print '<td><span class="badge badge-status' . $result->status . ' badge-status">' . $this->LibStatut($result->status) . '</span></td>';
-					print '<td>' . date('d/m/Y', $result->date_debut_pret) . '</td>';
-					print '<td>' . date('d/m/Y', $result->date_fin_pret) . '</td>';
-					print '</tr>';
-				}
-				unset($result);
-				print '</table>';
-			} else {
-				print '<p>Aucune attribution connue pour cette année scolaire.</p>';
-			}
-
-			print '</div>';
-		}
-	}
 }
 
-
-require_once DOL_DOCUMENT_ROOT.'/core/class/commonobjectline.class.php';
-
-/**
- * Class AttributionLine. You can also remove this and generate a CRUD class for lines objects.
- */
-class AttributionLine extends CommonObjectLine
-{
-	// To complete with content of an object AttributionLine
-	// We should have a field rowid, fk_attribution and position
-
-	/**
-	 * @var int  Does object support extrafields ? 0=No, 1=Yes
-	 */
-	public $isextrafieldmanaged = 0;
-
-	/**
-	 * Constructor
-	 *
-	 * @param DoliDb $db Database handler
-	 */
-	public function __construct(DoliDB $db)
-	{
-		$this->db = $db;
-	}
-}

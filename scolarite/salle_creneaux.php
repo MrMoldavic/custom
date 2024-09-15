@@ -22,6 +22,10 @@
  *  \brief      Tab for contacts linked to salle
  */
 
+/*ini_set('display_errors', '1');
+ini_set('display_startup_errors', '1');
+error_reporting(E_ALL);*/
+
 // Load Dolibarr environment
 $res = 0;
 // Try main.inc.php into web root known defined into CONTEXT_DOCUMENT_ROOT (not always defined)
@@ -56,6 +60,7 @@ if (!$res) {
 require_once DOL_DOCUMENT_ROOT.'/contact/class/contact.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formcompany.class.php';
 dol_include_once('/scolarite/class/salle.class.php');
+dol_include_once('/scolarite/class/creneau.class.php');
 dol_include_once('/scolarite/lib/scolarite_salle.lib.php');
 
 // Load translation files required by the page
@@ -90,10 +95,6 @@ if ($enablepermissioncheck) {
 }
 
 // Security check (enable the most restrictive one)
-//if ($user->socid > 0) accessforbidden();
-//if ($user->socid > 0) $socid = $user->socid;
-//$isdraft = (($object->status == $object::STATUS_DRAFT) ? 1 : 0);
-//restrictedArea($user, $object->element, $object->id, $object->table_element, '', 'fk_soc', 'rowid', $isdraft);
 if (empty($conf->scolarite->enabled)) accessforbidden();
 if (!$permissiontoread) accessforbidden();
 
@@ -130,52 +131,9 @@ if ($object->id) {
 	$linkback = '<a href="'.dol_buildpath('/scolarite/salle_list.php', 1).'?restore_lastsearch_values=1'.(!empty($socid) ? '&socid='.$socid : '').'">'.$langs->trans("BackToList").'</a>';
 
 	$morehtmlref = '<div class="refidno">';
-	/*
-	 // Ref customer
-	 $morehtmlref.=$form->editfieldkey("RefCustomer", 'ref_client', $object->ref_client, $object, 0, 'string', '', 0, 1);
-	 $morehtmlref.=$form->editfieldval("RefCustomer", 'ref_client', $object->ref_client, $object, 0, 'string', '', null, null, '', 1);
-	 // Thirdparty
-	 $morehtmlref.='<br>'.$langs->trans('ThirdParty') . ' : ' . (is_object($object->thirdparty) ? $object->thirdparty->getNomUrl(1) : '');
-	 // Project
-	 if (! empty($conf->projet->enabled))
-	 {
-	 $langs->load("projects");
-	 $morehtmlref.='<br>'.$langs->trans('Project') . ' ';
-	 if ($permissiontoadd)
-	 {
-	 if ($action != 'classify')
-	 //$morehtmlref.='<a class="editfielda" href="' . $_SERVER['PHP_SELF'] . '?action=classify&token='.newToken().'&id=' . $object->id . '">' . img_edit($langs->transnoentitiesnoconv('SetProject')) . '</a> : ';
-	 $morehtmlref.=' : ';
-	 if ($action == 'classify') {
-	 //$morehtmlref.=$form->form_project($_SERVER['PHP_SELF'] . '?id=' . $object->id, $object->socid, $object->fk_project, 'projectid', 0, 0, 1, 1);
-	 $morehtmlref.='<form method="post" action="'.$_SERVER['PHP_SELF'].'?id='.$object->id.'">';
-	 $morehtmlref.='<input type="hidden" name="action" value="classin">';
-	 $morehtmlref.='<input type="hidden" name="token" value="'.newToken().'">';
-	 $morehtmlref.=$formproject->select_projects($object->socid, $object->fk_project, 'projectid', $maxlength, 0, 1, 0, 1, 0, 0, '', 1);
-	 $morehtmlref.='<input type="submit" class="button valignmiddle" value="'.$langs->trans("Modify").'">';
-	 $morehtmlref.='</form>';
-	 } else {
-	 $morehtmlref.=$form->form_project($_SERVER['PHP_SELF'] . '?id=' . $object->id, $object->socid, $object->fk_project, 'none', 0, 0, 0, 1);
-	 }
-	 } else {
-	 if (! empty($object->fk_project)) {
-	 $proj = new Project($db);
-	 $proj->fetch($object->fk_project);
-	 $morehtmlref .= ': '.$proj->getNomUrl();
-	 } else {
-	 $morehtmlref .= '';
-	 }
-	 }
-	 }*/
 	$morehtmlref .= '</div>';
-	
 
-	//dol_banner_tab($object, 'ref', $linkback, 1, 'ref', 'nom_cours', $morehtmlref, '', 0, '', '', 1);
-
-	$jour = "SELECT * FROM ".MAIN_DB_PREFIX."c_jour WHERE active=1";
-	$resqlJour = $db->query($jour);
-
-	print '<h2>Liste des cours dans cette salle</h2>';
+	print "<h2>Liste des cours dans cette salle : $object->nom_complet</h2>";
 
 	print '<table class="border centpercent tableforfield">';
 	print '<tbody>';
@@ -183,50 +141,36 @@ if ($object->id) {
 	print '<td>Jour</td>';
 	print '<td>Creneau</td>';
 	print '<td>Éleves</td>';
-	print '<td>Nombres de places</td>';
+	print '<td>Nombres de places occupées</td>';
 	print '</tr>';
 
-	$creneau = "SELECT * FROM ".MAIN_DB_PREFIX."creneau WHERE fk_salle =".$object->id." AND status=4 ORDER BY jour ASC, heure_debut ASC";
-	$resqlCreneau = $db->query($creneau);
+	$dictionaryClass = new Dictionary($db);
+	$creneauClass = new Creneau($db);
+	$creneaux = $creneauClass->fetchAll('ASC, ASC','jour, heure_debut',0,0,array('fk_salle'=>$object->id,'status'=>4));
 
-	
-	foreach($resqlCreneau as $value)
-	{
-		$count = 0;
-		$jour = "SELECT * FROM ".MAIN_DB_PREFIX."c_jour WHERE active=1 AND rowid=".$value['jour'];
-		$resqlJour = $db->query($jour);
-		$jourObj = $db->fetch_object($resqlJour);
-
-		print '<tr>';
-		print '<td>'.$jourObj->jour.'</td>';
-		print '<td>'.$value['nom_creneau'].'</td>';
-		print '<td>';
-
-		$affectation = "SELECT s.fk_souhait FROM ".MAIN_DB_PREFIX."affectation as s WHERE s.fk_creneau=".$value['rowid']." AND date_fin IS NULL";
-		$resqlAffectation = $db->query($affectation);
-		foreach($resqlAffectation as $val)
+	if(!empty($creneaux)) {
+		foreach($creneaux as $value)
 		{
-			$eleve = "SELECT e.nom,e.prenom,e.rowid FROM ".MAIN_DB_PREFIX."eleve as e WHERE e.rowid=".("(SELECT s.fk_eleve FROM ".MAIN_DB_PREFIX."souhait as s WHERE s.rowid =".$val['fk_souhait'].")");
-			$resqlEleve = $db->query($eleve);
-			
-			foreach($resqlEleve as $res)
-			{
-				print '<a href="' . DOL_URL_ROOT . '/custom/viescolaire/eleve_card.php?id=' . $res['rowid'] . '">' .'- '. $res['nom'].' '.$res['prenom'] . '</a>';
-				print '<br>';
-				$count++;
-			}
+			$jourObj = $dictionaryClass->fetchByDictionary('c_jour', ['jour','rowid'],$value->jour,'rowid');
+
+			print '<tr>';
+			print '<td>'.$jourObj->jour.'</td>';
+			print '<td>'.$value->nom_creneau.'</td>';
+			print '<td>';
+			print $value->printElevesFromCreneau($value->id)[0];
+			print '</td>';
+			print '<td>'.$value->printElevesFromCreneau($value->id)[1].'/'.$value->nombre_places.'</td>';
+			print '</tr>';
 		}
-		print '</td>';
-		print '<td>'.$count.'/'.$value['nombre_places'].'</td>';
+	} else {
+		print '<tr>';
+		print '<td colspan="4"><strong>Aucun cours connu dans cette salle.</strong></td>';
 		print '</tr>';
 	}
+
 	print '</tbody>';
 	print '</table>';
 
-
-
-	// Contacts lines (modules that overwrite templates must declare this into descriptor)
-	
 }
 
 // End of page

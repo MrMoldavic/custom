@@ -82,8 +82,9 @@ if (!$res) {
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formcompany.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formfile.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formprojet.class.php';
+
 dol_include_once('/scolarite/class/attribution.class.php');
-dol_include_once('/viescolaire/class/dictionary.class.php');
+dol_include_once('/scolarite/class/annee.class.php');
 dol_include_once('/scolarite/lib/scolarite_attribution.lib.php');
 
 // Load translation files required by the page
@@ -153,10 +154,6 @@ if ($enablepermissioncheck) {
 $upload_dir = $conf->scolarite->multidir_output[isset($object->entity) ? $object->entity : 1].'/attribution';
 
 // Security check (enable the most restrictive one)
-//if ($user->socid > 0) accessforbidden();
-//if ($user->socid > 0) $socid = $user->socid;
-//$isdraft = (isset($object->status) && ($object->status == $object::STATUS_DRAFT) ? 1 : 0);
-//restrictedArea($user, $object->element, $object->id, $object->table_element, '', 'fk_soc', 'rowid', $isdraft);
 if (empty($conf->scolarite->enabled)) accessforbidden();
 if (!$permissiontoread) accessforbidden();
 
@@ -197,8 +194,6 @@ if (empty($reshook)) {
 	// Actions when printing a doc from card
 	include DOL_DOCUMENT_ROOT.'/core/actions_printing.inc.php';
 
-	// Action to move up and down lines of object
-	//include DOL_DOCUMENT_ROOT.'/core/actions_lineupdown.inc.php';
 
 	// Action to build doc
 	include DOL_DOCUMENT_ROOT.'/core/actions_builddoc.inc.php';
@@ -258,8 +253,8 @@ if ($action == 'create') {
 
 	print dol_get_fiche_head(array(), '');
 
-	$dictionaryClass = new Dictionary($db);
-	$objAnneScolaire = $dictionaryClass->returnActualyear();
+	$anneeClass = new Annee($db);
+	$anneeClass->fetch('','',' AND active=1 AND annee_actuelle=1');
 
 	// Set some default values
 	if (! GETPOSTISSET('date_debut_pret')){
@@ -267,7 +262,7 @@ if ($action == 'create') {
 		$_POST['date_debut_pretmonth'] = date('m');
 		$_POST['date_debut_pretyear'] = date('Y');
 	}
-	if (!GETPOSTISSET('fk_annee_scolaire')) $_POST['fk_annee_scolaire'] = $objAnneScolaire->rowid;
+	if (!GETPOSTISSET('fk_annee_scolaire')) $_POST['fk_annee_scolaire'] = $anneeClass->id;
 
 	print '<table class="border centpercent tableforfieldcreate">'."\n";
 
@@ -284,8 +279,6 @@ if ($action == 'create') {
 	print $form->buttonsSaveCancel("Create");
 
 	print '</form>';
-
-	//dol_set_focus('input[name="ref"]');
 }
 
 // Part to edit record
@@ -404,11 +397,6 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 		print '<hr>';
 	}
 
-
-
-
-
-
 	print '</div>';
 
 	print '</div>';
@@ -430,15 +418,10 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 		}
 
 		if (empty($reshook)) {
-			// Send
-
-
 			// Back to draft
 			if ($object->status == $object::STATUS_VALIDATED) {
 				print dolGetButtonAction($langs->trans('Terminer le prêt'), '', 'danger', $_SERVER["PHP_SELF"] . '?id=' . $object->id . '&action=desaffectKey&token=' . newToken(), '', $permissiontoadd);
 			}
-
-			//print dolGetButtonAction($langs->trans('Modifier'), '', 'default', $_SERVER["PHP_SELF"].'?id='.$object->id.'&action=edit&token='.newToken(), '', $permissiontoadd);
 
 			// Delete (need delete permission, or if draft, just need create/modify permission)
 			print dolGetButtonAction($langs->trans('Delete'), '', 'delete', $_SERVER['PHP_SELF'].'?id='.$object->id.'&action=delete&token='.newToken(), '', $permissiontodelete);

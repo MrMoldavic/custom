@@ -58,32 +58,6 @@ function creneauPrepareHead($object)
 		$h++;
 	}
 
-	require_once DOL_DOCUMENT_ROOT.'/core/lib/files.lib.php';
-	require_once DOL_DOCUMENT_ROOT.'/core/class/link.class.php';
-	$upload_dir = $conf->scolarite->dir_output."/creneau/".dol_sanitizeFileName($object->ref);
-	$nbFiles = count(dol_dir_list($upload_dir, 'files', 0, '', '(\.meta|_preview.*\.png)$'));
-	$nbLinks = Link::count($db, $object->element, $object->id);
-	$head[$h][0] = dol_buildpath("/scolarite/creneau_document.php", 1).'?id='.$object->id;
-	$head[$h][1] = $langs->trans('Documents');
-	if (($nbFiles + $nbLinks) > 0) {
-		$head[$h][1] .= '<span class="badge marginleftonlyshort">'.($nbFiles + $nbLinks).'</span>';
-	}
-	$head[$h][2] = 'document';
-	$h++;
-
-	$head[$h][0] = dol_buildpath("/scolarite/creneau_agenda.php", 1).'?id='.$object->id;
-	$head[$h][1] = $langs->trans("Events");
-	$head[$h][2] = 'agenda';
-	$h++;
-
-	// Show more tabs from modules
-	// Entries must be declared in modules descriptor with line
-	//$this->tabs = array(
-	//	'entity:+tabname:Title:@scolarite:/scolarite/mypage.php?id=__ID__'
-	//); // to add new tab
-	//$this->tabs = array(
-	//	'entity:-tabname:Title:@scolarite:/scolarite/mypage.php?id=__ID__'
-	//); // to remove a tab
 	complete_head_from_modules($conf, $langs, $object, $head, $h, 'creneau@scolarite');
 
 	complete_head_from_modules($conf, $langs, $object, $head, $h, 'creneau@scolarite', 'remove');

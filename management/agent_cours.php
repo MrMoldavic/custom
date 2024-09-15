@@ -22,6 +22,11 @@
  *  \brief      Tab for notes on Agent
  */
 
+
+/*ini_set('display_errors', '1');
+ini_set('display_startup_errors', '1');
+error_reporting(E_ALL);*/
+
 //if (! defined('NOREQUIREDB'))              define('NOREQUIREDB', '1');				// Do not create database handler $db
 //if (! defined('NOREQUIREUSER'))            define('NOREQUIREUSER', '1');				// Do not load object $user
 //if (! defined('NOREQUIRESOC'))             define('NOREQUIRESOC', '1');				// Do not load object $mysoc
@@ -75,6 +80,10 @@ if (!$res) {
 }
 
 dol_include_once('/management/class/agent.class.php');
+dol_include_once('/scolarite/class/annee.class.php');
+dol_include_once('/scolarite/class/creneau.class.php');
+
+dol_include_once('/viescolaire/class/dictionary.class.php');
 dol_include_once('/management/lib/management_agent.lib.php');
 
 // Load translation files required by the page
@@ -118,13 +127,8 @@ if ($enablepermissioncheck) {
 }
 
 // Security check (enable the most restrictive one)
-//if ($user->socid > 0) accessforbidden();
-//if ($user->socid > 0) $socid = $user->socid;
-//$isdraft = (($object->status == $object::STATUS_DRAFT) ? 1 : 0);
-//restrictedArea($user, $object->element, $object->id, $object->table_element, '', 'fk_soc', 'rowid', $isdraft);
 if (empty($conf->management->enabled)) accessforbidden();
 if (!$object->id) accessforbidden();
-
 
 /*
  * Actions
@@ -164,9 +168,6 @@ if ($id > 0 || !empty($ref)) {
 
 	$morehtmlref  = '<div class="refidno">';
 	$morehtmlref .= $object->prenom;
-
-
-
 	$morehtmlref .= '</div>';
 
 	dol_banner_tab($object, 'ref', $linkback, 1, 'ref', 'nom', $morehtmlref);
@@ -174,21 +175,26 @@ if ($id > 0 || !empty($ref)) {
 	print '<hr>';
 	print '<h2>Vos cours: </h2>';
 	print "<pre>( Vous avez ici accès aux mêmes informations que la scolarité, pour ce qui est des absences. <br> Si vous constatez un cours vide, rapprochez-vous de la scolarité pour plus d'informations. )</pre>";
-	$Jour = "SELECT jour, rowid FROM ".MAIN_DB_PREFIX."c_jour WHERE active=1";
-	$resqlJour = $db->query($Jour);
 
-	foreach($resqlJour as $value)
+	$creneauClass = new Creneau($db);
+	$eleveClass = new Eleve($db);
+	$appelClass = new Appel($db);
+	$dictionaryClass = new Dictionary($db);
+
+	$dateDuJour = date('d/m/Y');
+	$jours = $dictionaryClass->fetchByDictionary('c_jour', ['rowid','jour'],'','');
+
+	foreach($jours as $jour)
 	{
-		$cours = "SELECT professeurs, nom_creneau, rowid FROM ".MAIN_DB_PREFIX."creneau WHERE status=4 AND jour=".$value['rowid']." AND (fk_prof_1=".$object->id." OR fk_prof_2=".$object->id." OR fk_prof_3=".$object->id.") ORDER BY heure_debut ASC";
-		$resqlCours = $db->query($cours);
+		$creneaux = $creneauClass->fetchAll('ASC','t.heure_debut',0,0,['t.status'=>Creneau::STATUS_VALIDATED,'t.jour'=>$jour->rowid],'AND',' INNER JOIN '.MAIN_DB_PREFIX.'assignation as a ON a.fk_creneau=t.rowid');
 
-		print '<h3>'.$value['jour'].($resqlCours->num_rows > 0 ? ('    <span class="badge  badge-status4 badge-status">  '.$resqlCours->num_rows.' Cours</span>') : ('      <span class="badge  badge-status8 badge-status">  Aucun cours à ce jour</span>')).'</h3>';
+		print '<h3>'.$jour->jour.(count($creneaux) > 0 ? ('    <span class="badge  badge-status4 badge-status">  '.count($creneaux).' Cours</span>') : ('      <span class="badge  badge-status8 badge-status">  Aucun cours à ce jour</span>')).'</h3>';
 
 		print '<table class="tagtable liste">';
 		print '<tbody>';
 
 
-		if($resqlCours->num_rows != 0)
+		if(count($creneaux))
 		{
 			print '<tr class="liste_titre">
 			<th class="wrapcolumntitle liste_titre">Créneau</th>
@@ -196,64 +202,67 @@ if ($id > 0 || !empty($ref)) {
 			<th class="wrapcolumntitle liste_titre">Élèves</th>
 			<th class="wrapcolumntitle liste_titre">Absences à venir</th>
 			</tr>';
-			foreach($resqlCours as $val)
+			foreach($creneaux as $creneau)
 			{
 				print '<tr class="oddeven">';
-				print '<td style="width:30%"><a href="' . DOL_URL_ROOT . '/custom/scolarite/creneau_card.php?id=' . $val['rowid'] . '">'.$val['nom_creneau'].'</a></td>';
-				print '<td>'.$val['professeurs'].'</td>';
-
-				$affectation = "SELECT s.fk_souhait FROM ".MAIN_DB_PREFIX."affectation as s WHERE s.fk_creneau=".$val['rowid']." AND s.date_fin IS NULL";
-				$resqlAffectation = $db->query($affectation);
+				print '<td>'.$creneau->getNomUrl(1).'</td>';
+				print '<td>'.$creneau->printProfesseursFromCreneau($creneau->id).'</td>';
 
 				print '<td>';
-				foreach($resqlAffectation as $v)
-				{
-					$eleve = "SELECT e.nom,e.prenom,e.rowid FROM ".MAIN_DB_PREFIX."eleve as e WHERE e.rowid=".("(SELECT s.fk_eleve FROM ".MAIN_DB_PREFIX."souhait as s WHERE s.rowid =".$v['fk_souhait'].")");
-					$resqlEleve = $db->query($eleve);
-					foreach($resqlEleve as $res)
-					{
-						$niveau = "SELECT n.niveau FROM ".MAIN_DB_PREFIX."c_niveaux as n INNER JOIN ".MAIN_DB_PREFIX."souhait as s WHERE s.rowid=".$v['fk_souhait']." AND s.fk_niveau = n.rowid";
-						$resqlNiveau = $db->query($niveau);
-						$objectNiveau = $db->fetch_object($resqlNiveau);
-
-
-						print '<a href="' . DOL_URL_ROOT . '/custom/viescolaire/eleve_card.php?id=' . $res['rowid'] . '">' .'- '. $res['nom'].' '.$res['prenom'] . ' / '.$objectNiveau->niveau.'</a>';
-						print '<br>';
-					}
-				}
+				print $creneau->printElevesFromCreneau($creneau->id)[0];
 				print '</td>';
+
 				print '<td>';
 
+				$results = $appelClass->fetchAll(
+					'', // Pas de colonne spécifique à sélectionner
+					'', // Pas de tri spécifique
+					0,  // Limite
+					0,  // Offset
+					[
+						'fk_creneau' => $creneau->id,
+						'customsql' => '
+						t.date_creation >= "' . $date . '"
+						AND t.status != "present"
+						AND EXISTS (
+							SELECT 1
+							FROM ' . MAIN_DB_PREFIX . 'affectation AS affectation
+							INNER JOIN ' . MAIN_DB_PREFIX . 'souhait AS souhait ON affectation.fk_souhait = souhait.rowid
+							INNER JOIN ' . MAIN_DB_PREFIX . 'eleve AS eleve ON souhait.fk_eleve = eleve.rowid
+							WHERE
+								affectation.fk_creneau = ' . $creneau->id . '
+								AND affectation.date_fin IS NULL
+								AND eleve.rowid = t.fk_eleve
+						)'
+					],
+					'AND',
+					' INNER JOIN ' . MAIN_DB_PREFIX . 'eleve AS eleve ON t.fk_eleve = eleve.rowid'
+				);
 
 				$count = 0;
-				foreach($resqlAffectation as $v)
-				{
-					$eleve = "SELECT e.nom,e.prenom,e.rowid FROM ".MAIN_DB_PREFIX."eleve as e WHERE e.rowid=".("(SELECT s.fk_eleve FROM ".MAIN_DB_PREFIX."souhait as s WHERE s.rowid =".$v['fk_souhait'].")");
-					$resqlEleve = $db->query($eleve);
 
-					foreach($resqlEleve as $res)
-					{
-						$date = date('Y-m-d H:i:s');
-						$absence = "SELECT rowid, date_creation, justification  FROM ".MAIN_DB_PREFIX."appel WHERE fk_creneau=".$val['rowid']." AND fk_eleve=".$res['rowid']." AND date_creation >='".$date."'";
-						$resqlAbsence = $db->query($absence);
+				// Affichage des résultats
+				foreach ($results as $result) {
 
-						foreach($resqlAbsence as $r)
-						{
-							$dateDuJour = date('d/m/Y');
-							$count++;
-							print '- '.$res['prenom'].' '.$res['nom'].' sera absente le: '.date('d/m/Y', strtotime($r['date_creation'])).(date('d/m/Y', strtotime($r['date_creation'])) == $dateDuJour ? ' <span class="badge  badge-status4 badge-status">Aujourd\'hui</span>' : '').'<br>Justification : '.$r['justification'].'<br><hr>';
-						}
+					$raison = ($result->status === 'absenceI' || $result->status === 'absenceJ') ? 'absent(e)' : 'en retard';
+					// Instanciation de l'objet Eleve
+					$eleveClass->fetch($result->fk_eleve); // fetch l'objet Eleve par son id
+
+					if ($eleveClass->id) {
+						$count++;
+						echo '- ' . $eleveClass->getNomUrl(1) . ' sera '.$raison.' le: ' . date('d/m/Y', $result->date_creation) .
+							(date('d/m/Y', $result->date_creation) === $dateDuJour ? ' <span class="badge badge-status4 badge-status">Aujourd\'hui</span>' : '') .
+							'<br>Justification : ' . $result->justification . '<br><hr>';
 					}
 				}
-
-				if($count == 0) print 'Aucune absences futurs connues à ce jour pour ces élèves.';
+				if($count === 0) {
+					print 'Aucune absences futurs connues à ce jour pour ces élèves.';
+				}
 				print '</td>';
 
 				print '</tr>';
 			}
 		}
-		else
-		print '<p></p>';
 
 		print '</tbody>';
 		print '</table>';

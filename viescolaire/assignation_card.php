@@ -21,10 +21,10 @@
  *		\ingroup    viescolaire
  *		\brief      Page to create/edit/view assignation
  */
-
+/*
 ini_set('display_errors', '1');
 ini_set('display_startup_errors', '1');
-error_reporting(E_ALL);
+error_reporting(E_ALL);*/
 
 //if (! defined('NOREQUIREDB'))              define('NOREQUIREDB', '1');				// Do not create database handler $db
 //if (! defined('NOREQUIREUSER'))            define('NOREQUIREUSER', '1');				// Do not load object $user
@@ -131,13 +131,13 @@ include DOL_DOCUMENT_ROOT.'/core/actions_fetchobject.inc.php'; // Must be includ
 
 // There is several ways to check permission.
 // Set $enablepermissioncheck to 1 to enable a minimum low level of checks
-$enablepermissioncheck = 0;
+$enablepermissioncheck = 1;
 if ($enablepermissioncheck) {
-	$permissiontoread = $user->hasRight('viescolaire', 'inscription', 'read');
-	$permissiontoadd = $user->hasRight('viescolaire', 'inscription', 'write'); // Used by the include of actions_addupdatedelete.inc.php and actions_lineupdown.inc.php
-	$permissiontodelete = $user->hasRight('viescolaire', 'inscription', 'delete') || ($permissiontoadd && isset($object->status) && $object->status == $object::STATUS_DRAFT);
-	$permissionnote = $user->hasRight('viescolaire', 'inscription', 'write'); // Used by the include of actions_setnotes.inc.php
-	$permissiondellink = $user->hasRight('viescolaire', 'inscription', 'write'); // Used by the include of actions_dellink.inc.php
+	$permissiontoread = $user->hasRight('viescolaire', 'eleve', 'read');
+	$permissiontoadd = $user->hasRight('viescolaire', 'eleve', 'write'); // Used by the include of actions_addupdatedelete.inc.php and actions_lineupdown.inc.php
+	$permissiontodelete = $user->hasRight('viescolaire', 'eleve', 'delete') || ($permissiontoadd && isset($object->status) && $object->status == $object::STATUS_DRAFT);
+	$permissionnote = $user->hasRight('viescolaire', 'eleve', 'write'); // Used by the include of actions_setnotes.inc.php
+	$permissiondellink = $user->hasRight('viescolaire', 'eleve', 'write'); // Used by the include of actions_dellink.inc.php
 } else {
 	$permissiontoread = 1;
 	$permissiontoadd = 1; // Used by the include of actions_addupdatedelete.inc.php and actions_lineupdown.inc.php
@@ -213,7 +213,7 @@ if (empty($reshook)) {
 
 
 if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'create'))) {
-	header("Location: ".DOL_URL_ROOT."/custom/scolarite/creneau_card.php?id=" . $object->fk_creneau);
+	header("Location: ".dol_buildpath('/custom/scolarite/creneau_card.php',1). '?id=' . $object->fk_creneau);
 	exit;
 }
 
@@ -253,12 +253,6 @@ if ($action == 'create') {
 	print dol_get_fiche_head(array(), '');
 
 	// Set some default values
-
-	/*$anneeScolaireClass = new Annee($db);
-	$anneeScolaireClass->fetch('','',' AND active=1 AND annee_actuelle=1');
-
-
-	if (!GETPOSTISSET('fk_annee_scolaire')) $_POST['fk_annee_scolaire_id'] = $anneeScolaireClass->id;*/
 	print '<table class="border centpercent tableforfieldcreate">'."\n";
 
 

@@ -23,81 +23,55 @@ class Dictionary extends CommonObject
 		}
 	}
 
-	public function returnActualyear()
+	public function fetchByDictionary(string $table, array $parameters,$id = null, $column = null, string $andWhere = '')
 	{
-		$sql = "SELECT ";
-		$sql .= "rowid, annee, annee_actuelle ";
-		$sql .= "FROM ".MAIN_DB_PREFIX."c_annee_scolaire ";
-		$sql .= "WHERE annee_actuelle = 1";
+		// Construction de la requête SQL
+		$column ??= '';
+		$id ??= 0;
+		$sanitizedTable = MAIN_DB_PREFIX . $this->db->sanitize($this->db->escape($table));
+		$sanitizedParams = array_map(fn($param) => $this->db->sanitize($this->db->escape($param)), $parameters);
+		$sql = 'SELECT ' . implode(', ', $sanitizedParams) . ' FROM ' . $sanitizedTable;
 
-		$resql = $this->db->query($sql);
-		if($resql)
-		{
-			$record = $this->db->fetch_object($resql);
-			$this->db->free($resql);
-
-			return $record;
-		} else {
-			$this->errors[] = 'Error ' . $this->db->lasterror();
-			dol_syslog(__METHOD__ . ' ' . join(',', $this->errors), LOG_ERR);
-
-			return -1;
-		}
-	}
-
-
-	/**
-	 * Fetch object from the database
-	 *
-	 * @param string $table dictionary to fetch from
-	 * @param array $parameters array of column to fetch
-	 * @param int $id id of item requested for direct fetch
-	 * @param string $column string column requested for direct fetch
-	 * @return int <0 if KO, >0 if OK
-	 */
-	public function fetchByDictionary(string $table, array $parameters, int $id = 0, string $column = '', string $andWhere = '')
-	{
-		$sql = 'SELECT ';
-		for ($i = 0; $i < count($parameters); $i++) {
-			$sql .= $this->db->sanitize($this->db->escape($parameters[$i])) . ', ';
-		}
-		$sql = substr($sql, 0, -2);
-		$sql .= ' FROM ' . MAIN_DB_PREFIX . $this->db->sanitize($this->db->escape($table));
-
-		if ($id) {
-			$sql .= ' WHERE ' . $this->db->sanitize($this->db->escape($column)) . ' = ' . $this->db->sanitize($this->db->escape($id));
+		// Ajout de conditions WHERE si nécessaire
+		$conditions = [];
+		if ($id && $column) {
+			$conditions[] = $this->db->sanitize($this->db->escape($column)) . ' = ' . $this->db->sanitize($this->db->escape($id));
 		}
 		if ($andWhere) {
-			$sql .= $andWhere;
+			$conditions[] = $andWhere;
+		}
+		if (!empty($conditions)) {
+			$sql .= ' WHERE ' . implode(' AND ', $conditions);
 		}
 
+		// Exécution de la requête SQL
 		$resql = $this->db->query($sql);
 
-
-		if ($resql) {
-			$num = $this->db->num_rows($resql);
-			$i = 0;
-			if ($num == 1) {
-				$records = $this->db->fetch_object($resql);
-			} else {
-				while ($i < ($limit ? min($limit, $num) : $num)) {
-
-					$obj = $this->db->fetch_object($resql);
-
-					$records[$obj->id ?: $obj->rowid] = $obj;
-
-					$i++;
-				}
-			}
-			$this->db->free($resql);
-			return $records;
-		} else {
+		if (!$resql) {
 			$this->errors[] = 'Error ' . $this->db->lasterror();
-			dol_syslog(__METHOD__ . ' ' . join(',', $this->errors), LOG_ERR);
-
+			dol_syslog(__METHOD__ . ' ' . implode(',', $this->errors), LOG_ERR);
 			return -1;
 		}
+
+		// Traitement des résultats
+		$num = $this->db->num_rows($resql);
+		$records = [];
+
+		while ($obj = $this->db->fetch_object($resql)) {
+			// Utiliser une clé unique pour chaque objet, par exemple `id` ou `rowid`.
+			$key = property_exists($obj, 'id') ? $obj->id : (property_exists($obj, 'rowid') ? $obj->rowid : null);
+			if ($key !== null) {
+				$records[$key] = $obj;
+			} else {
+				// Ajouter un objet sans clé spécifique si 'id' ou 'rowid' n'existent pas.
+				$records[] = $obj;
+			}
+		}
+
+		$this->db->free($resql);
+		return $num === 1 ? reset($records) : $records;
 	}
+
 
 }
 

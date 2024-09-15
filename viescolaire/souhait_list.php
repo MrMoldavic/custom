@@ -151,9 +151,6 @@ if (!$sortfield) {
 if (!$sortorder) {
 	$sortorder = "DESC";
 }
-// ini_set('display_errors', '1');
-// ini_set('display_startup_errors', '1');
-// error_reporting(E_ALL);
 
 // Initialize array of search criterias
 $search_all = GETPOST('search_all', 'alphanohtml');
@@ -212,10 +209,6 @@ if ($enablepermissioncheck) {
 
 // Security check (enable the most restrictive one)
 if ($user->socid > 0) accessforbidden();
-//if ($user->socid > 0) accessforbidden();
-//$socid = 0; if ($user->socid > 0) $socid = $user->socid;
-//$isdraft = (($object->status == $object::STATUS_DRAFT) ? 1 : 0);
-//restrictedArea($user, $object->element, $object->id, $object->table_element, '', 'fk_soc', 'rowid', $isdraft);
 if (empty($conf->viescolaire->enabled)) accessforbidden('Moule not enabled');
 if (!$permissiontoread) accessforbidden();
 
@@ -286,9 +279,6 @@ $morejs = array();
 $morecss = array();
 
 
-// $sql = "SELECT t.rowid,t.nom_souhait,t.fk_eleve,t.fk_type_classe,t.fk_instru_enseigne,t.fk_niveau,t.fk_annee_scolaire,t.disponibilite,t.details,t.note_public,t.note_private,t.date_creation,t.tms,t.fk_user_creat,t.fk_user_modif,t.last_main_doc,t.model_pdf,t.status FROM llx_souhait as t";
-
-// $sql .= " WHERE fk_annee_scolaire = 2";
 // Build and execute select
 // --------------------------------------------------------------------
 $sql = 'SELECT DISTINCT ';
@@ -375,15 +365,6 @@ $sql .= $hookmanager->resPrint;
 // Count total nb of records
 $nbtotalofrecords = '';
 if (empty($conf->global->MAIN_DISABLE_FULL_SCANLIST)) {
-	/* This old and fast method to get and count full list returns all record so use a high amount of memory.
-	$resql = $db->query($sql);
-	$nbtotalofrecords = $db->num_rows($resql);
-	*/
-	/* The slow method does not consume memory on mysql (not tested on pgsql) */
-	/*$resql = $db->query($sql, 0, 'auto', 1);
-	while ($db->fetch_object($resql)) {
-		$nbtotalofrecords++;
-	}*/
 	/* The fast and low memory method to get and count full list converts the sql into a sql count */
 	$sqlforcount = preg_replace('/^SELECT[a-z0-9\._\s\(\),]+FROM/i', 'SELECT COUNT(DISTINCT t.rowid) as nbtotalofrecords FROM', $sql);
 	$resql = $db->query($sqlforcount);
@@ -460,10 +441,6 @@ $param .= $hookmanager->resPrint;
 
 // List of mass actions available
 $arrayofmassactions = array(
-	//'validate'=>img_picto('', 'check', 'class="pictofixedwidth"').$langs->trans("Validate"),
-	//'generate_doc'=>img_picto('', 'pdf', 'class="pictofixedwidth"').$langs->trans("ReGeneratePDF"),
-	//'builddoc'=>img_picto('', 'pdf', 'class="pictofixedwidth"').$langs->trans("PDFMerge"),
-	//'presend'=>img_picto('', 'email', 'class="pictofixedwidth"').$langs->trans("SendByMail"),
 );
 if ($permissiontodelete) {
 	$arrayofmassactions['predelete'] = img_picto('', 'delete', 'class="pictofixedwidth"') . $langs->trans("Delete");
@@ -519,9 +496,6 @@ if ($search_all) {
 }
 
 $moreforfilter = '';
-/*$moreforfilter.='<div class="divsearchfield">';
-$moreforfilter.= $langs->trans('MyFilter') . ': <input type="text" name="search_myfield" value="'.dol_escape_htmltag($search_myfield).'">';
-$moreforfilter.= '</div>';*/
 
 $parameters = array();
 $reshook = $hookmanager->executeHooks('printFieldPreListTitle', $parameters, $object); // Note that $action and $object may have been modified by hook
@@ -547,6 +521,12 @@ print '<table class="tagtable nobottomiftotal liste' . ($moreforfilter ? " listw
 // Fields title search
 // --------------------------------------------------------------------
 print '<tr class="liste_titre">';
+if (!empty($conf->global->MAIN_CHECKBOX_LEFT_COLUMN)) {
+	print '<td class="liste_titre maxwidthsearch">';
+	$searchpicto = $form->showFilterButtons('left');
+	print $searchpicto;
+	print '</td>';
+}
 foreach ($object->fields as $key => $val) {
 	$cssforfield = (empty($val['csslist']) ? (empty($val['css']) ? '' : $val['css']) : $val['csslist']);
 	if ($key == 'status') {
@@ -590,14 +570,21 @@ $parameters = array('arrayfields' => $arrayfields);
 $reshook = $hookmanager->executeHooks('printFieldListOption', $parameters, $object); // Note that $action and $object may have been modified by hook
 print $hookmanager->resPrint;
 // Action column
-print '<td class="liste_titre maxwidthsearch">';
-$searchpicto = $form->showFilterButtons();
-print $searchpicto;
-print '</td>';
+if (empty($conf->global->MAIN_CHECKBOX_LEFT_COLUMN)) {
+	print '<td class="liste_titre maxwidthsearch">';
+	$searchpicto = $form->showFilterButtons();
+	print $searchpicto;
+	print '</td>';
+}
 print '</tr>' . "\n";
+
+
 // Fields title label
 // --------------------------------------------------------------------
 print '<tr class="liste_titre">';
+if (!empty($conf->global->MAIN_CHECKBOX_LEFT_COLUMN)) {
+	print getTitleFieldOfList(($mode != 'kanban' ? $selectedfields : ''), 0, $_SERVER['PHP_SELF'], '', '', '', '', $sortfield, $sortorder, 'center maxwidthsearch ') . "\n";
+}
 foreach ($object->fields as $key => $val) {
 	$cssforfield = (empty($val['csslist']) ? (empty($val['css']) ? '' : $val['css']) : $val['csslist']);
 	if ($key == 'status') {
@@ -610,8 +597,7 @@ foreach ($object->fields as $key => $val) {
 		$cssforfield .= ($cssforfield ? ' ' : '') . 'right';
 	}
 	if (!empty($arrayfields['t.' . $key]['checked'])) {
-
-		print getTitleFieldOfList($arrayfields['t.' . $key]['label'], 0, $_SERVER['PHP_SELF'], 't.' . $key, '', $param.'&etablissementid='.$_SESSION['etablissementid'], ($cssforfield ? 'class="' . $cssforfield . '"' : ''), $sortfield, $sortorder, ($cssforfield ? $cssforfield . ' ' : '')) . "\n";
+		print getTitleFieldOfList($arrayfields['t.' . $key]['label'], 0, $_SERVER['PHP_SELF'], 't.' . $key, '', $param, ($cssforfield ? 'class="' . $cssforfield . '"' : ''), $sortfield, $sortorder, ($cssforfield ? $cssforfield . ' ' : '')) . "\n";
 	}
 }
 // Extra fields
@@ -621,7 +607,10 @@ $parameters = array('arrayfields' => $arrayfields, 'param' => $param, 'sortfield
 $reshook = $hookmanager->executeHooks('printFieldListTitle', $parameters, $object); // Note that $action and $object may have been modified by hook
 print $hookmanager->resPrint;
 // Action column
-print getTitleFieldOfList($selectedfields, 0, $_SERVER["PHP_SELF"], '', '', '', '', $sortfield, $sortorder, 'center maxwidthsearch ') . "\n";
+if (empty($conf->global->MAIN_CHECKBOX_LEFT_COLUMN)) {
+	print getTitleFieldOfList(($mode != 'kanban' ? $selectedfields : ''), 0, $_SERVER['PHP_SELF'], '', '', '', '', $sortfield, $sortorder, 'center maxwidthsearch ') . "\n";
+}
+$totalarray['nbfield']++;
 print '</tr>' . "\n";
 
 
@@ -655,6 +644,17 @@ while ($i < ($limit ? min($num, $limit) : $num)) {
 
 	// Show here line of result
 	print '<tr class="oddeven">';
+	if (!empty($conf->global->MAIN_CHECKBOX_LEFT_COLUMN)) {
+		print '<td class="nowrap center">';
+		if ($massactionbutton || $massaction) { // If we are in select mode (massactionbutton defined) or if we have already selected and sent an action ($massaction) defined
+			$selected = 0;
+			if (in_array($object->id, $arrayofselected)) {
+				$selected = 1;
+			}
+			print '<input id="cb'.$object->id.'" class="flat checkforselect" type="checkbox" name="toselect[]" value="'.$object->id.'"'.($selected ? ' checked="checked"' : '').'>';
+		}
+		print '</td>';
+	}
 	foreach ($object->fields as $key => $val) {
 		$cssforfield = (empty($val['csslist']) ? (empty($val['css']) ? '' : $val['css']) : $val['csslist']);
 		if (in_array($val['type'], array('date', 'datetime', 'timestamp'))) {
@@ -674,23 +674,21 @@ while ($i < ($limit ? min($num, $limit) : $num)) {
 		}
 
 		if (!empty($arrayfields['t.' . $key]['checked'])) {
-			//print '<td' . ($cssforfield ? ' class="' . $cssforfield . '"' : '') . '>';
-			print '<td '.($object->status == 9 ? 'style="background-color: #BBBBBB"' : '') .'>';
-			if ($key == 'status') {
+			print '<td '.($object->status === Souhait::STATUS_CANCELED ? 'style="background-color: #BBBBBB"' : '') .'>';
+			if ($key === 'status') {
 				print $object->getLibStatut(4);
-			} elseif ($key == 'rowid') {
+			} elseif ($key === 'rowid') {
 				print $object->showOutputField($val, $key, $object->id, '');
-			} elseif ($key == 'fk_eleve') {
+			} elseif ($key === 'fk_eleve') {
 				print dolGetButtonAction($eleve->prenom ? "$eleve->prenom $eleve->nom" : 'Erreur élève' , '', 'danger', '/custom/viescolaire/souhait_card.php?id=' . $object->id, '', $permissiontoread);
-				//print '<a href="' . DOL_URL_ROOT . '/custom/viescolaire/souhait_card.php?id=' . $obj->rowid . '">'.($eleve->nom ? "$eleve->prenom $eleve->nom" : 'Erreur élève').'</a>';
-			} elseif ($key == 'nom_souhait') {
+			} elseif ($key === 'nom_souhait') {
 				print $object->getNomUrl(1);
-			} elseif ($key == 'fk_annee_scolaire') {
-				$anneScolaire = "SELECT annee,annee_actuelle,rowid FROM ".MAIN_DB_PREFIX."c_annee_scolaire WHERE active = 1 AND annee_actuelle = 1";
-				$resqlAnneeScolaire = $db->query($anneScolaire);
-				$objAnneScolaire = $db->fetch_object($resqlAnneeScolaire);
+			} elseif ($key === 'fk_annee_scolaire') {
 
-				print '<span class="badge  badge-status'.($objAnneScolaire->rowid == $object->fk_annee_scolaire ? "4" : "6").' badge-status">'.$object->showOutputField($val, $key, $object->$key, '').'</span>';
+				$anneeClass = new Annee($db);
+				$anneeClass->fetch('','',' AND active=1 AND annee_actuelle=1');
+
+				print '<span class="badge  badge-status'.($anneeClass->id === (int) $object->fk_annee_scolaire ? '4' : '6').' badge-status">'.$object->showOutputField($val, $key, $object->$key, '').'</span>';
 			} else {
 				print $object->showOutputField($val, $key, $object->$key, '');
 			}
@@ -712,14 +710,12 @@ while ($i < ($limit ? min($num, $limit) : $num)) {
 			}
 		}
 	}
-	// Extra fields
-	include DOL_DOCUMENT_ROOT . '/core/tpl/extrafields_list_print_fields.tpl.php';
 	// Fields from hook
 	$parameters = array('arrayfields' => $arrayfields, 'object' => $object, 'obj' => $obj, 'i' => $i, 'totalarray' => &$totalarray);
 	$reshook = $hookmanager->executeHooks('printFieldListValue', $parameters, $object); // Note that $action and $object may have been modified by hook
 	print $hookmanager->resPrint;
 	// Action column
-	print '<td class="nowrap center">';
+	/*print '<td class="nowrap center">';
 	if ($massactionbutton || $massaction) { // If we are in select mode (massactionbutton defined) or if we have already selected and sent an action ($massaction) defined
 		$selected = 0;
 		if (in_array($object->id, $arrayofselected)) {
@@ -727,7 +723,18 @@ while ($i < ($limit ? min($num, $limit) : $num)) {
 		}
 		print '<input id="cb' . $object->id . '" class="flat checkforselect" type="checkbox" name="toselect[]" value="' . $object->id . '"' . ($selected ? ' checked="checked"' : '') . '>';
 	}
-	print '</td>';
+	print '</td>';*/
+	if (empty($conf->global->MAIN_CHECKBOX_LEFT_COLUMN)) {
+		print '<td class="nowrap center">';
+		if ($massactionbutton || $massaction) { // If we are in select mode (massactionbutton defined) or if we have already selected and sent an action ($massaction) defined
+			$selected = 0;
+			if (in_array($object->id, $arrayofselected)) {
+				$selected = 1;
+			}
+			print '<input id="cb'.$object->id.'" class="flat checkforselect" type="checkbox" name="toselect[]" value="'.$object->id.'"'.($selected ? ' checked="checked"' : '').'>';
+		}
+		print '</td>';
+	}
 	if (!$i) {
 		$totalarray['nbfield']++;
 	}
@@ -736,9 +743,6 @@ while ($i < ($limit ? min($num, $limit) : $num)) {
 
 	$i++;
 }
-
-// Show total line
-include DOL_DOCUMENT_ROOT . '/core/tpl/list_print_total.tpl.php';
 
 // If no record found
 if ($num == 0) {

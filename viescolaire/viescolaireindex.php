@@ -102,7 +102,7 @@ $form = new Form($db);
 $formfile = new FormFile($db);
 $eleve = new Eleve($db);
 
-llxHeader("", "Module Vie scolaire");
+llxHeader('', 'Module Vie scolaire');
 
 print load_fiche_titre("Accueil Vie Scolaire", '', 'fa-school');
 print '<hr>';
@@ -115,34 +115,16 @@ print '<div class="fichecenter"><div style="width:40%" class="fichethirdleft">';
 $appelClass = new Appel($db);
 $appelClass->printStatsIndex();
 
-print '</div><div style="width:55%" class="fichetwothirdright "><div class="ficheaddleft ">';
+print '</div><div style="width:58%" class="fichetwothirdright "><div class="ficheaddleft ">';
 
+print '<div style="background-color: #FFFFFF; border: 1px solid #ddd;border-radius: 12px; padding: 20px;box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); ">';
+
+print load_fiche_titre('Sélectionnez votre établissement', '', 'fa-school');
 // Ajout du formulaire qui permet de changer son établissement de prédilection
 $etablissementClass = new Etablissement($db);
-$etablissementsList = $etablissementClass->fetchAll('', '', 0, 0, [], 'AND');
-$etablissements = [0 => 'Tous'];
+print $etablissementClass->returnSelectEtablimmentForm();
 
-foreach ($etablissementsList as $val) {
-	$etablissements[$val->id] = $val->nom;
-}
-print '<form action="' . $_SERVER['PHP_SELF'] . '" method="POST">';
-print '<input type="hidden" tyname="sortfield" value="' . $sortfield . '">';
-print '<input type="hidden" name="sortorder" value="' . $sortorder . '">';
-print '<input type="hidden" name="action" value="changeEtablissement">';
-print '<input type="hidden" name="token" value="' . newToken() . '">';
-print '<table class="border centpercent">';
-print '<tr>';
-print '</td></tr>';
-print '<tr><td class="fieldrequired titlefieldcreate">Selectionnez votre établissement: </td><td>';
-print $form->selectarray('etablissementid', $etablissements, $_SESSION['etablissementid']);
-print '</td>';
-print '</tr>';
-print '<td></td>';
-print '<td>';
-print '<input type="submit" class="button" value="Valider">';
-print '</td>';
-print '</table>';
-print '</form>';
+print '</div>';
 print '<hr>';
 
 // Appel de la fonction qui permet l'affichage des absences par etablissement

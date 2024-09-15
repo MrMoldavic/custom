@@ -59,7 +59,7 @@ class Salle extends CommonObject
 	/**
 	 * @var int  Does object support extrafields ? 0=No, 1=Yes
 	 */
-	public $isextrafieldmanaged = 1;
+	public $isextrafieldmanaged = 0;
 
 	/**
 	 * @var string String with name of icon for salle. Must be the part after the 'object_' into object_salle.png
@@ -174,12 +174,6 @@ class Salle extends CommonObject
 			$this->fields['entity']['enabled'] = 0;
 		}
 
-		// Example to show how to set values of fields definition dynamically
-		/*if ($user->rights->scolarite->salle->read) {
-			$this->fields['myfield']['visible'] = 1;
-			$this->fields['myfield']['noteditable'] = 0;
-		}*/
-
 		// Unset fields that are disabled
 		foreach ($this->fields as $key => $val) {
 			if (isset($val['enabled']) && empty($val['enabled'])) {
@@ -208,15 +202,10 @@ class Salle extends CommonObject
 	 */
 	public function create(User $user, $notrigger = false)
 	{
-		$sql = "SELECT diminutif FROM ".MAIN_DB_PREFIX."etablissement WHERE rowid=".$this->fk_college;
-		$resql = $this->db->query($sql);
-		$diminutif = $this->db->fetch_object($resql);
+		$this->nom_complet = $this->returnCompleteSalleName();
 
-		$this->nom_complet .= $diminutif->diminutif.' - '.$this->salle;
 		$this->status = self::STATUS_VALIDATED;
-		$resultcreate = $this->createCommon($user, $notrigger);
-
-		return $resultcreate;
+		return $this->createCommon($user, $notrigger);
 	}
 
 	/**
@@ -234,20 +223,6 @@ class Salle extends CommonObject
 		}
 		return $result;
 	}
-
-	/**
-	 * Load object lines in memory from the database
-	 *
-	 * @return int         <0 if KO, 0 if not found, >0 if OK
-	 */
-	public function fetchLines()
-	{
-		$this->lines = array();
-
-		$result = $this->fetchLinesCommon();
-		return $result;
-	}
-
 
 	/**
 	 * Load list of objects in memory from the database.
@@ -338,16 +313,6 @@ class Salle extends CommonObject
 	 */
 	public function update(User $user, $notrigger = false)
 	{
-		/*$sql = "SELECT diminutif FROM ".MAIN_DB_PREFIX."etablissement WHERE rowid=".$this->fk_college;
-		$resql = $this->db->query($sql);
-		$diminutif = $this->db->fetch_object($resql);*/
-
-		//$sqlUpdate = "UPDATE ".MAIN_DB_PREFIX."salles SET nom_complet="."'".$diminutif->diminutif." - ".$this->salle."'".",salle="."'".$this->salle."'".",fk_college=".$this->fk_college." WHERE rowid=".$this->id;
-		// $resqlUpdate = $this->db->query($sqlUpdate);
-
-/*
-		$this->nom_complet = $diminutif->diminutif.' - '.$this->salle;*/
-
 		return $this->updateCommon($user, $notrigger);
 	}
 
@@ -361,7 +326,6 @@ class Salle extends CommonObject
 	public function delete(User $user, $notrigger = false)
 	{
 		return $this->deleteCommon($user, $notrigger);
-		//return $this->deleteCommon($user, $notrigger, 1);
 	}
 
 	/**
@@ -403,14 +367,6 @@ class Salle extends CommonObject
 			dol_syslog(get_class($this)."::validate action abandonned: already validated", LOG_WARNING);
 			return 0;
 		}
-
-		/*if (! ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->scolarite->salle->write))
-		 || (! empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->scolarite->salle->salle_advance->validate))))
-		 {
-		 $this->error='NotEnoughPermissions';
-		 dol_syslog(get_class($this)."::valid ".$this->error, LOG_ERR);
-		 return -1;
-		 }*/
 
 		$now = dol_now();
 
@@ -523,13 +479,6 @@ class Salle extends CommonObject
 			return 0;
 		}
 
-		/*if (! ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->scolarite->write))
-		 || (! empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->scolarite->scolarite_advance->validate))))
-		 {
-		 $this->error='Permission denied';
-		 return -1;
-		 }*/
-
 		return $this->setStatusCommon($user, self::STATUS_DRAFT, $notrigger, 'SALLE_UNVALIDATE');
 	}
 
@@ -547,13 +496,6 @@ class Salle extends CommonObject
 			return 0;
 		}
 
-		/*if (! ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->scolarite->write))
-		 || (! empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->scolarite->scolarite_advance->validate))))
-		 {
-		 $this->error='Permission denied';
-		 return -1;
-		 }*/
-
 		return $this->setStatusCommon($user, self::STATUS_CANCELED, $notrigger, 'SALLE_CANCEL');
 	}
 
@@ -570,13 +512,6 @@ class Salle extends CommonObject
 		if ($this->status != self::STATUS_CANCELED) {
 			return 0;
 		}
-
-		/*if (! ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->scolarite->write))
-		 || (! empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->scolarite->scolarite_advance->validate))))
-		 {
-		 $this->error='Permission denied';
-		 return -1;
-		 }*/
 
 		return $this->setStatusCommon($user, self::STATUS_VALIDATED, $notrigger, 'SALLE_REOPEN');
 	}
@@ -927,35 +862,6 @@ class Salle extends CommonObject
 		return $result;
 	}
 
-	/**
-	 * Action executed by scheduler
-	 * CAN BE A CRON TASK. In such a case, parameters come from the schedule job setup field 'Parameters'
-	 * Use public function doScheduledJob($param1, $param2, ...) to get parameters
-	 *
-	 * @return	int			0 if OK, <>0 if KO (this function is used also by cron so only 0 is OK)
-	 */
-	public function doScheduledJob()
-	{
-		global $conf, $langs;
-
-		//$conf->global->SYSLOG_FILE = 'DOL_DATA_ROOT/dolibarr_mydedicatedlofile.log';
-
-		$error = 0;
-		$this->output = '';
-		$this->error = '';
-
-		dol_syslog(__METHOD__, LOG_DEBUG);
-
-		$now = dol_now();
-
-		$this->db->begin();
-
-		// ...
-
-		$this->db->commit();
-
-		return $error;
-	}
 
 	public function returnCompleteSalleName()
 	{
@@ -963,32 +869,5 @@ class Salle extends CommonObject
 		$etablissementClass->fetch($this->fk_college);
 
 		return "$etablissementClass->diminutif - $this->salle";
-	}
-}
-
-
-require_once DOL_DOCUMENT_ROOT.'/core/class/commonobjectline.class.php';
-
-/**
- * Class SalleLine. You can also remove this and generate a CRUD class for lines objects.
- */
-class SalleLine extends CommonObjectLine
-{
-	// To complete with content of an object SalleLine
-	// We should have a field rowid, fk_salle and position
-
-	/**
-	 * @var int  Does object support extrafields ? 0=No, 1=Yes
-	 */
-	public $isextrafieldmanaged = 0;
-
-	/**
-	 * Constructor
-	 *
-	 * @param DoliDb $db Database handler
-	 */
-	public function __construct(DoliDB $db)
-	{
-		$this->db = $db;
 	}
 }

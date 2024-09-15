@@ -22,9 +22,9 @@
  *		\brief      List page for eleve
  */
 
-/* ini_set('display_errors', '1');
+ ini_set('display_errors', '1');
  ini_set('display_startup_errors', '1');
- error_reporting(E_ALL);*/
+ error_reporting(E_ALL);
 
 //if (! defined('NOREQUIREDB'))              define('NOREQUIREDB', '1');				// Do not create database handler $db
 //if (! defined('NOREQUIREUSER'))            define('NOREQUIREUSER', '1');				// Do not load object $user
@@ -83,6 +83,8 @@ require_once DOL_DOCUMENT_ROOT.'/core/class/html.formcompany.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/date.lib.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/company.lib.php';
 require_once DOL_DOCUMENT_ROOT.'/custom/scolarite/class/etablissement.class.php';
+
+dol_include_once('/custom/viescolaire/class/souhait.class.php');
 
 // load viescolaire libraries
 require_once __DIR__.'/class/eleve.class.php';
@@ -196,10 +198,6 @@ if ($enablepermissioncheck) {
 
 // Security check (enable the most restrictive one)
 if ($user->socid > 0) accessforbidden();
-//if ($user->socid > 0) accessforbidden();
-//$socid = 0; if ($user->socid > 0) $socid = $user->socid;
-//$isdraft = (($object->status == $object::STATUS_DRAFT) ? 1 : 0);
-//restrictedArea($user, $object->element, $object->id, $object->table_element, '', 'fk_soc', 'rowid', $isdraft);
 if (empty($conf->viescolaire->enabled)) accessforbidden('Moule not enabled');
 if (!$permissiontoread) accessforbidden();
 
@@ -290,8 +288,9 @@ if (isset($extrafields->attributes[$object->table_element]['label']) && is_array
 $parameters = array();
 $reshook = $hookmanager->executeHooks('printFieldListFrom', $parameters, $object); // Note that $action and $object may have been modified by hook
 $sql .= $hookmanager->resPrint;
-if ($_SESSION['etablissementid'] != 0) {
-	$sql .= ' INNER JOIN '.MAIN_DB_PREFIX.'etablissement as a ON t.fk_etablissement=' . $_SESSION['etablissementid'];
+
+if ((int) $_SESSION['etablissementid'] !== 0) {
+	$sql .= ' INNER JOIN '.MAIN_DB_PREFIX.'classe as c ON c.rowid=t.fk_classe_etablissement';
 }
 if ($object->ismultientitymanaged == 1) {
 	$sql .= " WHERE t.entity IN (".getEntity($object->element).")";
@@ -345,8 +344,19 @@ $parameters = array();
 $reshook = $hookmanager->executeHooks('printFieldListWhere', $parameters, $object); // Note that $action and $object may have been modified by hook
 $sql .= $hookmanager->resPrint;
 
+if (!$sortfield) {
+	reset($object->fields);					// Reset is required to avoid key() to return null.
+	$sortfield = "t.".key($object->fields); // Set here default search field. By default 1st field in definition.
+}
+if (!$sortorder) {
+	$sortorder = "ASC";
+}
 
-// Count total nb of records
+
+if((int) $_SESSION['etablissementid'] !== 0){
+	$sql .= ' AND c.fk_college = '.$_SESSION['etablissementid'];
+}
+
 $nbtotalofrecords = '';
 if (empty($conf->global->MAIN_DISABLE_FULL_SCANLIST)) {
 	/* The fast and low memory method to get and count full list converts the sql into a sql count */
@@ -362,19 +372,11 @@ if (empty($conf->global->MAIN_DISABLE_FULL_SCANLIST)) {
 }
 
 
-if (!$sortfield) {
-	reset($object->fields);					// Reset is required to avoid key() to return null.
-	$sortfield = "t.".key($object->fields); // Set here default search field. By default 1st field in definition.
-}
-if (!$sortorder) {
-	$sortorder = "ASC";
-}
-
-
 $sql .= $db->order($sortfield, $sortorder);
 if ($limit) {
 	$sql .= $db->plimit($limit + 1, $offset);
 }
+
 $resql = $db->query($sql);
 if (!$resql) {
 	dol_print_error($db);
@@ -426,12 +428,8 @@ $reshook = $hookmanager->executeHooks('printFieldListSearchParam', $parameters, 
 $param .= $hookmanager->resPrint;
 
 // List of mass actions available
-$arrayofmassactions = array(
-	//'validate'=>img_picto('', 'check', 'class="pictofixedwidth"').$langs->trans("Validate"),
-	//'generate_doc'=>img_picto('', 'pdf', 'class="pictofixedwidth"').$langs->trans("ReGeneratePDF"),
-	//'builddoc'=>img_picto('', 'pdf', 'class="pictofixedwidth"').$langs->trans("PDFMerge"),
-	//'presend'=>img_picto('', 'email', 'class="pictofixedwidth"').$langs->trans("SendByMail"),
-);
+$arrayofmassactions = array();
+
 if ($permissiontodelete) {
 	$arrayofmassactions['predelete'] = img_picto('', 'delete', 'class="pictofixedwidth"').$langs->trans("Delete");
 }
@@ -483,9 +481,6 @@ if ($search_all) {
 }
 
 $moreforfilter = '';
-/*$moreforfilter.='<div class="divsearchfield">';
-$moreforfilter.= $langs->trans('MyFilter') . ': <input type="text" name="search_myfield" value="'.dol_escape_htmltag($search_myfield).'">';
-$moreforfilter.= '</div>';*/
 
 $parameters = array();
 $reshook = $hookmanager->executeHooks('printFieldPreListTitle', $parameters, $object); // Note that $action and $object may have been modified by hook
@@ -687,37 +682,18 @@ while ($i < $imaxinloop) {
 					print ' title="'.dol_escape_htmltag($object->$key).'"';
 				}
 				print '>';
-				if ($key == 'status') {
+				if ($key === 'status') {
 					print $object->getLibStatut(5);
-				} elseif ($key == 'rowid') {
+				} elseif ($key === 'rowid') {
 					print $object->showOutputField($val, $key, $object->id, '');
-				} elseif ($key == 'prenom') {
-					print $object->getNomUrl(1).' '.($object->fk_famille == "" ? '<span class="badge badge-danger">Sans Famille liée &#9888</span>' : ($object->stats_affectations > 0 ? '<span class="badge badge-danger">Problème affectation &#9888</span>' : ''));
-				} elseif ($key == 'stats_affectations') {
+				} elseif ($key === 'prenom') {
+					print $object->getNomUrl(1).' '.($object->fk_famille === null ? '<span class="badge badge-danger">Sans Famille liée &#9888</span>' : ($object->stats_affectations > 0 ? '<span class="badge badge-danger">Problème affectation &#9888</span>' : ''));
+				} elseif ($key === 'stats_affectations') {
 
-					//annee scolaire
-					$anneScolaire = "SELECT annee,annee_actuelle,rowid FROM ".MAIN_DB_PREFIX."c_annee_scolaire WHERE active = 1 AND annee_actuelle = 1 ORDER BY rowid DESC";
-					$resqlAnneeScolaire = $db->query($anneScolaire);
-					$objAnneScolaire = $db->fetch_object($resqlAnneeScolaire);
+					$souhaitClass = new Souhait($db);
+					print $souhaitClass->printCountAffectationSouhaits((int)$object->id);
 
-					// Nombres d'affectations
-					$affectation = "SELECT COUNT(*) as total FROM ".MAIN_DB_PREFIX."souhait WHERE fk_eleve=".$object->id." AND status=4 AND fk_annee_scolaire =".$objAnneScolaire->rowid;
-					$resAffectation = $db->query($affectation);
-					$objAffectation = $db->fetch_object($resAffectation);
-
-					// Nomnbres de souhaits non-nuls
-					$souhait = "SELECT COUNT(*) as total FROM ".MAIN_DB_PREFIX."souhait WHERE fk_eleve=".$object->id." AND (status=4 OR status=0) AND fk_annee_scolaire =".$objAnneScolaire->rowid;
-					$resSouhaits = $db->query($souhait);
-					$objSouhaits = $db->fetch_object($resSouhaits);
-
-
-					print "{$objAffectation->total} / {$objSouhaits->total}".($objAffectation->total != $objSouhaits->total ? ' <span class="badge badge-danger">&#9888</span>' : '');
-
-				} elseif ($key == 'fk_etablissement') {
-					$etablissement = new Etablissement($db);
-					$etab = $etablissement->fetchOneField($object->fk_etablissement, 'diminutif');
-					print $etab->diminutif;
-				}else {
+				}  else {
 					print $object->showOutputField($val, $key, $object->$key, '');
 				}
 				print '</td>';
@@ -744,9 +720,7 @@ while ($i < $imaxinloop) {
 		$parameters = array('arrayfields'=>$arrayfields, 'object'=>$object, 'obj'=>$obj, 'i'=>$i, 'totalarray'=>&$totalarray);
 		$reshook = $hookmanager->executeHooks('printFieldListValue', $parameters, $object); // Note that $action and $object may have been modified by hook
 		print $hookmanager->resPrint;
-		/*if (!empty($arrayfields['anotherfield']['checked'])) {
-			print '<td class="right">'.$obj->anotherfield.'</td>';
-		}*/
+
 		// Action column
 		if (empty($conf->global->MAIN_CHECKBOX_LEFT_COLUMN)) {
 			print '<td class="nowrap center">';

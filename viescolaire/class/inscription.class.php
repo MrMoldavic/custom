@@ -63,7 +63,7 @@ class Inscription extends CommonObject
 	/**
 	 * @var int  Does object support extrafields ? 0=No, 1=Yes
 	 */
-	public $isextrafieldmanaged = 1;
+	public $isextrafieldmanaged = 0;
 
 	/**
 	 * @var string String with name of icon for inscription. Must be a 'fa-xxx' fontawesome code (or 'fa-xxx_fa_color_size') or 'inscription@viescolaire' if picto is file 'img/object_inscription.png'.
@@ -201,25 +201,32 @@ class Inscription extends CommonObject
 	 */
 	public function create(User $user, $notrigger = false)
 	{
-		$result = $this->fetchAll('','',0,'',['fk_eleve'=>$this->fk_eleve,'fk_annee_scolaire'=>$this->fk_annee_scolaire]);
+		$existingInscription = $this->fetchAll('','',0,'',['fk_eleve'=>$this->fk_eleve,'fk_annee_scolaire'=>$this->fk_annee_scolaire]);
 
-		if(count($result) != 0) setEventMessage('Une inscription avec ces infos existe déjà.','errors');
+		if(count($existingInscription) !== 0) {
+			setEventMessage('Une inscription avec ces infos existe déjà.', 'errors');
+		}
 		else
 		{
-			$dictionaryClass = new Dictionary($this->db);
-			$anneActuelle = $dictionaryClass->fetchByDictionary('c_annee_scolaire',array('rowid'),0,'',' WHERE annee_actuelle = 1 AND active = 1');
+			$anneeClass = new Annee($this->db);
+			$anneeClass->fetch('','',' AND annee_actuelle=1 AND active=1');
 
-			if($this->fk_annee_scolaire == $anneActuelle->rowid)
+			if((int) $this->fk_annee_scolaire === (int) $anneeClass->id)
 			{
 				$eleveClass = new Eleve($this->db);
 				$eleveClass->fetch($this->fk_eleve);
 				$eleveClass->status = $this->status;
-				$eleveClass->update($user);
+				$resUpdate = $eleveClass->update($user);
+
+				if($resUpdate < 0) {
+					setEventMessage('Une erreur est survenue lors de la mise à jour de l\'élève concerné'.'errors');
+					return -1;
+				}
 			}
 
 			setEventMessage('Inscription créée avec succès!');
-			$resultcreate = $this->createCommon($user, $notrigger);
-			return $resultcreate;
+
+			return $this->createCommon($user, $notrigger);
 		}
 	}
 
@@ -246,10 +253,6 @@ class Inscription extends CommonObject
 		if ($result > 0 && !empty($object->table_element_line)) {
 			$object->fetchLines();
 		}
-
-		// get lines so they will be clone
-		//foreach($this->lines as $line)
-		//	$line->fetch_optionals();
 
 		// Reset some properties
 		unset($object->id);
@@ -442,18 +445,25 @@ class Inscription extends CommonObject
 	 */
 	public function update(User $user, $notrigger = false)
 	{
-		$dictionaryClass = new Dictionary($this->db);
-		$anneActuelle = $dictionaryClass->fetchByDictionary('c_annee_scolaire',array('rowid'),0,'',' WHERE annee_actuelle = 1 AND active = 1');
+		$anneeClass = new Annee($this->db);
+		$anneeClass->fetch('','',' AND annee_actuelle=1');
 
-		if($this->fk_annee_scolaire === $anneActuelle->rowid)
+		if((int) $this->fk_annee_scolaire === (int) $anneeClass->id)
 		{
 			$eleveClass = new Eleve($this->db);
 			$eleveClass->fetch($this->fk_eleve);
 			$eleveClass->status = $this->status;
-			$eleveClass->update($user);
-			setEventMessage("Mise à jour faite avec succès.");
+			$resUpdate = $eleveClass->update($user);
 
-		} else setEventMessage("Attention, vous avez mis à jour une inscription d'une année antérieur.",'warnings');
+			if($resUpdate > 0) {
+				setEventMessage('Mise à jour faite avec succès.');
+			} else {
+				setEventMessage('Une erreur est survenue.','errors');
+			}
+
+		} else {
+			setEventMessage("Attention, vous avez mis à jour une inscription d'une année antérieur.", 'warnings');
+		}
 
 		return $this->updateCommon($user, $notrigger);
 	}
@@ -510,14 +520,6 @@ class Inscription extends CommonObject
 			dol_syslog(get_class($this)."::validate action abandonned: already validated", LOG_WARNING);
 			return 0;
 		}
-
-		/*if (! ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && !empty($user->rights->viescolaire->inscription->write))
-		 || (!empty($conf->global->MAIN_USE_ADVANCED_PERMS) && !empty($user->rights->viescolaire->inscription->inscription_advance->validate))))
-		 {
-		 $this->error='NotEnoughPermissions';
-		 dol_syslog(get_class($this)."::valid ".$this->error, LOG_ERR);
-		 return -1;
-		 }*/
 
 		$now = dol_now();
 
@@ -629,13 +631,6 @@ class Inscription extends CommonObject
 			return 0;
 		}
 
-		/*if (! ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && !empty($user->rights->viescolaire->write))
-		 || (!empty($conf->global->MAIN_USE_ADVANCED_PERMS) && !empty($user->rights->viescolaire->viescolaire_advance->validate))))
-		 {
-		 $this->error='Permission denied';
-		 return -1;
-		 }*/
-
 		return $this->setStatusCommon($user, self::STATUS_DRAFT, $notrigger, 'INSCRIPTION_UNVALIDATE');
 	}
 
@@ -653,13 +648,6 @@ class Inscription extends CommonObject
 			return 0;
 		}
 
-		/*if (! ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && !empty($user->rights->viescolaire->write))
-		 || (!empty($conf->global->MAIN_USE_ADVANCED_PERMS) && !empty($user->rights->viescolaire->viescolaire_advance->validate))))
-		 {
-		 $this->error='Permission denied';
-		 return -1;
-		 }*/
-
 		return $this->setStatusCommon($user, self::STATUS_CANCELED, $notrigger, 'INSCRIPTION_CANCEL');
 	}
 
@@ -676,13 +664,6 @@ class Inscription extends CommonObject
 		if ($this->status == self::STATUS_VALIDATED) {
 			return 0;
 		}
-
-		/*if (! ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && !empty($user->rights->viescolaire->write))
-		 || (!empty($conf->global->MAIN_USE_ADVANCED_PERMS) && !empty($user->rights->viescolaire->viescolaire_advance->validate))))
-		 {
-		 $this->error='Permission denied';
-		 return -1;
-		 }*/
 
 		return $this->setStatusCommon($user, self::STATUS_VALIDATED, $notrigger, 'INSCRIPTION_REOPEN');
 	}
@@ -801,36 +782,6 @@ class Inscription extends CommonObject
 
 		return $result;
 	}
-
-	/**
-	 *	Return a thumb for kanban views
-	 *
-	 *	@param      string	    $option                 Where point the link (0=> main card, 1,2 => shipment, 'nolink'=>No link)
-	 *  @return		string								HTML Code for Kanban thumb.
-	 */
-	/*
-	public function getKanbanView($option = '')
-	{
-		$return = '<div class="box-flex-item box-flex-grow-zero">';
-		$return .= '<div class="info-box info-box-sm">';
-		$return .= '<span class="info-box-icon bg-infobox-action">';
-		$return .= img_picto('', $this->picto);
-		$return .= '</span>';
-		$return .= '<div class="info-box-content">';
-		$return .= '<span class="info-box-ref">'.(method_exists($this, 'getNomUrl') ? $this->getNomUrl() : $this->ref).'</span>';
-		if (property_exists($this, 'label')) {
-			$return .= '<br><span class="info-box-label opacitymedium">'.$this->label.'</span>';
-		}
-		if (method_exists($this, 'getLibStatut')) {
-			$return .= '<br><div class="info-box-status margintoponly">'.$this->getLibStatut(5).'</div>';
-		}
-		$return .= '</div>';
-		$return .= '</div>';
-		$return .= '</div>';
-
-		return $return;
-	}
-	*/
 
 	/**
 	 *  Return the label of the status
@@ -1057,117 +1008,5 @@ class Inscription extends CommonObject
 		}
 
 		return $result;
-	}
-
-	/**
-	 * Action executed by scheduler
-	 * CAN BE A CRON TASK. In such a case, parameters come from the schedule job setup field 'Parameters'
-	 * Use public function doScheduledJob($param1, $param2, ...) to get parameters
-	 *
-	 * @return	int			0 if OK, <>0 if KO (this function is used also by cron so only 0 is OK)
-	 */
-	public function doScheduledJob()
-	{
-		global $conf, $langs;
-
-		//$conf->global->SYSLOG_FILE = 'DOL_DATA_ROOT/dolibarr_mydedicatedlofile.log';
-
-		$error = 0;
-		$this->output = '';
-		$this->error = '';
-
-		dol_syslog(__METHOD__, LOG_DEBUG);
-
-		$now = dol_now();
-
-		$this->db->begin();
-
-		// ...
-
-		$this->db->commit();
-
-		return $error;
-	}
-
-	public function inscriptionsPerYear(int $idEleve)
-	{
-		global $langs;
-
-		$dictionaryClass = new Dictionary($this->db);
-		$resqlAnneeScolaire = $dictionaryClass->fetchByDictionary('c_annee_scolaire',['rowid','annee','annee_actuelle'],0,'',' WHERE active = 1 ORDER BY rowid DESC');
-
-		foreach($resqlAnneeScolaire as $value)
-		{
-			$results = $this->fetchAll('','',0,'',['fk_eleve'=>$idEleve,'fk_annee_scolaire'=>$value->rowid]);
-
-			print '<div class="annee-accordion'.($value->annee_actuelle == 1 ? '-opened' : '').'">';
-			print '<h3><span class="badge badge-status4 badge-status">Année '.$value->annee.($value->annee_actuelle != 1 ? ' (année précédente)' : '').'</span></h3>';
-
-			if(count($results) > 0)
-			{
-				print '<table class="tagtable liste">';
-				print '<tbody>';
-
-				print '<tr class="liste_titre">
-					<th class="wrapcolumntitle liste_titre">Année scolaire</th>
-					<th class="wrapcolumntitle liste_titre">Etat</th>
-					<th class="wrapcolumntitle liste_titre">Crée par</th>
-					<th class="wrapcolumntitle liste_titre">Le</th>
-					<th class="wrapcolumntitle liste_titre"></th>
-					</tr>';
-				print '</tbody>';
-				foreach ($results as $result)
-				{
-					print '<tr class="oddeven">';
-					print '<td>'.$dictionaryClass->fetchByDictionary('c_annee_scolaire',array('annee'),$result->fk_annee_scolaire,'rowid')->annee.'</td>';
-					print '<td><span class="badge badge-status'.$result->status.' badge-status">'.$this->LibStatut($result->status).'</span></td>';
-
-					$userClass = new User($this->db);
-					$userClass->fetch($result->fk_user_creat);
-
-					print "<td>$userClass->firstname $userClass->lastname</td>";
-					print '<td>'.date('d/m/Y',$result->date_creation).'</td>';
-					print '<td>';
-					print '<a href="../viescolaire/inscription_card.php?id='.$result->id.'&action=edit">✏️</a> ';
-					print '<a href="'.$_SERVER["PHP_SELF"].'?id='.$idEleve.'&inscriptionid='.$result->id.'&action=deleteInscription">❌️</a>';
-					print '</td>';
-					print '</tr>';
-				}
-				unset($result);
-				print '</table>';
-			} else
-			{
-				print '<p>Aucune inscription connue pour cette année scolaire.</p>';
-			}
-
-			print '</div>';
-		}
-	}
-}
-
-
-require_once DOL_DOCUMENT_ROOT.'/core/class/commonobjectline.class.php';
-
-/**
- * Class InscriptionLine. You can also remove this and generate a CRUD class for lines objects.
- */
-class InscriptionLine extends CommonObjectLine
-{
-	// To complete with content of an object InscriptionLine
-	// We should have a field rowid, fk_inscription and position
-
-	/**
-	 * @var int  Does object support extrafields ? 0=No, 1=Yes
-	 */
-	public $isextrafieldmanaged = 0;
-
-	/**
-	 * Constructor
-	 *
-	 * @param DoliDb $db Database handler
-	 */
-	public function __construct(DoliDB $db)
-	{
-		$this->db = $db;
 	}
 }

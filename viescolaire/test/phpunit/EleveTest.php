@@ -29,6 +29,7 @@ global $conf,$user,$langs,$db;
 //require_once 'PHPUnit/Autoload.php';
 require_once '../../../../master.inc.php';
 require_once dirname(__FILE__).'/../../class/eleve.class.php';
+require_once dirname(__FILE__).'/../../class/famille.class.php';
 
 if (empty($user->id)) {
 	//print "Load permissions for admin user nb 1\n";
@@ -149,12 +150,12 @@ class EleveTest extends PHPUnit\Framework\TestCase
 		$localobject->prenom = "danny";
 		$localobject->nom = "shining";
 		$localobject->fk_famille = 1;
-		$localobject->fk_etablissement = 1;
+		//$localobject->fk_etablissement = 1;
 		$localobject->fk_classe_etablissement = 1;
 		$result=$localobject->create($user);
 
 		$this->assertLessThan($result, 0, 'Creation of élève has failed: '.$localobject->db->error());
-		//return $result;
+		return $result;
 	}
 
 	/**
@@ -173,11 +174,9 @@ class EleveTest extends PHPUnit\Framework\TestCase
 		$db=$this->savdb;
 
 		$localobject = new Eleve($db);
-		$result = $localobject->fetch(454);
+		$result = $localobject->fetch($this->testEleveCreate());
 		print $localobject->prenom;
 		$this->assertLessThan($result, 0);
-		$this->assertEquals('BASSET',$localobject->nom);
-
-
+		$this->assertEquals('SHINING',$localobject->nom);
 	}
 }

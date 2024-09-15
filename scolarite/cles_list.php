@@ -202,10 +202,6 @@ if ($enablepermissioncheck) {
 
 // Security check (enable the most restrictive one)
 if ($user->socid > 0) accessforbidden();
-//if ($user->socid > 0) accessforbidden();
-//$socid = 0; if ($user->socid > 0) $socid = $user->socid;
-//$isdraft = (($object->status == $object::STATUS_DRAFT) ? 1 : 0);
-//restrictedArea($user, $object->element, 0, $object->table_element, '', 'fk_soc', 'rowid', $isdraft);
 if (empty($conf->scolarite->enabled)) accessforbidden('Module not enabled');
 if (!$permissiontoread) accessforbidden();
 
@@ -395,21 +391,6 @@ if ($num == 1 && !empty($conf->global->MAIN_SEARCH_DIRECT_OPEN_IF_ONLY_ONE) && $
 
 llxHeader('', $title, $help_url, '', 0, 0, $morejs, $morecss, '', 'bodyforlist');
 
-// Example : Adding jquery code
-// print '<script type="text/javascript">
-// jQuery(document).ready(function() {
-// 	function init_myfunc()
-// 	{
-// 		jQuery("#myid").removeAttr(\'disabled\');
-// 		jQuery("#myid").attr(\'disabled\',\'disabled\');
-// 	}
-// 	init_myfunc();
-// 	jQuery("#mybutton").click(function() {
-// 		init_myfunc();
-// 	});
-// });
-// </script>';
-
 $arrayofselected = is_array($toselect) ? $toselect : array();
 
 $param = '';
@@ -445,10 +426,6 @@ $param .= $hookmanager->resPrint;
 
 // List of mass actions available
 $arrayofmassactions = array(
-	//'validate'=>img_picto('', 'check', 'class="pictofixedwidth"').$langs->trans("Validate"),
-	//'generate_doc'=>img_picto('', 'pdf', 'class="pictofixedwidth"').$langs->trans("ReGeneratePDF"),
-	//'builddoc'=>img_picto('', 'pdf', 'class="pictofixedwidth"').$langs->trans("PDFMerge"),
-	//'presend'=>img_picto('', 'email', 'class="pictofixedwidth"').$langs->trans("SendByMail"),
 );
 if (!empty($permissiontodelete)) {
 	$arrayofmassactions['predelete'] = img_picto('', 'delete', 'class="pictofixedwidth"').$langs->trans("Delete");
@@ -461,36 +438,9 @@ $massactionbutton = $form->selectMassAction('', $arrayofmassactions);
 
 // Ajout du formulaire qui permet de changer son établissement de prédilection
 $etablissementClass = new Etablissement($db);
-$etablissementsList = $etablissementClass->fetchAll('', '', 0, 0, [], 'AND');
-$etablissements = [0 => 'Tous'];
-
-foreach ($etablissementsList as $val) {
-	$etablissements[$val->id] = $val->nom;
-}
-print '<form action="' . $_SERVER['PHP_SELF'] . '" method="POST">';
-print '<input type="hidden" tyname="sortfield" value="' . $sortfield . '">';
-print '<input type="hidden" name="sortorder" value="' . $sortorder . '">';
-print '<input type="hidden" name="action" value="changeEtablissement">';
-print '<input type="hidden" name="token" value="' . newToken() . '">';
-dol_fiche_head('');
-print '<table class="border centpercent">';
-print '<tr>';
-print '</td></tr>';
-// Type de Kit
-print '<tr><td class="fieldrequired titlefieldcreate">Selectionnez votre établissement: </td><td>';
-print $form->selectarray('etablissementid', $etablissements, $_SESSION['etablissementid']);
-print ' <a href="' . DOL_URL_ROOT . '/custom/scolarite/etablissement_card.php?action=create">';
-print '<span class="fa fa-plus-circle valignmiddle paddingleft" title="Ajouter un etablissement"></span>';
-print '</a>';
-print '</td>';
-print '</tr>';
-print '<td></td>';
-print '<td>';
-print '<input type="submit" class="button" value="Valider">';
-print '</td>';
-print '</table>';
-dol_fiche_end();
-print '</form>';
+print dol_fiche_head();
+print $etablissementClass->returnSelectEtablimmentForm();
+print dol_fiche_end();
 
 print '<form method="POST" id="searchFormList" action="'.$_SERVER["PHP_SELF"].'">'."\n";
 if ($optioncss != '') {
@@ -532,9 +482,6 @@ if ($search_all) {
 }
 
 $moreforfilter = '';
-/*$moreforfilter.='<div class="divsearchfield">';
-$moreforfilter.= $langs->trans('MyFilter') . ': <input type="text" name="search_myfield" value="'.dol_escape_htmltag($search_myfield).'">';
-$moreforfilter.= '</div>';*/
 
 $parameters = array();
 $reshook = $hookmanager->executeHooks('printFieldPreListTitle', $parameters, $object); // Note that $action and $object may have been modified by hook
@@ -732,7 +679,6 @@ while ($i < $imaxinloop) {
 			if (in_array($val['type'], array('double(24,8)', 'double(6,3)', 'integer', 'real', 'price')) && !in_array($key, array('rowid', 'status')) && empty($val['arrayofkeyval'])) {
 				$cssforfield .= ($cssforfield ? ' ' : '').'right';
 			}
-			//if (in_array($key, array('fk_soc', 'fk_user', 'fk_warehouse'))) $cssforfield = 'tdoverflowmax100';
 
 			if (!empty($arrayfields['t.'.$key]['checked'])) {
 				print '<td'.($cssforfield ? ' class="'.$cssforfield.'"' : '');
@@ -744,31 +690,8 @@ while ($i < $imaxinloop) {
 					print $object->getLibStatut(5);
 				} elseif ($key == 'rowid') {
 					print $object->showOutputField($val, $key, $object->id, '');
-				} elseif ($key == 'numero_cle') {
-
-					$cle = "SELECT * FROM ".MAIN_DB_PREFIX."cles WHERE rowid = ".$object->id;
-					$resqlCle = $db->query($cle);
-					$objCle = $db->fetch_object($resqlCle);
-
-					if(!empty($objCle->caractere_ajoute))
-					{
-						if($objCle->caractere_ajoute == "delta")
-						{
-							print $objCle->numero_cle.' (&#x394;)';
-						}
-						else
-						{
-							print $objCle->numero_cle.' ('.$objCle->caractere_ajoute.')';
-						}
-
-					}
-					else
-					{
-						print $objCle->numero_cle;
-
-					}
-				}elseif ($key == 'type') {
-					print '<a href="' . DOL_URL_ROOT . '/custom/scolarite/cles_card.php?id=' . $obj->rowid . '">' . $object->showOutputField($val, $key, $object->$key, '') . '</a>';
+				} elseif ($key == 'type') {
+					print '<a href="' .dol_buildpath('/scolarite/cles_card.php', 1).'?id=' . $obj->rowid . '&token='.newToken().'">' . $object->showOutputField($val, $key, $object->$key, '') . '</a>';
 				} else {
 					print $object->showOutputField($val, $key, $object->$key, '');
 				}
@@ -796,9 +719,7 @@ while ($i < $imaxinloop) {
 		$parameters = array('arrayfields'=>$arrayfields, 'object'=>$object, 'obj'=>$obj, 'i'=>$i, 'totalarray'=>&$totalarray);
 		$reshook = $hookmanager->executeHooks('printFieldListValue', $parameters, $object); // Note that $action and $object may have been modified by hook
 		print $hookmanager->resPrint;
-		/*if (!empty($arrayfields['anotherfield']['checked'])) {
-			print '<td class="right">'.$obj->anotherfield.'</td>';
-		}*/
+
 		// Action column
 		if (empty($conf->global->MAIN_CHECKBOX_LEFT_COLUMN)) {
 			print '<td class="nowrap center">';
@@ -820,9 +741,6 @@ while ($i < $imaxinloop) {
 
 	$i++;
 }
-
-// Show total line
-include DOL_DOCUMENT_ROOT.'/core/tpl/list_print_total.tpl.php';
 
 // If no record found
 if ($num == 0) {

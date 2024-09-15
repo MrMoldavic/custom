@@ -61,7 +61,7 @@ class Eleve extends CommonObject
 	/**
 	 * @var int  Does object support extrafields ? 0=No, 1=Yes
 	 */
-	public $isextrafieldmanaged = 1;
+	public $isextrafieldmanaged = 0;
 
 	/**
 	 * @var string String with name of icon for eleve. Must be the part after the 'object_' into object_eleve.png
@@ -122,7 +122,6 @@ class Eleve extends CommonObject
 		'stats_affectations' => array('type' => 'varchar(255)', 'label' => 'Affectations', 'enabled' => '1', 'position' => 4, 'notnull' => 0, 'visible' => 2, 'validate' => '1',),
 		'genre' => array('type' => 'sellist:c_genre:genre', 'label' => 'Genre', 'enabled' => '1', 'position' => 6, 'notnull' => 0, 'visible' => 1, 'validate' => '1','css' => 'maxwidth250',),
 		'geographie_prioritaire' => array('type' => 'sellist:c_geographie_prioritaire:emplacement', 'label' => 'Géographie prioritaire', 'enabled' => '1', 'position' => 7, 'notnull' => 0, 'visible' => 1, 'validate' => '1','css' => 'maxwidth250',),
-		//'fk_etablissement' => array('type' => 'integer:Etablissement:custom/scolarite/class/etablissement.class.php:1', 'label' => 'Établissement', 'enabled' => '1', 'position' => 3, 'notnull' => 1, 'visible' => 1, 'default' => '0', 'css' => 'maxwidth250', 'validate' => '1',),
 		'fk_classe_etablissement' => array('type' => 'integer:Classe:custom/scolarite/class/classe.class.php:1:(t.fk_college=(SELECT c.rowid FROM '.MAIN_DB_PREFIX.'etablissement as c WHERE c.rowid=t.fk_college))', 'label' => 'Classe établissement', 'enabled' => '1', 'position' => 4, 'notnull' => 1, 'visible' => 1, 'validate' => '1', 'css' => 'maxwidth250',),
 		'fk_famille' => array('type' => 'integer:Famille:custom/viescolaire/class/famille.class.php:1', 'label' => 'Famille', 'enabled' => '1', 'position' => 1, 'notnull' => 0, 'visible' => 3, 'validate' => '1', 'css' => 'maxwidth250',),
 		'commentaires' => array('type' => 'text', 'label' => 'Commentaires', 'enabled' => '1', 'position' => 10, 'notnull' => 0, 'visible' => 3, 'validate' => '1',),
@@ -138,10 +137,15 @@ class Eleve extends CommonObject
 	);
 
 	public $rowid;
-	public $nom;
 	public $prenom;
+	public $nom;
+	public $stats_affectations;
+	public $genre;
+	public $geographie_prioritaire;
+
 	public $fk_etablissement;
 	public $fk_famille;
+	public $commentaires;
 	public $note_public;
 	public $note_private;
 	public $date_creation;
@@ -204,12 +208,6 @@ class Eleve extends CommonObject
 		if (empty($conf->multicompany->enabled) && isset($this->fields['entity'])) {
 			$this->fields['entity']['enabled'] = 0;
 		}
-
-		// Example to show how to set values of fields definition dynamically
-		/*if ($user->rights->viescolaire->eleve->read) {
-			$this->fields['myfield']['visible'] = 1;
-			$this->fields['myfield']['noteditable'] = 0;
-		}*/
 
 		// Unset fields that are disabled
 		foreach ($this->fields as $key => $val) {
@@ -295,10 +293,6 @@ class Eleve extends CommonObject
 		if ($result > 0 && !empty($object->table_element_line)) {
 			$object->fetchLines();
 		}
-
-		// get lines so they will be clone
-		//foreach($this->lines as $line)
-		//	$line->fetch_optionals();
 
 		// Reset some properties
 		unset($object->id);
@@ -551,14 +545,6 @@ class Eleve extends CommonObject
 			dol_syslog(get_class($this) . "::validate action abandonned: already validated", LOG_WARNING);
 			return 0;
 		}
-
-		/*if (! ((empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->viescolaire->eleve->write))
-		 || (! empty($conf->global->MAIN_USE_ADVANCED_PERMS) && ! empty($user->rights->viescolaire->eleve->eleve_advance->validate))))
-		 {
-		 $this->error='NotEnoughPermissions';
-		 dol_syslog(get_class($this)."::valid ".$this->error, LOG_ERR);
-		 return -1;
-		 }*/
 
 		$now = dol_now();
 
@@ -1100,36 +1086,6 @@ class Eleve extends CommonObject
 		return $result;
 	}
 
-	/**
-	 * Action executed by scheduler
-	 * CAN BE A CRON TASK. In such a case, parameters come from the schedule job setup field 'Parameters'
-	 * Use public function doScheduledJob($param1, $param2, ...) to get parameters
-	 *
-	 * @return	int			0 if OK, <>0 if KO (this function is used also by cron so only 0 is OK)
-	 */
-	public function doScheduledJob()
-	{
-		global $conf, $langs;
-
-		//$conf->global->SYSLOG_FILE = 'DOL_DATA_ROOT/dolibarr_mydedicatedlofile.log';
-
-		$error = 0;
-		$this->output = '';
-		$this->error = '';
-
-		dol_syslog(__METHOD__, LOG_DEBUG);
-
-		$now = dol_now();
-
-		$this->db->begin();
-
-		// ...
-
-		$this->db->commit();
-
-		return $error;
-	}
-
 	public function printAbsenceGraph()
 	{
 
@@ -1139,14 +1095,16 @@ class Eleve extends CommonObject
 		{
 			$materiels = array();
 
-			$sql = "SELECT COUNT(DISTINCT a.rowid) as total, a.status";
-			$sql .= " FROM ".MAIN_DB_PREFIX."appel as a";
-			$sql .= " WHERE a.treated = 1";
+			$sql = 'SELECT COUNT(DISTINCT a.rowid) as total, a.status';
+			$sql .= ' FROM ' .MAIN_DB_PREFIX. 'appel as a';
+			$sql .= ' WHERE a.treated = 1';
 			$sql .= ' AND a.fk_eleve = '.$this->id;
-			$sql .= " GROUP BY a.status";
+			$sql .= ' GROUP BY a.status';
 			$result = $this->db->query($sql);
 
-			if(!$result) return setEventMessage('L\'élève demandé n\'existe pas.','errors');
+			if(!$result) {
+				return setEventMessage('L\'élève demandé n\'existe pas.', 'errors');
+			}
 
 			while ($objp = $this->db->fetch_object($result))
 			{
@@ -1167,28 +1125,30 @@ class Eleve extends CommonObject
 				$materiels[$status] = $objp->total;
 			}
 
+			$anneeClass = new Annee($this->db);
+			$anneeClass->fetch('','',' AND active=1 AND annee_actuelle = 1');
+
 			print '<div class="div-table-responsive-no-min">';
 			print '<table class="noborder centpercent">';
-			print '<tr class="liste_titre"><td>Bilan Annuel des absences de '.$this->prenom.'</td><td>Bilan Global des absences de '.$this->prenom.'</td></tr>';
+			print "<tr class='liste_titre'><td>Bilan des absences de $this->prenom pour $anneeClass->annee</td><td>Bilan Global des absences de $this->prenom</td></tr>";
 
-			$absences = array();
+			$absences = [];
 
-			$dictionaryClass = new Dictionary($this->db);
-			$anneeScolaire = $dictionaryClass->fetchByDictionary('c_annee_scolaire',['rowid','annee','annee_actuelle'],0,'',' WHERE active = 1 AND annee_actuelle = 1');
 
-			$sql = "SELECT COUNT(DISTINCT a.rowid) as total, a.status";
-			$sql .= " FROM ".MAIN_DB_PREFIX."appel as a";
-			if($anneeScolaire)
+
+			$sql = 'SELECT COUNT(DISTINCT a.rowid) as total, a.status';
+			$sql .= ' FROM ' .MAIN_DB_PREFIX. 'appel as a';
+			if($anneeClass->id)
 			{
 				$sql .= ' INNER JOIN '.MAIN_DB_PREFIX.'creneau as c ON c.rowid=a.fk_creneau';
 			}
-			$sql .= " WHERE a.treated = 1";
+			$sql .= ' WHERE a.treated = 1';
 			$sql .= ' AND a.fk_eleve = '.$this->id;
-			if($anneeScolaire)
+			if($anneeClass->id)
 			{
-				$sql .= ' AND c.fk_annee_scolaire = '.$anneeScolaire->rowid;
+				$sql .= ' AND c.fk_annee_scolaire = '.$anneeClass->id;
 			}
-			$sql .= " GROUP BY a.status";
+			$sql .= ' GROUP BY a.status';
 			$result = $this->db->query($sql);
 
 			while ($objp = $this->db->fetch_object($result))
@@ -1232,7 +1192,7 @@ class Eleve extends CommonObject
 			$dolgraph->setShowPercent(1);
 			$dolgraph->SetType(array('pie'));
 			$dolgraph->setHeight('200');
-			$dolgraph->draw('idgraphstatus'.$anneeScolaire->rowid);
+			$dolgraph->draw('idgraphstatus'.$anneeClass->id);
 			print $dolgraph->show($total ? 0 : 1);
 
 			print '</td>';
@@ -1241,15 +1201,15 @@ class Eleve extends CommonObject
 			print '<td class="center nopaddingleftimp nopaddingrightimp">';
 
 			$total = 0;
-			$dataval = array();
-			$datalabels = array();
-			$dataseries = array();
+			$dataval = [];
+			$datalabels = [];
+			$dataseries = [];
 			$i = 0;
 
 			foreach ($materiels as $type=>$appel_count)
 			{
 				$total+=$appel_count;
-				$dataseries[] = array($type, $appel_count);
+				$dataseries[] = [$type, $appel_count];
 			}
 
 			include_once DOL_DOCUMENT_ROOT.'/core/class/dolgraph.class.php';
@@ -1258,9 +1218,9 @@ class Eleve extends CommonObject
 			$dolgraph->SetData($dataseries);
 			$dolgraph->setShowLegend(2);
 			$dolgraph->setShowPercent(1);
-			$dolgraph->SetType(array('pie'));
+			$dolgraph->SetType(['pie']);
 			$dolgraph->setHeight('200');
-			$dolgraph->draw('idgraphstatuss'.$anneeScolaire->rowid);
+			$dolgraph->draw('idgraphstatuss'.$anneeClass->id);
 			print $dolgraph->show($total ? 0 : 1);
 
 			print '</td>';
@@ -1278,19 +1238,17 @@ class Eleve extends CommonObject
 		$form = new Form($this->db);
 		$statusAbsencesList = ['tous' => 'Tous', 'present' => 'Présent(e)', 'absenceJ' => 'Absence Justifiée', 'retard' => 'Retard', 'absenceI' => 'Absence injustifiée'];
 
-		$out = '<form action="' . $_SERVER['PHP_SELF'] . '" method="POST">';
+		$out = '<div style="display: flex; justify-content: center; align-items: center; margin-bottom: 2em">';
+		$out .= '<form action="' . $_SERVER['PHP_SELF'] . '" method="POST" style="width:50%; background-color: #FFFFFF; border: 1px solid #ddd;border-radius: 12px; padding: 20px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); ">';
 		$out .= '<input type="hidden" name="action" value="changeStatusAbsence">';
 		$out .= '<input type="hidden" name="id" value="' . $this->id . '">';
 		$out .= '<input type="hidden" name="selectedAnneeScolaire" value="' . $anneeScolaireId . '">';
 		$out .= '<input type="hidden" name="token" value="' . newToken() . '">';
 		$out .= '<table class="border centpercent center">';
-		$out .= '<tr>';
+		$out .= '<tr';
 		$out .= '</td></tr>';
 		$out .= '<tr><td class="fieldrequired titlefieldcreate">Selectionnez les absences souhaitées: </td><td>';
 		$out .= $form->selectarray('absenceName', $statusAbsencesList, GETPOST('absenceName', 'aZ09'));
-		$out .= ' <a href="' . DOL_URL_ROOT . '/custom/scolarite/etablissement_card.php?action=create">';
-		$out .= '<span class="fa fa-plus-circle valignmiddle paddingleft" title="Ajouter un type d\'absence"></span>';
-		$out .= '</a>';
 		$out .= '</td>';
 		$out .= '</tr>';
 		$out .= '<td></td>';
@@ -1299,12 +1257,13 @@ class Eleve extends CommonObject
 		$out .= '</td>';
 		$out .= '</table>';
 		$out .= '</form>';
+		$out .= '</div>';
 
 		return $out;
 	}
 
 	// Fonction pour afficher les différentes absences d'élèves par années scolaires
-	public function printAbsencesTables()
+	public function printAbsencesTables() : string
 	{
 		$out = '';
 
@@ -1312,28 +1271,27 @@ class Eleve extends CommonObject
 
 		$appelClass = new Appel($this->db);
 
-		$dictionaryClass = new Dictionary($this->db);
-		$resqlAnneeScolaire = $dictionaryClass->fetchByDictionary('c_annee_scolaire', ['rowid', 'annee', 'annee_actuelle'], 0, '', ' WHERE active = 1 ORDER BY rowid DESC');
+		$anneeClass = new Annee($this->db);
+		$annees = $anneeClass->fetchAll('DESC','rowid',0,0,['active'=>1]);
 
-		foreach ($resqlAnneeScolaire as $value) {
-			$out .= '<div class="annee-accordion' . (GETPOST('selectedAnneeScolaire','int') == $value->rowid ? '-opened' : ($value->annee_actuelle == 1 && !GETPOST('selectedAnneeScolaire','int') ? '-opened' : '')) . '">';
-			$out .= '<h3><span class="badge badge-status4 badge-status">Année ' . $value->annee . ($value->annee_actuelle != 1 ? ' (année précédente)' : '') . '</span></h3>';
+		foreach ($annees as $annee) {
+			$out .= '<div class="annee-accordion' . (GETPOST('selectedAnneeScolaire','int') === $annee->id ? '-opened' : ($annee->annee_actuelle === 1 && !GETPOST('selectedAnneeScolaire','int') ? '-opened' : '')) . '">';
+			$out .= '<h3><span class="badge badge-status4 badge-status">Année ' . $annee->annee . ($annee->annee_actuelle !== 1 ? ' (année précédente)' : ' (année actuelle)') . '</span></h3>';
 
 			$out .= '<div>';
-			$out .= $this->printSelectAbsenceFormAbsence($value->rowid);
+			$out .= $this->printSelectAbsenceFormAbsence($annee->id);
 
-			$arr = ['t.fk_eleve' => $this->id, 't.treated' => 1, 'c.fk_annee_scolaire' => $value->rowid];
-			if (GETPOST('action', 'alpha') == 'changeStatusAbsence' && GETPOST('absenceName', 'aZ09') != 'tous') {
+			$arr = ['t.fk_eleve' => $this->id, 't.treated' => 1, 'c.fk_annee_scolaire' => $annee->id];
+			if (GETPOST('action', 'alpha') === 'changeStatusAbsence' && GETPOST('absenceName', 'aZ09') !== 'tous') {
 				$arr['t.status'] = '%' . GETPOST('absenceName', 'aZ09') . '%';
 			}
 
 			$absences = $appelClass->fetchAll('desc', 'date_creation', 0, 0, $arr, 'AND', ' INNER JOIN ' . MAIN_DB_PREFIX . 'creneau as c ON c.rowid = t.fk_creneau');
 
-			if (count($absences) > 0) {
+			if (!empty($absences)) {
 				$out .= '<table class="border centpercent tableforfield">';
 				$out .= '<tbody>';
 				$out .= '<tr>';
-				$out .= '<td>Etablissement</td>';
 				$out .= '<td>Creneau</td>';
 				$out .= '<td>Professeur</td>';
 				$out .= '<td>Justification</td>';
@@ -1343,38 +1301,21 @@ class Eleve extends CommonObject
 				$out .= '</tr>';
 
 				foreach ($absences as $absence) {
-					$etablissementClass = new Etablissement($this->db);
-					$etablissementClass->fetch($absence->fk_etablissement);
-
 					$creneauClass = new Creneau($this->db);
 					$creneauClass->fetch($absence->fk_creneau);
 
 					$out .= '<tr>';
-					$out .= '<td>' . $etablissementClass->diminutif . '</td>';
-					$out .= '<td>' . ($creneauClass->nom_creneau != '' ? '<a href="' . DOL_URL_ROOT . '/custom/scolarite/creneau_card.php?id=' . $creneauClass->id . ' " target="_blank">' . $creneauClass->nom_creneau . '</a>' : '<span class="badge  badge-status8 badge-status" style="color:white;">Erreur créneau</span>') . '</td>';
+					$out .= '<td>' . ($creneauClass->nom_creneau !== '' ? '<a href="' . dol_buildpath('/custom/scolarite/creneau_card.php',1) . '?id=' . $creneauClass->id . ' " target="_blank">' . $creneauClass->printFullNameCreneau() . '</a>' : '<span class="badge  badge-status8 badge-status" style="color:white;">Erreur créneau</span>') . '</td>';
 					$out .= '<td>';
 
-					$agentClass = new Agent($this->db);
-					$agentClass->fetch($creneauClass->fk_prof_1);
-
-					if ($agentClass->id) $out .= '<a href="' . DOL_URL_ROOT . '/custom/management/agent_card.php?id=' . $agentClass->id . '" target="_blank">' . $agentClass->prenom . ' ' . $agentClass->nom . '</a><br>';
-
-					$agentClass = new Agent($this->db);
-					$agentClass->fetch($creneauClass->fk_prof_2);
-
-					if ($agentClass->id) $out .= '<a href="' . DOL_URL_ROOT . '/custom/management/agent_card.php?id=' . $agentClass->id . '" target="_blank">' . $agentClass->prenom . ' ' . $agentClass->nom . '</a><br>';
-
-					$agentClass = new Agent($this->db);
-					$agentClass->fetch($creneauClass->fk_prof_3);
-
-					if ($agentClass->id) $out .= '<a href="' . DOL_URL_ROOT . '/custom/management/agent_card.php?id=' . $agentClass->id . '" target="_blank">' . $agentClass->prenom . ' ' . $agentClass->nom . '</a><br>';
+					$out .= $creneauClass->printProfesseursFromCreneau($creneauClass->id);
 
 					$out .= '</td>';
 					$out .= "<td style='overflow-wrap: normal; max-width: 30em'>" . ($absence->justification ? : 'Aucune') . '</td>';
 
 					$out .= '<td>' . date('d/m/Y', $absence->date_creation) . '</td>';
-					$out .= '<td>' . '<span class="badge  badge-status' . ($absence->status == 'retard' ? '1' : ($absence->status == 'absenceJ' ? '7' : ($absence->status == 'present' ? '4' : '8'))) . ' badge-status" style="color:white;">' . $absence->status . '</span>' . '</td>';
-					$out .= '<td style="padding:1em; "><a href="' . $_SERVER['PHP_SELF'] . '?id=' . $this->id . '&idAppel=' . $value->rowid . '&action=deleteAbsence">' . '❌' . '</a></td>';
+					$out .= '<td>' . '<span class="badge  badge-status' . ($absence->status === 'retard' ? '1' : ($absence->status === 'absenceJ' ? '7' : ($absence->status === 'present' ? '4' : '8'))) . ' badge-status" style="color:white;">' . $absence->status . '</span>' . '</td>';
+					$out .= '<td style="padding:1em; "><a href="' . $_SERVER['PHP_SELF'] . '?id=' . $this->id . '&idAppel=' . $absence->rowid . '&action=deleteAbsence">' . img_picto('', 'fa-trash', 'class="valignmiddle"') . '</a></td>';
 
 					$out .= '</tr>';
 				}
@@ -1388,32 +1329,5 @@ class Eleve extends CommonObject
 		}
 
 		return $out;
-	}
-}
-
-
-require_once DOL_DOCUMENT_ROOT . '/core/class/commonobjectline.class.php';
-
-/**
- * Class EleveLine. You can also remove this and generate a CRUD class for lines objects.
- */
-class EleveLine extends CommonObjectLine
-{
-	// To complete with content of an object EleveLine
-	// We should have a field rowid, fk_eleve and position
-
-	/**
-	 * @var int  Does object support extrafields ? 0=No, 1=Yes
-	 */
-	public $isextrafieldmanaged = 0;
-
-	/**
-	 * Constructor
-	 *
-	 * @param DoliDb $db Database handler
-	 */
-	public function __construct(DoliDB $db)
-	{
-		$this->db = $db;
 	}
 }

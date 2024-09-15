@@ -48,7 +48,7 @@ if ($action == 'confirm_activation') {
 if ($action == 'confirm_delete') {
 	// On va chercher l'année scolaire actuelle
 	$dictionaryClass = new Dictionary($db);
-	$anneeActuelle = $dictionaryClass->fetchByDictionary('c_annee_scolaire',['annee','rowid'],0,'',' WHERE annee_actuelle=1');
+	$anneeActuelle = $dictionaryClass->fetchByDictionary('c_annee_scolaire',['annee','rowid'],0,'',' annee_actuelle=1');
 
 	// On va chercher les souhaits de l'élève qui pourraient être actifs
 	$souhaitClass = new Souhait($db);

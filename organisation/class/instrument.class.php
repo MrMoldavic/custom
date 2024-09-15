@@ -56,7 +56,7 @@ class Instrument extends CommonObject
 	/**
 	 * @var int  Does object support extrafields ? 0=No, 1=Yes
 	 */
-	public $isextrafieldmanaged = 1;
+	public $isextrafieldmanaged = 0;
 
 	/**
 	 * @var string String with name of icon for instrument. Must be a 'fa-xxx' fontawesome code (or 'fa-xxx_fa_color_size') or 'instrument@organisation' if picto is file 'img/object_instrument.png'.
@@ -65,7 +65,7 @@ class Instrument extends CommonObject
 
 
 	const STATUS_DRAFT = 0;
-	const STATUS_VALIDATED = 1;
+	const STATUS_VALIDATED = 4;
 	const STATUS_CANCELED = 9;
 
 
@@ -228,7 +228,7 @@ class Instrument extends CommonObject
 			}
 		}
 
-		
+
 	}
 
 	/**

@@ -160,10 +160,6 @@ if ($enablepermissioncheck) {
 $upload_dir = $conf->viescolaire->multidir_output[isset($object->entity) ? $object->entity : 1] . '/appel';
 
 // Security check (enable the most restrictive one)
-//if ($user->socid > 0) accessforbidden();
-//if ($user->socid > 0) $socid = $user->socid;
-//$isdraft = (isset($object->status) && ($object->status == $object::STATUS_DRAFT) ? 1 : 0);
-//restrictedArea($user, $object->element, $object->id, $object->table_element, '', 'fk_soc', 'rowid', $isdraft);
 if (empty($conf->viescolaire->enabled)) accessforbidden();
 if (!$permissiontoread) accessforbidden();
 
@@ -274,7 +270,7 @@ if ($action == 'create' && !$antenneId && !GETPOST('appelday', 'alpha')) // SELE
 	print '</form>';
 }
 
-if ($action == 'create' && $antenneId && GETPOST('appelday', 'alpha'))
+if ($action == 'create' && $antenneId && GETPOST('appel', 'alpha'))
 {
 	print '<div style="dislay:flex;">';
 	print '<div class="hourLoader" style="display: flex; flex-direction: row; align-items: center; margin-left: 2em; margin-top: 3em;">';
@@ -283,13 +279,16 @@ if ($action == 'create' && $antenneId && GETPOST('appelday', 'alpha'))
 	print '</div>';
 	print '</div>';
 
+
 	print '<div class="appelDiv">';
-	print load_fiche_titre('Sommaire','','fa-list');
 
 	$dateObj = DateTime::createFromFormat('d/m/Y', GETPOST('appel', 'alpha'));
+
+	print load_fiche_titre('Sommaire de l\'appel du '.$dateObj->format('d/m/Y'),'','fa-list');
+	print '<hr>';
+
 	$jourId = date('w', strtotime($dateObj->format('Y-m-d')));
 
-	print '<a href="' . DOL_URL_ROOT . '/custom/viescolaire/appel_card.php?day=' . $jourId . '&month=' . GETPOST('appelmonth', 'alpha') . '&year=' . GETPOST('appelyear', 'alpha') . '&daymonth=' . GETPOST('appelday', 'alpha') . '&antenneId=' . $antenneId . '&action=create">Voir l\'appel du jour complet</a>';
 
 	print '<br><br>';
 	print '<div class="div-table-responsive appelDiv">';
@@ -312,19 +311,20 @@ if ($action == 'create' && $antenneId && GETPOST('appelday', 'alpha'))
 		// Récupération de toutes les informations nécessaires chaque heure
 		$infosCreneauxHoraire = $creneauClass->returnSqlCountCreneauSommaire($jourId, $loop, $antenneId, $dateObj->format('Y-m-d'));
 
+
 		print '<tr class="oddeven">';
-		print '<td>' . ($infosCreneauxHoraire[0] > 0 ? '<a href="' . DOL_URL_ROOT . '/custom/viescolaire/appel_card.php?selectedDay=' . $jourId . '&heureActuelle=' . $loop . '&selectedDate=' . $dateObj->format('Y-m-d') . '&action=create&daymonth=' . GETPOST('appelday', 'alpha') . '&antenneId=' . $antenneId . '&heureActuelle=' . $loop . '"> Appel ' : '') . ' ' . $loop . 'h-' . ($loop + 1) . 'h' . ($infosCreneauxHoraire[0] > 0 ? '</a>' : '') . '</td>';
+		print '<td>' . ($infosCreneauxHoraire[0] > 0 ? '<a href="' . dol_buildpath('/custom/viescolaire/appel_card.php',1) . '?selectedDay=' . $jourId . '&heureActuelle=' . $loop . '&selectedDate=' . $dateObj->format('Y-m-d') . '&action=create&daymonth=' . GETPOST('appelday', 'alpha') . '&antenneId=' . $antenneId . '&heureActuelle=' . $loop . '"> Appel ' : '') . ' ' . $loop . 'h-' . ($loop + 1) . 'h' . ($infosCreneauxHoraire[0] > 0 ? '</a>' : '') . '</td>';
 		print '</td>
 		  <td>' . $infosCreneauxHoraire[5] . '/' . $infosCreneauxHoraire[0] . '</td>
 		  <td>' . $infosCreneauxHoraire[3] . '/' . $infosCreneauxHoraire[1] . '</td>
 		  <td>' . $infosCreneauxHoraire[4] . '/' . $infosCreneauxHoraire[2] . '</td>
 		  <td>' . $infosCreneauxHoraire[0] . '</td>';
 
-		if ($infosCreneauxHoraire[0] == 0) {
-			print '<td><span class="badge  badge-status6 badge-status" style="color:white;">Pas de cours à cette heure</span></td>';
-		} elseif ($loop > (int)date('H') && $infosCreneauxHoraire[5] != $infosCreneauxHoraire[0]) {
+		if ($loop > (int)date('H') && $infosCreneauxHoraire[5] !== $infosCreneauxHoraire[0] && ($infosCreneauxHoraire[3] === 0 || $infosCreneauxHoraire[4] === 0)) {
 			print '<td><span class="badge  badge-status5 badge-status" style="color:white;">Appel(s) à venir</span></td>';
-		} elseif ($infosCreneauxHoraire[5] == $infosCreneauxHoraire[0]) {
+		} elseif ($infosCreneauxHoraire[0] === 0) {
+			print '<td><span class="badge  badge-status6 badge-status" style="color:white;">Pas de cours à cette heure</span></td>';
+		}elseif ($infosCreneauxHoraire[5] === $infosCreneauxHoraire[0]) {
 			print '<td><span class="badge  badge-status4 badge-status" style="color:white;">Appel(s) complet(s)</span></td>';
 		} else {
 			print '<td><span class="badge  badge-status8 badge-status" style="color:white;">Appel(s) incomplet(s)</span></td>';
@@ -335,6 +335,9 @@ if ($action == 'create' && $antenneId && GETPOST('appelday', 'alpha'))
 	print '</table>';
 	print '</div>';
 	print '</div>';
+
+	print dolGetButtonAction('Changer de date', '', 'danger', $_SERVER['PHP_SELF'] .'?action=create&token=' . newToken(), '', $permissiontoadd);
+	print dolGetButtonAction('Voir l\'appel complet du jour', '', 'danger', dol_buildpath('/custom/viescolaire/appel_card.php',1) .'?antenneId='.$antenneId.'&allCreneaux=true&selectedDay='.$jourId.'&selectedDate='.$dateObj->format('Y-m-d').'&action=create&token=' . newToken(), '', $permissiontoadd);
 
 	print "<script src = 'assets/js/appel.js'></script>";
 }
