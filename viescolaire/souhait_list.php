@@ -22,6 +22,10 @@
  *		\brief      List page for souhait
  */
 
+/*ini_set('display_errors', '1');
+ini_set('display_startup_errors', '1');
+error_reporting(E_ALL);*/
+
 //if (! defined('NOREQUIREDB'))              define('NOREQUIREDB', '1');				// Do not create database handler $db
 //if (! defined('NOREQUIREUSER'))            define('NOREQUIREUSER', '1');				// Do not load object $user
 //if (! defined('NOREQUIRESOC'))             define('NOREQUIRESOC', '1');				// Do not load object $mysoc
@@ -84,8 +88,7 @@ require_once DOL_DOCUMENT_ROOT . '/core/lib/date.lib.php';
 require_once DOL_DOCUMENT_ROOT . '/core/lib/company.lib.php';
 require_once DOL_DOCUMENT_ROOT.'/custom/scolarite/class/etablissement.class.php';
 //require_once DOL_DOCUMENT_ROOT . '/custom/viescolaire/class/eleve.class.php';
-
-
+dol_include_once('/scolarite/class/annee.class.php');
 
 // load viescolaire libraries
 require_once __DIR__ . '/class/souhait.class.php';
@@ -304,20 +307,21 @@ $reshook = $hookmanager->executeHooks('printFieldListFrom', $parameters, $object
 $sql .= $hookmanager->resPrint;
 if($_SESSION['etablissementid'] != 0)
 {
-	$sql .= " INNER JOIN llx_eleve as e ON t.fk_eleve=e.rowid";
-	$sql .= " INNER JOIN llx_etablissement as a ON e.fk_etablissement=".$_SESSION['etablissementid'];
+	$sql .= ' INNER JOIN llx_eleve as e ON t.fk_eleve=e.rowid';
+	$sql .= ' INNER JOIN llx_classe as c ON e.fk_classe_etablissement=c.rowid';
+	$sql .= ' INNER JOIN llx_etablissement as a ON c.fk_college=' .$_SESSION['etablissementid'];
 }
 if ($object->ismultientitymanaged == 1) {
-	$sql .= " WHERE t.entity IN (" . getEntity($object->element) . ")";
+	$sql .= ' WHERE t.entity IN (' . getEntity($object->element) . ')';
 } elseif($allYear == 'false') {
-	$anneScolaire = "SELECT annee,annee_actuelle,rowid FROM ".MAIN_DB_PREFIX."c_annee_scolaire WHERE active = 1 AND annee_actuelle = 1";
-	$resqlAnneeScolaire = $db->query($anneScolaire);
-	$objAnneScolaire = $db->fetch_object($resqlAnneeScolaire);
 
-	$sql .= " WHERE fk_annee_scolaire = ".$objAnneScolaire->rowid;
+	$anneeClass = new Annee($db);
+	$anneeClass->fetch('','',' AND active=1 AND annee_actuelle=1');
+
+	$sql .= " WHERE fk_annee_scolaire = $anneeClass->id";
 }
 else {
-	$sql .= " WHERE 1 = 1";
+	$sql .= ' WHERE 1 = 1';
 }
 foreach ($search as $key => $val) {
 	if (array_key_exists($key, $object->fields)) {
@@ -623,7 +627,6 @@ if (isset($extrafields->attributes[$object->table_element]['computed']) && is_ar
 		}
 	}
 }
-
 
 // Loop on record
 // --------------------------------------------------------------------
