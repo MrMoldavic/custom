@@ -219,7 +219,6 @@ $title = $langs->trans("Affectation");
 $help_url = '';
 llxHeader('', $title, $help_url);
 
-
 // Part to create
 if ($action == 'create') {
 	if (empty($permissiontoadd)) {
