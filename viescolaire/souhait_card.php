@@ -452,7 +452,7 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 	foreach($anneeScolaires as $val)
 	{
 		$affectationClass = new Affectation($db);
-		$affectations =  $affectationClass->fetchAll('','',0,0,array('t.fk_souhait'=>$object->id,'t.status'=>Affectation::STATUS_CANCELED,'s.fk_annee_scolaire'=>$val->id),'AND',' INNER JOIN '.MAIN_DB_PREFIX.$object->table_element.' as s ON t.fk_souhait=s.rowid');
+		$affectations = $affectationClass->fetchAll('','',0,0,array('t.fk_souhait'=>$object->id,'t.status'=>Affectation::STATUS_CANCELED,'s.fk_annee_scolaire'=>$val->id),'AND',' INNER JOIN '.MAIN_DB_PREFIX.$object->table_element.' as s ON t.fk_souhait=s.rowid');
 
 
 		if(empty($affectations)) {
@@ -479,19 +479,21 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 				$creneauClass = new Creneau($db);
 				$creneauClass->fetch($value->fk_creneau,'');
 
-				if($creneauClass)
+				if($creneauClass->id)
 				{
 					$resultJour = $dictionaryClass->fetchByDictionary('c_jour',['jour','rowid'],$creneauClass->jour,'rowid');
 
 					print '<tr class="oddeven">';
 					print "<td>$resultJour->jour</td>";
 					print '<td>'.date('H:i',$creneauClass->heure_debut-3600).'h / '.date('H:i',$creneauClass->heure_fin-3600).'h</td>';
-					print '<td>'.$creneauClass->printProfesseursFromCreneau($creneauClass->id).'</td>';
+					print '<td>'.($creneauClass->printProfesseursFromCreneau($creneauClass->id) ? : 'Erreur professeurs').'</td>';
 
 					$userClass = new User($db);
-					$userClass->fetch($value->fk_user_creat);
+					if($value->fk_user_creat) {
+						$userClass->fetch($value->fk_user_creat);
+					}
 
-					print '<td>'.$userClass->firstname.' '.$userClass->lastname.' le '.date('d/m/Y',$value->date_creation).'</td>';
+					print '<td>'.($userClass->id ? $userClass->firstname.' '.$userClass->lastname.' le '.date('d/m/Y',$value->date_creation) : 'Erreur créateur affectation').'</td>';
 					print '<td><a title="Voir le créneau" href="' . dol_buildpath('/custom/scolarite/creneau_card.php',1).'?id=' . $creneauClass->id .'">'.img_picto('', 'fa-eye', 'class="valignmiddle"').'</a></td>';
 					print '<td><a  title="Supprimer l\'affectation" href="' . $_SERVER['PHP_SELF'] . '?id=' . $object->id . '&affectationid=' . $value->id . '&action=deleteAffectation">'.img_picto('', 'fa-trash', 'class="valignmiddle pictotitle"', $pictoisfullpath).'</a></td>';
 					print '</tr>';
