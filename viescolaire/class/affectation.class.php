@@ -216,7 +216,25 @@ class Affectation extends CommonObject
 
 		if($etablissementDiminutif && $typeClasse && $instruEnseigne) {
 			unset($this->fields['fk_creneau']['type']);
+
+
 			$affectationCount = $this->fetchAll(
+				'',
+				'',
+				0,
+				0,
+				[
+					't.status' => self::STATUS_VALIDATED,
+					'customsql' => "DATE(NOW()) >= DATE(t.date_debut)
+            AND (DATE(NOW()) <= DATE(t.date_fin) OR ISNULL(t.date_fin))
+            AND t.nom_creneau LIKE '%" . substr($etablissementDiminutif, 0, 2) . "%' "
+						. ($typeClasse === 2 ? 'AND t.fk_type_classe=' . $typeClasse : 'AND t.fk_instrument_enseigne = ' . $instruEnseigne)
+				],
+				'AND'
+			);
+
+			$this->fields['fk_creneau']['type'] = 'integer:Creneau:custom/scolarite/class/creneau.class.php:1:(t.nombre_places>(SELECT COUNT(*) FROM ' . MAIN_DB_PREFIX . 'affectation as c WHERE c.fk_creneau=t.rowid AND c.status = 4 AND DATE(NOW()) >= DATE(c.date_debut) AND (DATE(NOW()) <= DATE(c.date_fin) OR ISNULL(c.date_fin))) AND t.status=' . Creneau::STATUS_VALIDATED . ') AND (t.nom_creneau LIKE \'%' . substr($etablissementDiminutif, 0, 2) . '%\') ' . ($typeClasse == 2 ? 'AND t.fk_type_classe=' . $typeClasse : 'AND t.fk_instrument_enseigne = ' . $instruEnseigne);
+			/*$affectationCount = $this->fetchAll(
 				'',
 				'',
 				0,
@@ -233,7 +251,9 @@ class Affectation extends CommonObject
 				' INNER JOIN ' . MAIN_DB_PREFIX . 'creneau as c ON c.rowid = t.fk_creneau'
 			);
 
-			$this->fields['fk_creneau']['type'] = 'integer:Creneau:custom/scolarite/class/creneau.class.php:1:(t.nombre_places'.(count($affectationCount) > 0 ? ':>:' : (count($affectationCount) === 0 ? ':>=:' : ':<:')).count($affectationCount).') and (t.status='.Creneau::STATUS_VALIDATED.") and (t.nom_creneau:like:'%{$etablissementDiminutif}%') and ".($typeClasse === 2 ? 't.fk_type_classe=' . $typeClasse : 't.fk_instrument_enseigne = ' . $instruEnseigne);
+
+
+			$this->fields['fk_creneau']['type'] = 'integer:Creneau:custom/scolarite/class/creneau.class.php:1:(t.nombre_places'.(count($affectationCount) > 0 ? ':>:' : (count($affectationCount) === 0 ? ':>=:' : ':<:')).'t.nombre_places-'.count($affectationCount).') and (t.status='.Creneau::STATUS_VALIDATED.") and (t.nom_creneau:like:'%{$etablissementDiminutif}%') and ".($typeClasse === 2 ? 't.fk_type_classe=' . $typeClasse : 't.fk_instrument_enseigne = ' . $instruEnseigne);*/
 		}
 	}
 
