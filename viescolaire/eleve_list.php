@@ -22,9 +22,9 @@
  *		\brief      List page for eleve
  */
 
- ini_set('display_errors', '1');
+/* ini_set('display_errors', '1');
  ini_set('display_startup_errors', '1');
- error_reporting(E_ALL);
+ error_reporting(E_ALL);*/
 
 //if (! defined('NOREQUIREDB'))              define('NOREQUIREDB', '1');				// Do not create database handler $db
 //if (! defined('NOREQUIREUSER'))            define('NOREQUIREUSER', '1');				// Do not load object $user
@@ -201,8 +201,6 @@ if ($user->socid > 0) accessforbidden();
 if (empty($conf->viescolaire->enabled)) accessforbidden('Moule not enabled');
 if (!$permissiontoread) accessforbidden();
 
-
-
 /*
  * Actions
  */
@@ -250,7 +248,6 @@ if (empty($reshook)) {
 }
 
 
-
 /*
  * View
  */
@@ -263,7 +260,6 @@ $help_url = '';
 $title = "Liste des Élèves";
 $morejs = array();
 $morecss = array();
-
 
 // Build and execute select
 // --------------------------------------------------------------------
@@ -675,7 +671,6 @@ while ($i < $imaxinloop) {
 				$cssforfield .= ($cssforfield ? ' ' : '').'right';
 			}
 
-
 			if (!empty($arrayfields['t.'.$key]['checked'])) {
 				print '<td'.($cssforfield ? ' class="'.$cssforfield.'"' : '');
 				if (preg_match('/tdoverflow/', $cssforfield)) {
@@ -687,7 +682,7 @@ while ($i < $imaxinloop) {
 				} elseif ($key === 'rowid') {
 					print $object->showOutputField($val, $key, $object->id, '');
 				} elseif ($key === 'prenom') {
-					print $object->getNomUrl(1).' '.($object->fk_famille === null ? '<span class="badge badge-danger">Sans Famille liée &#9888</span>' : ($object->stats_affectations > 0 ? '<span class="badge badge-danger">Problème affectation &#9888</span>' : ''));
+					print $object->getNomUrl(1).' '.($object->fk_famille === null ? '<span class="badge badge-danger">Sans Famille liée '.img_picto('', 'fa-warning', '').'</span>' : ($object->stats_affectations > 0 ? '<span class="badge badge-danger">Problème affectation &#9888</span>' : ''));
 				} elseif ($key === 'stats_affectations') {
 
 					$souhaitClass = new Souhait($db);

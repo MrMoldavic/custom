@@ -107,10 +107,10 @@ class Affectation extends CommonObject
 
 	public $fields=array(
 		'rowid' => array('type'=>'integer', 'label'=>'TechnicalID', 'enabled'=>'1', 'position'=>1, 'notnull'=>1, 'visible'=>0, 'noteditable'=>'1', 'index'=>1, 'css'=>'left', 'comment'=>"Id"),
-		'fk_souhait' => array('type'=>'integer:Souhait:custom/viescolaire/class/souhait.class.php:1:(t.status:=:0)', 'label'=>'Souhait', 'enabled'=>'1', 'position'=>20, 'notnull'=>1, 'visible'=>1, 'index'=>1, 'searchall'=>1, 'showoncombobox'=>'1', 'validate'=>'1', 'comment'=>"Reference of object", 'css'=>'maxwidth400',),
-		'fk_creneau' => array('type'=>'integer:Creneau:custom/scolarite/class/creneau.class.php:1', 'label'=>'Créneau', 'enabled'=>'1', 'position'=>30, 'notnull'=>0, 'visible'=>1, 'searchall'=>1, 'css'=>'maxwidth300', 'cssview'=>'wordbreak', 'help'=>"Help text", 'showoncombobox'=>'1', 'validate'=>'1',),
+		'fk_souhait' => array('type'=>'integer:Souhait:custom/viescolaire/class/souhait.class.php:1:(t.status:=:0)', 'label'=>'Souhait', 'enabled'=>'1', 'position'=>20, 'notnull'=>1, 'visible'=>1, 'index'=>1, 'searchall'=>1, 'showoncombobox'=>'1', 'validate'=>'1','foreignkey'=>'souhait.rowid', 'noteditable'=>'1', 'css'=>'maxwidth400',),
+		'fk_creneau' => array('type'=>'integer:Creneau:custom/scolarite/class/creneau.class.php:1', 'label'=>'Créneau', 'enabled'=>'1', 'position'=>30, 'notnull'=>0, 'visible'=>1, 'searchall'=>1, 'css'=>'maxwidth300', 'cssview'=>'wordbreak','foreignkey'=>'creneau.rowid', 'showoncombobox'=>'1', 'validate'=>'1',),
 		'date_debut' => array('type'=>'date', 'label'=>'Date de début', 'enabled'=>'1', 'position'=>40, 'notnull'=>0, 'visible'=>1, 'default'=>'null', 'isameasure'=>'1', 'validate'=>'1',),
-		'date_fin' => array('type'=>'date', 'label'=>'Date de fin', 'enabled'=>'1', 'position'=>45, 'notnull'=>0, 'visible'=>2, 'default'=>'0', 'isameasure'=>'1', 'css'=>'maxwidth75imp', 'help'=>"Help text for quantity", 'validate'=>'1',),
+		'date_fin' => array('type'=>'date', 'label'=>'Date de fin', 'enabled'=>'1', 'position'=>45, 'notnull'=>0, 'visible'=>2, 'default'=>'0', 'isameasure'=>'1', 'css'=>'maxwidth75imp', 'validate'=>'1',),
 		'description' => array('type'=>'text', 'label'=>'Commentaires', 'enabled'=>'1', 'position'=>60, 'notnull'=>0, 'visible'=>3, 'validate'=>'1',),
 		'note_public' => array('type'=>'html', 'label'=>'NotePublic', 'enabled'=>'1', 'position'=>61, 'notnull'=>0, 'visible'=>0, 'cssview'=>'wordbreak', 'validate'=>'1',),
 		'note_private' => array('type'=>'html', 'label'=>'NotePrivate', 'enabled'=>'1', 'position'=>62, 'notnull'=>0, 'visible'=>0, 'cssview'=>'wordbreak', 'validate'=>'1',),
@@ -183,7 +183,7 @@ class Affectation extends CommonObject
 	 *
 	 * @param DoliDb $db Database handler
 	 */
-	public function __construct(DoliDB $db)
+	public function __construct(DoliDB $db, $etablissementDiminutif = null, $typeClasse = null, $instruEnseigne = null)
 	{
 		global $conf, $langs;
 
@@ -213,6 +213,28 @@ class Affectation extends CommonObject
 				}
 			}
 		}
+
+		if($etablissementDiminutif && $typeClasse && $instruEnseigne) {
+			unset($this->fields['fk_creneau']['type']);
+			$affectationCount = $this->fetchAll(
+				'',
+				'',
+				0,
+				0,
+				[
+					't.status' => self::STATUS_VALIDATED,
+					'c.status' => Creneau::STATUS_VALIDATED,
+					'customsql' => "DATE(NOW()) >= DATE(t.date_debut)
+                        AND (DATE(NOW()) <= DATE(t.date_fin) OR ISNULL(t.date_fin))
+                        AND c.nom_creneau LIKE '%{$etablissementDiminutif}%' "
+						. ($typeClasse === 2 ? 'AND c.fk_type_classe=' . $typeClasse : 'AND c.fk_instrument_enseigne = ' . $instruEnseigne)
+				],
+				'AND',
+				' INNER JOIN ' . MAIN_DB_PREFIX . 'creneau as c ON c.rowid = t.fk_creneau'
+			);
+
+			$this->fields['fk_creneau']['type'] = 'integer:Creneau:custom/scolarite/class/creneau.class.php:1:(t.nombre_places'.(count($affectationCount) > 0 ? ':>:' : (count($affectationCount) === 0 ? ':>=:' : ':<:')).count($affectationCount).') and (t.status='.Creneau::STATUS_VALIDATED.") and (t.nom_creneau:like:'%{$etablissementDiminutif}%') and ".($typeClasse === 2 ? 't.fk_type_classe=' . $typeClasse : 't.fk_instrument_enseigne = ' . $instruEnseigne);
+		}
 	}
 
 	/**
@@ -224,36 +246,27 @@ class Affectation extends CommonObject
 	 */
 	public function create(User $user, $notrigger = false)
 	{
-		$souhait = new Souhait($this->db);
+		// Import des classes concernées
+		$souhaitClass = new Souhait($this->db);
+		$creneauClass = new Creneau($this->db);
+		$anneeClass = new Annee($this->db);
 
-		// On récupère les infos du créneau visé
-		$selectedCreneau = "SELECT c.heure_debut,c.jour,c.rowid FROM ".MAIN_DB_PREFIX."creneau as c WHERE c.rowid =".$this->fk_creneau;
-		$resqlCreneau = $this->db->query($selectedCreneau);
-		$objectCreneau = $this->db->fetch_object($resqlCreneau);
+		// Fetch du créneau concerné, du souhait concerné ainsi que l'année actuelle
+		$creneauClass->fetch($this->fk_creneau);
+		$souhaitClass->fetch($this->fk_souhait);
+		$anneeClass->fetch('','',' AND active=1 AND annee_actuelle=1');
 
-		// On récupère les infos de l'élève concerné pour avoir accès à la liste de ses souhaits
-		$eleve = "SELECT e.fk_eleve FROM ".MAIN_DB_PREFIX."souhait as e WHERE e.rowid =".$this->fk_souhait;
-		$resqlEleve = $this->db->query($eleve);
-		$objectEleve = $this->db->fetch_object($resqlEleve);
+		// Recherche des autres souhaits qui pourraient rentrer en conflits avec l'affectation
+		$souhaits = $souhaitClass->fetchAll('','',0,0,['fk_eleve'=>$souhaitClass->fk_eleve,'fk_annee_scolaire'=>$anneeClass->id,'status'=>Souhait::STATUS_VALIDATED]);
 
-
-		// selection de l'année scolaire actuelle afin d'aller chercher les bons créneaux
-		$anneScolaire = "SELECT annee,annee_actuelle,rowid FROM ".MAIN_DB_PREFIX."c_annee_scolaire WHERE active = 1 AND annee_actuelle = 1 ORDER BY rowid DESC";
-		$resqlAnneeScolaire = $this->db->query($anneScolaire);
-		$objAnneScolaire = $this->db->fetch_object($resqlAnneeScolaire);
-
-		// On récupère la liste des souhaits de l'élève
-		$souhait = "SELECT * FROM ".MAIN_DB_PREFIX."souhait as c WHERE c.fk_eleve = ".$objectEleve->fk_eleve." AND c.fk_annee_scolaire=".$objAnneScolaire->rowid." AND c.status = ".$souhait::STATUS_VALIDATED;
-		$resqlSouhait = $this->db->query($souhait);
-
-
-		foreach($resqlSouhait as $val)
+		foreach($souhaits as $souhait)
 		{
-			$sql = "SELECT c.rowid,c.heure_debut,c.jour FROM ".MAIN_DB_PREFIX."creneau as c WHERE c.rowid =".("(SELECT e.fk_creneau FROM ".MAIN_DB_PREFIX."affectation as e WHERE e.fk_souhait =".$val['rowid']." AND e.status = 4)");
-			$resql = $this->db->query($sql);
+			// Recherche des créneaux
+			$creneaux = $creneauClass->fetchAll('','',0,0,['a.fk_souhait'=>$souhait->id,'a.status'=> self::STATUS_VALIDATED],'AND',' INNER JOIN '.MAIN_DB_PREFIX.'affectation as a ON a.fk_creneau=t.rowid');
 
-			foreach($resql as $value) {
-				if ($value['heure_debut'] == $objectCreneau->heure_debut && $value['jour'] == $objectCreneau->jour) {
+			foreach($creneaux as $creneau)
+			{
+				if ($creneau->heure_debut === $creneauClass->heure_debut && $creneau->jour === $creneauClass->jour) {
 					$error = true;
 				}
 			}
@@ -261,7 +274,8 @@ class Affectation extends CommonObject
 
 		if($error)
 		{
-			setEventMessage('L\'élève à déjà cours à cet horaire. Affectation impossible.','errors');
+			setEventMessage("L'élève à déjà cours à cet horaire. Affectation impossible. <br><br> Cours concerné : {$creneau->getNomUrl(1)}",'errors');
+			return -1;
 		}
 		else
 		{
@@ -269,10 +283,15 @@ class Affectation extends CommonObject
 			$souhait->fetch($this->fk_souhait);
 			$souhait->validate($user, $notrigger);
 
-			$this->validate($user, $notrigger);
+			$this->status = self::STATUS_VALIDATED;
 
 			$resultcreate = $this->createCommon($user, $notrigger);
-			setEventMessage('Affectation confirmée!');
+
+			if($resultcreate > 0) {
+				setEventMessage('Affectation confirmée!');
+			} else {
+				setEventMessage('Une erreur est survenue.','errors');
+			}
 
 			return $resultcreate;
 		}
@@ -302,10 +321,6 @@ class Affectation extends CommonObject
 		if ($result > 0 && !empty($object->table_element_line)) {
 			$object->fetchLines();
 		}
-
-		// get lines so they will be clone
-		//foreach($this->lines as $line)
-		//	$line->fetch_optionals();
 
 		// Reset some properties
 		unset($object->id);
@@ -385,9 +400,9 @@ class Affectation extends CommonObject
 	 * @param string $ref  Ref
 	 * @return int         <0 if KO, 0 if not found, >0 if OK
 	 */
-	public function fetch($id, $ref = null)
+	public function fetch($id, $ref = null,$moresql = null)
 	{
-		$result = $this->fetchCommon($id, $ref);
+		$result = $this->fetchCommon($id, $ref,$moresql);
 		if ($result > 0 && !empty($this->table_element_line)) {
 			$this->fetchLines();
 		}
@@ -419,7 +434,7 @@ class Affectation extends CommonObject
 	 * @param  string      $filtermode   Filter mode (AND or OR)
 	 * @return array|int                 int <0 if KO, array of pages if OK
 	 */
-	public function fetchAll($sortorder = '', $sortfield = '', $limit = 0, $offset = 0, array $filter = array(), $filtermode = 'AND',$innerJoin = null)
+	public function fetchAll($sortorder = '', $sortfield = '', $limit = 0, $offset = 0, $filter = array(), $filtermode = 'AND',$innerJoin = null)
 	{
 		global $conf;
 
@@ -514,7 +529,6 @@ class Affectation extends CommonObject
 	public function delete(User $user, $notrigger = false)
 	{
 		return $this->deleteCommon($user, $notrigger);
-		//return $this->deleteCommon($user, $notrigger, 1);
 	}
 
 	/**

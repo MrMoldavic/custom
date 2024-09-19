@@ -429,7 +429,9 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 
 	print '</div>';
 
+
 	print '<div class="clearboth"></div>';
+	print '<hr>';
 	print load_fiche_titre('Liste des parents', '', 'fa-user');
 
 	// Partie affichant les informations de la famille d'un élève
@@ -475,7 +477,7 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 		print '</tbody>';
 		print '</table>';
 	} else {
-		print '<h3><span class="badge badge-danger">Sans Famille liée &#9888</span></h3>';
+		print '<h2><span class="badge badge-danger">Sans Famille liée '.img_picto('', 'fa-warning', '').'</span></h2>';
 	}
 
 	if ($action != 'presend' && $action != 'editline') {
@@ -534,7 +536,7 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 				$souhaitClass = new Souhait($db);
 				$souhaits = $souhaitClass->fetchAll('ASC','status',0,0,['fk_eleve'=>$object->id,'fk_annee_scolaire'=>$value->id],'AND');
 
-				print '<div style="width : 75%" class="annee-accordion'.($value->annee_actuelle === 1 ? '-opened' : '').'">';
+				print '<div class="annee-accordion'.($value->annee_actuelle === 1 ? '-opened' : '').'">';
 				print '<h3><span class="badge badge-status4 badge-status">'.$value->annee.($value->annee_actuelle !== 1 ? ' (année précédente)' : ' (année actuelle)').'</span></h3>';
 
 				if(count($souhaits) > 0)
@@ -570,16 +572,12 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 
 							print "<td>$userClass->firstname $userClass->lastname, ".$dateFormat.'</td>';
 						}
-						elseif($souhait->status === Souhait::STATUS_CANCELED)
-						{
-							print '<td><span class="badge badge-status8 badge-status" style="color:white;">Souhait désactivé</span></td>';
-						}
 						else
 						{
-							print '<td><span class="badge badge-status1 badge-status" style="color:white;">En attente d\'affectation</span></td>';
+							print '<td><span class="badge badge-status'.($souhait->status === Souhait::STATUS_CANCELED ? '8' : '1').' badge-status" style="color:white;">'.($souhait->status === Souhait::STATUS_CANCELED ? 'Souhait désactivé' : 'En attente d\'affectation').'</span></td>';
+							print '<td>Aucun créneau</td>';
+							print '<td>Aucune info</td>';
 						}
-						print '<td>Aucun créneau</td>';
-						print '<td>Aucune info</td>';
 						print '</tr>';
 					}
 					print '</tbody>';

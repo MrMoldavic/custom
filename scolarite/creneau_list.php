@@ -86,6 +86,8 @@ require_once DOL_DOCUMENT_ROOT.'/core/lib/company.lib.php';
 
 dol_include_once('/scolarite/class/etablissement.class.php');
 dol_include_once('/scolarite/class/annee.class.php');
+dol_include_once('/scolarite/class/classe.class.php');
+dol_include_once('/viescolaire/class/parents.class.php');
 dol_include_once('/viescolaire/class/dictionary.class.php');
 
 // load scolarite libraries
@@ -478,11 +480,11 @@ $param .= $hookmanager->resPrint;
 
 // List of mass actions available
 $arrayofmassactions = array(
-	'mail'=>img_picto('', 'email', 'class="pictofixedwidth"').$langs->trans("Exporter les mails"),
-	'eleves'=>img_picto('', 'user', 'class="pictofixedwidth"').$langs->trans("Exporter les élèves"),
-	'telephone'=>img_picto('', 'phone', 'class="pictofixedwidth"').$langs->trans("Exporter les téléphones"),
-	'validate'=>img_picto('', 'check', 'class="pictofixedwidth"').$langs->trans("Validate"),
-	'coordonnee'=>img_picto('', 'location', 'class="pictofixedwidth"').$langs->trans("Coordonnées par enfants"),
+	'mail'=>img_picto('', 'email', 'class="pictofixedwidth"').$langs->trans('Exporter les mails'),
+	'eleves'=>img_picto('', 'user', 'class="pictofixedwidth"').$langs->trans('Exporter les élèves'),
+	'telephone'=>img_picto('', 'phone', 'class="pictofixedwidth"').$langs->trans('Exporter les téléphones'),
+	'coordonnee'=>img_picto('', 'fa-info', 'class="pictofixedwidth"').$langs->trans('Coordonnées par enfants'),
+	'validate' => img_picto('', 'check', 'class="pictofixedwidth"') . $langs->trans('Validate'),
 );
 if ($permissiontodelete) {
 	$arrayofmassactions['predelete'] = img_picto('', 'delete', 'class="pictofixedwidth"').$langs->trans("Delete");
@@ -492,76 +494,8 @@ if (GETPOST('nomassaction', 'int') || in_array($massaction, array('presend', 'pr
 }
 $massactionbutton = $form->selectMassAction('', $arrayofmassactions);
 
-
-if($massaction == 'telephone' || $massaction == 'mail' || $massaction == 'eleves' || $massaction == 'coordonnee')
-{
-	print '<br>';
-	foreach($arrayofselected as $value)
-	{
-		$affectation = "SELECT s.fk_souhait FROM ".MAIN_DB_PREFIX."affectation as s WHERE s.fk_creneau={$value} AND date_fin IS NULL";
-		$resqlAffectation = $db->query($affectation);
-
-		foreach($resqlAffectation as $val)
-		{
-			$eleve = "SELECT e.fk_famille,e.prenom,e.nom,e.fk_classe_etablissement FROM ".MAIN_DB_PREFIX."eleve as e WHERE e.rowid=".("(SELECT s.fk_eleve FROM ".MAIN_DB_PREFIX."souhait as s WHERE s.rowid ={$val['fk_souhait']}) ORDER BY fk_classe_etablissement ASC");
-			$resqlEleve = $db->query($eleve);
-				foreach($resqlEleve as $res)
-				{
-					if($massaction == 'eleves')
-					{
-						if($res['prenom'] != NULL)
-						{
-							$classe = "SELECT classe FROM ".MAIN_DB_PREFIX."classe WHERE rowid={$res['fk_classe_etablissement']}";
-							$resqlClasse = $db->query($classe);
-							$objClasse = $db->fetch_object($resqlClasse);
-
-							print "{$res['prenom']} {$res['nom']} / $objClasse->classe<br>";
-						}
-					}
-					else
-					{
-						$out = "";
-						$famille = "SELECT identifiant_famille,".($massaction == 'mail' ? 'f.mail_parent_1,f.mail_parent_2' : ($massaction == 'telephone' ? 'f.tel_parent_1,f.tel_parent_2' : 'f.mail_parent_1,f.mail_parent_2,f.tel_parent_1,f.tel_parent_2,prenom_parent_1,nom_parent_1,prenom_parent_2,nom_parent_2'))." FROM ".MAIN_DB_PREFIX."famille as f WHERE f.rowid=".$res['fk_famille'];
-						$resqlFamille = $db->query($famille);
-
-
-						if($resqlFamille->num_rows == 0)
-						{
-							print "{$res['prenom']} {$res['nom']}<strong style='color:red'>: Aucune famille connue</strong><br>";
-						}
-						else
-						{
-							$objFamille = $db->fetch_object($resqlFamille);
-							if($massaction == 'coordonnee')
-							{
-								$out .= "{$res['prenom']} {$res['nom']}";
-								$out .= " / $objFamille->prenom_parent_1 $objFamille->nom_parent_1";
-								$out .= ' / '.($objFamille->mail_parent_1 ? : '<strong>Aucun mail parent 1</strong>');
-								$out .= ' / '.($objFamille->tel_parent_1 ? : '<strong>Aucun tel parent 1</strong>');
-								if($objFamille->prenom_parent_2 && $objFamille->nom_parent_2)
-								{
-									$out .= " / $objFamille->prenom_parent_2 $objFamille->nom_parent_2";
-									$out .= ' / '.($objFamille->mail_parent_2 ? : '<strong>Aucun mail parent 2</strong>');
-									$out .= ' / '.($objFamille->tel_parent_2 ? : '<strong>Aucun tel parent 2</strong>');
-								} else $out .= ' / <strong>Aucun parent 2</strong>';
-								$out .= "<br>";
-							}
-							else
-							{
-								if($objFamille->mail_parent_1 != NULL AND $massaction == 'mail') $out .= "$objFamille->mail_parent_1 <br>";
-								if($objFamille->mail_parent_2 != NULL AND $massaction == 'mail') $out .= "$objFamille->mail_parent_2 <br>";
-								if($objFamille->tel_parent_1 != NULL AND $massaction == 'telephone') $out .= "$objFamille->tel_parent_1 <br>";
-								if($objFamille->tel_parent_2 != NULL AND $massaction == 'telephone') $out .= "$objFamille->tel_parent_2 <br>";
-							}
-						}
-
-						print $out;
-
-					}
-				}
-		}
-	}
-}
+// Fichier pour gérer les massactions personalisées
+include DOL_DOCUMENT_ROOT.'/custom/viescolaire/core/actions/actions_creneau_massaction_viescolaire.inc.php';
 
 // Ajout du formulaire qui permet de changer son établissement de prédilection
 $etablissementClass = new Etablissement($db);

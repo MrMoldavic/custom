@@ -416,7 +416,7 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 	print '<div style="background-color: #FFFFFF; border: 1px solid #ddd;border-radius: 12px; padding: 20px; max-width: 60%;box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); ">';
 	// Vérification si aucun créneau n'est affecté et le statut n'est pas annulé
 	if (empty($actualCreneau) && $object->status !== Souhait::STATUS_CANCELED) {
-		print '<span class="badge badge-status8 badge-status" style="color:white;">Aucun créneau affecté à ce souhait</span>';
+		print '<span class="badge badge-status8 badge-status" style="color:white;">Aucun créneau affecté à ce souhait.</span>';
 	} elseif ($object->status === Souhait::STATUS_CANCELED) {
 		// Affichage pour un souhait annulé
 		print '<span class="badge badge-status9 badge-status" style="color:white;">Souhait Désactivé</span>';
@@ -446,18 +446,23 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 	// partie pour afficher les infos d'anciens créneaux
 	$anneeScolaire = new Annee($db);
 	$anneeScolaires = $anneeScolaire->fetchAll('DESC,ASC','annee_actuelle,rowid',0,0,array('active'=>1));
+	print '<hr>';
 
 	print load_fiche_titre('Infos anciens créneaux pour ce souhait', '', 'fa-table');
 	foreach($anneeScolaires as $val)
 	{
-
 		$affectationClass = new Affectation($db);
 		$affectations =  $affectationClass->fetchAll('','',0,0,array('t.fk_souhait'=>$object->id,'t.status'=>Affectation::STATUS_CANCELED,'s.fk_annee_scolaire'=>$val->id),'AND',' INNER JOIN '.MAIN_DB_PREFIX.$object->table_element.' as s ON t.fk_souhait=s.rowid');
 
-		if(!empty($affectations))
-		{
-			print '<div class="annee-accordion'.($val->annee_actuelle == 1 ? '-opened' : '').'">';
-			print '<h3><span class="badge badge-status4 badge-status">'.$val->annee.($val->annee_actuelle == 1 ? ' - (année actuelle)' : '(année précédente)').'</span></h3>';
+
+		if(empty($affectations)) {
+			print '<div style="background-color: #FFFFFF; border: 1px solid #ddd;border-radius: 12px; padding: 20px; max-width: 60%;box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); ">';
+			print '<span class="badge badge-status8 badge-status" style="color:white;">Aucune affectation antérieure connue.</span>';
+			print '</div>';
+			break;
+		} else {
+			print '<div class="annee-accordion'.((int) $val->annee_actuelle === 1 ? '-opened' : '').'">';
+			print '<h3><span class="badge badge-status4 badge-status">'.$val->annee.((int) $val->annee_actuelle === 1 ? ' - (année actuelle)' : '(année précédente)').'</span></h3>';
 
 			print '<table class="tagtable liste table">';
 			print '<tbody>';
@@ -496,7 +501,6 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 			print '</table>';
 			print '</div>';
 		}
-
 	}
 	print '</div>';
 	print '</div>';
@@ -540,17 +544,16 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 		print '</div>' . "\n";
 	}
 
-	// TODO : trouver un moyen d'améliorer ça.
-	if ($object->status == Souhait::STATUS_DRAFT) {
+	if ($object->status === Souhait::STATUS_DRAFT) {
 
-		$instruEnseigne = $object->fk_instru_enseigne;
-		$typeClasse = $object->fk_type_classe;
-		$object = new Affectation($db);
+		$instruEnseigne = (int) $object->fk_instru_enseigne;
+		$typeClasse = (int) $object->fk_type_classe;
+		$etablissementDiminutif = substr($etablissement->diminutif, 0,2);
 
-		$object->fk_souhait = $id;
-		print load_fiche_titre('Nouvelle affectation', '', 'fa-sign');
+		$object = new Affectation($db, $etablissementDiminutif,$typeClasse, $instruEnseigne);
 
-		print '<form method="POST" action="' . $_SERVER["PHP_SELF"] . '?id=' . $id . '">';
+		print '<form method="POST" action="' . $_SERVER['PHP_SELF'] . '?id=' . $id . '">';
+		print '<input type="hidden" name="fk_souhait" value="' . $id . '">';
 		print '<input type="hidden" name="token" value="' . newToken() . '">';
 		print '<input type="hidden" name="action" value="newaffectation">';
 		if ($backtopage) {
@@ -559,9 +562,6 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 		if ($backtopageforcancel) {
 			print '<input type="hidden" name="backtopageforcancel" value="' . $backtopageforcancel . '">';
 		}
-		//var_dump($object->fields);
-		print dol_get_fiche_head(array(), '');
-
 
 		// Set some default values
 		$_POST['fk_souhait'] = $id;
@@ -569,95 +569,30 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 		$_POST['date_debutday'] = date('d', time());
 		$_POST['date_debutyear'] = date('Y', time());
 
+		print dol_get_fiche_head(array(), '');
+
+
 		print '<table class="border centpercent tableforfieldcreate">' . "\n";
 
-		// Copie d'un code existant (commonfields_add.tpl.php) afin de modifier la clause qui nous intéresse
-		foreach ($object->fields as $key => $val) {
-			// Discard if field is a hidden field on form
-			if (abs($val['visible']) != 1 && abs($val['visible']) != 3) {
-				continue;
-			}
+		// Common attributes
+		include DOL_DOCUMENT_ROOT . '/core/tpl/commonfields_add.tpl.php';
 
-			if (array_key_exists('enabled', $val) && isset($val['enabled']) && !verifCond($val['enabled'])) {
-				continue; // We don't want this field
-			}
-
-			print '<tr class="field_'.$key.'">';
-			print '<td';
-			print ' class="titlefieldcreate';
-			if (isset($val['notnull']) && $val['notnull'] > 0) {
-				print ' fieldrequired';
-			}
-			if ($val['type'] == 'text' || $val['type'] == 'html') {
-				print ' tdtop';
-			}
-			print '"';
-			print '>';
-			if (!empty($val['help'])) {
-				print $form->textwithpicto($langs->trans($val['label']), $langs->trans($val['help']));
-			} else {
-				print $langs->trans($val['label']);
-			}
-			print '</td>';
-			print '<td class="valuefieldcreate">';
-			if (!empty($val['picto'])) {
-				print img_picto('', $val['picto'], '', false, 0, 0, '', 'pictofixedwidth');
-			}
-			if (in_array($val['type'], array('int', 'integer'))) {
-				$value = GETPOST($key, 'int');
-			} elseif ($val['type'] == 'double') {
-				$value = price2num(GETPOST($key, 'alphanohtml'));
-			} elseif ($val['type'] == 'text' || $val['type'] == 'html') {
-				$value = GETPOST($key, 'restricthtml');
-			} elseif ($val['type'] == 'date') {
-				$value = dol_mktime(12, 0, 0, GETPOST($key.'month', 'int'), GETPOST($key.'day', 'int'), GETPOST($key.'year', 'int'));
-			} elseif ($val['type'] == 'datetime') {
-				$value = dol_mktime(GETPOST($key.'hour', 'int'), GETPOST($key.'min', 'int'), 0, GETPOST($key.'month', 'int'), GETPOST($key.'day', 'int'), GETPOST($key.'year', 'int'));
-			} elseif ($val['type'] == 'boolean') {
-				$value = (GETPOST($key) == 'on' ? 1 : 0);
-			} elseif ($val['type'] == 'price') {
-				$value = price2num(GETPOST($key));
-			} elseif ($key == 'lang') {
-				$value = GETPOST($key, 'aZ09');
-			} else {
-				$value = GETPOST($key, 'alphanohtml');
-			}
-			if (!empty($val['noteditable'])) {
-				print $object->showOutputField($val, $key, $value, '', '', '', 0);
-			} else {
-				if ($key == 'lang') {
-					print img_picto('', 'language', 'class="pictofixedwidth"');
-					print $formadmin->select_language($value, $key, 0, null, 1, 0, 0, 'minwidth300', 2);
-				} else {
-					// Si on est sur l'input fk_creneau, on rentre dans la boucle
-					if($key == 'fk_creneau') {
-						// On supprime le champ Type de fk_creneau
-						unset($object->fields['fk_creneau']['type']);
-						// On ajoute le notre, avec nos conditions
-						$object->fields['fk_creneau']['type'] = "integer:Creneau:custom/scolarite/class/creneau.class.php:1:(t.nombre_places>(SELECT COUNT(*) FROM llx_affectation as c WHERE c.fk_creneau=t.rowid AND c.status = 4 AND DATE(NOW()) >= DATE(c.date_debut) AND (DATE(NOW()) <= DATE(c.date_fin) OR ISNULL(c.date_fin))) AND t.status = 4 AND (t.nom_creneau LIKE '%".substr($resEtablissement->diminutif, 0,2)."%') ".($typeClasse == 2 ? "AND t.fk_type_classe=".$typeClasse : "AND t.fk_instrument_enseigne = ".$instruEnseigne).") ";
-					}
-					print $object->showInputField($val, $key, $value, '', '', '', 0);
-				}
-			}
-			print '</td>';
-			print '</tr>';
-		}
+		// Other attributes
+		include DOL_DOCUMENT_ROOT . '/core/tpl/extrafields_add.tpl.php';
 
 		print '</table>' . "\n";
 
 		print dol_get_fiche_end();
 
 		print '<div id="div-creneau">';
-		print $form->buttonsSaveCancel("Créer affectation");
+		print $form->buttonsSaveCancel('Créer affectation');
 		print '</div>';
 
 		print '</form>';
-
-		print '</div>';
 	}
 
 
-	print '<script src="/custom/viescolaire/scripts/selectCreneaux.js" defer ></script>';
+	print '<script src="../viescolaire/scripts/selectCreneaux.js" defer ></script>';
 }
 
 

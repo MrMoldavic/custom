@@ -228,9 +228,6 @@ class Souhait extends CommonObject
 				unset($this->fields[$key]);
 			}
 		}
-
-
-
 		// Translate some data of arrayofkeyval
 		if (is_object($langs)) {
 			foreach ($this->fields as $key => $val) {

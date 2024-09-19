@@ -89,6 +89,7 @@ require_once DOL_DOCUMENT_ROOT . '/core/lib/company.lib.php';
 require_once DOL_DOCUMENT_ROOT.'/custom/scolarite/class/etablissement.class.php';
 //require_once DOL_DOCUMENT_ROOT . '/custom/viescolaire/class/eleve.class.php';
 dol_include_once('/scolarite/class/annee.class.php');
+dol_include_once('/scolarite/class/classe.class.php');
 
 // load viescolaire libraries
 require_once __DIR__ . '/class/souhait.class.php';
@@ -280,7 +281,6 @@ $help_url = '';
 $title = $langs->trans('ListOf', $langs->transnoentitiesnoconv("Souhaits"));
 $morejs = array();
 $morecss = array();
-
 
 // Build and execute select
 // --------------------------------------------------------------------
@@ -717,16 +717,6 @@ while ($i < ($limit ? min($num, $limit) : $num)) {
 	$parameters = array('arrayfields' => $arrayfields, 'object' => $object, 'obj' => $obj, 'i' => $i, 'totalarray' => &$totalarray);
 	$reshook = $hookmanager->executeHooks('printFieldListValue', $parameters, $object); // Note that $action and $object may have been modified by hook
 	print $hookmanager->resPrint;
-	// Action column
-	/*print '<td class="nowrap center">';
-	if ($massactionbutton || $massaction) { // If we are in select mode (massactionbutton defined) or if we have already selected and sent an action ($massaction) defined
-		$selected = 0;
-		if (in_array($object->id, $arrayofselected)) {
-			$selected = 1;
-		}
-		print '<input id="cb' . $object->id . '" class="flat checkforselect" type="checkbox" name="toselect[]" value="' . $object->id . '"' . ($selected ? ' checked="checked"' : '') . '>';
-	}
-	print '</td>';*/
 	if (empty($conf->global->MAIN_CHECKBOX_LEFT_COLUMN)) {
 		print '<td class="nowrap center">';
 		if ($massactionbutton || $massaction) { // If we are in select mode (massactionbutton defined) or if we have already selected and sent an action ($massaction) defined
