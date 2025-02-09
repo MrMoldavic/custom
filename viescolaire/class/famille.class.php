@@ -977,7 +977,7 @@ class Famille extends CommonObject
 		$parentClass = new Parents($this->db);
 		$parents = $parentClass->fetchAll('', '', 0, 0, ['fk_famille' => $this->id]);
 
-		if (!empty($parents)) {
+		if (count($parents) > 0) {
 			// Extraire les noms et prénoms des parents
 			$parentNames = [];
 			$lastnames = [];

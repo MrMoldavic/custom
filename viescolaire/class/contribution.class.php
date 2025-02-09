@@ -366,7 +366,7 @@ class Contribution extends CommonObject
 
 				$contributionContentClass = new ContributionContent($this->db);
 				$contributionContentClass->fk_contribution = $resultcreate;
-				$contributionContentClass->fk_type_contribution_content = "Adhésion";
+				$contributionContentClass->fk_type_contribution_content = 0;
 				$contributionContentClass->montant = 0;
 				$contributionContentClass->fk_type_adherent = 1;
 				$contributionContentClass->fk_subscription = null;
@@ -1315,9 +1315,9 @@ class Contribution extends CommonObject
 					// Modify / Remove button
 					print '<td align="center">';
 					if($line->fk_type_contribution_content == "Adhésion") {
-						print '<a class="reposition editfielda" href="' . $_SERVER["PHP_SELF"] . '?action=addLine&id=' . $this->id . '&fk_adherent=' . $line->fk_adherent . '&fk_type_contribution_content=2">Ajouter un don</a>';
+						print '<a class="reposition editfielda" href="' . $_SERVER["PHP_SELF"] . '?action=addLine&id=' . $this->id . '&fk_adherent=' . $line->fk_adherent . '&fk_type_contribution_content=2&token='.newToken().'">Ajouter un don</a>';
 						print '<br>';
-						print '<a class="reposition editfielda" href="' . $_SERVER["PHP_SELF"] . '?action=addLine&id=' . $this->id . '&fk_adherent=' . $line->fk_adherent . '&fk_type_contribution_content=1">Ajouter une facture</a>';
+						print '<a class="reposition editfielda" href="' . $_SERVER["PHP_SELF"] . '?action=addLine&id=' . $this->id . '&fk_adherent=' . $line->fk_adherent . '&fk_type_contribution_content=1&token='.newToken().'">Ajouter une facture</a>';
 						print '<br>';
 
 						$existingSubscription = new Dictionary($this->db);
@@ -1337,11 +1337,11 @@ class Contribution extends CommonObject
 
 							if($existingDon->fk_statut == 2 && $line->mail_envoye != 1)
 							{
-								print '<a class="reposition editfielda" href="' . $_SERVER['PHP_SELF'] . '?id='.$this->id.'&action=mailEnvoyeValidation&lineid='.$line->id.'&idDon='.$existingDon->rowid.'">Mail envoyé</a>';
+								print '<a class="reposition editfielda" href="' . $_SERVER['PHP_SELF'] . '?id='.$this->id.'&action=mailEnvoyeValidation&lineid='.$line->id.'&idDon='.$existingDon->rowid.'&token='.newToken().'">Mail envoyé</a>';
 								print '<br>';
 							}
 
-							print '<a class="reposition editfield badge badge-status'.($existingDon->fk_statut == 2 ? '4' : $existingDon->fk_statut).' badge-status" href="../../don/card.php?action=view&id='.$existingDon->rowid.'">'.$donClass->LibStatut($existingDon->fk_statut).'</a>';
+							print '<a class="reposition editfield badge badge-status'.($existingDon->fk_statut == 2 ? '4' : $existingDon->fk_statut).' badge-status" href="../../don/card.php?action=view&id='.$existingDon->rowid.'&token='.newToken().'">'.$donClass->LibStatut($existingDon->fk_statut).'</a>';
 							print '<br>';
 							$PrintModifAndDelete = 0;
 						}
@@ -1375,13 +1375,13 @@ class Contribution extends CommonObject
 								$PrintModifAndDelete = 0;
 							}
 
-							print '<a class="reposition editfielda " href="'.($res > 0 ? '../../compta/facture/card.php?facid='.$res->rowid.'&contributionId='.$this->id : $_SERVER["PHP_SELF"].'?id='.$this->id.'&lineid='.$line->id.'&parentId='.$parentClass->id.'&action=createFacture').'">'.($res > 0 ? '<span class="badge badge-status'.$spanColor.' badge-status">'.$stateToPrint.'</span>' : 'Payer la facture').'</a>';
+							print '<a class="reposition editfielda " href="'.($res > 0 ? '../../compta/facture/card.php?facid='.$res->rowid.'&contributionId='.$this->id : $_SERVER["PHP_SELF"].'?id='.$this->id.'&lineid='.$line->id.'&parentId='.$parentClass->id.'&action=createFacture').'&token='.newToken().'">'.($res > 0 ? '<span class="badge badge-status'.$spanColor.' badge-status">'.$stateToPrint.'</span>' : 'Payer la facture').'</a>';
 							print '&nbsp;';
 						}
 						elseif($line->montant != 0)
 						{
 							$refDon = "$parentClass->firstname-$parentClass->lastname / $date";
-							print '<a class="reposition editfielda" href="../../don/card.php?action=create&lastname='.urlencode($parentClass->lastname).'&firstname='.urlencode($parentClass->firstname).'&zipcode='.urlencode($parentClass->zipcode).'&town='.urlencode($parentClass->town).'&amount='.urlencode($line->montant).'&options_contribution_content='.$line->id.'&address='.$parentClass->address.'&email='.$parentClass->mail.'&ref='.$refDon.'&backtopagefromcontribution=1&id_contribution='.$this->id.'&remonth=09&reday=01&reyear='.$dateAdhesion->format('Y').'">Faire le reçu</a>';
+							print '<a class="reposition editfielda" href="../../don/card.php?action=create&lastname='.urlencode($parentClass->lastname).'&firstname='.urlencode($parentClass->firstname).'&zipcode='.urlencode($parentClass->zipcode).'&town='.urlencode($parentClass->town).'&amount='.urlencode($line->montant).'&options_contribution_content='.$line->id.'&address='.$parentClass->address.'&email='.$parentClass->mail.'&ref='.$refDon.'&backtopagefromcontribution=1&id_contribution='.$this->id.'&remonth=09&reday=01&reyear='.$dateAdhesion->format('Y').'&token='.newToken().'">Faire le reçu</a>';
 							print '&nbsp;';
 						}
 					}
@@ -1392,9 +1392,9 @@ class Contribution extends CommonObject
 
 					if($PrintModifAndDelete == 1)
 					{
-						print '<a class="reposition editfielda" href="'.$_SERVER["PHP_SELF"].'?action=editline&id='. $this->id .'&lineid='.$line->id.'">'.img_edit().'</a>';
+						print '<a class="reposition editfielda" href="'.$_SERVER["PHP_SELF"].'?action=editline&id='. $this->id .'&lineid='.$line->id.'&token='.newToken().'">'.img_edit().'</a>';
 						print '&nbsp;';
-						print '<a class="reposition editfielda" href="'.$_SERVER["PHP_SELF"].'?action=deleteline&id='. $this->id .'&lineid='.$line->id.'">'.img_delete().'</a>';
+						print '<a class="reposition editfielda" href="'.$_SERVER["PHP_SELF"].'?action=deleteline&id='. $this->id .'&lineid='.$line->id.'&token='.newToken().'">'.img_delete().'</a>';
 						print '&nbsp;';
 					}
 

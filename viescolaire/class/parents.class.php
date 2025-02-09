@@ -414,9 +414,8 @@ class Parents extends CommonObject
 	 * @param $firstname
 	 * @param $lastname
 	 * @param $table
-	 * @return object
 	 */
-	public function fetchAdherentOrTiersByParent($firstname,$lastname,$table) : object
+	public function fetchAdherentOrTiersByParent($firstname,$lastname,$table)
 	{
 		$sql = "SELECT a.rowid";
 		$sql .= " FROM ".MAIN_DB_PREFIX.((string) $table). ' as a';

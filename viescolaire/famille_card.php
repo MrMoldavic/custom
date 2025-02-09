@@ -22,9 +22,6 @@
  *		\brief      Page to create/edit/view famille
  */
 
-ini_set('display_errors', '1');
-ini_set('display_startup_errors', '1');
-error_reporting(E_ALL);
 
 //if (! defined('NOREQUIREDB'))              define('NOREQUIREDB', '1');				// Do not create database handler $db
 //if (! defined('NOREQUIREUSER'))            define('NOREQUIREUSER', '1');				// Do not load object $user
@@ -442,7 +439,7 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 		print '<p>Aucun parent connu.</p>';
 	}
 
-	print dolGetButtonAction($langs->trans('Ajouter un parent'), '', 'default', '/custom/viescolaire/parents_card.php?action=create&fk_famille='.$object->id.'&token='.newToken(), '', $permissiontoadd);
+	print dolGetButtonAction($langs->trans('Ajouter un parent'), '', 'default', 'parents_card.php?action=create&fk_famille='.$object->id.'&token='.newToken(), '', $permissiontoadd);
 
 
 	print '<hr>';
@@ -546,7 +543,7 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 			print "<td><span class='badge badge-status4 badge-status'>".$anneeClass->annee. '</span></td>';
 			print "<td><span class='badge badge-status4 badge-status'>".$contribution->montant_total. '€</span></td>';
 			print '<td center>';
-			print '<a class="reposition editfielda" href="'.$_SERVER['PHP_SELF'].'?action=deleteContribution&contributionId='. $contribution->id .'&id='.$object->id.'">'.img_delete().'</a>';
+			print '<a class="reposition editfielda" href="'.$_SERVER['PHP_SELF'].'?action=deleteContribution&contributionId='. $contribution->id .'&id='.$object->id.'&token='.newToken().'">'.img_delete().'</a>';
 			print '</td>';
 			print '</tr>';
 		}
@@ -556,7 +553,7 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 		print '<p>Aucune contribution connue.</p>';
 	}
 
-	print dolGetButtonAction($langs->trans('Créer une contribution'), '', 'default', '/custom/viescolaire/contribution_card.php?action=create&fk_famille='.$object->id.'&token='.newToken(), '', $permissiontoadd);
+	print dolGetButtonAction($langs->trans('Créer une contribution'), '', 'default', 'contribution_card.php?action=create&fk_famille='.$object->id.'&token='.newToken(), '', $permissiontoadd);
 
 	print '<div class="clearboth"></div>';
 

@@ -72,7 +72,7 @@ class modVieScolaire extends DolibarrModules
 		$this->editor_url = 'https://www.example.com';
 
 		// Possible values for version are: 'development', 'experimental', 'dolibarr', 'dolibarr_deprecated' or a version string like 'x.y.z'
-		$this->version = 'development';
+		$this->version = '1.0';
 		// Url to the file with your last numberversion of this module
 		//$this->url_last_version = 'http://www.example.com/versionmodule.txt';
 
@@ -218,16 +218,16 @@ class modVieScolaire extends DolibarrModules
 			'SELECT g.rowid as rowid, g.genre, g.active FROM ' . MAIN_DB_PREFIX . 'c_genre as g',
 			'SELECT e.rowid as rowid, e.emplacement, e.active FROM ' . MAIN_DB_PREFIX . 'c_geographie_prioritaire as e',
 			'SELECT c.rowid as rowid, c.categorie, c.active FROM ' . MAIN_DB_PREFIX . 'c_csp as c',
-			'SELECT c.rowid as rowid, c.annee, c.active FROM ' . MAIN_DB_PREFIX . 'c_annee_scolaire as c',
+			'SELECT c.rowid as rowid, c.annee,c.annee_actuelle,c.active FROM ' . MAIN_DB_PREFIX . 'c_annee_scolaire as c',
 			'SELECT t.rowid as rowid, t.type, t.active FROM ' . MAIN_DB_PREFIX . 'c_type_parent as t',),
 			// Sort order
 			'tabsqlsort' => array("niveau ASC", "rowid ASC",  "emplacement ASC", "categorie ASC", "annee ASC","rowid ASC"),
 			// List of fields (result of select to show dictionary)
-			'tabfield' => array("niveau", "genre", "emplacement", "categorie", "annee","type"),
+			'tabfield' => array("niveau", "genre", "emplacement", "categorie", "annee","annee_actuelle","type"),
 			// List of fields (list of fields to edit a record)
-			'tabfieldvalue' => array("niveau", "genre", "emplacement", "categorie", "annee","type"),
+			'tabfieldvalue' => array("niveau", "genre", "emplacement", "categorie", "annee","annee_actuelle","type"),
 			// List of fields (list of fields for insert)
-			'tabfieldinsert' => array("niveau", "genre", "emplacement", "categorie", "annee","type"),
+			'tabfieldinsert' => array("niveau", "genre", "emplacement", "categorie", "annee","annee_actuelle","type"),
 			// Name of columns with primary key (try to always name it 'rowid')
 			'tabrowid' => array("rowid", "rowid", "rowid", "rowid", "rowid", "rowid"),
 			// Condition to show each dictionary
