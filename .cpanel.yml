@@ -22,6 +22,5 @@ deployment:
     - /bin/cp -R source $DEPLOYPATH
     - /bin/cp -R viescolaire $DEPLOYPATH
     - /bin/cp index.html $DEPLOYPATH
-    - /bin/cp main.inc.php $DEPLOYPATH
     - /bin/cp proxy.md $DEPLOYPATH
     - /bin/cp README.md $DEPLOYPATH
