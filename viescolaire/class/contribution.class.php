@@ -1348,11 +1348,11 @@ class Contribution extends CommonObject
 						elseif($line->fk_type_contribution_content == 1 && $line->montant != 0)
 						{
 							$dictionaryClass = new Dictionary($this->db);
-							$res = $dictionaryClass->fetchByDictionary('facture',['rowid','fk_statut','fk_soc'],0,''," WHERE fk_soc=$parentClass->fk_tiers");
+							$res = $dictionaryClass->fetchByDictionary('facture',['rowid','fk_statut','fk_soc'],0,''," fk_soc=$parentClass->fk_tiers");
 
 							$stateToPrint = "";
 							$spanColor = 0;
-							if($res > 0)
+							if(count($res) > 0)
 							{
 								switch ($res->fk_statut) {
 									case 0:
@@ -1375,7 +1375,7 @@ class Contribution extends CommonObject
 								$PrintModifAndDelete = 0;
 							}
 
-							print '<a class="reposition editfielda " href="'.($res > 0 ? '../../compta/facture/card.php?facid='.$res->rowid.'&contributionId='.$this->id : $_SERVER["PHP_SELF"].'?id='.$this->id.'&lineid='.$line->id.'&parentId='.$parentClass->id.'&action=createFacture').'&token='.newToken().'">'.($res > 0 ? '<span class="badge badge-status'.$spanColor.' badge-status">'.$stateToPrint.'</span>' : 'Payer la facture').'</a>';
+							print '<a class="reposition editfielda " href="'.(count($res) > 0 ? '../../compta/facture/card.php?facid='.$res->rowid.'&contributionId='.$this->id : $_SERVER["PHP_SELF"].'?id='.$this->id.'&lineid='.$line->id.'&parentId='.$parentClass->id.'&action=createFacture').'&token='.newToken().'">'.(count($res) > 0 ? '<span class="badge badge-status'.$spanColor.' badge-status">'.$stateToPrint.'</span>' : 'Payer la facture').'</a>';
 							print '&nbsp;';
 						}
 						elseif($line->montant != 0)
